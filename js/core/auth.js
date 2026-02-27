@@ -4,23 +4,38 @@
 // ═══════════════════════════════════════
 const MENU_PERMS = {
   finanzas:   { label:'💹 Finanzas', subs:[
-    {id:'resumen',label:'Dashboard Grupo'},{id:'centum',label:'Centum Capital'},
-    {id:'sal_res',label:'Salem — P&L'},{id:'sal_ing',label:'Salem — Ingresos'},{id:'sal_tpv',label:'Salem — TPV'},{id:'sal_gas',label:'Salem — Costes y Gastos'},{id:'sal_nom',label:'Salem — Nómina'},
-    {id:'end_res',label:'Endless — P&L'},{id:'end_ing',label:'Endless — Ingresos'},{id:'end_gas',label:'Endless — Costes y Gastos'},{id:'end_nom',label:'Endless — Nómina'},{id:'end_cred',label:'Cartera Endless'},
-    {id:'dyn_res',label:'Dynamo — P&L'},{id:'dyn_ing',label:'Dynamo — Ingresos'},{id:'dyn_gas',label:'Dynamo — Costes y Gastos'},{id:'dyn_nom',label:'Dynamo — Nómina'},{id:'dyn_cred',label:'Cartera Dynamo'},
-    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit Ingresos'},{id:'wb_gas',label:'Wirebit — Costes y Gastos'},{id:'wb_nom',label:'Nómina Wirebit'},
-    {id:'flujo_ing',label:'Flujo Ingresos'},{id:'flujo_gas',label:'Flujo Gastos'},
+    {id:'resumen',label:'Dashboard Grupo'},{id:'centum',label:'Centum Capital'},{id:'grupo',label:'Grupo Financiero'},
+    {id:'sal_res',label:'Salem — P&L'},{id:'sal_ing',label:'Salem — Ingresos'},{id:'sal_gas',label:'Salem — Costes y Gastos'},{id:'sal_nom',label:'Salem — Nómina'},
+    {id:'end_res',label:'Endless — P&L'},{id:'end_ing',label:'Endless — Ingresos'},{id:'end_gas',label:'Endless — Costes y Gastos'},{id:'end_nom',label:'Endless — Nómina'},
+    {id:'dyn_res',label:'Dynamo — P&L'},{id:'dyn_ing',label:'Dynamo — Ingresos'},{id:'dyn_gas',label:'Dynamo — Costes y Gastos'},{id:'dyn_nom',label:'Dynamo — Nómina'},
+    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit — Ingresos'},{id:'wb_gas',label:'Wirebit — Costes y Gastos'},{id:'wb_cripto',label:'Wirebit — Cripto'},{id:'wb_tarjetas',label:'Wirebit — Tarjetas'},{id:'wb_nom',label:'Wirebit — Nómina'},
     {id:'nomina',label:'Nómina Compartida'},{id:'gastos_comp',label:'Gastos Compartidos'},
   ]},
-  terminales: { label:'🖥️ Terminales', subs:[] },
+  terminales: { label:'🖥️ Terminales', subs:[
+    {id:'tpv_general',label:'Dashboard General'},{id:'tpv_dashboard',label:'Dashboard Periodo'},
+    {id:'tpv_pagos',label:'Control de Pagos'},{id:'tpv_resumen',label:'Resumen por Cliente'},
+    {id:'tpv_agentes',label:'Comisiones Agentes'},{id:'tpv_terminales',label:'Por Cliente'},{id:'tpv_cambios',label:'Cambios de Terminal'},
+  ]},
   tarjetas:   { label:'💳 Tarjetas', subs:[
-    {id:'tarjeta_wb',label:'Wirebit'},{id:'tarjeta_black',label:'Centum Black'},{id:'tarjeta_blue',label:'Centum Blue'},
+    {id:'tar_dashboard',label:'Dashboard CENTUM'},{id:'tar_conceptos',label:'Conceptos'},
+    {id:'tar_subclientes',label:'Subclientes'},{id:'tar_rechazos',label:'Rechazos'},{id:'tar_tarjetahabientes',label:'Tarjetahabientes'},
+  ]},
+  tesoreria:  { label:'🏦 Tesorería', subs:[
+    {id:'tes_flujo',label:'Flujo de Caja'},{id:'tes_individual',label:'Por Empresa'},{id:'tes_grupo',label:'Consolidado Grupo'},
   ]},
   creditos:   { label:'🏦 Créditos', subs:[
+    {id:'cred_dash',label:'Dashboard Consolidado'},{id:'cred_cobr',label:'Cobranza'},
     {id:'end_cred',label:'Cartera Endless'},{id:'dyn_cred',label:'Cartera Dynamo'},
   ]},
+  carga:      { label:'📦 Carga de Datos', subs:[
+    {id:'carga_masiva',label:'Carga Masiva'},{id:'flujo_ing',label:'Flujo Ingresos'},{id:'flujo_gas',label:'Flujo Gastos'},
+    {id:'tpv_upload',label:'Datos TPV'},{id:'tpv_comisiones',label:'Config. Comisiones'},
+    {id:'tar_upload',label:'Carga Tarjetas'},{id:'wb_upload',label:'Wirebit Cripto'},{id:'wb_tar_upload',label:'Wirebit Tarjetas'},
+    {id:'carga_creditos',label:'Carga Créditos'},
+  ]},
   config:     { label:'⚙️ Configuración', subs:[
-    {id:'cfg_usuarios',label:'Usuarios'},
+    {id:'cfg_usuarios',label:'Usuarios'},{id:'cfg_permisos',label:'Permisos'},
+    {id:'cfg_apariencia',label:'Apariencia'},{id:'cfg_categorias',label:'Categorías P&L'},{id:'cfg_bancos',label:'Bancos y Cuentas'},
   ]},
 };
 
@@ -142,10 +157,10 @@ function uToggleSub(subId, menuId, cb){
 function uCollectPerms(){
   const perms = {};
   document.querySelectorAll('#u-perms input[data-menu]:not([data-sub])').forEach(cb => {
-    if(cb.checked) perms[cb.dataset.menu] = 'menu';
+    perms[cb.dataset.menu] = cb.checked ? 'menu' : false;
   });
   document.querySelectorAll('#u-perms input[data-sub]').forEach(cb => {
-    if(perms[cb.dataset.menu]){
+    if(perms[cb.dataset.menu]==='menu'){
       perms[cb.dataset.sub] = cb.checked;
     }
   });
