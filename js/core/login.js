@@ -100,11 +100,11 @@ function applyMenuPermissions(){
     const menuId=panel?panel.id.replace('sub-',''):null;
 
     if(user.rol==='admin'){
-      // Admin: ocultar si el menú padre no está habilitado
-      if(menuId&&perms[menuId]!=='menu'&&perms[menuId]!==true){ si.style.display='none'; return; }
+      // Admin: solo ocultar si menú padre explícitamente deshabilitado
+      if(menuId&&perms[menuId]===false){ si.style.display='none'; return; }
       // Sub explícitamente deshabilitado
       if(perms[viewId]===false){ si.style.display='none'; return; }
-      return; // Admin — módulo habilitado → mostrar
+      return; // Admin — lo demás se muestra
     }
     // No-admin: necesita permiso explícito
     if(perms[viewId]===true) return;
