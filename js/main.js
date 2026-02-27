@@ -1,14 +1,21 @@
 // GFVMCR — Inicialización principal
-// Este archivo arranca la aplicación cuando el DOM está listo.
+// Bootstrap asíncrono: Supabase → localStorage → render
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Aplicar tema guardado
-  applyTheme();
-
-  // Render inicial del dashboard
-  rResumen();
-
-  // Inicializar mes en filtros si aplica
-  const fm = document.getElementById('tes-fil-mes');
-  if (fm) fm.value = tesCurMonth();
+  initApp().then(() => {
+    // Post-init adicional
+    const fm = document.getElementById('tes-fil-mes');
+    if (fm && typeof tesCurMonth === 'function') fm.value = tesCurMonth();
+  }).catch(e => {
+    console.error('[main] initApp falló, fallback a localStorage:', e);
+    // Fallback: correr init con lo que haya en localStorage
+    try {
+      S.recs = DB.get('vmcr4') || [];
+      uLoad(); ccLoad(); fiLoad(); fgLoad(); syncFlujoToRecs();
+      applyTheme(_theme); renderReg(); sv('inicio', null);
+      if (typeof updateToggleBtn === 'function') updateToggleBtn();
+    } catch (e2) { console.error('[main] fallback también falló:', e2); }
+    const loader = document.getElementById('app-loader');
+    if (loader) loader.style.display = 'none';
+  });
 });

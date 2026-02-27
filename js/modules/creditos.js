@@ -37,6 +37,280 @@ function credTotalIntereses(c){
   return 0;
 }
 
+// ── Helpers de fecha DD/MM/YYYY o DD/Mon/YYYY ──
+const _MESES_MAP = {ene:0,feb:1,mar:2,abr:3,apr:3,may:4,jun:5,jul:6,ago:7,aug:7,sep:8,oct:9,nov:10,dic:11,dec:11};
+function credParseDate(str){
+  if(!str) return null;
+  const p = str.split('/');
+  if(p.length!==3) return null;
+  let mes = parseInt(p[1]);
+  if(isNaN(mes)){
+    mes = _MESES_MAP[p[1].toLowerCase().substring(0,3)];
+    if(mes===undefined) return null;
+  } else { mes--; }
+  return new Date(parseInt(p[2]), mes, parseInt(p[0]));
+}
+function credFormatDate(d){
+  if(!d) return '';
+  return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+'/'+d.getFullYear();
+}
+
+// ── Estatus de pago por periodo ──
+function credPeriodStatus(credit, row){
+  if(!row || row.periodo===0) return null;
+  const pagos = credit.pagos || [];
+  const pago = pagos.find(p => p.periodo === row.periodo);
+  const fechaVenc = credParseDate(row.fecha);
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  if(pago){
+    return pago.monto >= (row.pago||0) ? 'PAGADO' : 'PARCIAL';
+  }
+  if(!fechaVenc) return 'PENDIENTE';
+  return fechaVenc < today ? 'VENCIDO' : 'PENDIENTE';
+}
+
+function credDiasAtraso(row){
+  const f = credParseDate(row.fecha);
+  if(!f) return 0;
+  const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.floor((today - f)/(1000*60*60*24));
+  return diff > 0 ? diff : 0;
+}
+
+function credCobranzaResumen(credit){
+  if(!credit.amort || credit.amort.length<=1) return null;
+  const rows = credit.amort.slice(1);
+  let pagado=0, parcial=0, vencido=0, pendiente=0;
+  let montoVencido=0, montoPagado=0, maxAtraso=0;
+  const pagos = credit.pagos || [];
+
+  rows.forEach(r=>{
+    const st = credPeriodStatus(credit, r);
+    const pr = pagos.find(p=>p.periodo===r.periodo);
+    if(st==='PAGADO')   { pagado++;  montoPagado += pr ? pr.monto : 0; }
+    else if(st==='PARCIAL'){ parcial++; montoPagado += pr ? pr.monto : 0; montoVencido += (r.pago||0) - (pr?pr.monto:0); }
+    else if(st==='VENCIDO'){ vencido++; montoVencido += (r.pago||0); maxAtraso = Math.max(maxAtraso, credDiasAtraso(r)); }
+    else { pendiente++; }
+  });
+  return { pagado, parcial, vencido, pendiente, montoVencido, montoPagado, maxAtraso, total:rows.length };
+}
+
+function credProximoPago(credit){
+  if(!credit.amort || credit.amort.length<=1) return null;
+  for(let i=1;i<credit.amort.length;i++){
+    const st = credPeriodStatus(credit, credit.amort[i]);
+    if(st==='VENCIDO'||st==='PENDIENTE'||st==='PARCIAL') return credit.amort[i];
+  }
+  return null;
+}
+
+// ══════════════════════════════════════
+// DASHBOARD CONSOLIDADO DE CRÉDITOS
+// ══════════════════════════════════════
+function rCredDash(){
+  // Load latest data from DB
+  try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+
+  const all = [
+    ...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})),
+    ...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'}))
+  ];
+
+  // ── KPIs consolidados ──
+  const activos    = all.filter(c=>c.st==='Activo');
+  const vencidos   = all.filter(c=>c.st==='Vencido');
+  const prospectos = all.filter(c=>c.st==='Prospecto');
+  const pagados    = all.filter(c=>c.st==='Pagado');
+
+  const montoTotal     = all.reduce((s,c)=>s+(c.monto||0),0);
+  const carteraActiva  = activos.reduce((s,c)=>s+credSaldoActual(c),0);
+  const carteraVencida = vencidos.reduce((s,c)=>s+credSaldoActual(c),0);
+  const carteraTotal   = carteraActiva + carteraVencida;
+  const intTotal       = all.reduce((s,c)=>s+credTotalIntereses(c),0);
+  const totalCreditos  = activos.length + vencidos.length + prospectos.length;
+  const pctVencida     = carteraTotal>0 ? ((carteraVencida/carteraTotal)*100).toFixed(1) : '0';
+
+  const _kpiCard = (k) => `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px;border-top:3px solid ${k.color}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:.7rem;font-weight:600;color:var(--text2)">${k.lbl}</div>
+        <div style="width:28px;height:28px;border-radius:8px;background:${k.bg};display:flex;align-items:center;justify-content:center;font-size:.85rem">${k.ico}</div>
+      </div>
+      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:1.1rem;color:${k.color}">${k.val}</div>
+      <div style="font-size:.67rem;color:var(--muted);margin-top:3px">${k.sub}</div>
+    </div>`;
+
+  const kpis1 = [
+    {lbl:'Total Créditos', val:totalCreditos, sub:`${activos.length} activos · ${vencidos.length} vencidos · ${prospectos.length} prospectos`, ico:'📋', color:'#0073ea', bg:'var(--blue-bg)'},
+    {lbl:'Monto Total Prestado', val:fmtK(montoTotal), sub:'Capital otorgado ambas SOFOMs', ico:'💵', color:'var(--green)', bg:'var(--green-bg)'},
+    {lbl:'Cartera Vigente', val:fmtK(carteraActiva), sub:'Saldo activo pendiente consolidado', ico:'📈', color:'#0073ea', bg:'var(--blue-bg)'},
+  ];
+  const kpis2 = [
+    {lbl:'Cartera Vencida', val:fmtK(carteraVencida), sub: carteraVencida>0 ? pctVencida+'% del total' : 'Sin vencimientos', ico:'⚠️', color: carteraVencida>0?'var(--red)':'var(--green)', bg: carteraVencida>0?'var(--red-bg)':'var(--green-bg)'},
+    {lbl:'Intereses Totales', val:fmtK(intTotal), sub:'Sobre tablas de amortización', ico:'💰', color:'var(--purple)', bg:'var(--purple-bg)'},
+    {lbl:'Tasa Ponderada Prom.', val: montoTotal>0 ? (all.reduce((s,c)=>s+(c.tasa||0)*(c.monto||0),0)/montoTotal).toFixed(1)+'%' : '—', sub:'Ponderada por monto', ico:'📊', color:'var(--orange)', bg:'var(--orange-bg)'},
+  ];
+
+  const el1 = document.getElementById('cred-dash-kpis');
+  const el2 = document.getElementById('cred-dash-kpis2');
+  if(el1) el1.innerHTML = kpis1.map(_kpiCard).join('');
+  if(el2) el2.innerHTML = kpis2.map(_kpiCard).join('');
+
+  // ── Charts ──
+  // Chart 1: Status breakdown (horizontal bar)
+  dc('ccredst');
+  CH['ccredst'] = new Chart(document.getElementById('c-cred-status'),{
+    type:'bar',
+    data:{
+      labels:['Activos','Vencidos','Prospectos','Pagados'],
+      datasets:[{
+        data:[activos.length, vencidos.length, prospectos.length, pagados.length],
+        backgroundColor:['rgba(0,184,117,.22)','rgba(234,57,67,.22)','rgba(255,160,0,.22)','rgba(155,81,224,.22)'],
+        borderColor:['#00b875','#ea3943','#ffa000','#9b51e0'],
+        borderWidth:1.5, borderRadius:4
+      }]
+    },
+    options:{...cOpts(),indexAxis:'y',plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+' créditos'}}},
+      scales:{x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{stepSize:1,color:'#b0b4d0',font:{size:9}}},y:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}}}}
+  });
+
+  // Chart 2: Entity distribution (doughnut)
+  dc('ccredent');
+  const endCartera = END_CREDITS.filter(c=>c.st==='Activo'||c.st==='Vencido').reduce((s,c)=>s+credSaldoActual(c),0);
+  const dynCartera = DYN_CREDITS.filter(c=>c.st==='Activo'||c.st==='Vencido').reduce((s,c)=>s+credSaldoActual(c),0);
+  const totalCar = endCartera + dynCartera;
+  CH['ccredent'] = new Chart(document.getElementById('c-cred-entity'),{
+    type:'doughnut',
+    data:{
+      labels:[`Endless ${fmtK(endCartera)}`,`Dynamo ${fmtK(dynCartera)}`],
+      datasets:[{
+        data: totalCar>0 ? [endCartera, dynCartera] : [1,1],
+        backgroundColor: totalCar>0 ? ['rgba(0,184,117,.22)','rgba(255,112,67,.22)'] : ['rgba(134,134,134,.15)','rgba(134,134,134,.15)'],
+        borderColor: totalCar>0 ? ['#00b875','#ff7043'] : ['rgba(134,134,134,.3)','rgba(134,134,134,.3)'],
+        borderWidth:2
+      }]
+    },
+    options:{...cOpts(),cutout:'60%',plugins:{legend:{position:'bottom',labels:{color:'#8b8fb5',font:{size:10},boxWidth:8,padding:6}},
+      tooltip:{callbacks:{label:ctx=>' '+fmtK(ctx.raw)+' ('+(totalCar>0?((ctx.raw/totalCar)*100).toFixed(1):0)+'%)'}}},
+      scales:{x:{display:false},y:{display:false}}}
+  });
+
+  // ── Entity summary cards ──
+  _credDashEntitySummary('end', END_CREDITS, '#00b875');
+  _credDashEntitySummary('dyn', DYN_CREDITS, '#ff7043');
+
+  // ── Lista combinada ──
+  _credDashRenderAllList(all);
+}
+
+function _credDashEntitySummary(entKey, credits, col){
+  const el = document.getElementById('cred-dash-'+entKey+'-summary');
+  if(!el) return;
+  const activos = credits.filter(c=>c.st==='Activo');
+  const vencidos = credits.filter(c=>c.st==='Vencido');
+  const prospectos = credits.filter(c=>c.st==='Prospecto');
+  const carteraActiva = activos.reduce((s,c)=>s+credSaldoActual(c),0);
+  const montoOriginal = credits.reduce((s,c)=>s+(c.monto||0),0);
+  const intTotal = credits.reduce((s,c)=>s+credTotalIntereses(c),0);
+  const total = activos.length+vencidos.length+prospectos.length;
+
+  if(!total){
+    el.innerHTML = `<div style="text-align:center;padding:16px;color:var(--muted);font-size:.78rem">Sin créditos en cartera</div>`;
+    return;
+  }
+
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
+      <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Créditos</div>
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:${col}">${total}</div>
+        <div style="font-size:.6rem;color:var(--muted)">${activos.length} act · ${vencidos.length} venc · ${prospectos.length} prosp</div>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Monto Prestado</div>
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:${col}">${fmtK(montoOriginal)}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Cartera Vigente</div>
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:#0073ea">${fmtK(carteraActiva)}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px">
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Intereses</div>
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:var(--purple)">${fmtK(intTotal)}</div>
+      </div>
+    </div>`;
+}
+
+function _credDashRenderAllList(all){
+  const listEl = document.getElementById('cred-dash-all-list');
+  const countEl = document.getElementById('cred-dash-total-count');
+  if(!listEl) return;
+
+  if(countEl) countEl.textContent = all.length;
+
+  if(!all.length){
+    listEl.innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-size:.82rem">
+      <div style="font-size:2rem;margin-bottom:10px">📭</div>
+      No hay créditos en cartera.<br>
+      <span style="font-size:.72rem">Usa <strong>Cargar PDF</strong> para importar desde tabla de amortización.</span>
+    </div>`;
+    return;
+  }
+
+  const sorted = [...all].sort((a,b)=>{
+    const ord = {Activo:0,Vencido:1,Prospecto:2,Pagado:3};
+    return (ord[a.st]||9) - (ord[b.st]||9) || (b.monto||0) - (a.monto||0);
+  });
+
+  const stIco = {Activo:'✅',Vencido:'⚠️',Pagado:'🏁',Prospecto:'🎯'};
+  const stBg  = {Activo:'var(--green-bg)',Vencido:'var(--red-bg)',Pagado:'var(--purple-bg)',Prospecto:'var(--yellow-bg)'};
+  const stCol = {Activo:'var(--green)',Vencido:'var(--red)',Pagado:'var(--purple)',Prospecto:'var(--yellow)'};
+  const stBor = {Activo:'var(--green-lt)',Vencido:'var(--red-lt)',Pagado:'var(--purple-lt)',Prospecto:'var(--yellow-lt)'};
+
+  listEl.innerHTML = sorted.map(c=>{
+    const saldo = credSaldoActual(c);
+    const intTot = credTotalIntereses(c);
+    const credits = c._ent==='end' ? END_CREDITS : DYN_CREDITS;
+    const origIdx = credits.findIndex(x=>x.cl===c.cl);
+
+    return `<div class="cred-dash-row" data-name="${(c.cl||'').toLowerCase()}" onclick="credOpenDetail('${c._ent}','${(c.cl||'').replace(/'/g,"\\'")}',${origIdx})"
+      style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <div style="width:36px;height:36px;border-radius:10px;background:${stBg[c.st]||stBg.Activo};border:1px solid ${stBor[c.st]||stBor.Activo};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${stIco[c.st]||'📋'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span style="font-weight:700;font-size:.82rem">${c.cl}</span>
+          <span style="font-size:.58rem;font-weight:700;padding:1px 6px;border-radius:8px;background:${stBg[c.st]};color:${stCol[c.st]};border:1px solid ${stBor[c.st]}">${c.st}</span>
+          <span style="font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${c._col}18;color:${c._col};border:1px solid ${c._col}35">${c._entLabel}</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted)">${c.tipo||'Simple'} · ${c.tasa||0}% anual · ${c.plazo||0} meses${c.disbDate?' · '+c.disbDate:''}</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:85px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;color:${c._col}">${fmtK(c.monto||0)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Monto</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:85px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.85rem;color:#0073ea">${fmtK(saldo)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Saldo</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:85px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.85rem;color:var(--purple)">${fmtK(intTot)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Intereses</div>
+      </div>
+      <div style="color:var(--muted);font-size:.9rem;flex-shrink:0">›</div>
+    </div>`;
+  }).join('');
+}
+
+function credDashFilter(query){
+  const q = query.toLowerCase();
+  document.querySelectorAll('.cred-dash-row').forEach(row=>{
+    row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+
 // ── Dashboard KPIs ──
 function credRenderDashKPIs(credits, entKey){
   const col   = entKey==='end' ? '#00b875' : '#ff7043';
@@ -180,8 +454,22 @@ function credOpenDetail(entKey, nombre, idx){
         <td>${r.fecha||'—'}</td>
         <td class="mo">—</td><td class="mo">—</td><td class="mo">—</td><td class="mo">—</td>
         <td class="mo bld" style="color:${col}">${fmtFull(r.saldo)}</td>
+        <td style="text-align:center;color:var(--muted);font-size:.65rem">—</td>
       </tr>`;
       const isPaid = r.saldo <= 0.01;
+      const st = credPeriodStatus(c, r);
+      const pr = (c.pagos||[]).find(p=>p.periodo===r.periodo);
+      let cobrCell = '';
+      if(st==='PAGADO'){
+        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);font-weight:700">Pagado</span><br><span style="font-size:.58rem;color:var(--muted)">${pr.fecha} · ${fmtFull(pr.monto)}</span></td>`;
+      } else if(st==='PARCIAL'){
+        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(pr.monto)} de ${fmtFull(r.pago)}</span><br><button class="btn btn-out" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">+ Completar</button></td>`;
+      } else if(st==='VENCIDO'){
+        const dias = credDiasAtraso(r);
+        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700">Vencido ${dias}d</span><br><button style="font-size:.58rem;margin-top:2px;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;border:none;cursor:pointer" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button></td>`;
+      } else {
+        cobrCell = `<td style="text-align:center"><button class="btn btn-out" style="font-size:.58rem;padding:2px 8px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button></td>`;
+      }
       return `<tr ${isPaid?'style="opacity:.6"':''}>
         <td class="r">${r.periodo}</td>
         <td style="font-size:.75rem">${r.fecha||'—'}</td>
@@ -190,11 +478,15 @@ function credOpenDetail(entKey, nombre, idx){
         <td class="mo" style="color:var(--orange)">${fmtFull(r.int)}</td>
         <td class="mo" style="color:var(--muted);font-size:.72rem">${fmtFull(r.ivaInt)}</td>
         <td class="mo bld" style="color:${isPaid?'var(--green)':col}">${isPaid?'✅ Pagado':fmtFull(r.saldo)}</td>
+        ${cobrCell}
       </tr>`;
     }).join('');
+    const resumen = credCobranzaResumen(c);
+    const resBadge = resumen ? `<span style="font-size:.6rem;padding:1px 6px;border-radius:6px;margin-left:6px;background:${resumen.vencido>0?'var(--red-bg)':'var(--green-bg)'};color:${resumen.vencido>0?'var(--red)':'var(--green)'};font-weight:600">${resumen.pagado}/${resumen.total} pagados</span>` : '';
     amortTable = `
       <div style="margin-top:16px">
-        <div style="font-size:.78rem;font-weight:700;color:var(--text2);margin-bottom:8px">📅 Tabla de Amortización</div>
+        <div style="font-size:.78rem;font-weight:700;color:var(--text2);margin-bottom:8px">📅 Tabla de Amortización ${resBadge}</div>
+        <div id="cobr-form-container"></div>
         <div style="overflow-x:auto">
           <table class="bt">
             <thead><tr>
@@ -202,6 +494,7 @@ function credOpenDetail(entKey, nombre, idx){
               <th class="r">Pago Fijo</th><th class="r">Abono Capital</th>
               <th class="r">Intereses</th><th class="r">IVA Intereses</th>
               <th class="r">Saldo Capital</th>
+              <th style="text-align:center;min-width:100px">Cobranza</th>
             </tr></thead>
             <tbody>${rows}</tbody>
             <tfoot><tr style="background:var(--bg);font-weight:700">
@@ -211,6 +504,7 @@ function credOpenDetail(entKey, nombre, idx){
               <td class="mo" style="color:var(--orange)">${fmtFull(intTot)}</td>
               <td class="mo" style="color:var(--muted)">${fmtFull(ivaTot)}</td>
               <td class="mo bld" style="color:var(--green)">$0.00</td>
+              <td></td>
             </tfoot>
           </table>
         </div>
@@ -281,16 +575,98 @@ function credOpenDetail(entKey, nombre, idx){
   openModal(null, `🏦 Detalle — ${c.cl}`, html);
 }
 
+// ── Registro de pagos ──
+function credRegistrarPago(entKey, creditIdx, periodo){
+  const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
+  const c = credits[creditIdx];
+  if(!c) return;
+  const amortRow = c.amort ? c.amort.find(r=>r.periodo===periodo) : null;
+  if(!amortRow) return;
+
+  const formId = 'cobr-form-'+periodo;
+  const existing = document.getElementById(formId);
+  if(existing){ existing.remove(); return; }
+
+  // Remove any other open form
+  document.querySelectorAll('[id^="cobr-form-"]').forEach(el=>el.remove());
+
+  const defaultFecha = new Date().toISOString().split('T')[0];
+  const existingPago = (c.pagos||[]).find(p=>p.periodo===periodo);
+  const defaultMonto = existingPago ? existingPago.monto : (amortRow.pago||0);
+
+  const formHtml = `
+    <div id="${formId}" style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:10px;padding:14px 18px;margin:12px 0;animation:fadeIn .2s">
+      <div style="font-size:.75rem;font-weight:700;color:var(--blue);margin-bottom:10px">
+        💰 Registrar Pago — Periodo ${periodo} · Vence: ${amortRow.fecha||'—'} · Monto esperado: ${fmtFull(amortRow.pago)}
+      </div>
+      <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:.65rem;color:var(--muted);display:block;margin-bottom:3px">Fecha del pago</label>
+          <input id="cobr-fecha-${periodo}" type="date" value="${defaultFecha}"
+            style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-family:'Figtree',sans-serif;background:var(--white);color:var(--text)">
+        </div>
+        <div style="flex:1;min-width:140px">
+          <label style="font-size:.65rem;color:var(--muted);display:block;margin-bottom:3px">Monto pagado</label>
+          <input id="cobr-monto-${periodo}" type="number" step="0.01" value="${defaultMonto}"
+            style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-family:'Figtree',sans-serif;background:var(--white);color:var(--text)">
+        </div>
+        <button style="padding:7px 18px;border-radius:8px;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:.72rem;font-weight:600;font-family:'Figtree',sans-serif"
+          onclick="credGuardarPago('${entKey}',${creditIdx},${periodo})">
+          Guardar
+        </button>
+        <button style="padding:7px 14px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;font-size:.72rem;font-family:'Figtree',sans-serif"
+          onclick="document.getElementById('${formId}').remove()">
+          Cancelar
+        </button>
+      </div>
+      ${existingPago ? `<div style="font-size:.62rem;color:var(--muted);margin-top:6px">⚠️ Pago existente: ${existingPago.fecha} por ${fmtFull(existingPago.monto)} — se reemplazará</div>` : ''}
+    </div>`;
+
+  const container = document.getElementById('cobr-form-container');
+  if(container){ container.innerHTML = formHtml; }
+  else {
+    // Fallback: insert before table
+    const tbl = document.querySelector('#modal-body .bt');
+    if(tbl) tbl.closest('div').insertAdjacentHTML('beforebegin', formHtml);
+  }
+}
+
+function credGuardarPago(entKey, creditIdx, periodo){
+  const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
+  const c = credits[creditIdx];
+  if(!c) return;
+
+  const fechaEl = document.getElementById('cobr-fecha-'+periodo);
+  const montoEl = document.getElementById('cobr-monto-'+periodo);
+  if(!fechaEl||!montoEl) return;
+
+  const fechaISO = fechaEl.value;
+  const monto = parseFloat(montoEl.value);
+  if(!fechaISO||isNaN(monto)||monto<=0){ toast('Ingresa fecha y monto válidos'); return; }
+
+  const [y,m,d] = fechaISO.split('-');
+  const fechaDDMMYYYY = `${d}/${m}/${y}`;
+
+  if(!c.pagos) c.pagos = [];
+  const idx = c.pagos.findIndex(p=>p.periodo===periodo);
+  if(idx>=0) c.pagos[idx] = { periodo, fecha:fechaDDMMYYYY, monto };
+  else c.pagos.push({ periodo, fecha:fechaDDMMYYYY, monto });
+
+  DB.set('vmcr_cred_'+entKey, credits);
+  credOpenDetail(entKey, c.cl, creditIdx);
+  toast('✅ Pago registrado — Periodo '+periodo);
+}
+
 function credClearAll(entKey){
   const label = entKey==='end' ? 'Endless Money' : 'Dynamo Finance';
   customConfirm('¿Limpiar toda la cartera de '+label+'? Esta acción no se puede deshacer.', 'Limpiar', (ok)=>{
     if(!ok) return;
     const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
     credits.length = 0;
-    localStorage.removeItem('vmcr_cred_'+entKey);
-    localStorage.removeItem('vmcr_cc_hist');
+    DB.remove('vmcr_cred_'+entKey);
+    DB.remove('vmcr_cc_hist');
     entKey==='end' ? rEndCred() : rDynCred();
-    fiInjectCredits(); syncFlujoToRecs();
+    fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
     toast('🗑 Cartera de '+label+' limpiada');
   });
 }
@@ -301,7 +677,7 @@ function credDelete(entKey, idx){
   customConfirm('¿Eliminar "' + name + '"?', 'Eliminar', (ok)=>{
     if(!ok) return;
     credits.splice(idx, 1);
-    localStorage.setItem('vmcr_cred_' + entKey, JSON.stringify(credits));
+    DB.set('vmcr_cred_' + entKey, credits);
     closeModal();
     if(entKey==='end') rEndCred(); else rDynCred();
     toast('🗑 ' + name + ' eliminado');
@@ -323,20 +699,256 @@ function credDelRow(entKey, ci){
 }
 
 function rEndCred(){
-  try{const s=JSON.parse(localStorage.getItem('vmcr_cred_end'));if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
   credRenderDashKPIs(END_CREDITS,'end');
   credRenderList(END_CREDITS,'end');
 }
 function rDynCred(){
-  try{const s=JSON.parse(localStorage.getItem('vmcr_cred_dyn'));if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
   credRenderDashKPIs(DYN_CREDITS,'dyn');
   credRenderList(DYN_CREDITS,'dyn');
   syncDynResKPIs();
 }
 
+// ══════════════════════════════════════
+// COBRANZA — SEGUIMIENTO DE PAGOS
+// ══════════════════════════════════════
+function rCredCobr(){
+  // Reload data
+  try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+
+  const all = [
+    ...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})),
+    ...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'}))
+  ].filter(c=>c.st==='Activo'||c.st==='Vencido');
+
+  // Aggregate
+  let totalPorCobrar=0, cobranzaAlDia=0, cobranzaVencida=0;
+  let totalPeriodos=0, periodosPagados=0;
+  const clientData = [];
+
+  all.forEach(c=>{
+    const res = credCobranzaResumen(c);
+    if(!res) return;
+    const pendienteMonto = (c.amort||[]).slice(1)
+      .filter(r=>credPeriodStatus(c,r)==='PENDIENTE')
+      .reduce((s,r)=>s+(r.pago||0),0);
+    totalPorCobrar += res.montoVencido + pendienteMonto;
+    cobranzaAlDia += res.montoPagado;
+    cobranzaVencida += res.montoVencido;
+    totalPeriodos += res.total;
+    periodosPagados += res.pagado;
+
+    const prox = credProximoPago(c);
+    clientData.push({
+      ...c, _resumen:res, _prox:prox,
+      _diasAtraso: res.maxAtraso,
+      _statusLabel: res.vencido>0?'Vencido' : res.parcial>0?'Parcial' : res.pagado===res.total?'Pagado' : 'Al día'
+    });
+  });
+
+  const cumplimiento = totalPeriodos>0 ? ((periodosPagados/totalPeriodos)*100).toFixed(1) : '0';
+
+  _cobrKPIs(totalPorCobrar, cobranzaAlDia, cobranzaVencida, cumplimiento);
+  _cobrCharts(clientData);
+  _cobrRenderList(clientData);
+}
+
+function _cobrKPIs(totalPorCobrar, alDia, vencida, cumplimiento){
+  const el = document.getElementById('cobr-kpis');
+  if(!el) return;
+  const _c = k => `
+    <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px;border-top:3px solid ${k.color}">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+        <div style="font-size:.7rem;font-weight:600;color:var(--text2)">${k.lbl}</div>
+        <div style="width:28px;height:28px;border-radius:8px;background:${k.bg};display:flex;align-items:center;justify-content:center;font-size:.85rem">${k.ico}</div>
+      </div>
+      <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:1.1rem;color:${k.color}">${k.val}</div>
+      <div style="font-size:.67rem;color:var(--muted);margin-top:3px">${k.sub}</div>
+    </div>`;
+  const pct = parseFloat(cumplimiento);
+  el.innerHTML = [
+    { lbl:'Total por Cobrar', val:fmtK(totalPorCobrar), sub:'Pendiente + Vencido', ico:'💰', color:'#0073ea', bg:'var(--blue-bg)' },
+    { lbl:'Cobranza al Día', val:fmtK(alDia), sub:'Pagos recibidos', ico:'✅', color:'var(--green)', bg:'var(--green-bg)' },
+    { lbl:'Cobranza Vencida', val:fmtK(vencida), sub:vencida>0?'Requiere atención':'Sin vencidos', ico:'🚨', color:vencida>0?'var(--red)':'var(--green)', bg:vencida>0?'var(--red-bg)':'var(--green-bg)' },
+    { lbl:'% Cumplimiento', val:cumplimiento+'%', sub:'Periodos pagados vs total', ico:'📊', color:pct>=80?'var(--green)':pct>=50?'var(--orange)':'var(--red)', bg:pct>=80?'var(--green-bg)':pct>=50?'var(--orange-bg)':'var(--red-bg)' }
+  ].map(_c).join('');
+}
+
+function _cobrCharts(clientData){
+  const totalPagado = clientData.reduce((s,c)=>s+(c._resumen?.pagado||0),0);
+  const totalParcial = clientData.reduce((s,c)=>s+(c._resumen?.parcial||0),0);
+  const totalVencido = clientData.reduce((s,c)=>s+(c._resumen?.vencido||0),0);
+  const totalPendiente = clientData.reduce((s,c)=>s+(c._resumen?.pendiente||0),0);
+
+  dc('ccobrst');
+  CH['ccobrst'] = new Chart(document.getElementById('c-cobr-status'),{
+    type:'bar',
+    data:{
+      labels:['Pagados','Parciales','Vencidos','Pendientes'],
+      datasets:[{
+        data:[totalPagado,totalParcial,totalVencido,totalPendiente],
+        backgroundColor:['rgba(0,184,117,.22)','rgba(255,160,0,.22)','rgba(234,57,67,.22)','rgba(0,115,234,.22)'],
+        borderColor:['#00b875','#ffa000','#ea3943','#0073ea'],
+        borderWidth:1.5, borderRadius:4
+      }]
+    },
+    options:{...cOpts(), indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+ctx.raw+' periodos'}}},
+      scales:{
+        x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{stepSize:1,color:'#b0b4d0',font:{size:9}}},
+        y:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}}
+      }
+    }
+  });
+
+  const vencidos = clientData
+    .filter(c=>c._resumen&&c._resumen.montoVencido>0)
+    .sort((a,b)=>b._resumen.montoVencido-a._resumen.montoVencido)
+    .slice(0,5);
+
+  dc('ccobrvenc');
+  CH['ccobrvenc'] = new Chart(document.getElementById('c-cobr-vencida'),{
+    type:'bar',
+    data:{
+      labels:vencidos.length>0 ? vencidos.map(c=>c.cl) : ['Sin vencidos'],
+      datasets:[{
+        data:vencidos.length>0 ? vencidos.map(c=>c._resumen.montoVencido) : [0],
+        backgroundColor:'rgba(234,57,67,.22)',
+        borderColor:'#ea3943',
+        borderWidth:1.5, borderRadius:4
+      }]
+    },
+    options:{...cOpts(), indexAxis:'y',
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>' '+fmtFull(ctx.raw)}}},
+      scales:{
+        x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>fmtK(v)}},
+        y:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}}
+      }
+    }
+  });
+}
+
+function _cobrRenderList(clientData){
+  const listEl = document.getElementById('cobr-list');
+  const countEl = document.getElementById('cobr-count');
+  if(!listEl) return;
+  if(countEl) countEl.textContent = clientData.length;
+
+  if(!clientData.length){
+    listEl.innerHTML = `<div style="padding:40px;text-align:center;color:var(--muted);font-size:.82rem">
+      <div style="font-size:2rem;margin-bottom:10px">✅</div>
+      No hay créditos activos para seguimiento de cobranza.
+    </div>`;
+    return;
+  }
+
+  const sorted = [...clientData].sort((a,b)=>{
+    if(a._statusLabel==='Vencido'&&b._statusLabel!=='Vencido') return -1;
+    if(b._statusLabel==='Vencido'&&a._statusLabel!=='Vencido') return 1;
+    return (b._diasAtraso||0)-(a._diasAtraso||0);
+  });
+
+  const stIco = {'Vencido':'🚨','Parcial':'⚠️','Al día':'✅','Pagado':'🏁'};
+  const stBg  = {'Vencido':'var(--red-bg)','Parcial':'var(--orange-bg)','Al día':'var(--green-bg)','Pagado':'var(--purple-bg)'};
+  const stCol = {'Vencido':'var(--red)','Parcial':'var(--orange)','Al día':'var(--green)','Pagado':'var(--purple)'};
+
+  listEl.innerHTML = sorted.map(c=>{
+    const credits = c._ent==='end' ? END_CREDITS : DYN_CREDITS;
+    const origIdx = credits.findIndex(x=>x.cl===c.cl);
+    const proxFecha = c._prox ? c._prox.fecha : '—';
+    const proxMonto = c._prox ? fmtFull(c._prox.pago) : '—';
+    const sl = c._statusLabel;
+
+    return `<div class="cobr-row" data-name="${(c.cl||'').toLowerCase()}"
+      onclick="credOpenDetail('${c._ent}','${(c.cl||'').replace(/'/g,"\\'")}',${origIdx})"
+      style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
+      onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <div style="width:36px;height:36px;border-radius:10px;background:${stBg[sl]||'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${stIco[sl]||'📋'}</div>
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          <span style="font-weight:700;font-size:.82rem">${c.cl}</span>
+          <span style="font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${c._col}18;color:${c._col};border:1px solid ${c._col}35">${c._entLabel}</span>
+        </div>
+        <div style="font-size:.68rem;color:var(--muted)">${c._resumen.pagado}/${c._resumen.total} periodos pagados</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:100px">
+        <div style="font-size:.78rem;font-weight:600">${proxFecha}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Próximo Pago</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:85px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.85rem">${proxMonto}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Monto</div>
+      </div>
+      <div style="text-align:center;flex-shrink:0;min-width:80px">
+        <span style="font-size:.65rem;font-weight:700;padding:3px 10px;border-radius:10px;background:${stBg[sl]||'var(--bg)'};color:${stCol[sl]||'var(--text)'}">${sl}</span>
+        ${c._diasAtraso>0 ? `<div style="font-size:.6rem;color:var(--red);margin-top:2px;font-weight:600">${c._diasAtraso} días</div>` : ''}
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:85px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.85rem;color:${c._resumen.montoVencido>0?'var(--red)':'var(--green)'}">${fmtK(c._resumen.montoVencido)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Vencido</div>
+      </div>
+      <div style="color:var(--muted);font-size:.9rem;flex-shrink:0">›</div>
+    </div>`;
+  }).join('');
+}
+
+function cobrFilter(q){
+  const query = q.toLowerCase();
+  document.querySelectorAll('.cobr-row').forEach(r=>{
+    r.style.display = r.dataset.name.includes(query) ? '' : 'none';
+  });
+}
+
 // RENDER: WIREBIT INGRESOS
 // ═══════════════════════════════════════
 function rWBIng(){
+  // ── KPIs ──
+  const totalAnual = sum(WB_ING_TOTAL);
+  const kTotal = document.getElementById('wb-ing-kpi-total');
+  const kStart = document.getElementById('wb-ing-kpi-start');
+  const kEnd = document.getElementById('wb-ing-kpi-end');
+  const kGrowth = document.getElementById('wb-ing-kpi-growth');
+  if (totalAnual > 0) {
+    kTotal.textContent = fmt(totalAnual);
+    kTotal.style.color = 'var(--purple)';
+    kTotal.style.fontSize = '';
+    document.getElementById('wb-ing-kpi-total-sub').textContent = 'Ingresos acumulados 2026';
+
+    const ene = WB_ING_TOTAL[0];
+    kStart.textContent = ene ? fmt(ene) : '—';
+    kStart.style.color = ene ? 'var(--green)' : 'var(--muted)';
+    kStart.style.fontSize = '';
+    document.getElementById('wb-ing-kpi-start-sub').textContent = 'Enero 2026';
+
+    // Find last month with data
+    let lastIdx = 11;
+    while (lastIdx > 0 && !WB_ING_TOTAL[lastIdx]) lastIdx--;
+    const lastVal = WB_ING_TOTAL[lastIdx];
+    kEnd.textContent = lastVal ? fmt(lastVal) : '—';
+    kEnd.style.color = lastVal ? '#0073ea' : 'var(--muted)';
+    kEnd.style.fontSize = '';
+    document.getElementById('wb-ing-kpi-end-sub').textContent = MO[lastIdx] + ' 2026';
+
+    // Avg monthly growth (months with data)
+    const months = WB_ING_TOTAL.filter(v => v > 0);
+    if (months.length >= 2) {
+      let growths = 0, cnt = 0;
+      for (let i = 1; i < 12; i++) {
+        if (WB_ING_TOTAL[i] > 0 && WB_ING_TOTAL[i - 1] > 0) {
+          growths += (WB_ING_TOTAL[i] - WB_ING_TOTAL[i - 1]) / WB_ING_TOTAL[i - 1];
+          cnt++;
+        }
+      }
+      const avgGrowth = cnt ? (growths / cnt * 100) : 0;
+      kGrowth.textContent = (avgGrowth >= 0 ? '+' : '') + avgGrowth.toFixed(1) + '%';
+      kGrowth.style.color = avgGrowth >= 0 ? 'var(--orange)' : '#eb5757';
+      kGrowth.style.fontSize = '';
+      document.getElementById('wb-ing-kpi-growth-sub').textContent = 'Crecimiento mensual promedio';
+    }
+  }
+
   const colors=['#9b51e0','#0073ea','#00b875','#ff7043','#ffa000'];
   dc('cwbi2');
   CH['cwbi2']=new Chart(document.getElementById('c-wb-ing2'),{type:'bar',data:{labels:MO,
@@ -397,80 +1009,67 @@ function loadFile(ev){
 }
 
 
-// ── Sidebar & Menu system ──
-let _activeMenu = 'finanzas'; // current open menu
-let _subOpen = true;          // submenu panel visible
+// ── Sidebar & Menu system (accordion single-column) ──
+let _activeMenu = null;   // current open menu
 
-function openMenu(menuId, el){
-  // Si picamos el mismo menú que ya está abierto → cerrar
-  if(_activeMenu === menuId && _subOpen){
-    closeSubMenu();
+// Mapa de vistas default por sección
+const _MENU_DEFAULTS = {
+  finanzas:'resumen', terminales:'tpv_general',
+  tarjetas:'tar_dashboard', tesoreria:'tes_grupo',
+  creditos:'cred_dash', carga:'flujo_ing', config:'cfg_usuarios'
+};
+
+function openMenu(menuId, el, viewOverride){
+  const sub = document.getElementById('sub-' + menuId);
+
+  // Mismo menú → toggle accordion
+  if(_activeMenu === menuId){
+    if(sub) sub.classList.remove('open');
+    el.classList.remove('active');
+    _activeMenu = null;
     return;
   }
 
-  // Activar item del menú principal
-  document.querySelectorAll('.mi').forEach(m => m.classList.remove('active'));
+  // Cerrar menú anterior
+  if(_activeMenu){
+    const prevSub = document.getElementById('sub-' + _activeMenu);
+    if(prevSub) prevSub.classList.remove('open');
+    document.querySelectorAll('.mi').forEach(m => m.classList.remove('active'));
+  }
+
+  // Abrir el nuevo
   el.classList.add('active');
-
-  // Mostrar sub-panel correcto
-  document.querySelectorAll('.sub-panel').forEach(p => p.style.display = 'none');
-  const panel = document.getElementById('sub-' + menuId);
-  if(panel) panel.style.display = 'block';
-
+  if(sub) sub.classList.add('open');
   _activeMenu = menuId;
 
-  // Abrir submenú si estaba cerrado
-  _subOpen = true;
-  document.getElementById('sb-sub').classList.add('open');
-  document.getElementById('main').classList.add('sub-open');
-  document.getElementById('main').classList.remove('sub-closed');
-  updateToggleBtn();
-  setTimeout(resizeCharts, 240);
+  // Navegar a la vista (override o default)
+  sv(viewOverride || _MENU_DEFAULTS[menuId], null);
 }
 
 function closeSubMenu(){
-  _subOpen = false;
-  document.getElementById('sb-sub').classList.remove('open');
-  document.getElementById('main').classList.remove('sub-open');
-  document.getElementById('main').classList.add('sub-closed');
-  document.querySelectorAll('.mi').forEach(m => m.classList.remove('active'));
-  updateToggleBtn();
-  setTimeout(resizeCharts, 240);
+  if(_activeMenu){
+    const sub = document.getElementById('sub-' + _activeMenu);
+    if(sub) sub.classList.remove('open');
+    document.querySelectorAll('.mi').forEach(m => m.classList.remove('active'));
+    _activeMenu = null;
+  }
 }
 
 function toggleSidebar(){
   const shell = document.getElementById('sb-shell');
   const main  = document.getElementById('main');
-  const btn   = document.getElementById('sb-toggle');
   const collapsed = shell.classList.toggle('collapsed');
-  if(collapsed){
-    main.classList.remove('sub-open');
-    main.classList.add('sb-hidden');
-  } else {
-    main.classList.remove('sb-hidden');
-    if(_subOpen) main.classList.add('sub-open');
-  }
+  main.classList.toggle('sb-hidden', collapsed);
   updateToggleBtn();
-  setTimeout(resizeCharts, 240);
+  setTimeout(resizeCharts, 250);
 }
 
 function updateToggleBtn(){
-  const btn     = document.getElementById('sb-toggle');
-  const shell   = document.getElementById('sb-shell');
-  const collapsed = shell.classList.contains('collapsed');
-  if(collapsed){
-    btn.style.left = '8px';
-    btn.textContent = '›';
-    btn.title = 'Mostrar menú';
-  } else if(_subOpen){
-    btn.style.left = '422px';  // 200 menu + 214 sub + 8 gap
-    btn.textContent = '‹';
-    btn.title = 'Ocultar menú';
-  } else {
-    btn.style.left = '208px';  // 200 menu + 8 gap
-    btn.textContent = '‹';
-    btn.title = 'Ocultar menú';
-  }
+  const btn = document.getElementById('sb-toggle');
+  const collapsed = document.getElementById('sb-shell').classList.contains('collapsed');
+  btn.style.left = collapsed ? '8px' : '248px';
+  btn.textContent = collapsed ? '›' : '‹';
+  btn.title = collapsed ? 'Mostrar menú' : 'Ocultar menú';
 }
 
 function resizeCharts(){
@@ -485,7 +1084,7 @@ let CC_PREVIEW = [];   // créditos extraídos pendientes de importar
 let CC_HISTORY = [];   // historial de cargas
 
 function ccLoad(){
-  try{ CC_HISTORY = JSON.parse(localStorage.getItem('vmcr_cc_hist')||'[]'); }catch(e){ CC_HISTORY=[]; }
+  try{ CC_HISTORY = DB.get('vmcr_cc_hist') || []; }catch(e){ CC_HISTORY=[]; }
 }
 
 function rCargaCreditos(){
@@ -665,7 +1264,7 @@ function ccImport(){
     });
     END_CREDITS.length = 0;
     updated.forEach(c => END_CREDITS.push(c));
-    localStorage.setItem('vmcr_cred_end', JSON.stringify(END_CREDITS));
+    DB.set('vmcr_cred_end', END_CREDITS);
   } else {
     const updated = CC_PREVIEW.map(c => {
       const idx = DYN_CREDITS.findIndex(x=>x.cl.toLowerCase()===c.cl.toLowerCase());
@@ -676,7 +1275,7 @@ function ccImport(){
     });
     DYN_CREDITS.length = 0;
     updated.forEach(c => DYN_CREDITS.push(c));
-    localStorage.setItem('vmcr_cred_dyn', JSON.stringify(DYN_CREDITS));
+    DB.set('vmcr_cred_dyn', DYN_CREDITS);
   }
 
   // Log to history
@@ -687,9 +1286,10 @@ function ccImport(){
     count: CC_PREVIEW.length,
     names: CC_PREVIEW.map(c=>c.cl).join(', ')
   });
-  localStorage.setItem('vmcr_cc_hist', JSON.stringify(CC_HISTORY.slice(0,20)));
+  DB.set('vmcr_cc_hist', CC_HISTORY.slice(0,20));
 
   // Sync flows
+  fiInjectTPV();
   fiInjectCredits();
   syncFlujoToRecs();
 
@@ -774,7 +1374,7 @@ function customConfirm(msg, okLabel, callback){
 function ccDeleteHistory(idx){
   ccLoad();
   CC_HISTORY.splice(idx, 1);
-  localStorage.setItem('vmcr_cc_hist', JSON.stringify(CC_HISTORY));
+  DB.set('vmcr_cc_hist', CC_HISTORY);
   ccRenderHistory();
 }
 

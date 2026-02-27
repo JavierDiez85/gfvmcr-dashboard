@@ -6,30 +6,48 @@ window._htmlSource = document.documentElement.outerHTML;
 // ═══════════════════════════════════════
 // DATA: WIREBIT PRESUPUESTO 2026 (del Excel)
 // ═══════════════════════════════════════
-const MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+// MO is now defined globally in helpers.js
 
 const WB_ING = {
-  'Fees Fondeo Tarjetas':   [20000,20200,21210,23331,26831,30855,32398,34018,37420,41162,43220,51864],
-  'Fees Fondeo Tarjeta CRM':[15000,15150,15302,16832,19356,22260,25599,28159,30975,32523,35776,42931],
-  'Fees VEX Retail':        [10000,11000,13200,16500,20625,26813,29494,32443,35687,39256,43182,47500],
-  'Fees VEX Ecommerce':     [6500,7150,7865,8652,9517,10468,11515,12667,13933,15327,16859,18545],
-  'Fees Retiros / OTC':     [6500,7150,7865,8652,9517,10467,11515,12667,13933,15327,16859,18545],
+  'Fees Fondeo Tarjetas':   [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Fees Fondeo Tarjeta CRM':[0,0,0,0,0,0,0,0,0,0,0,0],
+  'Fees VEX Retail':        [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Fees VEX Ecommerce':     [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Fees Retiros / OTC':     [0,0,0,0,0,0,0,0,0,0,0,0],
 };
-const WB_ING_TOTAL = [58000,60650,65442,73966,85845,100863,110521,119953,131948,143594,155896,179385];
+const WB_ING_TOTAL = [0,0,0,0,0,0,0,0,0,0,0,0];
 
 const WB_COSTOS = {
-  'Bitfinex':           [500,500,100,0,0,0,0,0,0,0,0,0],
-  'Lmax':               [150,100,0,0,0,0,0,0,0,0,0,0],
-  'Bitso':              [2100,2500,3000,7000,8400,10080,12096,14515,17418,20902,25082,30099],
-  'Efevoo Fondeo':      [10000,15000,18000,30000,36000,43200,51840,62208,74650,89580,107495,128995],
-  'Efevoo Tarjetas':    [6000,7200,8640,12960,19440,23328,25661,28227,31050,34155,37570,41327],
-  'Efevoo SaaS':        [27675,27675,27675,27675,27675,30442,33487,36835,40519,44571,49028,53931],
-  'Comisiones BBVA':    [1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900,1900],
+  'Bitfinex':           [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Lmax':               [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Bitso':              [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Efevoo Fondeo':      [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Efevoo Tarjetas':    [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Efevoo SaaS':        [0,0,0,0,0,0,0,0,0,0,0,0],
+  'Comisiones BBVA':    [0,0,0,0,0,0,0,0,0,0,0,0],
 };
-const WB_COSTO_TOTAL = [48325,54875,59315,79535,93415,108950,124983,143685,165536,191107,221076,256251];
+const WB_COSTO_TOTAL = [0,0,0,0,0,0,0,0,0,0,0,0];
 const WB_MARGEN = WB_ING_TOTAL.map((v,i)=>v-WB_COSTO_TOTAL[i]);
 
-const WB_NOM_TOTAL = [304000,361000,366000,326000,326000,346000,346000,346000,346000,346000,346000,346000];
+// Inject Wirebit fees from localStorage into WB_ING arrays
+function wbLoadFees() {
+  const data = DB.get('vmcr_wb_fees_2026');
+  if (!data || !data.monthly) return;
+  for (const [concepto, vals] of Object.entries(data.monthly)) {
+    if (WB_ING[concepto]) {
+      for (let i = 0; i < 12; i++) WB_ING[concepto][i] = Math.round(vals[i] || 0);
+    }
+  }
+  // Recalculate totals
+  for (let i = 0; i < 12; i++) {
+    WB_ING_TOTAL[i] = Object.values(WB_ING).reduce((s, v) => s + v[i], 0);
+    WB_MARGEN[i] = WB_ING_TOTAL[i] - WB_COSTO_TOTAL[i];
+  }
+}
+// Auto-load on script init
+wbLoadFees();
+
+const WB_NOM_TOTAL = [0,0,0,0,0,0,0,0,0,0,0,0];
 
 const NOM = [
   {n:'Ángel Ahedo',     r:'Dir. Comercial',    s:120000, tipo:'Administrativo', dist:{Salem:.9, Endless:.05,Dynamo:.05,Wirebit:0}},
@@ -46,81 +64,307 @@ const NOM = [
 const NOM_DIST = {Salem:186000, Endless:23000, Dynamo:23000, Wirebit:320000};
 
 const GCOMP = [
-  // Porcentajes actualizados según hoja "Gastos Compartidos" del Excel
-  {c:'Renta impresora',    cat:'Administrativo', sal:.2,end:.2,dyn:.2,wb:.4, vals:[0,0,1260,1462,1580,1521,108346,2500]},
-  {c:'Renta oficina',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, vals:[1893,3086,2390,26695,54666,54666,1276,36775]},
-  {c:'Mantenimiento',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, vals:[0,13718,31780,34218,35271,35499,35499,35000]},
-  {c:'Alestra',            cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[0,0,0,31415,17391,17391,17391,17391]},
+  // Porcentajes de distribución (data real pendiente de captura)
+  {c:'Renta impresora',    cat:'Administrativo', sal:.2,end:.2,dyn:.2,wb:.4, vals:[]},
+  {c:'Renta oficina',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
+  {c:'Mantenimiento',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
+  {c:'Alestra',            cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
   {c:'Luz',                cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
   {c:'Insumos Oficina',    cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-  {c:'Efevoo Tarjetas',    cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  vals:[121789,108727,122415,103756,100961,105276,111108,110000]},
-  {c:'Efevoo TPV',         cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  vals:[88267,88267,85524,85967,95792,99885,97642,100000]},
-  {c:'Material MKT',       cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  vals:[1959,24256,0,0,0,1200,0,3000]},
-  {c:'Evento NL',          cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  vals:[0,434600,0,0,0,0,0,0]},
-  {c:'Viajes',             cat:'Representación', sal:1, end:0, dyn:0, wb:0,  vals:[23787,35376,26269,29505,11750,3300,7649,10000]},
-  {c:'Software',           cat:'Operaciones',    sal:.4,end:.1,dyn:.1,wb:.4, vals:[4152,16135,2008,0,2680,1040,1902,5000]},
-  {c:'Hardware',           cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  vals:[0,0,0,534000,0,0,524782,10000]},
-  {c:'STP',                cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  vals:[7714,0,0,0,0,0,0,5000]},
-  {c:'Comisiones SitesPay',cat:'Com. Bancarias', sal:1, end:0, dyn:0, wb:0,  vals:[0,15882,23391,16180,16383,13645,12412,13000]},
-  {c:'CNBV Endless',       cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  vals:[0,0,0,42796,5006,5006,5006,5006]},
-  {c:'CNBV Dynamo',        cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  vals:[0,0,0,42796,5006,5006,5006,5006]},
-  {c:'Icarus Endless',     cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  vals:[0,16211,16211,16211,16211,16211,16211,16211]},
-  {c:'Icarus Dynamo',      cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  vals:[0,16211,16211,0,16211,16211,16211,16211]},
-  {c:'Otros/Varios',       cat:'Varios',         sal:.4,end:.1,dyn:.1,wb:.4, vals:[22030,0,14850,0,0,31200,153135,15000]},
+  {c:'Efevoo Tarjetas',    cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'Efevoo TPV',         cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'Material MKT',       cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'Evento NL',          cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'Viajes',             cat:'Representación', sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'Software',           cat:'Operaciones',    sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
+  {c:'Hardware',           cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'STP',                cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'Comisiones SitesPay',cat:'Com. Bancarias', sal:1, end:0, dyn:0, wb:0,  vals:[]},
+  {c:'CNBV Endless',       cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  vals:[]},
+  {c:'CNBV Dynamo',        cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  vals:[]},
+  {c:'Icarus Endless',     cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  vals:[]},
+  {c:'Icarus Dynamo',      cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  vals:[]},
+  {c:'Otros/Varios',       cat:'Varios',         sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
 ];
 
-const SAL_TPV_CLIENTES = ['La Cantada','Quesos Chiapas','Luna Canela','Dentista Niños','Lucia Acapulco','Templados Varsa','Paradiso Beach','Tonys Restaurante','La Churrasca Atlixco','Molienda Sagrada','Tintorería Easy Clean','Super el Valle','La Churrasca Dorada','Otros Clientes'];
+const SAL_TPV_CLIENTES = [];
 
 const SAL_GASTOS_ITEMS = [
   // Costos Directos
   {c:'Nómina Operativa',       cat:'Nómina',       sec:'cd', ppto:0},
-  {c:'Software (CD)',          cat:'Operaciones',  sec:'cd', ppto:5000},
-  {c:'Hardware (CD)',          cat:'Operaciones',  sec:'cd', ppto:10000},
-  {c:'Comisiones Promotoría',  cat:'Com. Bancarias',sec:'cd',ppto:13000},
+  {c:'Software (CD)',          cat:'Operaciones',  sec:'cd', ppto:0},
+  {c:'Hardware (CD)',          cat:'Operaciones',  sec:'cd', ppto:0},
+  {c:'Comisiones Promotoría',  cat:'Com. Bancarias',sec:'cd',ppto:0},
   // Gastos Administrativos
-  {c:'Nómina Administrativa',  cat:'Nómina',       sec:'ga', ppto:186000},
-  {c:'Renta Oficina',          cat:'Renta',        sec:'ga', ppto:36775},
-  {c:'Mantenimiento',          cat:'Renta',        sec:'ga', ppto:35000},
-  {c:'Renta Impresora',        cat:'Administrativo',sec:'ga',ppto:2500},
-  {c:'Software',               cat:'Operaciones',  sec:'ga', ppto:5000},
-  {c:'Hardware',               cat:'Operaciones',  sec:'ga', ppto:10000},
-  {c:'Efevoo Tarjetas',        cat:'Costo Directo',sec:'ga', ppto:110000},
-  {c:'Efevoo TPV',             cat:'Costo Directo',sec:'ga', ppto:100000},
-  {c:'Marketing',              cat:'Marketing',    sec:'ga', ppto:3000},
+  {c:'Nómina Administrativa',  cat:'Nómina',       sec:'ga', ppto:0},
+  {c:'Renta Oficina',          cat:'Renta',        sec:'ga', ppto:0},
+  {c:'Mantenimiento',          cat:'Renta',        sec:'ga', ppto:0},
+  {c:'Renta Impresora',        cat:'Administrativo',sec:'ga',ppto:0},
+  {c:'Software',               cat:'Operaciones',  sec:'ga', ppto:0},
+  {c:'Hardware',               cat:'Operaciones',  sec:'ga', ppto:0},
+  {c:'Efevoo Tarjetas',        cat:'Costo Directo',sec:'ga', ppto:0},
+  {c:'Efevoo TPV',             cat:'Costo Directo',sec:'ga', ppto:0},
+  {c:'Marketing',              cat:'Marketing',    sec:'ga', ppto:0},
   {c:'Luz',                    cat:'Administrativo',sec:'ga',ppto:0},
-  {c:'Insumos Oficina',        cat:'Administrativo',sec:'ga',ppto:2000},
-  {c:'Viáticos',               cat:'Representación',sec:'ga',ppto:10000},
+  {c:'Insumos Oficina',        cat:'Administrativo',sec:'ga',ppto:0},
+  {c:'Viáticos',               cat:'Representación',sec:'ga',ppto:0},
   {c:'Comisiones Bancarias',   cat:'Com. Bancarias',sec:'ga',ppto:0},
-  {c:'Cumplimiento',           cat:'Regulatorio',  sec:'ga', ppto:17391},
+  {c:'Cumplimiento',           cat:'Regulatorio',  sec:'ga', ppto:0},
 ];
 
 const END_CREDITS = /*EMBED:END_CREDITS*/[]/*END:END_CREDITS*/;
 const DYN_CREDITS = /*EMBED:DYN_CREDITS*/[]/*END:DYN_CREDITS*/;
 
-const WB_NOM_DETAIL = [
-  {n:'Joaquin Vallejo',vals:[120000,120000,120000,120000,120000,120000,120000,120000,120000,120000,120000,120000],total:1440000},
-  {n:'Javier Diez',vals:[60000,60000,60000,60000,60000,60000,60000,60000,60000,60000,60000,60000],total:720000},
-  {n:'Ezequiel',vals:[44000,44000,44000,44000,44000,44000,44000,44000,44000,44000,44000,44000],total:528000},
-  {n:'Ricardo Medina',vals:[30000,30000,30000,30000,30000,30000,30000,30000,30000,30000,30000,30000],total:360000},
-  {n:'Ismael (Entra Feb)',vals:[0,22000,22000,22000,22000,22000,22000,22000,22000,22000,22000,22000],total:242000},
-  {n:'Auxiliar Contable (Entra Feb)',vals:[0,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000,10000],total:110000},
-  {n:'Diseño/Imagen (Ene-Mar)',vals:[20000,20000,10000,0,0,0,0,0,0,0,0,0],total:50000},
-  {n:'Community Manager (Entra Mar)',vals:[0,0,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000],total:150000},
-  {n:'David (Sale Abr)',vals:[30000,30000,30000,0,0,0,0,0,0,0,0,0],total:90000},
-  {n:'Back-end (Entra Feb)',vals:[0,25000,25000,25000,25000,25000,25000,25000,25000,25000,25000,25000],total:275000},
-  {n:'Ejecutivo Comercial (Entra Jun)',vals:[0,0,0,0,0,20000,20000,20000,20000,20000,20000,20000],total:140000},
-];
+const WB_NOM_DETAIL = [];
+
+// ═══════════════════════════════════════
+
+// RENDER: INICIO (Pantalla de Bienvenida)
+// ═══════════════════════════════════════
+
+const TAREAS_KEY = 'vmcr_tareas';
+
+async function rInicio() {
+  // 1. Fecha actual
+  const fechaEl = document.getElementById('inicio-fecha');
+  if (fechaEl) {
+    const now = new Date();
+    const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
+    fechaEl.textContent = '📅 ' + now.toLocaleDateString('es-MX', opts).replace(/^\w/, c => c.toUpperCase());
+  }
+
+  // 2. KPIs Tesorería
+  _inicioTesKPIs();
+
+  // 3. KPIs Terminales (async)
+  _inicioTPVKPIs();
+
+  // 4. KPIs Tarjetas (estáticos)
+  _inicioTarKPIs();
+
+  // 5. Alertas automáticas
+  _inicioAlertas();
+
+  // 6. Tareas manuales
+  renderTareas();
+}
+
+function _inicioTesKPIs() {
+  try {
+    const data = typeof tesLoad === 'function' ? tesLoad() : [];
+    const mes = typeof tesCurMonth === 'function' ? tesCurMonth() : '';
+    const totIng = data.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
+    const totGas = data.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
+    const saldo = totIng - totGas;
+    const thisMon = data.filter(m => m.fecha?.substring(0, 7) === mes);
+    const mesIng = thisMon.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
+    const mesGas = thisMon.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
+    const mesNeto = mesIng - mesGas;
+
+    const fmt = n => typeof tesFmt === 'function' ? tesFmt(n) : '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    const fmtS = n => typeof tesFmtSigned === 'function' ? tesFmtSigned(n) : (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 2 });
+    const mesLabel = new Date().toLocaleString('es-MX', { month: 'long', year: 'numeric' });
+
+    const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    const _c = (id, v) => { const el = document.getElementById(id); if (el) el.style.color = v; };
+
+    _s('inicio-tes-saldo', fmt(saldo));
+    _c('inicio-tes-saldo', saldo >= 0 ? 'var(--green)' : 'var(--red)');
+    _s('inicio-tes-saldo-sub', (saldo >= 0 ? 'Superávit' : 'Déficit') + ' · ' + data.length + ' movimientos');
+
+    _s('inicio-tes-neto', fmtS(mesNeto));
+    _c('inicio-tes-neto', mesNeto >= 0 ? 'var(--green)' : 'var(--red)');
+    _s('inicio-tes-neto-sub', mesLabel);
+
+    _s('inicio-tes-ing', fmt(mesIng));
+    _s('inicio-tes-ing-sub', mesLabel);
+    _s('inicio-tes-gas', fmt(mesGas));
+    _s('inicio-tes-gas-sub', mesLabel);
+  } catch (e) { console.warn('[Inicio] Tesorería KPIs error:', e); }
+}
+
+async function _inicioTPVKPIs() {
+  try {
+    const k = await TPV.kpis();
+    if (!k) return;
+    const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+
+    _s('inicio-tpv-cobrado', fmtTPV(k.total_cobrado));
+    _s('inicio-tpv-cobrado-sub', (k.num_transacciones ? parseFloat(k.num_transacciones).toLocaleString() : '0') + ' transacciones');
+
+    const totalCom = parseFloat(k.total_comisiones) || 0;
+    const totalCob = parseFloat(k.total_cobrado) || 1;
+    _s('inicio-tpv-com', fmtTPV(totalCom));
+    _s('inicio-tpv-com-sub', (totalCom / totalCob * 100).toFixed(1) + '% del cobrado');
+
+    const comSalem = parseFloat(k.com_salem) || 0;
+    _s('inicio-tpv-salem', fmtTPV(comSalem));
+    _s('inicio-tpv-salem-sub', totalCom > 0 ? (comSalem / totalCom * 100).toFixed(1) + '% de comisiones' : '—');
+
+    _s('inicio-tpv-clientes', k.num_clientes || '0');
+    _s('inicio-tpv-clientes-sub', 'Clientes con operaciones');
+  } catch (e) { console.warn('[Inicio] TPV KPIs error:', e); }
+}
+
+function _inicioTarKPIs() {
+  try {
+    // Tarjetas data is hardcoded in tar_dashboard HTML — read from the DOM if available,
+    // otherwise use the known static values
+    const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+    _s('inicio-tar-monto', '$18.7M');
+    _s('inicio-tar-txns', '7,232');
+    _s('inicio-tar-th', '1,847');
+  } catch (e) { console.warn('[Inicio] Tarjetas KPIs error:', e); }
+}
+
+async function _inicioAlertas() {
+  const container = document.getElementById('inicio-alertas');
+  if (!container) return;
+  const alertas = [];
+
+  try {
+    // 1. Clientes TPV sin comisiones
+    const clients = await TPV.getClients();
+    const RATE_FIELDS = [
+      'rate_efevoo_tc','rate_efevoo_td','rate_salem_tc','rate_salem_td',
+      'rate_convenia_tc','rate_convenia_td','rate_comisionista_tc','rate_comisionista_td'
+    ];
+    const sinConfig = (clients || []).filter(c => !RATE_FIELDS.some(f => parseFloat(c[f]) > 0)).length;
+    if (sinConfig > 0) alertas.push({ icon: '⚙️', text: `${sinConfig} clientes TPV sin comisiones configuradas`, color: 'var(--orange)', action: "openMenu('terminales',document.getElementById('mi-terminales'),'tpv_comisiones')" });
+
+    // 2. Flujo neto negativo
+    const data = typeof tesLoad === 'function' ? tesLoad() : [];
+    const mes = typeof tesCurMonth === 'function' ? tesCurMonth() : '';
+    const thisMon = data.filter(m => m.fecha?.substring(0, 7) === mes);
+    const mesIng = thisMon.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
+    const mesGas = thisMon.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
+    if (mesIng - mesGas < 0) alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : ''), color: 'var(--red)', action: "openMenu('tesoreria',document.getElementById('mi-tesoreria'));sv('tes_flujo',null)" });
+
+    // 3. Créditos vencidos (fix: c.st not c.status)
+    let vencidos = 0;
+    if (typeof END_CREDITS !== 'undefined' && Array.isArray(END_CREDITS))
+      vencidos += END_CREDITS.filter(c => c.st === 'Vencido').length;
+    if (typeof DYN_CREDITS !== 'undefined' && Array.isArray(DYN_CREDITS))
+      vencidos += DYN_CREDITS.filter(c => c.st === 'Vencido').length;
+    if (vencidos > 0) alertas.push({ icon: '⚠️', text: `${vencidos} créditos vencidos en cartera`, color: 'var(--red)', action: "openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
+
+    // 4. Sin movimientos de tesorería este mes
+    if (thisMon.length === 0 && data.length > 0)
+      alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', action: "openMenu('tesoreria',document.getElementById('mi-tesoreria'));sv('tes_flujo',null)" });
+
+    // 5. Cobranza: pagos vencidos y próximos
+    try {
+      const allCred = [
+        ...(Array.isArray(END_CREDITS) ? END_CREDITS.map(c=>({...c,_ent:'end'})) : []),
+        ...(Array.isArray(DYN_CREDITS) ? DYN_CREDITS.map(c=>({...c,_ent:'dyn'})) : [])
+      ].filter(c=>c.st==='Activo'||c.st==='Vencido');
+
+      let pagosProximos=0, pagosVencidos=0, montoVencido=0;
+      const today = new Date(); today.setHours(0,0,0,0);
+      const in7d = new Date(today); in7d.setDate(in7d.getDate()+7);
+
+      allCred.forEach(c=>{
+        if(!c.amort||c.amort.length<=1) return;
+        c.amort.slice(1).forEach(r=>{
+          if(typeof credPeriodStatus!=='function') return;
+          const st = credPeriodStatus(c, r);
+          if(st==='VENCIDO'){ pagosVencidos++; montoVencido+=(r.pago||0); }
+          else if(st==='PENDIENTE'){
+            const f = typeof credParseDate==='function' ? credParseDate(r.fecha) : null;
+            if(f&&f>=today&&f<=in7d) pagosProximos++;
+          }
+        });
+      });
+
+      if(pagosProximos>0) alertas.push({ icon:'🔔', text:`${pagosProximos} pagos vencen en los próximos 7 días`, color:'var(--orange)', action:"openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
+      if(pagosVencidos>0) alertas.push({ icon:'🚨', text:`${pagosVencidos} pagos vencidos por ${typeof fmtK==='function'?fmtK(montoVencido):'$'+montoVencido} total`, color:'var(--red)', action:"openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
+    } catch(e){ console.warn('[Inicio] Cobranza alertas error:',e); }
+
+  } catch (e) { console.warn('[Inicio] Alertas error:', e); }
+
+  // Render alertas
+  if (alertas.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-size:.75rem">✅ Todo en orden — sin alertas pendientes</div>';
+  } else {
+    container.innerHTML = alertas.map(a =>
+      `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;cursor:pointer;background:${a.color}10;border-left:3px solid ${a.color}" onclick="${a.action}">
+        <span style="font-size:1rem">${a.icon}</span>
+        <span style="font-size:.72rem;color:var(--text);flex:1">${a.text}</span>
+        <span style="font-size:.62rem;color:var(--muted)">ver →</span>
+      </div>`
+    ).join('');
+  }
+}
+
+// ═══ TAREAS MANUALES ═══
+
+function _loadTareas() {
+  try { const d = DB.get(TAREAS_KEY); return Array.isArray(d) ? d : []; } catch (e) { return []; }
+}
+
+function _saveTareas(tareas) {
+  DB.set(TAREAS_KEY, tareas);
+}
+
+function addTarea() {
+  const input = document.getElementById('inicio-tarea-input');
+  if (!input) return;
+  const text = input.value.trim();
+  if (!text) return;
+  const tareas = _loadTareas();
+  tareas.push({ id: Date.now(), text, done: false, createdAt: new Date().toISOString() });
+  _saveTareas(tareas);
+  input.value = '';
+  renderTareas();
+}
+
+function toggleTarea(id) {
+  const tareas = _loadTareas();
+  const t = tareas.find(t => t.id === id);
+  if (t) t.done = !t.done;
+  _saveTareas(tareas);
+  renderTareas();
+}
+
+function deleteTarea(id) {
+  let tareas = _loadTareas();
+  tareas = tareas.filter(t => t.id !== id);
+  _saveTareas(tareas);
+  renderTareas();
+}
+
+function renderTareas() {
+  const container = document.getElementById('inicio-tareas-body');
+  if (!container) return;
+  const tareas = _loadTareas();
+
+  // Separate: pending first, done after
+  const pending = tareas.filter(t => !t.done);
+  const done = tareas.filter(t => t.done);
+  const sorted = [...pending, ...done];
+
+  if (sorted.length === 0) {
+    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:.72rem">Sin tareas pendientes. Agrega una arriba.</div>';
+    return;
+  }
+
+  container.innerHTML = sorted.map(t =>
+    `<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);${t.done ? 'opacity:.5' : ''}">
+      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTarea(${t.id})" style="cursor:pointer;accent-color:var(--green)">
+      <span style="flex:1;font-size:.72rem;${t.done ? 'text-decoration:line-through;color:var(--muted)' : 'color:var(--text)'}">${t.text}</span>
+      <button onclick="deleteTarea(${t.id})" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>
+    </div>`
+  ).join('');
+}
 
 // ═══════════════════════════════════════
 
 // RENDER: RESUMEN
 // ═══════════════════════════════════════
 function rResumen(){
-  try {
-    // ── Sync créditos → FI_ROWS → S.recs ──
-    if(typeof fiInjectCredits==='function') fiInjectCredits();
-    if(typeof syncFlujoToRecs==='function') syncFlujoToRecs();
-  } catch(e){ console.warn('rResumen sync error:', e); }
+  // NOTE: _syncAll() is called by the router before rResumen().
+  // This ensures wbLoadFees + fiLoad + fgLoad + fiInjectTPV + fiInjectCredits + syncFlujoToRecs
+  // are all executed, so S.recs contains ALL data (TPV, créditos, Wirebit fees, flujos).
 
   const entKeys = ['Salem','Endless','Dynamo','Wirebit'];
   const entC    = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
@@ -133,12 +377,6 @@ function rResumen(){
       if(ingByEnt[r.ent]) r.vals.forEach((v,i)=> ingByEnt[r.ent][i] += (v||0));
     });
   } catch(e){}
-
-  // Si no hay datos de Wirebit capturados, usar el presupuesto hardcoded
-  const hasWBreal = ingByEnt.Wirebit.some(v=>v>0);
-  if(!hasWBreal && WB_ING_TOTAL) {
-    WB_ING_TOTAL.forEach((v,i) => ingByEnt.Wirebit[i] = v);
-  }
 
   // ── Gastos por empresa desde S.recs ──
   const gasByEnt = {Salem:Array(12).fill(0),Endless:Array(12).fill(0),Dynamo:Array(12).fill(0),Wirebit:Array(12).fill(0)};
@@ -161,14 +399,16 @@ function rResumen(){
   const nomTotal = Object.values(nomByEnt).reduce((a,b)=>a+b,0);
 
   // ── Totales anuales ──
-  const ingTot = {}, gasTot = {};
+  const ingTot = {}, gasTot = {}, gasOnlyTot = {};
   entKeys.forEach(e=>{
     ingTot[e] = ingByEnt[e].reduce((a,b)=>a+b,0);
-    gasTot[e] = gasByEnt[e].reduce((a,b)=>a+b,0) + nomByEnt[e]*12;
+    gasOnlyTot[e] = gasByEnt[e].reduce((a,b)=>a+b,0);      // gastos capturados SIN nómina
+    gasTot[e] = gasOnlyTot[e] + nomByEnt[e]*12;              // total con nómina (para margen, KPIs)
   });
-  const ingGrupo  = Object.values(ingTot).reduce((a,b)=>a+b,0);
-  const gasGrupo  = Object.values(gasTot).reduce((a,b)=>a+b,0);
-  const margenGrupo = ingGrupo - gasGrupo;
+  const ingGrupo      = Object.values(ingTot).reduce((a,b)=>a+b,0);
+  const gasOnlyGrupo  = Object.values(gasOnlyTot).reduce((a,b)=>a+b,0);
+  const gasGrupo      = Object.values(gasTot).reduce((a,b)=>a+b,0);   // con nómina (para margen)
+  const margenGrupo   = ingGrupo - gasGrupo;
 
   // ── KPI cards ──
   const q = id => document.getElementById(id);
@@ -179,7 +419,7 @@ function rResumen(){
     elIng.textContent = fmtK(ingGrupo);
     elIng.style.color = 'var(--green)';
     const sub = entKeys.filter(e=>ingTot[e]>0).map(e=>e.slice(0,3)+' '+fmtK(ingTot[e])).join('  ');
-    if(q('dash-kpi-ing-sub')) q('dash-kpi-ing-sub').textContent = sub || 'Wirebit presupuesto incluido';
+    if(q('dash-kpi-ing-sub')) q('dash-kpi-ing-sub').textContent = sub || 'Sin ingresos registrados';
     if(q('dash-kpi-ing-sub')) q('dash-kpi-ing-sub').className = 'kpi-d dnu';
     if(q('dash-bar-ing')) q('dash-bar-ing').style.width = Math.min(100, Math.round(ingGrupo/Math.max(ingGrupo,gasGrupo,1)*100))+'%';
   }
@@ -187,9 +427,9 @@ function rResumen(){
   // Gastos
   const elGas = q('dash-kpi-gas');
   if(elGas){
-    elGas.textContent = fmtK(gasGrupo);
+    elGas.textContent = fmtK(gasOnlyGrupo);
     elGas.style.color = 'var(--orange)';
-    if(q('dash-kpi-gas-sub')) q('dash-kpi-gas-sub').textContent = 'Nómina '+fmtK(nomTotal*12)+'/año incl.';
+    if(q('dash-kpi-gas-sub')) q('dash-kpi-gas-sub').textContent = gasOnlyGrupo > 0 ? 'Sin nómina · ver detalle →' : 'Sin gastos capturados';
     if(q('dash-kpi-gas-sub')) q('dash-kpi-gas-sub').className = 'kpi-d dnu';
     if(q('dash-bar-gas')) q('dash-bar-gas').style.width = Math.min(100, Math.round(gasGrupo/Math.max(ingGrupo,gasGrupo,1)*100))+'%';
   }
@@ -215,8 +455,13 @@ function rResumen(){
     const tip  = {...cOp.plugins.tooltip, callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}};
     const tK   = v=>'$'+(Math.abs(v)>=1e6?(v/1e6).toFixed(1)+'M':Math.abs(v)>=1000?(v/1000).toFixed(0)+'K':v);
 
+    // Period columns for charts (exclude "Total" column from chart — only show breakdown)
+    const {cols: _allCols, colLabels: _allLabels} = periodColumns(_dashMode);
+    const isTotal = l => l.startsWith('Total');
+    const chartCols   = _allCols.filter((_,i)=>!isTotal(_allLabels[i]));
+    const chartLabels = _allLabels.filter(l=>!isTotal(l));
+
     // Gráfica 1 — Ingresos por empresa
-    // Si hay datos mensuales → barras apiladas; si no → donut anual
     dc('cdashi');
     const ingMoTotal = Array(12).fill(0);
     entKeys.forEach(e=>ingByEnt[e].forEach((v,i)=>ingMoTotal[i]+=v));
@@ -224,43 +469,49 @@ function rResumen(){
     const c1 = q('c-dash-ing'); if(!c1) return;
 
     if(hasMonthly){
-      CH['cdashi'] = new Chart(c1,{type:'bar',data:{labels:MO,
-        datasets:entKeys.filter(e=>ingTot[e]>0).map(e=>({label:e,data:ingByEnt[e],backgroundColor:entCBg[e],borderColor:entC[e],borderWidth:1.5}))
+      const ingAgg = {};
+      entKeys.filter(e=>ingTot[e]>0).forEach(e=>{
+        ingAgg[e] = chartCols.map(idxs=>colVal(ingByEnt[e],idxs));
+      });
+      CH['cdashi'] = new Chart(c1,{type:'bar',data:{labels:chartLabels,
+        datasets:Object.keys(ingAgg).map(e=>({label:e,data:ingAgg[e],backgroundColor:entCBg[e],borderColor:entC[e],borderWidth:1.5}))
       },options:cOpts({scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:tK}}}})});
-      if(q('dash-c1-sub')) q('dash-c1-sub').textContent='Mensual · por empresa';
+      const modeLabel = _dashMode==='trimestral'?'Trimestral':_dashMode==='anual'?'Anual':'Mensual';
+      if(q('dash-c1-sub')) q('dash-c1-sub').textContent=modeLabel+' · por empresa';
     } else {
       const ann = entKeys.map(e=>({e,v:ingTot[e]}));
       CH['cdashi'] = new Chart(c1,{type:'doughnut',data:{
         labels:ann.map(d=>d.e),
         datasets:[{data:ann.map(d=>d.v),backgroundColor:ann.map(d=>entCBg[d.e]),borderColor:ann.map(d=>entC[d.e]),borderWidth:1.5}]
       },options:{...cOp,plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:8,padding:4}},tooltip:tip},cutout:'58%',scales:noAx}});
-      if(q('dash-c1-sub')) q('dash-c1-sub').textContent='Presupuesto anual · por empresa';
+      if(q('dash-c1-sub')) q('dash-c1-sub').textContent='Anual · por empresa';
     }
 
-    // Gráfica 2 — Gastos por empresa (donut)
+    // Gráfica 2 — Gastos por empresa (donut) — siempre anual
     dc('cdashg');
     const c2 = q('c-dash-gas'); if(!c2) return;
-    const gasAnn = entKeys.map(e=>({e,v:gasTot[e]}));
+    const gasAnn = entKeys.map(e=>({e,v:gasOnlyTot[e]}));
     CH['cdashg'] = new Chart(c2,{type:'doughnut',data:{
       labels:gasAnn.map(d=>d.e),
       datasets:[{data:gasAnn.map(d=>d.v),backgroundColor:gasAnn.map(d=>entCBg[d.e]),borderColor:gasAnn.map(d=>entC[d.e]),borderWidth:1.5}]
     },options:{...cOp,plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:8,padding:4}},tooltip:tip},cutout:'58%',scales:noAx}});
 
-    // Gráfica 3 — Nómina por empresa (barras)
+    // Gráfica 3 — Nómina por empresa (barras) — respeta período
     dc('cdashnom');
     const c3 = q('c-dash-nom'); if(!c3) return;
+    const nomMult = _dashMode==='anual'?12:_dashMode==='trimestral'?3:1;
+    const nomLabel = _dashMode==='anual'?'Anual':_dashMode==='trimestral'?'Trimestral':'Mensual';
     CH['cdashnom'] = new Chart(c3,{type:'bar',data:{
       labels:entKeys,
-      datasets:[{data:entKeys.map(e=>nomByEnt[e]),backgroundColor:entKeys.map(e=>entCBg[e]),borderColor:entKeys.map(e=>entC[e]),borderWidth:1.5,borderRadius:4}]
+      datasets:[{data:entKeys.map(e=>nomByEnt[e]*nomMult),backgroundColor:entKeys.map(e=>entCBg[e]),borderColor:entKeys.map(e=>entC[e]),borderWidth:1.5,borderRadius:4}]
     },options:cOpts({plugins:{legend:{display:false}},scales:{
       x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},
       y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:tK}}
     }})});
 
-    // Gráfica 4 — Margen por empresa (barras horizontales)
+    // Gráfica 4 — Margen por empresa (barras horizontales) — siempre anual
     dc('cdashm');
     const c4 = q('c-dash-margen'); if(!c4) return;
-    // Margen = ingresos - (gastos capturados + nómina anual)
     const margenVals = entKeys.map(e => ingTot[e] - gasTot[e]);
     CH['cdashm'] = new Chart(c4,{type:'bar',data:{
       labels:entKeys,
@@ -284,12 +535,20 @@ function rResumen(){
 // DASHBOARD GRUPO — Sección 2 & 3
 // ═══════════════════════════════════════
 let _edoMode = 'mensual';
+let _dashMode = 'mensual';
 
 function setEDO(mode, btn){
   _edoMode = mode;
-  document.querySelectorAll('.pbar .pbtn').forEach(b => b.classList.remove('active'));
+  btn.closest('.pbar').querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
   if(btn) btn.classList.add('active');
   rEDO();
+}
+
+function setDashMode(mode, btn){
+  _dashMode = mode;
+  btn.closest('.pbar').querySelectorAll('.pbtn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  rResumen();
 }
 
 function rEntSummary(){
@@ -356,6 +615,7 @@ function rEntSummary(){
 }
 
 function rEDO(){
+  fiInjectTPV();
   fiInjectCredits();
   syncFlujoToRecs();
 
@@ -391,21 +651,8 @@ function rEDO(){
   const GAS_TOT = Array(12).fill(0).map((_,i)=>GAS.Salem[i]+GAS.Endless[i]+GAS.Dynamo[i]+GAS.Wirebit[i]);
   const MARGEN  = ING_TOT.map((v,i)=>v-GAS_TOT[i]);
 
-  // Collapse months based on mode
-  let cols, colLabels;
-  if(_edoMode === 'anual'){
-    cols = [Array(12).fill(0).map((_,i)=>i)];
-    colLabels = ['Total 2026'];
-  } else if(_edoMode === 'trimestral'){
-    cols = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
-    colLabels = ['Q1','Q2','Q3','Q4','Total 2026'];
-    cols.push(Array(12).fill(0).map((_,i)=>i));
-  } else {
-    cols = Array(12).fill(0).map((_,i)=>[i]);
-    colLabels = MO.concat(['Total']);
-  }
-
-  const colVal = (arr, idxs) => idxs.reduce((a,i)=>a+arr[i],0);
+  // Collapse months based on mode (shared utility)
+  const {cols, colLabels} = periodColumns(_edoMode);
 
   thead.innerHTML = '<th style="min-width:160px">Concepto</th>' +
     colLabels.map(l=>`<th class="r" style="min-width:70px">${l}</th>`).join('');
@@ -498,7 +745,7 @@ function openModal(id, customTitle, customHtml){
     resumen_ingresos:{
       t:'Ingresos Grupo Financiero 2026', s:'Salem · Endless · Dynamo · Wirebit',
       render:()=>{
-        fiInjectCredits(); syncFlujoToRecs();
+        fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
         const entC={Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
         const rows = ['Salem','Endless','Dynamo','Wirebit'].map(e=>{
           const recs = S.recs.filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e);
@@ -520,7 +767,7 @@ function openModal(id, customTitle, customHtml){
         </tbody></table>`;
       },
       afterRender:()=>{
-        fiInjectCredits(); syncFlujoToRecs();
+        fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
         const entC={Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
         const entCBg={Salem:'rgba(0,115,234,.22)',Endless:'rgba(0,184,117,.22)',Dynamo:'rgba(255,112,67,.22)',Wirebit:'rgba(155,81,224,.22)'};
         const rows=['Salem','Endless','Dynamo','Wirebit'].map(e=>{
@@ -537,7 +784,7 @@ function openModal(id, customTitle, customHtml){
     resumen_gastos:{
       t:'Gastos Grupo Financiero 2026', s:'Nómina · Gastos operativos · Gastos compartidos',
       render:()=>{
-        fiInjectCredits(); syncFlujoToRecs();
+        fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
         const entC={Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
         const rows=['Salem','Endless','Dynamo','Wirebit'].map(e=>{
           const nom = NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:n.wb)||0)/100,0)*12;
@@ -574,7 +821,7 @@ function openModal(id, customTitle, customHtml){
     resumen_margen:{
       t:'Margen Operativo Grupo Financiero 2026', s:'Ingresos capturados − Gastos totales por empresa',
       render:()=>{
-        fiInjectCredits(); syncFlujoToRecs();
+        fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
         const entC={Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
         const rows=['Salem','Endless','Dynamo','Wirebit'].map(e=>{
           const ing=S.recs.filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e).reduce((a,r)=>a+r.vals.reduce((x,y)=>x+y,0),0);
@@ -599,7 +846,7 @@ function openModal(id, customTitle, customHtml){
         </tbody></table>`;
       },
       afterRender:()=>{
-        fiInjectCredits(); syncFlujoToRecs();
+        fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
         const rows=['Salem','Endless','Dynamo','Wirebit'].map(e=>{
           const ing=S.recs.filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e).reduce((a,r)=>a+r.vals.reduce((x,y)=>x+y,0),0);
           const nom=NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:n.wb)||0)/100,0)*12;
@@ -635,16 +882,11 @@ function openModal(id, customTitle, customHtml){
     centum_costos_modal:{
       t:'Centum Capital — Costos y Gastos Consolidados',s:'Presupuesto mensual de las 3 entidades',
       render:()=>`<div class="m-kpi-row" style="grid-template-columns:repeat(3,1fr)">
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Salem Gastos/Mes</div><div class="m-kpi-val" style="color:var(--red)">$383K</div></div>
-        <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Endless Gastos/Mes</div><div class="m-kpi-val" style="color:var(--red)">$90K</div></div>
-        <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Dynamo Gastos/Mes</div><div class="m-kpi-val" style="color:var(--red)">$90K</div></div>
+        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Salem Gastos/Mes</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div>
+        <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Endless Gastos/Mes</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div>
+        <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Dynamo Gastos/Mes</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div>
       </div>
-      <table class="mbt"><thead><tr><th>Entidad</th><th>Mayor Costo</th><th class="r">Total/Mes</th><th class="r">Total Anual</th><th class="r">% del Total</th></tr></thead><tbody>
-        <tr><td class="bld" style="color:#0073ea">Salem Internacional</td><td>Efevoo Tarjetas $110K</td><td class="mo neg">$383,000</td><td class="mo neg">$4,596,000</td><td class="mo">65%</td></tr>
-        <tr><td class="bld" style="color:#00b875">Endless Money</td><td>Nómina + Regulatorio</td><td class="mo neg">$90,154</td><td class="mo neg">$1,081,848</td><td class="mo">18%</td></tr>
-        <tr><td class="bld" style="color:#ff7043">Dynamo Finance</td><td>Nómina + Regulatorio</td><td class="mo neg">$90,154</td><td class="mo neg">$1,081,848</td><td class="mo">18%</td></tr>
-        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL CENTUM</td><td></td><td class="mo bld neg">$563,308/mes</td><td class="mo bld neg">$6,759,696/año</td><td class="mo bld">100%</td></tr>
-      </tbody></table>`
+      <p style="text-align:center;color:var(--muted);padding:24px 0;font-size:.85rem">Pendiente de captura de datos reales.</p>`
     },
     // ── Centum Cartera
     centum_cartera_modal:{
@@ -664,10 +906,10 @@ function openModal(id, customTitle, customHtml){
     // ── Centum Nomina
     centum_nom_modal:{
       t:'Centum Capital — Nómina Asignada',s:'Salem + Endless + Dynamo',
-      render:()=>`<div class="m-kpi-row" style="grid-template-columns:repeat(3,1fr)">
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Salem</div><div class="m-kpi-val">$186K/mes</div></div>
-        <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Endless</div><div class="m-kpi-val">$23K/mes</div></div>
-        <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Dynamo</div><div class="m-kpi-val">$23K/mes</div></div>
+      render:()=>{const _s=NOM_DIST.Salem||0,_e=NOM_DIST.Endless||0,_d=NOM_DIST.Dynamo||0;return`<div class="m-kpi-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Salem</div><div class="m-kpi-val">${fmtK(_s)}/mes</div></div>
+        <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Endless</div><div class="m-kpi-val">${fmtK(_e)}/mes</div></div>
+        <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Dynamo</div><div class="m-kpi-val">${fmtK(_d)}/mes</div></div>
       </div>
       <table class="mbt"><thead><tr><th>Empleado</th><th>Rol</th><th class="r">Sueldo/Mes</th><th class="r">% Salem</th><th class="r">% Endless</th><th class="r">% Dynamo</th></tr></thead><tbody>
         ${NOM.filter(e=>e.dist.Salem>0||e.dist.Endless>0||e.dist.Dynamo>0).map(e=>`<tr>
@@ -676,8 +918,8 @@ function openModal(id, customTitle, customHtml){
           <td class="mo" style="color:#00b875">${e.dist.Endless>0?(e.dist.Endless*100).toFixed(0)+'%':'—'}</td>
           <td class="mo" style="color:#ff7043">${e.dist.Dynamo>0?(e.dist.Dynamo*100).toFixed(0)+'%':'—'}</td>
         </tr>`).join('')}
-        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL CENTUM</td><td></td><td></td><td class="mo bld" style="color:#0073ea">$186K</td><td class="mo bld" style="color:#00b875">$23K</td><td class="mo bld" style="color:#ff7043">$23K</td></tr>
-      </tbody></table>`
+        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL CENTUM</td><td></td><td></td><td class="mo bld" style="color:#0073ea">${fmtK(_s)}</td><td class="mo bld" style="color:#00b875">${fmtK(_e)}</td><td class="mo bld" style="color:#ff7043">${fmtK(_d)}</td></tr>
+      </tbody></table>`;}
     },
     // ── Grupo Ingresos
     grupo_ing_modal:{
@@ -685,9 +927,9 @@ function openModal(id, customTitle, customHtml){
       render:()=>{
         const rows=MO.map((m,i)=>`<tr><td class="bld">${m}</td><td class="mo">—</td><td class="mo pos">${fmt(WB_ING_TOTAL[i])}</td><td class="mo bld pos">${fmt(WB_ING_TOTAL[i])}</td></tr>`).join('');
         return`<div class="m-kpi-row" style="grid-template-columns:repeat(3,1fr)">
-          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Wirebit (ppto)</div><div class="m-kpi-val" style="color:#9b51e0">$1.29M</div></div>
-          <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Centum Capital</div><div class="m-kpi-val">Pendiente</div></div>
-          <div class="m-kpi" style="--ac:var(--green)"><div class="m-kpi-lbl">Total Capturado</div><div class="m-kpi-val" style="color:#9b51e0">$1.29M</div></div>
+          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Wirebit</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div>
+          <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Centum Capital</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div>
+          <div class="m-kpi" style="--ac:var(--green)"><div class="m-kpi-lbl">Total Capturado</div><div class="m-kpi-val" style="color:var(--muted)">$0</div></div>
         </div>
         <div style="overflow-x:auto"><table class="mbt"><thead><tr><th>Mes</th><th class="r">Centum (pendiente)</th><th class="r">Wirebit</th><th class="r">Total Grupo</th></tr></thead><tbody>${rows}</tbody></table></div>`;
       }
@@ -695,22 +937,39 @@ function openModal(id, customTitle, customHtml){
     // ── Grupo Costos
     grupo_costos_modal:{
       t:'Grupo Financiero — Costos y Gastos Totales 2026',s:'Las 4 entidades consolidadas',
-      render:()=>`<div class="m-kpi-row" style="grid-template-columns:repeat(4,1fr)">
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Salem</div><div class="m-kpi-val" style="color:var(--red)">$4.6M/año</div></div>
-        <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Endless</div><div class="m-kpi-val" style="color:var(--red)">$1.08M/año</div></div>
-        <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Dynamo</div><div class="m-kpi-val" style="color:var(--red)">$1.08M/año</div></div>
-        <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Wirebit</div><div class="m-kpi-val" style="color:var(--red)">$4.1M nom.</div></div>
-      </div>
-      <table class="mbt"><thead><tr><th>Entidad</th><th class="r">Gastos/Mes</th><th class="r">Total Anual</th><th class="r">% del Grupo</th></tr></thead><tbody>
-        <tr><td class="bld" style="color:#0073ea">Salem Internacional</td><td class="mo neg">$383,000</td><td class="mo neg">$4,596,000</td><td class="mo">17%</td></tr>
-        <tr><td class="bld" style="color:#00b875">Endless Money</td><td class="mo neg">$90,154</td><td class="mo neg">$1,081,848</td><td class="mo">4%</td></tr>
-        <tr><td class="bld" style="color:#ff7043">Dynamo Finance</td><td class="mo neg">$90,154</td><td class="mo neg">$1,081,848</td><td class="mo">4%</td></tr>
-        <tr><td class="bld" style="color:#9b51e0">Wirebit (costos dir.)</td><td class="mo neg">$129,207</td><td class="mo neg">$1,550,484</td><td class="mo">6%</td></tr>
-        <tr><td class="bld" style="color:#9b51e0">Wirebit (nómina)</td><td class="mo neg">$342,000</td><td class="mo neg">$4,104,000</td><td class="mo">15%</td></tr>
-        <tr><td class="bld">Nómina Compartida (todos)</td><td class="mo neg">$552,000</td><td class="mo neg">$6,624,000</td><td class="mo">25%</td></tr>
-        <tr><td class="bld">Gastos Compartidos (ppto)</td><td class="mo neg">$665,000</td><td class="mo neg">$7,980,000</td><td class="mo">29%</td></tr>
-        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL GRUPO</td><td class="mo bld neg">—</td><td class="mo bld neg">~$27.0M</td><td class="mo bld">100%</td></tr>
-      </tbody></table>`
+      render:()=>{
+        const salMes=SAL_GASTOS_ITEMS.reduce((a,i)=>a+(i.ppto||0),0);
+        const endNom=NOM_DIST.Endless||23000, dynNom=NOM_DIST.Dynamo||23000;
+        const wbCostoMes=Math.round(sum(WB_COSTO_TOTAL)/12);
+        const wbNomMes=Math.round(sum(WB_NOM_TOTAL)/12);
+        const nomCompMes=NOM.reduce((a,n)=>a+(n.s||0),0);
+        const gcompMes=GCOMP.reduce((a,g)=>a+(g.vals.length?Math.round(sum(g.vals)/12):0),0);
+        const items=[
+          {n:'Salem Internacional',c:'#0073ea',v:salMes},
+          {n:'Endless Money',c:'#00b875',v:endNom},
+          {n:'Dynamo Finance',c:'#ff7043',v:dynNom},
+          {n:'Wirebit (costos dir.)',c:'#9b51e0',v:wbCostoMes},
+          {n:'Wirebit (nómina)',c:'#9b51e0',v:wbNomMes},
+          {n:'Nómina Compartida (todos)',c:null,v:nomCompMes},
+          {n:'Gastos Compartidos (ppto)',c:null,v:gcompMes},
+        ];
+        const totalAnual=items.reduce((a,i)=>a+i.v*12,0);
+        const rows=items.filter(i=>i.v>0).map(i=>{
+          const pct=totalAnual?Math.round(i.v*12/totalAnual*100):0;
+          return`<tr><td class="bld"${i.c?' style="color:'+i.c+'"':''}>${i.n}</td><td class="mo neg">${fmt(i.v)}</td><td class="mo neg">${fmt(i.v*12)}</td><td class="mo">${pct}%</td></tr>`;
+        }).join('');
+        const salAnual=salMes*12, endAnual=endNom*12, dynAnual=dynNom*12, wbAnual=(wbCostoMes+wbNomMes)*12;
+        return`<div class="m-kpi-row" style="grid-template-columns:repeat(4,1fr)">
+          <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Salem</div><div class="m-kpi-val" style="color:var(--red)">${salAnual?fmtK(salAnual)+'/año':'Sin datos'}</div></div>
+          <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Endless</div><div class="m-kpi-val" style="color:var(--red)">${fmtK(endAnual)}/año</div></div>
+          <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Dynamo</div><div class="m-kpi-val" style="color:var(--red)">${fmtK(dynAnual)}/año</div></div>
+          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Wirebit</div><div class="m-kpi-val" style="color:var(--red)">${fmtK(wbAnual)} nom.</div></div>
+        </div>
+        <table class="mbt"><thead><tr><th>Entidad</th><th class="r">Gastos/Mes</th><th class="r">Total Anual</th><th class="r">% del Grupo</th></tr></thead><tbody>
+          ${rows}
+          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL GRUPO</td><td class="mo bld neg">—</td><td class="mo bld neg">${fmtK(totalAnual)}</td><td class="mo bld">100%</td></tr>
+        </tbody></table>`;
+      }
     },
     // ── Grupo Cartera
     grupo_cartera_modal:{
@@ -736,13 +995,14 @@ function openModal(id, customTitle, customHtml){
           dc('m-chart1');
           const pieTip2={...cOpts().plugins.tooltip,callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}};
           CH['m-chart1']=new Chart(document.getElementById('m-chart1'),{type:'doughnut',data:{
-            labels:['Salem (pendiente)','Endless $23.2K','Dynamo $426.6K','Wirebit $1.29M'],
-            datasets:[{data:[1,23208,426600,sum(WB_ING_TOTAL)],backgroundColor:['rgba(0,115,234,.3)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)'],borderWidth:0}]
+            labels:['Salem (sin datos)','Endless (sin datos)','Dynamo (sin datos)','Wirebit (sin datos)'],
+            datasets:[{data:[1,1,1,1],backgroundColor:['rgba(0,115,234,.15)','rgba(0,184,117,.15)','rgba(255,112,67,.15)','rgba(155,81,224,.15)'],borderWidth:0}]
           },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:10},boxWidth:9,padding:8}},tooltip:pieTip2},cutout:'50%',scales:{x:{display:false},y:{display:false}}}});
           dc('m-chart2');
+          const _nd=NOM_DIST;
           CH['m-chart2']=new Chart(document.getElementById('m-chart2'),{type:'doughnut',data:{
-            labels:['Salem $186K','Endless $23K','Dynamo $23K','Wirebit $320K'],
-            datasets:[{data:[186000,23000,23000,320000],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)'],borderWidth:0}]
+            labels:['Salem '+fmtK(_nd.Salem||0),'Endless '+fmtK(_nd.Endless||0),'Dynamo '+fmtK(_nd.Dynamo||0),'Wirebit '+fmtK(_nd.Wirebit||0)],
+            datasets:[{data:[_nd.Salem||0,_nd.Endless||0,_nd.Dynamo||0,_nd.Wirebit||0],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)'],borderWidth:0}]
           },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:10},boxWidth:9,padding:8}},tooltip:pieTip2},cutout:'50%',scales:{x:{display:false},y:{display:false}}}});
         },50);
         return canv+`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px"><div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:center;margin-bottom:4px">Ingresos por Entidad</div><div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;text-align:center;margin-bottom:4px">Nómina Mensual por Empresa</div></div>`;
@@ -783,10 +1043,12 @@ function openModal(id, customTitle, customHtml){
     salem_gas_modal:{
       t:'Salem — Gastos Operativos 2026',s:'Presupuesto detallado por categoría',
       render:()=>{
-        const rows=SAL_GASTOS_ITEMS.map(g=>`<tr><td class="bld">${g.c}</td><td><span style="font-size:.65rem;color:var(--muted)">${g.cat}</span></td><td class="mo neg">${fmt(g.ppto)}</td><td class="mo neg">${fmt(g.ppto*12)}</td><td class="mo">${((g.ppto/383000)*100).toFixed(1)}%</td></tr>`).join('');
-        return`<div class="m-kpi-row"><div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">Total Ppto/Mes</div><div class="m-kpi-val">$383K</div></div><div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">Anual Est.</div><div class="m-kpi-val">$4.6M</div></div><div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Mayor Gasto</div><div class="m-kpi-val" style="font-size:.82rem">Nómina $186K</div></div></div>
+        const total=SAL_GASTOS_ITEMS.reduce((s,g)=>s+g.ppto,0);
+        const rows=SAL_GASTOS_ITEMS.filter(g=>g.ppto>0).map(g=>`<tr><td class="bld">${g.c}</td><td><span style="font-size:.65rem;color:var(--muted)">${g.cat}</span></td><td class="mo neg">${fmt(g.ppto)}</td><td class="mo neg">${fmt(g.ppto*12)}</td><td class="mo">${total?((g.ppto/total)*100).toFixed(1):'0'}%</td></tr>`).join('');
+        const nomSalG=NOM_DIST.Salem||186000;
+        return`<div class="m-kpi-row"><div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">Nómina/Mes</div><div class="m-kpi-val">${fmtK(nomSalG)}</div></div><div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">Nómina Anual</div><div class="m-kpi-val">${fmtK(nomSalG*12)}</div></div><div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Otros Gastos</div><div class="m-kpi-val" style="color:var(--muted)">${(total-nomSalG)>0?fmtK(total-nomSalG)+'/mes':'Sin datos'}</div></div></div>
           <table class="mbt"><thead><tr><th>Concepto</th><th>Categoría</th><th class="r">Ppto/Mes</th><th class="r">Anual Est.</th><th class="r">% Total</th></tr></thead><tbody>${rows}
-          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">$383,000</td><td class="mo bld neg">$4,596,000</td><td class="mo bld">100%</td></tr>
+          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">${fmt(total)}</td><td class="mo bld neg">${fmt(total*12)}</td><td class="mo bld">100%</td></tr>
           </tbody></table>`;
       }
     },
@@ -816,17 +1078,11 @@ function openModal(id, customTitle, customHtml){
     // ── Endless gastos modal
     endless_gas_modal:{
       t:'Endless — Gastos Operativos 2026',s:'Presupuesto detallado por categoría',
-      render:()=>`<div class="m-kpi-row"><div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Total Ppto/Mes</div><div class="m-kpi-val">$90K</div></div><div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Anual Est.</div><div class="m-kpi-val">$1.08M</div></div><div class="m-kpi" style="--ac:var(--blue)"><div class="m-kpi-lbl">Mayor Gasto</div><div class="m-kpi-val" style="font-size:.82rem">Circ. Créd. $17.4K</div></div></div>
+      render:()=>{const nEnd=NOM_DIST.Endless||23000;return`<div class="m-kpi-row"><div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Nómina/Mes</div><div class="m-kpi-val">${fmtK(nEnd)}</div></div><div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Nómina Anual</div><div class="m-kpi-val">${fmtK(nEnd*12)}</div></div><div class="m-kpi" style="--ac:var(--blue)"><div class="m-kpi-lbl">Otros Gastos</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div></div>
         <table class="mbt"><thead><tr><th>Concepto</th><th>Categoría</th><th class="r">Ppto/Mes</th><th class="r">Anual Est.</th></tr></thead><tbody>
-          <tr><td class="bld">Nómina (asignada)</td><td><span style="font-size:.65rem;color:var(--muted)">Nómina</span></td><td class="mo neg">$23,000</td><td class="mo neg">$276,000</td></tr>
-          <tr><td class="bld">Círculo de Crédito</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$17,391</td><td class="mo neg">$208,692</td></tr>
-          <tr><td class="bld">Icarus Endless</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$16,211</td><td class="mo neg">$194,532</td></tr>
-          <tr><td class="bld">Alestra</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$17,391</td><td class="mo neg">$208,692</td></tr>
-          <tr><td class="bld">CNBV Endless</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$5,006</td><td class="mo neg">$60,072</td></tr>
-          <tr><td class="bld">Renta y Servicios</td><td><span style="font-size:.65rem;color:var(--muted)">Renta</span></td><td class="mo neg">$7,155</td><td class="mo neg">$85,860</td></tr>
-          <tr><td class="bld">Otros / Compartidos</td><td><span style="font-size:.65rem;color:var(--muted)">Varios</span></td><td class="mo neg">$4,000</td><td class="mo neg">$48,000</td></tr>
-          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">$90,154/mes</td><td class="mo bld neg">$1,081,848/año</td></tr>
-        </tbody></table>`
+          <tr><td class="bld">Nómina (asignada)</td><td><span style="font-size:.65rem;color:var(--muted)">Nómina</span></td><td class="mo neg">${fmt(nEnd)}</td><td class="mo neg">${fmt(nEnd*12)}</td></tr>
+          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">${fmt(nEnd)}/mes</td><td class="mo bld neg">${fmt(nEnd*12)}/año</td></tr>
+        </tbody></table>`;}
     },
     // ── Dynamo cartera modal
     dynamo_cred_modal:{
@@ -841,17 +1097,11 @@ function openModal(id, customTitle, customHtml){
     // ── Dynamo gastos modal
     dynamo_gas_modal:{
       t:'Dynamo Finance — Gastos Operativos 2026',s:'Presupuesto detallado por categoría',
-      render:()=>`<div class="m-kpi-row"><div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Total Ppto/Mes</div><div class="m-kpi-val">$90K</div></div><div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Anual Est.</div><div class="m-kpi-val">$1.08M</div></div><div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Mayor Gasto</div><div class="m-kpi-val" style="font-size:.82rem">Circ. Créd. $17.4K</div></div></div>
+      render:()=>{const nDyn=NOM_DIST.Dynamo||23000;return`<div class="m-kpi-row"><div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Nómina/Mes</div><div class="m-kpi-val">${fmtK(nDyn)}</div></div><div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Nómina Anual</div><div class="m-kpi-val">${fmtK(nDyn*12)}</div></div><div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Otros Gastos</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div></div>
         <table class="mbt"><thead><tr><th>Concepto</th><th>Categoría</th><th class="r">Ppto/Mes</th><th class="r">Anual Est.</th></tr></thead><tbody>
-          <tr><td class="bld">Nómina (asignada)</td><td><span style="font-size:.65rem;color:var(--muted)">Nómina</span></td><td class="mo neg">$23,000</td><td class="mo neg">$276,000</td></tr>
-          <tr><td class="bld">Círculo de Crédito</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$17,391</td><td class="mo neg">$208,692</td></tr>
-          <tr><td class="bld">Icarus Dynamo</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$16,211</td><td class="mo neg">$194,532</td></tr>
-          <tr><td class="bld">Alestra</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$17,391</td><td class="mo neg">$208,692</td></tr>
-          <tr><td class="bld">CNBV Dynamo</td><td><span style="font-size:.65rem;color:var(--muted)">Regulatorio</span></td><td class="mo neg">$5,006</td><td class="mo neg">$60,072</td></tr>
-          <tr><td class="bld">Renta y Servicios</td><td><span style="font-size:.65rem;color:var(--muted)">Renta</span></td><td class="mo neg">$7,155</td><td class="mo neg">$85,860</td></tr>
-          <tr><td class="bld">Otros / Compartidos</td><td><span style="font-size:.65rem;color:var(--muted)">Varios</span></td><td class="mo neg">$4,000</td><td class="mo neg">$48,000</td></tr>
-          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">$90,154/mes</td><td class="mo bld neg">$1,081,848/año</td></tr>
-        </tbody></table>`
+          <tr><td class="bld">Nómina (asignada)</td><td><span style="font-size:.65rem;color:var(--muted)">Nómina</span></td><td class="mo neg">${fmt(nDyn)}</td><td class="mo neg">${fmt(nDyn*12)}</td></tr>
+          <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">${fmt(nDyn)}/mes</td><td class="mo bld neg">${fmt(nDyn*12)}/año</td></tr>
+        </tbody></table>`;}
     },
     // ── Ingresos Wirebit
     ingresos:{
@@ -899,19 +1149,20 @@ function openModal(id, customTitle, customHtml){
           const dists=Object.entries(e.dist).filter(([,p])=>p>0).map(([co,p])=>`<span style="display:inline-flex;align-items:center;gap:3px;margin-right:5px"><span style="width:7px;height:7px;border-radius:50%;background:${{Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'}[co]||'#aaa'};display:inline-block"></span><span style="font-size:.68rem">${co} ${(p*100).toFixed(0)}%</span></span>`).join('');
           return`<tr><td class="bld">${e.n}</td><td style="color:var(--muted);font-size:.75rem">${e.r}</td><td class="mo bld pos">${fmt(e.s)}</td><td>${dists}</td><td class="mo">${fmt(e.s*12)}</td></tr>`;
         }).join('');
-        const distRows=[{n:'Salem',v:186000,c:'#0073ea'},{n:'Endless',v:23000,c:'#00b875'},{n:'Dynamo',v:23000,c:'#ff7043'},{n:'Wirebit',v:320000,c:'#9b51e0'}]
-          .map(d=>`<tr><td class="bld"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:3px;background:${d.c};display:inline-block"></span>${d.n}</span></td><td class="mo pos">${fmt(d.v)}/mes</td><td class="mo pos">${fmt(d.v*12)}/año</td></tr>`).join('');
+        const distData=[{n:'Salem',v:NOM_DIST.Salem||0,c:'#0073ea'},{n:'Endless',v:NOM_DIST.Endless||0,c:'#00b875'},{n:'Dynamo',v:NOM_DIST.Dynamo||0,c:'#ff7043'},{n:'Wirebit',v:NOM_DIST.Wirebit||0,c:'#9b51e0'}];
+        const distRows=distData.map(d=>`<tr><td class="bld"><span style="display:inline-flex;align-items:center;gap:6px"><span style="width:8px;height:8px;border-radius:3px;background:${d.c};display:inline-block"></span>${d.n}</span></td><td class="mo pos">${fmt(d.v)}/mes</td><td class="mo pos">${fmt(d.v*12)}/año</td></tr>`).join('');
+        const nomMensual=NOM.reduce((a,e)=>a+(e.s||0),0), nomCount=NOM.length, nomAvg=nomCount?Math.round(nomMensual/nomCount):0;
         return`<div class="m-kpi-row" style="grid-template-columns:repeat(4,1fr)">
-          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Total Mensual</div><div class="m-kpi-val">$552K</div></div>
-          <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Total Anual</div><div class="m-kpi-val">$6.62M</div></div>
-          <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Empleados</div><div class="m-kpi-val">11</div></div>
-          <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Promedio/mes</div><div class="m-kpi-val">$50.2K</div></div>
+          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Total Mensual</div><div class="m-kpi-val">${fmtK(nomMensual)}</div></div>
+          <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Total Anual</div><div class="m-kpi-val">${fmtK(nomMensual*12)}</div></div>
+          <div class="m-kpi" style="--ac:#00b875"><div class="m-kpi-lbl">Empleados</div><div class="m-kpi-val">${nomCount}</div></div>
+          <div class="m-kpi" style="--ac:#ff7043"><div class="m-kpi-lbl">Promedio/mes</div><div class="m-kpi-val">${fmtK(nomAvg)}</div></div>
         </div>
         <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Por Empleado</div>
         <div style="overflow-x:auto;margin-bottom:16px"><table class="mbt"><thead><tr><th>Nombre</th><th>Rol</th><th class="r">Sueldo/Mes</th><th>Distribución</th><th class="r">Anual</th></tr></thead><tbody>${rows}</tbody></table></div>
         <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Por Empresa</div>
         <table class="mbt"><thead><tr><th>Empresa</th><th class="r">Mensual</th><th class="r">Anual</th></tr></thead><tbody>${distRows}
-        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL GRUPO</td><td class="mo bld pos">$552K/mes</td><td class="mo bld pos">$6.62M/año</td></tr>
+        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL GRUPO</td><td class="mo bld pos">${fmtK(nomMensual)}/mes</td><td class="mo bld pos">${fmtK(nomMensual*12)}/año</td></tr>
         </tbody></table>`;
       }
     },
@@ -930,10 +1181,12 @@ function openModal(id, customTitle, customHtml){
           const ents=[g.sal>0?`SAL ${g.sal*100|0}%`:'',g.end>0?`END ${g.end*100|0}%`:'',g.dyn>0?`DYN ${g.dyn*100|0}%`:'',g.wb>0?`WB ${g.wb*100|0}%`:''].filter(Boolean).join(' · ');
           return`<tr><td class="bld">${g.c}</td><td style="color:var(--muted);font-size:.72rem">${g.cat}</td><td style="font-size:.7rem;color:var(--text2)">${ents}</td>${g.vals.map(v=>`<td class="mo neg">${v?fmt(v):'—'}</td>`).join('')}<td class="mo bld neg">${fmt(tot)}</td></tr>`;
         }).join('');
+        const acum=sum(monthly), avgMes=monthly.length?Math.round(acum/monthly.length):0;
+        const topCat=Object.entries(catMap).sort((a,b)=>b[1]-a[1])[0];
         return`<div class="m-kpi-row">
-          <div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Acumulado Ene–Ago</div><div class="m-kpi-val" style="color:var(--orange)">$5.32M</div></div>
-          <div class="m-kpi" style="--ac:var(--red)"><div class="m-kpi-lbl">Mayor Categoría</div><div class="m-kpi-val" style="font-size:.85rem">Costo Directo</div></div>
-          <div class="m-kpi" style="--ac:var(--blue)"><div class="m-kpi-lbl">Ppto/Mes Promedio</div><div class="m-kpi-val">$665K</div></div>
+          <div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Acumulado Ene–Ago</div><div class="m-kpi-val" style="color:var(--orange)">${acum?fmtK(acum):'Sin datos'}</div></div>
+          <div class="m-kpi" style="--ac:var(--red)"><div class="m-kpi-lbl">Mayor Categoría</div><div class="m-kpi-val" style="font-size:.85rem">${topCat?topCat[0]:'Pendiente'}</div></div>
+          <div class="m-kpi" style="--ac:var(--blue)"><div class="m-kpi-lbl">Ppto/Mes Promedio</div><div class="m-kpi-val">${avgMes?fmtK(avgMes):'Sin datos'}</div></div>
         </div>
         <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Por Categoría</div>
         <div style="overflow-x:auto;margin-bottom:16px"><table class="mbt"><thead><tr><th>Categoría</th><th class="r">Total</th><th class="r">% del Total</th></tr></thead><tbody>${catRows}</tbody></table></div>
@@ -944,22 +1197,22 @@ function openModal(id, customTitle, customHtml){
     // ── Salem detalle
     salem_kpi:{
       t:'Salem Internacional — Resumen Ejecutivo',s:'TPV · Fondeo Tarjetas Centum Black',
-      render:()=>`<div class="m-kpi-row" style="grid-template-columns:repeat(4,1fr)">
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Gasto Ppto/Mes</div><div class="m-kpi-val" style="color:#0073ea">$383K</div></div>
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Clientes TPV</div><div class="m-kpi-val">14</div></div>
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Nómina Asignada</div><div class="m-kpi-val">$186K/mes</div></div>
-        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Mayor Costo</div><div class="m-kpi-val" style="font-size:.82rem">Efevoo Tarjetas $110K</div></div>
+      render:()=>{
+        const total=SAL_GASTOS_ITEMS.reduce((s,g)=>s+g.ppto,0);
+        const gasRows=SAL_GASTOS_ITEMS.filter(g=>g.ppto>0).map(g=>`<tr><td class="bld">${g.c}</td><td style="color:var(--muted);font-size:.75rem">${g.cat}</td><td class="mo neg">${fmt(g.ppto)}</td><td class="mo neg">${fmt(g.ppto*12)}</td></tr>`).join('');
+        const nomSal=NOM_DIST.Salem||186000;
+        return`<div class="m-kpi-row" style="grid-template-columns:repeat(3,1fr)">
+        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Nómina Asignada</div><div class="m-kpi-val">${fmtK(nomSal)}/mes</div></div>
+        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Otros Gastos</div><div class="m-kpi-val" style="color:var(--muted)">${(total-nomSal)>0?fmtK(total-nomSal)+'/mes':'Sin datos'}</div></div>
+        <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Ingresos</div><div class="m-kpi-val" style="color:var(--muted)">Sin datos</div></div>
       </div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Clientes TPV</div>
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:14px">
-        ${SAL_TPV_CLIENTES.map(c=>`<div style="background:var(--blue-bg);border:1px solid var(--blue-lt);border-radius:6px;padding:6px 10px;font-size:.75rem;font-weight:600;color:#0060b8">${c}</div>`).join('')}
-      </div>
-      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Gastos Clave</div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">Gastos con Datos</div>
       <table class="mbt"><thead><tr><th>Concepto</th><th>Categoría</th><th class="r">Ppto/Mes</th><th class="r">Anual Est.</th></tr></thead><tbody>
-        ${SAL_GASTOS_ITEMS.map(g=>`<tr><td class="bld">${g.c}</td><td style="color:var(--muted);font-size:.75rem">${g.cat}</td><td class="mo neg">${fmt(g.ppto)}</td><td class="mo neg">${fmt(g.ppto*12)}</td></tr>`).join('')}
-        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">$383K/mes</td><td class="mo bld neg">$4.6M/año</td></tr>
+        ${gasRows}
+        <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">${fmt(total)}/mes</td><td class="mo bld neg">${fmt(total*12)}/año</td></tr>
       </tbody></table>
-      <div style="margin-top:12px;text-align:right"><button class="btn btn-blue" onclick="closeModal();navTo('sal_res')" style="font-size:.73rem">Ver P&L completo →</button></div>`
+      <div style="margin-top:12px;text-align:right"><button class="btn btn-blue" onclick="closeModal();navTo('sal_res')" style="font-size:.73rem">Ver P&L completo →</button></div>`;
+      }
     },
     // ── Endless detalle
     endless_kpi:{
@@ -998,6 +1251,8 @@ function openModal(id, customTitle, customHtml){
     wirebit_kpi:{
       t:'Wirebit — Resumen Ejecutivo 2026',s:'Exchange · VEX · OTC · Tarjetas Cripto',
       render:()=>{
+        const ingAnual=sum(WB_ING_TOTAL), nomAnual=sum(WB_NOM_TOTAL), costoAnual=sum(WB_COSTO_TOTAL);
+        const ebitda=ingAnual-costoAnual-nomAnual;
         const canv=`<canvas id="m-chart1" height="140" style="margin-bottom:14px"></canvas>`;
         setTimeout(()=>{
           dc('m-chart1');
@@ -1007,10 +1262,10 @@ function openModal(id, customTitle, customHtml){
         },50);
         const rows=MO.map((m,i)=>`<tr><td class="bld">${m}</td><td class="mo pos">${fmt(WB_ING_TOTAL[i])}</td><td class="mo neg">${fmt(WB_COSTO_TOTAL[i])}</td><td class="mo neg">${fmt(WB_NOM_TOTAL[i])}</td><td class="mo ${(WB_MARGEN[i]-WB_NOM_TOTAL[i])>=0?'pos':'neg'}">${fmt(WB_MARGEN[i]-WB_NOM_TOTAL[i])}</td></tr>`).join('');
         return`<div class="m-kpi-row" style="grid-template-columns:repeat(4,1fr)">
-          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Ingresos Anuales</div><div class="m-kpi-val" style="color:#9b51e0">$1.29M</div></div>
-          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Inicio → Fin</div><div class="m-kpi-val" style="font-size:.9rem">$58K → $179K</div></div>
-          <div class="m-kpi" style="--ac:var(--red)"><div class="m-kpi-lbl">EBITDA Anual Est.</div><div class="m-kpi-val" style="color:var(--red);font-size:.88rem">Negativo</div></div>
-          <div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">Nómina Anual WB</div><div class="m-kpi-val">$4.1M</div></div>
+          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Ingresos Anuales</div><div class="m-kpi-val" style="color:#9b51e0">${ingAnual?fmtK(ingAnual):'Sin datos'}</div></div>
+          <div class="m-kpi" style="--ac:#9b51e0"><div class="m-kpi-lbl">Inicio → Fin</div><div class="m-kpi-val" style="font-size:.9rem">${(WB_ING_TOTAL[0]||WB_ING_TOTAL[11])?fmtK(WB_ING_TOTAL[0])+' → '+fmtK(WB_ING_TOTAL[11]):'Sin datos'}</div></div>
+          <div class="m-kpi" style="--ac:${ebitda>=0?'var(--green)':'var(--red)'}"><div class="m-kpi-lbl">EBITDA Anual Est.</div><div class="m-kpi-val" style="color:${ebitda>=0?'var(--green)':'var(--red)'};font-size:.88rem">${ingAnual?fmtK(ebitda):'Pendiente'}</div></div>
+          <div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">Nómina Anual WB</div><div class="m-kpi-val">${fmtK(nomAnual)}</div></div>
         </div>
         ${canv}
         <div style="overflow-x:auto"><table class="mbt"><thead><tr><th>Mes</th><th class="r">Ingresos</th><th class="r">Costos Directos</th><th class="r">Nómina</th><th class="r">EBITDA</th></tr></thead><tbody>${rows}</tbody></table></div>

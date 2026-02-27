@@ -10,59 +10,881 @@ const TPV_TERMINALES  = [{"cliente": "La Churrasca Atlixco", "num_term": 3, "ter
 const TPV_CAMBIOS     = [{"num": 1, "terminal": "01610015202405211076", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 35, "monto_ant": 27063, "tipo": "⚠️ Solapamiento", "cliente_act": "Del Valle", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-01-22", "txns_act": 210}, {"num": 2, "terminal": "01610015202405211296", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-17", "txns_ant": 21, "monto_ant": 90555, "tipo": "⚠️ Solapamiento", "cliente_act": "Del Valle", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-01-26", "txns_act": 193}, {"num": 3, "terminal": "01610015202405211508", "cliente_ant": "Mexico Handmade", "fecha_ant_ini": "2026-01-09", "fecha_ant_fin": "2026-01-13", "txns_ant": 16, "monto_ant": 110125, "tipo": "⚠️ Solapamiento", "cliente_act": "Constructora Brumo", "fecha_act_ini": "2026-01-12", "fecha_act_fin": "2026-02-02", "txns_act": 9}, {"num": 4, "terminal": "01610015202405211522", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 8, "monto_ant": 2692.5, "tipo": "⚠️ Solapamiento", "cliente_act": "C CUMBRES", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-02-11", "txns_act": 440}, {"num": 5, "terminal": "01610015202405211525", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-16", "fecha_ant_fin": "2026-01-18", "txns_ant": 9, "monto_ant": 3330, "tipo": "⚠️ Solapamiento", "cliente_act": "C CUMBRES", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-02-10", "txns_act": 883}, {"num": 6, "terminal": "01610015202405211599", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 22, "monto_ant": 28770, "tipo": "⚠️ Solapamiento", "cliente_act": "C CUMBRES", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-02-09", "txns_act": 644}, {"num": 7, "terminal": "01610050202309050195", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 126, "monto_ant": 95687, "tipo": "⚠️ Solapamiento", "cliente_act": "C CUMBRES", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-02-09", "txns_act": 1789}, {"num": 8, "terminal": "01610050202309050271", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 61, "monto_ant": 37795, "tipo": "⚠️ Solapamiento", "cliente_act": "C CUMBRES", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-02-08", "txns_act": 1723}, {"num": 9, "terminal": "01610060202309270501", "cliente_ant": "Luna Canela", "fecha_ant_ini": "2026-01-01", "fecha_ant_fin": "2026-02-04", "txns_ant": 24, "monto_ant": 51113.2, "tipo": "⚠️ Solapamiento", "cliente_act": "JPART", "fecha_act_ini": "2026-02-04", "fecha_act_fin": "2026-02-04", "txns_act": 2}, {"num": 10, "terminal": "01610060202309271247", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 145, "monto_ant": 97544, "tipo": "⚠️ Solapamiento", "cliente_act": "C CUMBRES", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-02-09", "txns_act": 2139}, {"num": 11, "terminal": "01610060202309271429", "cliente_ant": "Rest B", "fecha_ant_ini": "2026-01-14", "fecha_ant_fin": "2026-01-20", "txns_ant": 4, "monto_ant": 20, "tipo": "⚠️ Solapamiento", "cliente_act": "Viajes CEUNI", "fecha_act_ini": "2026-01-19", "fecha_act_fin": "2026-01-21", "txns_act": 2}, {"num": 12, "terminal": "01610080202310110215", "cliente_ant": "FOCACCIA", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-16", "txns_ant": 26, "monto_ant": 21784, "tipo": "⚠️ Solapamiento", "cliente_act": "Del Valle", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-01-22", "txns_act": 260}, {"num": 13, "terminal": "01610015202405211085", "cliente_ant": "Tony2", "fecha_ant_ini": "2026-01-23", "fecha_ant_fin": "2026-01-23", "txns_ant": 1, "monto_ant": 1.1, "tipo": "✅ Limpio", "cliente_act": "Club PH Phonique", "fecha_act_ini": "2026-01-30", "fecha_act_fin": "2026-02-08", "txns_act": 6}, {"num": 14, "terminal": "01610015202405211098", "cliente_ant": "COCINA MONTEJO", "fecha_ant_ini": "2026-01-07", "fecha_ant_fin": "2026-01-20", "txns_ant": 8, "monto_ant": 15992, "tipo": "✅ Limpio", "cliente_act": "MJ", "fecha_act_ini": "2026-01-21", "fecha_act_fin": "2026-02-07", "txns_act": 81}, {"num": 15, "terminal": "01610015202405211525", "cliente_ant": "Centum Capital", "fecha_ant_ini": "2026-01-15", "fecha_ant_fin": "2026-01-15", "txns_ant": 2, "monto_ant": 0, "tipo": "✅ Limpio", "cliente_act": "FOCACCIA", "fecha_act_ini": "2026-01-16", "fecha_act_fin": "2026-01-18", "txns_act": 9}, {"num": 16, "terminal": "01610060202309270015", "cliente_ant": "Luna Canela", "fecha_ant_ini": "2026-01-07", "fecha_ant_fin": "2026-01-29", "txns_ant": 7, "monto_ant": 3.24, "tipo": "✅ Limpio", "cliente_act": "Mt Mechanics", "fecha_act_ini": "2026-02-02", "fecha_act_fin": "2026-02-07", "txns_act": 8}, {"num": 17, "terminal": "01610060202309270414", "cliente_ant": "Empire Fitness Cholula", "fecha_ant_ini": "2025-12-31", "fecha_ant_fin": "2026-01-15", "txns_ant": 423, "monto_ant": 251316, "tipo": "✅ Limpio", "cliente_act": "Nutriment 11 sur", "fecha_act_ini": "2026-02-05", "fecha_act_fin": "2026-02-06", "txns_act": 4}];
 
 function fmtTPV(n){n=parseFloat(n)||0;if(Math.abs(n)>=1e6)return'$'+(n/1e6).toFixed(1)+'M';if(Math.abs(n)>=1000)return'$'+(n/1000).toFixed(0)+'K';return'$'+n.toFixed(0);}
-function fmtTPVFull(n){return n?'$'+parseFloat(n).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0}):'—';}
+function fmtTPVFull(n,d=0){return n?'$'+parseFloat(n).toLocaleString('es-MX',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';}
+
+// Cache for pagos modal functions (populated in rTPVPagos)
+let _tpvPagosCache = [];
+let _termAllData = []; // cache for terminal filter
 
 function filterTPVTable(tbodyId,q){
   document.getElementById(tbodyId).querySelectorAll('tr').forEach(r=>{r.style.display=r.textContent.toLowerCase().includes(q.toLowerCase())?'':'none';});
 }
 
-function initTPVTables(){
-  const render=(id,arr)=>{
-    const el=document.getElementById(id);if(!el)return;
-    el.innerHTML=arr.map((c,i)=>`<tr>
-      <td style="color:var(--muted);font-size:.72rem">${i+1}</td>
-      <td class="bld">${c.cliente}</td>
-      <td class="mo">${c.monto_tc>0?fmtTPVFull(c.monto_tc):'—'}</td>
-      <td class="mo">${c.monto_td>0?fmtTPVFull(c.monto_td):'—'}</td>
-      <td class="mo">${c.monto_amex>0?fmtTPVFull(c.monto_amex):'—'}</td>
-      <td class="mo bld pos">${fmtTPVFull(c.total)}</td></tr>`).join('');
-  };
-  render('dg-tbody',TPV_DG_CLIENTS);
-  render('dd-tbody',TPV_D_CLIENTS);
+// ── Generic search-to-dropdown helper ──
+// Filters a <select> options by text query, auto-selects + triggers change on single match
+function _filterSelectOptions(selectId, allOptions, query, defaultLabel) {
+  const sel = document.getElementById(selectId); if (!sel) return;
+  const q = (query || '').toLowerCase().trim();
+  sel.innerHTML = `<option value="">${defaultLabel}</option>`;
+  const filtered = q ? allOptions.filter(o => o.label.toLowerCase().includes(q)) : allOptions;
+  filtered.forEach(o => { sel.innerHTML += `<option value="${o.value}">${o.label}</option>`; });
+  if (filtered.length === 1) {
+    sel.value = filtered[0].value;
+    sel.dispatchEvent(new Event('change'));
+  }
+}
+
+// Cached option lists (populated by render functions)
+let _termClienteOptions = [];
+let _agenteOptions = [];
+let _pagoClienteAllOptions = [];
+let _pagoAgenteAllOptions = [];
+
+// Search filters for each dropdown
+function filterTermClienteOptions(q) { _filterSelectOptions('term-cliente-filter', _termClienteOptions, q, 'Todos los clientes'); }
+function filterAgenteOptions(q) { _filterSelectOptions('agente-filter', _agenteOptions, q, 'Todos los agentes'); }
+function filterPagoClienteOptions(q) { _filterSelectOptions('pago-cliente-sel', _pagoClienteAllOptions, q, '— Seleccionar cliente —'); }
+function filterPagoAgenteOptions(q) { _filterSelectOptions('pago-agente-sel', _pagoAgenteAllOptions, q, '— Seleccionar agente —'); }
+
+// Filter terminales: show all or client-specific breakdown
+async function filterTerminalesByCliente() {
+  const sel = document.getElementById('term-cliente-filter');
+  const clienteFilter = sel ? sel.value : '';
+
+  if (!clienteFilter) {
+    // Restore full terminal view
+    rTPVTerminales();
+    return;
+  }
+
+  const filtered = _termAllData.filter(t => t.cliente === clienteFilter);
+  const tbody = document.getElementById('term-tbody');
+  if (!tbody) return;
+
+  // Fetch commission data for this client
+  const comData = await TPV.clientCommissions() || [];
+  const clientCom = comData.find(c => c.cliente === clienteFilter);
+  const totalCobrado = clientCom ? parseFloat(clientCom.total_cobrado) || 0 : 0;
+  const comSalem = clientCom ? parseFloat(clientCom.com_salem) || 0 : 0;
+  const comTotal = clientCom ? parseFloat(clientCom.monto_neto) || 0 : 0;
+
+  // KPIs for this client
+  const numTerm = filtered.length;
+  const totIng = filtered.reduce((s, t) => s + parseFloat(t.ingresos || 0), 0);
+  const totTxn = filtered.reduce((s, t) => s + parseInt(t.transacciones || 0), 0);
+  const activas = filtered.filter(t => (parseInt(t.dias_sin_uso) || 0) <= 14).length;
+  const inactivas = filtered.filter(t => (parseInt(t.dias_sin_uso) || 0) > 30).length;
+
+  const kEl = document.getElementById('tpv-term-kpis');
+  if (kEl) kEl.innerHTML = `
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Terminales</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🖥️</div></div><div class="kpi-val" style="color:#0073ea">${numTerm}</div><div class="kpi-d dnu"><span style="color:var(--green)">${activas} activas</span> · <span style="color:var(--red)">${inactivas} inact.</span></div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Total Cobrado</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div><div class="kpi-val" style="color:var(--green)">${fmtTPV(totalCobrado)}</div><div class="kpi-d dnu">${totTxn.toLocaleString()} transacciones</div><div class="kbar"><div class="kfill" style="background:var(--green);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--purple)"><div class="kpi-top"><div class="kpi-lbl">Com. Salem</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">🏦</div></div><div class="kpi-val" style="color:var(--purple)">${fmtTPV(comSalem)}</div><div class="kpi-d dnu">Comisión Salem</div><div class="kbar"><div class="kfill" style="background:var(--purple);width:${totalCobrado > 0 ? Math.min(comSalem / totalCobrado * 100, 100).toFixed(0) : 0}%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Total Comisiones</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📊</div></div><div class="kpi-val" style="color:var(--orange)">${fmtTPV(comTotal)}</div><div class="kpi-d dnu">${totalCobrado > 0 ? (comTotal / totalCobrado * 100).toFixed(1) : '0.0'}% del cobrado</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:${totalCobrado > 0 ? Math.min(comTotal / totalCobrado * 100, 100).toFixed(0) : 0}%"></div></div></div>`;
+
+  // Update subtitle
+  const sub = document.getElementById('tpv-term-subtitle');
+  if (sub) sub.innerHTML = `<b>${clienteFilter}</b> · ${numTerm} terminales · <span style="color:var(--green);font-weight:600">${activas} activas</span> · <span style="color:var(--red)">${inactivas} inactivas</span>`;
+
+  // Render terminal rows
+  tbody.innerHTML = filtered.map(t => {
+    const dias = parseInt(t.dias_sin_uso) || 0;
+    const badge = dias <= 14 ? '<span class="tpv-badge-ok">Activa</span>' : dias <= 30 ? `<span class="tpv-badge-warn">${dias}d sin uso</span>` : `<span class="tpv-badge-inact">Inactiva ${dias}d</span>`;
+    const tid = t.terminal_id && t.terminal_id !== '-' && t.terminal_id !== 'None' ? `<span style="font-family:monospace;font-size:.67rem;color:var(--muted)">${t.terminal_id.slice(-10)}</span>` : '—';
+    return `<tr>
+      <td>${tid}</td>
+      <td class="mo pos bld">${parseFloat(t.ingresos) > 0 ? fmtTPVFull(t.ingresos) : '—'}</td>
+      <td class="mo" style="text-align:center">${parseInt(t.transacciones) > 0 ? parseInt(t.transacciones).toLocaleString() : '—'}</td>
+      <td class="mo">${parseFloat(t.promedio) > 0 ? '$' + parseFloat(t.promedio).toFixed(0) : '—'}</td>
+      <td style="font-size:.73rem">${t.ultimo_uso || '—'}</td>
+      <td class="mo" style="text-align:center;color:${dias > 30 ? 'var(--red)' : dias > 14 ? 'var(--orange)' : 'var(--green)'}">${dias || '—'}</td>
+      <td>${badge}</td></tr>`;
+  }).join('');
+
+  // Update table header for client detail
+  const thead = document.querySelector('#view-tpv_terminales .bt thead tr');
+  if (thead) thead.innerHTML = '<th>Terminal ID</th><th class="r">Ingresos</th><th class="r">Txns</th><th class="r">Prom/Txn</th><th>Último Uso</th><th class="r">Días Sin Uso</th><th>Estado</th>';
+
+  // Update charts for this client
+  setTimeout(() => {
+    const isDark = document.body.classList.contains('dark');
+    const textC = isDark ? '#9da0c5' : '#8b8fb5';
+    const gridC = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    // Bar chart: ingresos per terminal
+    const sorted = [...filtered].sort((a, b) => parseFloat(b.ingresos || 0) - parseFloat(a.ingresos || 0)).slice(0, 10);
+    if (TPV_CHARTS['term_top']) TPV_CHARTS['term_top'].destroy();
+    const c1 = document.getElementById('c-tpv-term-top');
+    if (c1) {
+      TPV_CHARTS['term_top'] = new Chart(c1, { type: 'bar',
+        data: { labels: sorted.map(t => t.terminal_id ? t.terminal_id.slice(-8) : '—'), datasets: [{ data: sorted.map(t => parseFloat(t.ingresos)), backgroundColor: '#0073ea22', borderColor: '#0073ea', borderWidth: 1.5, borderRadius: 4 }] },
+        options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { grid: { color: gridC }, ticks: { color: textC, font: { size: 9 }, callback: v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'K' : '$' + v } }, y: { grid: { display: false }, ticks: { color: textC, font: { size: 8 } } } } }
+      });
+    }
+    // Doughnut: active vs inactive for this client
+    if (TPV_CHARTS['term_status']) TPV_CHARTS['term_status'].destroy();
+    const c2 = document.getElementById('c-tpv-term-status');
+    const warning = filtered.filter(t => { const d = parseInt(t.dias_sin_uso) || 0; return d > 14 && d <= 30; }).length;
+    if (c2) {
+      TPV_CHARTS['term_status'] = new Chart(c2, { type: 'doughnut',
+        data: { labels: ['Activas', 'Alerta', 'Inactivas'], datasets: [{ data: [activas, warning, inactivas], backgroundColor: ['#00b875', '#ffa000', '#e53935'], borderWidth: 0 }] },
+        options: { cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, color: textC, boxWidth: 10, padding: 8 } } } }
+      });
+    }
+  }, 50);
+}
+
+// Filter agentes: show all agents or client breakdown for specific agent
+async function filterAgentesBySelect() {
+  const sel = document.getElementById('agente-filter');
+  const selectedId = sel ? sel.value : '';
+
+  if (!selectedId) {
+    // Restore full agent view
+    rTPVAgentes();
+    return;
+  }
+
+  // Find agent in cache
+  const ag = _agentesCache.find(a => String(a.agente_id) === selectedId);
+  if (!ag) return;
+
+  const pct = parseFloat(ag.pct || 0);
+
+  // Fetch client data in parallel
+  const [allClients, comData] = await Promise.all([
+    TPV.getClients(),
+    TPV.clientCommissions()
+  ]);
+
+  // Get client IDs belonging to this agent
+  const agentClientIds = (allClients || [])
+    .filter(c => c.agente_id === parseInt(selectedId))
+    .map(c => c.id);
+
+  // Filter commissions for this agent's clients
+  const clientRows = (comData || [])
+    .filter(c => agentClientIds.includes(c.client_id))
+    .map(c => {
+      const cobrado = parseFloat(c.total_cobrado) || 0;
+      const comSalem = parseFloat(c.com_salem) || 0;
+      const comAgente = comSalem * pct;
+      return { ...c, _cobrado: cobrado, _comSalem: comSalem, _comAgente: comAgente };
+    })
+    .sort((a, b) => b._cobrado - a._cobrado);
+
+  // Totals
+  const totCobrado = clientRows.reduce((s, c) => s + c._cobrado, 0);
+  const totComSalem = clientRows.reduce((s, c) => s + c._comSalem, 0);
+  const totComAgente = clientRows.reduce((s, c) => s + c._comAgente, 0);
+  const pagado = agenteTotalPagado(ag.agente_id);
+  const pendiente = Math.max(0, totComAgente - pagado);
+
+  // Update subtitle
+  const sub = document.getElementById('agentes-subtitle');
+  if (sub) sub.innerHTML = `<b>${ag.agente} (${ag.siglas})</b> · ${clientRows.length} clientes · Com. ${(pct * 100).toFixed(0)}% sobre Salem · <span style="color:var(--green);font-weight:600">Pagado ${fmtTPV(pagado)}</span>`;
+
+  // Update KPIs
+  const kEl = document.getElementById('agentes-kpis');
+  if (kEl) kEl.innerHTML = `
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Monto Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💰</div></div><div class="kpi-val" style="color:#0073ea">${fmtTPV(totCobrado)}</div><div class="kpi-d dnu">${clientRows.length} clientes del agente</div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Com. Salem</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">🏦</div></div><div class="kpi-val" style="color:var(--green)">${fmtTPV(totComSalem)}</div><div class="kpi-d dnu">Comisión generada para Salem</div><div class="kbar"><div class="kfill" style="background:var(--green);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Com. ${ag.siglas}</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📈</div></div><div class="kpi-val" style="color:var(--orange)">${fmtTPV(totComAgente)}</div><div class="kpi-d dnu">${(pct * 100).toFixed(0)}% de Com. Salem</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Pendiente Pago</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">⏳</div></div><div class="kpi-val" style="color:var(--red)">${fmtTPV(pendiente)}</div><div class="kpi-d dnu">Pagado: ${fmtTPV(pagado)}</div><div class="kbar"><div class="kfill" style="background:var(--red);width:${totComAgente > 0 ? Math.min(pendiente / totComAgente * 100, 100).toFixed(0) : 0}%"></div></div></div>`;
+
+  // Update table header
+  const theadRow = document.getElementById('agentes-thead');
+  if (theadRow) theadRow.innerHTML = '<th>#</th><th>Cliente</th><th class="r">Monto Cobrado</th><th class="r">Com. Salem</th><th class="r" style="color:var(--orange)">Com. ' + ag.siglas + '</th><th class="r">% del Total</th>';
+
+  // Render client rows
+  const tbody = document.getElementById('agentes-tbody');
+  if (tbody) {
+    if (clientRows.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--muted);font-size:.8rem">Este agente no tiene clientes con transacciones registradas.</td></tr>';
+    } else {
+      tbody.innerHTML = clientRows.map((c, i) => {
+        const pctTotal = totCobrado > 0 ? (c._cobrado / totCobrado * 100).toFixed(1) : '0.0';
+        return `<tr>
+          <td style="color:var(--muted);font-size:.72rem">${i + 1}</td>
+          <td class="bld">${c.cliente}</td>
+          <td class="mo pos bld">${fmtTPVFull(c._cobrado)}</td>
+          <td class="mo">${fmtTPVFull(c._comSalem)}</td>
+          <td class="mo" style="color:var(--orange);font-weight:600">${fmtTPVFull(c._comAgente)}</td>
+          <td class="mo">${pctTotal}%</td></tr>`;
+      }).join('');
+    }
+  }
+
+  // Update table title
+  const tableTitle = document.getElementById('agentes-table-title');
+  if (tableTitle) tableTitle.textContent = `Clientes de ${ag.agente} (${ag.siglas})`;
+  const chartTitle = document.getElementById('agentes-chart-title');
+  if (chartTitle) chartTitle.textContent = `Clientes de ${ag.siglas}`;
+  const chartSub = document.getElementById('agentes-chart-sub');
+  if (chartSub) chartSub.textContent = `Cobrado vs Com. ${ag.siglas}`;
+
+  // Update chart: top clients by cobrado
+  setTimeout(() => {
+    const isDark = document.body.classList.contains('dark');
+    const textC = isDark ? '#9da0c5' : '#8b8fb5';
+    const gridC = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    const top10 = clientRows.slice(0, 10);
+    if (TPV_CHARTS['agentes']) TPV_CHARTS['agentes'].destroy();
+    const canvas = document.getElementById('c-tpv-agentes'); if (!canvas) return;
+    TPV_CHARTS['agentes'] = new Chart(canvas, { type: 'bar',
+      data: { labels: top10.map(c => (c.cliente || '').substring(0, 18)), datasets: [
+        { label: 'Cobrado', data: top10.map(c => c._cobrado), backgroundColor: '#0073ea22', borderColor: '#0073ea', borderWidth: 1.5, borderRadius: 4 },
+        { label: 'Com. ' + ag.siglas, data: top10.map(c => c._comAgente), backgroundColor: '#ff704322', borderColor: '#ff7043', borderWidth: 1.5, borderRadius: 4 }
+      ]},
+      options: { indexAxis: 'y', plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, color: textC, boxWidth: 10 } } }, scales: {
+        x: { grid: { color: gridC }, ticks: { color: textC, font: { size: 9 }, callback: v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'K' : '$' + v } },
+        y: { grid: { display: false }, ticks: { color: textC, font: { size: 8 } } }
+      }}
+    });
+  }, 50);
+}
+
+function _renderClientTable(id, arr) {
+  const el = document.getElementById(id); if (!el) return;
+  el.innerHTML = arr.map((c, i) => `<tr>
+    <td style="color:var(--muted);font-size:.72rem">${i + 1}</td>
+    <td class="bld">${c.cliente}</td>
+    <td class="mo">${c.monto_tc > 0 ? fmtTPVFull(c.monto_tc) : '—'}</td>
+    <td class="mo">${c.monto_td > 0 ? fmtTPVFull(c.monto_td) : '—'}</td>
+    <td class="mo">${c.monto_amex > 0 ? fmtTPVFull(c.monto_amex) : '—'}</td>
+    <td class="mo bld pos">${fmtTPVFull(c.total)}</td></tr>`).join('');
+}
+
+function _renderKpis(containerId, kpis, mix, clickable) {
+  const el = document.getElementById(containerId); if (!el) return;
+  const k = kpis || {};
+  const totalCom = parseFloat(k.total_comisiones) || 0;
+  const totalCob = parseFloat(k.total_cobrado) || 1;
+  const pctCom = (totalCom / totalCob * 100).toFixed(1);
+  const comSalem = parseFloat(k.com_salem) || 0;
+  const comEfevoo = parseFloat(k.com_efevoo) || 0;
+  const pctSalem = totalCom > 0 ? (comSalem / totalCom * 100).toFixed(1) : '0.0';
+  const pctEfevoo = totalCom > 0 ? (comEfevoo / totalCom * 100).toFixed(1) : '0.0';
+  el.innerHTML = `
+    <div class="kpi-card ${clickable ? 'kpi-clickable' : ''}" style="--ac:#0073ea" ${clickable ? "onclick=\"sv('tpv_dashboard',null)\"" : ''}>
+      ${clickable ? '<div class="kpi-hint">ver período →</div>' : ''}
+      <div class="kpi-top"><div class="kpi-lbl">Total Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💰</div></div>
+      <div class="kpi-val" style="color:#0073ea">${fmtTPV(k.total_cobrado)}</div>
+      <div class="kpi-d dnu">${k.num_transacciones ? parseFloat(k.num_transacciones).toLocaleString() + ' transacciones' : ''}</div>
+      <div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div>
+    </div>
+    <div class="kpi-card ${clickable ? 'kpi-clickable' : ''}" style="--ac:var(--green)" ${clickable ? "onclick=\"openTopComisiones()\"" : ''}>
+      ${clickable ? '<div class="kpi-hint">ver top 10 →</div>' : ''}
+      <div class="kpi-top"><div class="kpi-lbl">Total Comisiones</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📈</div></div>
+      <div class="kpi-val" style="color:var(--green)">${fmtTPV(totalCom)}</div>
+      <div class="kpi-d dup">${pctCom}% del cobrado</div>
+      <div class="kbar"><div class="kfill" style="background:var(--green);width:${Math.min(parseFloat(pctCom), 100)}%"></div></div>
+    </div>
+    <div class="kpi-card" style="--ac:#0073ea">
+      <div class="kpi-top"><div class="kpi-lbl">Com. Salem</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🏦</div></div>
+      <div class="kpi-val" style="color:#0073ea">${fmtTPV(comSalem)}</div>
+      <div class="kpi-d dnu">${pctSalem}% de comisiones</div>
+      <div class="kbar"><div class="kfill" style="background:#0073ea;width:${pctSalem}%"></div></div>
+    </div>
+    <div class="kpi-card ${clickable ? 'kpi-clickable' : ''}" style="--ac:var(--purple)" ${clickable ? "onclick=\"sv('tpv_agentes',null)\"" : ''}>
+      ${clickable ? '<div class="kpi-hint">ver agentes →</div>' : ''}
+      <div class="kpi-top"><div class="kpi-lbl">${clickable ? 'Clientes Activos' : 'Com. Efevoo'}</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">${clickable ? '🏪' : '⚡'}</div></div>
+      <div class="kpi-val" style="color:var(--purple)">${clickable ? (k.num_clientes || 0) : fmtTPV(comEfevoo)}</div>
+      <div class="kpi-d dnu">${clickable ? 'Com. Efevoo ' + fmtTPV(comEfevoo) : pctEfevoo + '% del total'}</div>
+      <div class="kbar"><div class="kfill" style="background:var(--purple);width:${clickable ? '100' : pctEfevoo}%"></div></div>
+    </div>`;
+}
+
+function _renderCharts(topKey, pieKey, clients, mix, barColor) {
+  const isDark = document.body.classList.contains('dark');
+  const gridC = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const textC = isDark ? '#9da0c5' : '#8b8fb5';
+  const top10 = (clients || []).slice(0, 10);
+  const canvasTop = document.getElementById(topKey === 'top10' ? 'c-tpv-top10' : 'c-tpv-dd-top');
+  const canvasPie = document.getElementById(topKey === 'top10' ? 'c-tpv-com-pie' : 'c-tpv-dd-pie');
+
+  if (TPV_CHARTS[topKey]) TPV_CHARTS[topKey].destroy();
+  if (canvasTop) {
+    TPV_CHARTS[topKey] = new Chart(canvasTop, {
+      type: 'bar',
+      data: { labels: top10.map(c => c.cliente.substring(0, 18)), datasets: [{ data: top10.map(c => parseFloat(c.total)), backgroundColor: barColor + '22', borderColor: barColor, borderWidth: 1.5, borderRadius: 4 }] },
+      options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: {
+        x: { grid: { color: gridC }, ticks: { color: textC, font: { size: 9 }, callback: v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'K' : '$' + v } },
+        y: { grid: { display: false }, ticks: { color: textC, font: { size: 9 } } }
+      }}
+    });
+  }
+
+  if (TPV_CHARTS[pieKey]) TPV_CHARTS[pieKey].destroy();
+  if (canvasPie && mix && mix.length) {
+    TPV_CHARTS[pieKey] = new Chart(canvasPie, {
+      type: 'doughnut',
+      data: { labels: mix.map(m => m.entity), datasets: [{ data: mix.map(m => parseFloat(m.total_commission)), backgroundColor: ['#9b51e0', '#0073ea', '#ff7043', '#ffa000'], borderWidth: 0 }] },
+      options: { cutout: '65%', plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, color: textC, boxWidth: 10, padding: 8 } } } }
+    });
+  }
+}
+
+async function initTPVGeneral() {
+  const [clients, kpis, mix] = await Promise.all([
+    TPV.clientsByVolume(), TPV.kpis(), TPV.commissionMix()
+  ]);
+  const k = kpis || {};
+  const sub = document.getElementById('tpv-general-subtitle');
+  if (sub) sub.innerHTML = `Análisis acumulado · Sin filtro de fechas · <span style="color:#0073ea;font-weight:600">${k.num_clientes || 0} clientes</span> · <span style="color:var(--green);font-weight:600">${(k.num_transacciones||0).toLocaleString()} txns</span>`;
+  _renderClientTable('dg-tbody', clients || []);
+  _renderKpis('tpv-general-kpis', k, mix, true);
+  setTimeout(() => _renderCharts('top10', 'com_pie', clients, mix, '#0073ea'), 50);
+}
+
+async function initTPVDashboard(fromDate, toDate) {
+  // Use provided dates or get from date pickers, default to current month
+  const from = fromDate || document.getElementById('dash-from')?.value || (()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-01'})();
+  const to = toDate || document.getElementById('dash-to')?.value || new Date().toISOString().slice(0,10);
+  // Update date picker values
+  const dfEl = document.getElementById('dash-from'); if(dfEl && !dfEl.value) dfEl.value = from;
+  const dtEl = document.getElementById('dash-to'); if(dtEl && !dtEl.value) dtEl.value = to;
+  const [clients, kpis, mix] = await Promise.all([
+    TPV.clientsByVolume(from, to), TPV.kpis(from, to), TPV.commissionMix(from, to)
+  ]);
+  const k = kpis || {};
+  const periodLabel = from && to ? `${from} → ${to}` : 'Histórico completo';
+  const sub = document.getElementById('tpv-dashboard-subtitle');
+  if (sub) sub.innerHTML = `Período: <span style="color:#0073ea;font-weight:600">${periodLabel}</span> · ${k.num_clientes || 0} clientes · ${(k.num_transacciones||0).toLocaleString()} txns`;
+  // Update chart and table labels dynamically
+  const chartPeriod = document.getElementById('dd-chart-period');
+  if (chartPeriod) chartPeriod.textContent = periodLabel;
+  const piePeriod = document.getElementById('dd-pie-period');
+  if (piePeriod) piePeriod.textContent = periodLabel;
+  const tableTitle = document.getElementById('dd-table-title');
+  if (tableTitle) tableTitle.textContent = `Clientes — ${periodLabel}`;
+  _renderClientTable('dd-tbody', clients || []);
+  _renderKpis('tpv-dashboard-kpis', k, mix, false);
+  setTimeout(() => _renderCharts('dd_top', 'dd_pie', clients, mix, '#00b875'), 50);
+
+  // Calculate and render Salem monthly earnings
+  const year = (from || to || new Date().toISOString()).slice(0, 4);
+  TPV.calcMonthlyPL(year).then(plData => {
+    _renderSalemEarnings(plData);
+  }).catch(e => {
+    console.warn('[TPV] Salem earnings calc failed:', e.message);
+    _renderSalemEarnings(TPV.monthlyPLData(year));
+  });
+}
+
+// Helper for quick date buttons
+function setDashDates(period) {
+  const now = new Date();
+  let from, to = now.toISOString().slice(0,10);
+  if (period === 'this_month') { from = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; }
+  else if (period === 'last_month') { const d = new Date(now.getFullYear(), now.getMonth()-1, 1); from = d.toISOString().slice(0,10); to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0,10); }
+  else if (period === 'last_3') { const d = new Date(now.getFullYear(), now.getMonth()-2, 1); from = d.toISOString().slice(0,10); }
+  else if (period === 'all') { from = null; to = null; }
+  const dfEl = document.getElementById('dash-from'); if(dfEl) dfEl.value = from || '';
+  const dtEl = document.getElementById('dash-to'); if(dtEl) dtEl.value = to || '';
+  TPV.invalidateAll();
+  initTPVDashboard(from, to);
+}
+function setPagosDates(period) {
+  const now = new Date();
+  let from, to = now.toISOString().slice(0,10);
+  if (period === 'this_month') { from = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; }
+  else if (period === 'last_month') { const d = new Date(now.getFullYear(), now.getMonth()-1, 1); from = d.toISOString().slice(0,10); to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0,10); }
+  else if (period === 'last_3') { const d = new Date(now.getFullYear(), now.getMonth()-2, 1); from = d.toISOString().slice(0,10); }
+  else if (period === 'all') { from = null; to = null; }
+  const dfEl = document.getElementById('pagos-from'); if(dfEl) dfEl.value = from || '';
+  const dtEl = document.getElementById('pagos-to'); if(dtEl) dtEl.value = to || '';
+  TPV.invalidateAll();
+  rTPVPagos();
 }
 
 
-function rTPVAgentes(){
+// ═══════════════════════════════════════
+// SALEM MONTHLY EARNINGS — Dashboard Section + Modal
+// ═══════════════════════════════════════
+
+const MES_NAMES = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+function _renderSalemEarnings(data) {
+  const kSalem = document.getElementById('se-kpi-salem');
+  const kPromo = document.getElementById('se-kpi-promo');
+  const kInternas = document.getElementById('se-kpi-internas');
+  const kNeto = document.getElementById('se-kpi-neto');
+  const sub = document.getElementById('salem-earn-subtitle');
+  if (!kSalem) return;
+
+  if (!data || !data.monthly) {
+    kSalem.textContent = '—';
+    kPromo.textContent = '—';
+    kInternas.textContent = '—';
+    kNeto.textContent = '—';
+    if (sub) sub.textContent = 'Datos no disponibles — carga datos TPV primero';
+    return;
+  }
+
+  const totSalem = data.monthly.reduce((s, m) => s + (m.com_salem || 0), 0);
+  const totPromo = data.monthly.reduce((s, m) => s + (m.com_comisionista || 0), 0);
+  const totInternas = data.monthly.reduce((s, m) => s + (m.com_agentes || 0), 0);
+  const neto = totSalem - totPromo - totInternas;
+
+  kSalem.textContent = fmtTPV(totSalem);
+  kPromo.textContent = fmtTPV(totPromo);
+  kInternas.textContent = fmtTPV(totInternas);
+  kNeto.textContent = fmtTPV(neto);
+  if (sub) {
+    const activeMo = data.monthly.filter(m => m.com_salem > 0).length;
+    sub.textContent = `${data.year} · ${activeMo} meses con actividad · Auto-sync P&L`;
+  }
+
+  // Mini bar chart — monthly com_salem
+  const canvas = document.getElementById('c-tpv-salem-monthly');
+  if (!canvas) return;
+  const isDark = document.body.classList.contains('dark');
+  const gridC = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+  const textC = isDark ? '#9da0c5' : '#8b8fb5';
+
+  if (TPV_CHARTS['csalearnm']) TPV_CHARTS['csalearnm'].destroy();
+  TPV_CHARTS['csalearnm'] = new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels: MES_NAMES,
+      datasets: [
+        { label: 'Com. Salem', data: data.monthly.map(m => m.com_salem || 0), backgroundColor: '#0073ea33', borderColor: '#0073ea', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Promotoría', data: data.monthly.map(m => -(m.com_comisionista || 0)), backgroundColor: '#ff704333', borderColor: '#ff7043', borderWidth: 1.5, borderRadius: 3 },
+        { label: 'Internas', data: data.monthly.map(m => -(m.com_agentes || 0)), backgroundColor: '#9b51e033', borderColor: '#9b51e0', borderWidth: 1.5, borderRadius: 3 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, color: textC, boxWidth: 10, padding: 8 } } },
+      scales: {
+        x: { stacked: true, grid: { display: false }, ticks: { color: textC, font: { size: 8 } } },
+        y: { stacked: true, grid: { color: gridC }, ticks: { color: textC, font: { size: 8 }, callback: v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'K' : '$' + v } }
+      }
+    }
+  });
+}
+
+function openSalemEarnings() {
+  const year = new Date().getFullYear().toString();
+  const data = TPV.monthlyPLData(year);
+  if (!data || !data.monthly) {
+    if (typeof toast === 'function') toast('⚠️ No hay datos mensuales — carga el Dashboard TPV primero');
+    return;
+  }
+
+  const ov = document.getElementById('salem-earnings-overlay');
+  if (!ov) return;
+
+  // Update subtitle
+  const sub = document.getElementById('salem-earn-modal-subtitle');
+  if (sub) sub.textContent = `Año ${data.year} · ${data.byClient ? data.byClient.length : 0} clientes · Actualizado ${new Date(data.updated).toLocaleString('es-MX')}`;
+
+  // Monthly summary table
+  const tbody = document.getElementById('salem-earn-monthly-tbody');
+  const tfoot = document.getElementById('salem-earn-monthly-tfoot');
+  if (tbody) {
+    tbody.innerHTML = data.monthly.map((m, i) => {
+      const neto = (m.com_salem || 0) - (m.com_comisionista || 0) - (m.com_agentes || 0);
+      const hasData = m.com_salem > 0;
+      return `<tr style="${!hasData ? 'opacity:.4' : ''}">
+        <td class="bld">${MES_NAMES[i]}</td>
+        <td class="mo" style="color:#0073ea">${fmtTPVFull(m.com_salem)}</td>
+        <td class="mo" style="color:#ff7043">${fmtTPVFull(m.com_comisionista)}</td>
+        <td class="mo" style="color:#9b51e0">${fmtTPVFull(m.com_agentes)}</td>
+        <td class="mo bld ${neto >= 0 ? 'pos' : 'neg'}">${fmtTPVFull(neto)}</td>
+        <td class="mo">${fmtTPVFull(m.total_cobrado)}</td>
+      </tr>`;
+    }).join('');
+  }
+  if (tfoot) {
+    const tSalem = data.monthly.reduce((s, m) => s + (m.com_salem || 0), 0);
+    const tPromo = data.monthly.reduce((s, m) => s + (m.com_comisionista || 0), 0);
+    const tInt = data.monthly.reduce((s, m) => s + (m.com_agentes || 0), 0);
+    const tCob = data.monthly.reduce((s, m) => s + (m.total_cobrado || 0), 0);
+    const tNeto = tSalem - tPromo - tInt;
+    tfoot.innerHTML = `<tr style="font-weight:700;border-top:2px solid var(--border)">
+      <td>TOTAL</td>
+      <td class="mo" style="color:#0073ea">${fmtTPVFull(tSalem)}</td>
+      <td class="mo" style="color:#ff7043">${fmtTPVFull(tPromo)}</td>
+      <td class="mo" style="color:#9b51e0">${fmtTPVFull(tInt)}</td>
+      <td class="mo bld ${tNeto >= 0 ? 'pos' : 'neg'}">${fmtTPVFull(tNeto)}</td>
+      <td class="mo">${fmtTPVFull(tCob)}</td>
+    </tr>`;
+  }
+
+  // Per-client detail table
+  const cTbody = document.getElementById('salem-earn-client-tbody');
+  if (cTbody && data.byClient) {
+    cTbody.innerHTML = data.byClient.map((c, i) => {
+      const neto = c.total_salem - c.total_comisionista - c.total_agentes;
+      const pctPromo = c.total_salem > 0 ? ((c.total_comisionista + c.total_agentes) / c.total_salem * 100).toFixed(1) : '0.0';
+      return `<tr data-name="${c.cliente.toLowerCase()}">
+        <td style="color:var(--muted);font-size:.72rem">${i + 1}</td>
+        <td class="bld">${c.cliente}</td>
+        <td>${c.agente ? '<span style="font-size:.65rem;background:var(--purple-bg);color:var(--purple);padding:2px 5px;border-radius:4px">' + (c.siglas || c.agente) + '</span>' : '<span style="color:var(--muted);font-size:.65rem">—</span>'}</td>
+        <td class="mo" style="color:#0073ea">${fmtTPVFull(c.total_salem)}</td>
+        <td class="mo" style="color:#ff7043">${fmtTPVFull(c.total_comisionista)}</td>
+        <td class="mo" style="color:#9b51e0">${fmtTPVFull(c.total_agentes)}</td>
+        <td class="mo">${pctPromo}%</td>
+        <td class="mo bld ${neto >= 0 ? 'pos' : 'neg'}">${fmtTPVFull(neto)}</td>
+      </tr>`;
+    }).join('');
+  }
+
+  ov.style.display = 'flex';
+}
+
+function closeSalemEarnings() {
+  const ov = document.getElementById('salem-earnings-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+function filterSalemClients(q) {
+  const rows = document.querySelectorAll('#salem-earn-client-tbody tr');
+  const lq = q.toLowerCase();
+  rows.forEach(r => { r.style.display = r.dataset.name && r.dataset.name.includes(lq) ? '' : 'none'; });
+}
+
+
+// ── AGENT PAYMENT TRACKING (localStorage) ──
+const AGENTE_PAGOS_KEY = 'vmcr_tpv_agente_pagos';
+let _agentesCache = [];
+
+function agentePagosLoad() { try { return DB.get(AGENTE_PAGOS_KEY) || {}; } catch(e) { return {}; } }
+function agentePagosSave(data) { DB.set(AGENTE_PAGOS_KEY, data); }
+function agenteTotalPagado(agenteId) {
+  const data = agentePagosLoad();
+  return (data[agenteId] || []).reduce((s, p) => s + p.monto, 0);
+}
+
+async function rTPVAgentes(){
   const tbody=document.getElementById('agentes-tbody');if(!tbody)return;
-  const totV=TPV_AGENTES.reduce((a,ag)=>a+ag.vendido,0);
-  const totC=TPV_AGENTES.reduce((a,ag)=>a+ag.com_agente,0);
-  const totPend=TPV_AGENTES.reduce((a,ag)=>a+ag.pendiente,0);
+  const agents = await TPV.agentSummary() || [];
+  const agPagosData = agentePagosLoad();
+
+  // Enrich with payment data
+  const enriched = agents.map(ag => {
+    const comAgente = parseFloat(ag.com_agente||0);
+    const pagado = agenteTotalPagado(ag.agente_id);
+    const pendiente = Math.max(0, comAgente - pagado);
+    return { ...ag, _pagado: pagado, _pendiente: pendiente, _nPagos: (agPagosData[ag.agente_id]||[]).length };
+  });
+  _agentesCache = enriched;
+
+  // Populate agent filter dropdown + search cache
+  _agenteOptions = enriched.map(a => ({ value: String(a.agente_id), label: `${a.agente} (${a.siglas})` }));
+  const agenteFilter = document.getElementById('agente-filter');
+  if (agenteFilter) {
+    const prev = agenteFilter.value;
+    agenteFilter.innerHTML = '<option value="">Todos los agentes</option>' +
+      _agenteOptions.map(o => `<option value="${o.value}" ${o.value === prev ? 'selected' : ''}>${o.label}</option>`).join('');
+  }
+  const agenteSearchEl = document.getElementById('agente-search');
+  if (agenteSearchEl) agenteSearchEl.value = '';
+
+  const totV=enriched.reduce((a,ag)=>a+parseFloat(ag.vendido||0),0);
+  const totC=enriched.reduce((a,ag)=>a+parseFloat(ag.com_agente||0),0);
+  const totPagado=enriched.reduce((a,ag)=>a+ag._pagado,0);
+  const totPend=enriched.reduce((a,ag)=>a+ag._pendiente,0);
+
+  const sub=document.getElementById('agentes-subtitle');
+  if(sub) sub.textContent=`${enriched.length} agentes · Com. sobre com. Salem · Pagado ${fmtTPV(totPagado)} de ${fmtTPV(totC)}`;
+
+  // Restore table header and titles (in case we're coming back from client breakdown)
+  const theadRow = document.getElementById('agentes-thead');
+  if (theadRow) theadRow.innerHTML = '<th>Agente</th><th>Sig.</th><th class="r">% Com.</th><th class="r">Total Vendido</th><th class="r">Com. Salem</th><th class="r">Com. Agente</th><th class="r">Clientes</th><th class="r">Activos</th><th class="r" style="color:var(--green)">Pagado</th><th class="r" style="color:var(--red)">Pendiente</th><th>Acción</th>';
+  const tTitle = document.getElementById('agentes-table-title');
+  if (tTitle) tTitle.textContent = 'Detalle por Agente';
+  const cTitle = document.getElementById('agentes-chart-title');
+  if (cTitle) cTitle.textContent = 'Vendido por Agente';
+  const cSub = document.getElementById('agentes-chart-sub');
+  if (cSub) cSub.textContent = 'Total histórico';
+
   const kEl=document.getElementById('agentes-kpis');
   if(kEl)kEl.innerHTML=`
-    <div class="tpv-kpi" style="border-top:3px solid #0073ea"><div class="tpv-kpi-lbl">Agentes</div><div class="tpv-kpi-val" style="color:#0073ea">${TPV_AGENTES.length}</div></div>
-    <div class="tpv-kpi" style="border-top:3px solid var(--green)"><div class="tpv-kpi-lbl">Total Vendido</div><div class="tpv-kpi-val" style="color:var(--green)">${fmtTPV(totV)}</div></div>
-    <div class="tpv-kpi" style="border-top:3px solid var(--orange)"><div class="tpv-kpi-lbl">Com. Total Agentes</div><div class="tpv-kpi-val" style="color:var(--orange)">${fmtTPV(totC)}</div></div>
-    <div class="tpv-kpi" style="border-top:3px solid var(--red)"><div class="tpv-kpi-lbl">Pendiente Pago</div><div class="tpv-kpi-val" style="color:var(--red)">${fmtTPV(totPend)}</div></div>`;
-  tbody.innerHTML=TPV_AGENTES.map(ag=>{
-    const badge=ag.pendiente<=0?'<span class="tpv-badge-ok">Al día</span>':`<span class="tpv-badge-warn">${fmtTPVFull(ag.pendiente)}</span>`;
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Agentes Activos</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🤝</div></div><div class="kpi-val" style="color:#0073ea">${enriched.length}</div><div class="kpi-d dnu">Con clientes asignados</div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Total Vendido</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div><div class="kpi-val" style="color:var(--green)">${fmtTPV(totV)}</div><div class="kpi-d dnu">Por todos los agentes</div><div class="kbar"><div class="kfill" style="background:var(--green);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Com. Agentes</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📈</div></div><div class="kpi-val" style="color:var(--orange)">${fmtTPV(totC)}</div><div class="kpi-d dup">Pagado: ${fmtTPV(totPagado)} (${totC>0?(totPagado/totC*100).toFixed(0):0}%)</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:${totC>0?Math.min(totPagado/totC*100,100).toFixed(0):0}%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Pendiente Pago</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">⏳</div></div><div class="kpi-val" style="color:var(--red)">${fmtTPV(totPend)}</div><div class="kpi-d dnu">${enriched.filter(a=>a._pendiente>0).length} agentes con saldo</div><div class="kbar"><div class="kfill" style="background:var(--red);width:${totC>0?Math.min(totPend/totC*100,100).toFixed(0):0}%"></div></div></div>`;
+  tbody.innerHTML=enriched.map(ag=>{
+    const badge=ag._pendiente<=0?'<span class="tpv-badge-ok">Al día</span>':`<span class="tpv-badge-warn">${fmtTPVFull(ag._pendiente)}</span>`;
+    const histBtn = ag._nPagos > 0 ? `<span style="font-size:.6rem;background:var(--blue-bg);color:var(--blue);border-radius:10px;padding:1px 6px;font-weight:700">${ag._nPagos}</span>` : '';
     return`<tr>
       <td class="bld">${ag.agente}</td>
       <td><span style="font-size:.67rem;background:var(--blue-bg);color:#0060b8;border:1px solid var(--blue-lt);padding:1px 7px;border-radius:10px;font-weight:700">${ag.siglas}</span></td>
-      <td class="mo">${(ag.pct*100).toFixed(0)}%</td>
+      <td class="mo">${(parseFloat(ag.pct||0)*100).toFixed(0)}%</td>
       <td class="mo bld">${fmtTPVFull(ag.vendido)}</td>
       <td class="mo">${fmtTPVFull(ag.com_salem)}</td>
       <td class="mo pos">${fmtTPVFull(ag.com_agente)}</td>
-      <td class="mo" style="text-align:center">${ag.clientes}</td>
-      <td class="mo" style="text-align:center">${ag.activos}</td>
-      <td class="mo pos">${ag.pagado>0?fmtTPVFull(ag.pagado):'—'}</td>
-      <td>${badge}</td></tr>`;
+      <td class="mo" style="text-align:center">${ag.num_clientes||0}</td>
+      <td class="mo" style="text-align:center">${ag.num_activos||0}</td>
+      <td class="mo pos">${ag._pagado>0?fmtTPVFull(ag._pagado):'<span style="color:var(--muted)">—</span>'}</td>
+      <td>${badge}</td>
+      <td style="text-align:center;white-space:nowrap">
+        <button onclick="openHistorialAgente(${ag.agente_id})" title="Historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px">🕐${histBtn}</button>
+        <button onclick="openEditAgente(${ag.agente_id})" title="Editar" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--blue);padding:2px 4px">✏️</button>
+        <button onclick="openPagoAgenteModal(${ag.agente_id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
+      </td></tr>`;
   }).join('');
+  // Chart
+  setTimeout(()=>{
+    const isDark=document.body.classList.contains('dark');
+    const textC=isDark?'#9da0c5':'#8b8fb5';
+    const filtered=enriched.filter(a=>parseFloat(a.vendido)>0);
+    if(TPV_CHARTS['agentes'])TPV_CHARTS['agentes'].destroy();
+    const canvas=document.getElementById('c-tpv-agentes');if(!canvas)return;
+    TPV_CHARTS['agentes']=new Chart(canvas,{type:'bar',
+      data:{labels:filtered.map(a=>a.siglas),datasets:[
+        {label:'Com. Agente',data:filtered.map(a=>parseFloat(a.com_agente)),backgroundColor:'#ff704322',borderColor:'#ff7043',borderWidth:1.5,borderRadius:4},
+        {label:'Pagado',data:filtered.map(a=>a._pagado),backgroundColor:'#00b87522',borderColor:'#00b875',borderWidth:1.5,borderRadius:4}
+      ]},
+      options:{plugins:{legend:{position:'bottom',labels:{font:{size:9},color:textC,boxWidth:10}}},scales:{
+        x:{grid:{display:false},ticks:{color:textC,font:{size:9}}},
+        y:{grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'},ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v}}
+      }}
+    });
+  },50);
 }
 
-function rTPVTerminales(){
+// Agent payment modal functions
+function openPagoAgenteModal(agenteId) {
+  const ov = document.getElementById('pago-agente-overlay');
+  ov.style.display = 'flex';
+  document.getElementById('pago-agente-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('pago-agente-monto').value = '';
+  document.getElementById('pago-agente-ref').value = '';
+  const sel = document.getElementById('pago-agente-sel');
+  // Populate options + search cache
+  _pagoAgenteAllOptions = _agentesCache.map(a => ({ value: String(a.agente_id), label: `${a.agente} (${a.siglas})` }));
+  sel.innerHTML = '<option value="">— Seleccionar agente —</option>' +
+    _agentesCache.map(a => `<option value="${a.agente_id}" ${a.agente_id===agenteId?'selected':''}>${a.agente} (${a.siglas})</option>`).join('');
+  const pagoAgSearchEl = document.getElementById('pago-agente-search');
+  if (pagoAgSearchEl) pagoAgSearchEl.value = '';
+  if (agenteId) { document.getElementById('pago-agente-title').textContent = 'Pago a ' + (_agentesCache.find(a=>a.agente_id===agenteId)?.agente||'Agente'); }
+  else { document.getElementById('pago-agente-title').textContent = 'Registrar Pago a Agente'; }
+  pagoAgenteUpdateSaldo();
+}
+function closePagoAgenteModal() { document.getElementById('pago-agente-overlay').style.display = 'none'; }
+function pagoAgenteUpdateSaldo() {
+  const selId = parseInt(document.getElementById('pago-agente-sel').value);
+  const info = document.getElementById('pago-agente-saldo-info');
+  if (!selId) { info.style.display = 'none'; return; }
+  const ag = _agentesCache.find(a => a.agente_id === selId);
+  if (!ag) return;
+  document.getElementById('pago-agente-saldo-val').textContent = fmtTPVFull(ag._pendiente);
+  info.style.display = '';
+}
+function submitPagoAgente() {
+  const selId = parseInt(document.getElementById('pago-agente-sel').value);
+  if (!selId) { toast('⚠️ Selecciona un agente'); return; }
+  const fecha = document.getElementById('pago-agente-fecha').value;
+  const monto = parseFloat(document.getElementById('pago-agente-monto').value);
+  const ref = document.getElementById('pago-agente-ref').value.trim();
+  if (!fecha) { toast('⚠️ Ingresa la fecha'); return; }
+  if (!monto || monto <= 0) { toast('⚠️ Ingresa un monto válido'); return; }
+  const data = agentePagosLoad();
+  if (!data[selId]) data[selId] = [];
+  data[selId].push({ id: Date.now(), fecha, monto, ref, registrado: new Date().toLocaleString('es-MX') });
+  agentePagosSave(data);
+  const ag = _agentesCache.find(a => a.agente_id === selId);
+  toast(`✅ Pago de ${fmtTPVFull(monto)} a ${ag?.agente||'agente'}`);
+  closePagoAgenteModal();
+  rTPVAgentes();
+}
+function openHistorialAgente(agenteId) {
+  const ag = _agentesCache.find(a => a.agente_id === agenteId);
+  if (!ag) return;
+  const data = agentePagosLoad();
+  const pagos = (data[agenteId] || []).sort((a, b) => b.fecha.localeCompare(a.fecha));
+  document.getElementById('hist-agente-title').textContent = '🕐 Historial — ' + ag.agente;
+  document.getElementById('hist-agente-subtitle').textContent = `${pagos.length} pago${pagos.length!==1?'s':''} registrado${pagos.length!==1?'s':''}`;
+  document.getElementById('hist-agente-kpis').innerHTML = `
+    <div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Com. Agente</div><div class="m-kpi-val" style="color:var(--orange)">${fmtTPVFull(ag.com_agente)}</div></div>
+    <div class="m-kpi" style="--ac:var(--green)"><div class="m-kpi-lbl">Pagado</div><div class="m-kpi-val" style="color:var(--green)">${fmtTPVFull(ag._pagado)}</div></div>
+    <div class="m-kpi" style="--ac:var(--red)"><div class="m-kpi-lbl">Pendiente</div><div class="m-kpi-val" style="color:var(--red)">${fmtTPVFull(ag._pendiente)}</div></div>`;
+  if (pagos.length === 0) {
+    document.getElementById('hist-agente-body').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem">Sin pagos registrados</div>';
+  } else {
+    document.getElementById('hist-agente-body').innerHTML = `<table class="bt"><thead><tr><th>Fecha</th><th class="r">Monto</th><th>Referencia</th><th>Registrado</th><th></th></tr></thead><tbody>
+      ${pagos.map(p => `<tr><td class="bld">${p.fecha}</td><td class="mo pos">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td><button onclick="deletePagoAgente(${agenteId},${p.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem">🗑</button></td></tr>`).join('')}
+    </tbody></table>`;
+  }
+  document.getElementById('historial-agente-overlay').style.display = 'flex';
+}
+function closeHistorialAgente() { document.getElementById('historial-agente-overlay').style.display = 'none'; }
+
+// ── MODAL: TOP 10 CLIENTES POR COMISIÓN ──
+async function openTopComisiones() {
+  const ov = document.getElementById('top-comisiones-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+
+  const tbody = document.getElementById('top-com-tbody');
+  const kpisDiv = document.getElementById('top-com-kpis');
+  const subDiv = document.getElementById('top-com-subtitle');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>';
+
+  try {
+    const data = await TPV.clientCommissions();
+    if (!data || !data.length) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Sin datos</td></tr>';
+      return;
+    }
+
+    const top10 = data.slice(0, 10);
+    const totalCom = data.reduce((s, r) => s + parseFloat(r.monto_neto || 0), 0);
+    const top10Com = top10.reduce((s, r) => s + parseFloat(r.monto_neto || 0), 0);
+    const top10Pct = totalCom > 0 ? (top10Com / totalCom * 100).toFixed(1) : '0';
+
+    // KPI chips
+    if (kpisDiv) {
+      kpisDiv.innerHTML = `
+        <div style="background:var(--green-bg);color:var(--green);padding:6px 14px;border-radius:8px;font-size:.72rem;font-weight:600">
+          Total: ${fmtTPV(totalCom)}
+        </div>
+        <div style="background:var(--blue-bg);color:#0073ea;padding:6px 14px;border-radius:8px;font-size:.72rem;font-weight:600">
+          Top 10: ${fmtTPV(top10Com)} (${top10Pct}%)
+        </div>
+        <div style="background:var(--purple-bg);color:var(--purple);padding:6px 14px;border-radius:8px;font-size:.72rem;font-weight:600">
+          ${data.length} clientes activos
+        </div>`;
+    }
+    if (subDiv) subDiv.textContent = 'Acumulado histórico · ' + data.length + ' clientes con actividad';
+
+    // Table
+    if (tbody) {
+      tbody.innerHTML = top10.map((r, i) => {
+        const neto = parseFloat(r.monto_neto || 0);
+        const pct = totalCom > 0 ? (neto / totalCom * 100).toFixed(1) : '0.0';
+        const barW = top10[0] && parseFloat(top10[0].monto_neto) > 0
+          ? (neto / parseFloat(top10[0].monto_neto) * 100).toFixed(0) : 0;
+        return `<tr>
+          <td style="font-weight:700;color:var(--green)">${i + 1}</td>
+          <td><b>${r.cliente || '-'}</b>${r._rate_corrected ? ' <span title="Ajuste por cambio de tasa" style="font-size:.5rem;background:var(--purple-bg);color:var(--purple);border-radius:4px;padding:0 4px;font-weight:700;vertical-align:middle">📊</span>' : ''}</td>
+          <td style="text-align:right">${fmtTPV(r.total_cobrado)}</td>
+          <td style="text-align:right">${fmtTPV(r.com_efevoo)}</td>
+          <td style="text-align:right">${fmtTPV(r.com_salem)}</td>
+          <td style="text-align:right">${fmtTPV(r.com_convenia)}</td>
+          <td style="text-align:right">${fmtTPV(r.com_comisionista)}</td>
+          <td style="text-align:right"><b style="color:var(--green)">${fmtTPV(neto)}</b>
+            <div style="height:3px;background:var(--border);border-radius:2px;margin-top:3px"><div style="height:100%;background:var(--green);border-radius:2px;width:${barW}%"></div></div>
+          </td>
+          <td style="text-align:right;font-weight:600">${pct}%</td>
+        </tr>`;
+      }).join('');
+    }
+  } catch (e) {
+    console.error('[TPV] openTopComisiones error:', e);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:#e53935">Error al cargar datos</td></tr>';
+  }
+}
+function closeTopComisiones() { document.getElementById('top-comisiones-overlay').style.display = 'none'; }
+function deletePagoAgente(agenteId, pagoId) {
+  if (!confirm('¿Eliminar este pago?')) return;
+  const data = agentePagosLoad();
+  if (data[agenteId]) { data[agenteId] = data[agenteId].filter(p => p.id !== pagoId); if (data[agenteId].length === 0) delete data[agenteId]; }
+  agentePagosSave(data);
+  toast('🗑 Pago eliminado');
+  closeHistorialAgente();
+  rTPVAgentes();
+}
+function exportAgentesCSV() {
+  if (!_agentesCache.length) { toast('⚠️ No hay datos'); return; }
+  let csv = 'Agente,Siglas,%Com,Vendido,Com Salem,Com Agente,Pagado,Pendiente\n';
+  _agentesCache.forEach(a => { csv += `"${a.agente}","${a.siglas}",${(parseFloat(a.pct||0)*100).toFixed(0)}%,${parseFloat(a.vendido).toFixed(2)},${parseFloat(a.com_salem).toFixed(2)},${parseFloat(a.com_agente).toFixed(2)},${a._pagado.toFixed(2)},${a._pendiente.toFixed(2)}\n`; });
+  const blob = new Blob([csv], { type: 'text/csv' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'agentes_comisiones.csv'; a.click();
+}
+
+// ── EDITAR / NUEVO AGENTE ──
+function openEditAgente(agenteId) {
+  const ov = document.getElementById('edit-agente-overlay');
+  const title = document.getElementById('edit-agente-title');
+  if (agenteId) {
+    // Editar existente
+    const ag = _agentesCache.find(a => a.agente_id === agenteId);
+    if (!ag) { toast('⚠️ Agente no encontrado'); return; }
+    document.getElementById('edit-agente-id').value = agenteId;
+    document.getElementById('edit-agente-nombre').value = ag.agente || '';
+    document.getElementById('edit-agente-siglas').value = ag.siglas || '';
+    document.getElementById('edit-agente-pct').value = (parseFloat(ag.pct || 0) * 100).toFixed(0);
+    document.getElementById('edit-agente-activo').value = ag.activo !== false ? 'true' : 'false';
+    title.textContent = 'Editar Agente';
+  } else {
+    // Nuevo agente
+    document.getElementById('edit-agente-id').value = '';
+    document.getElementById('edit-agente-nombre').value = '';
+    document.getElementById('edit-agente-siglas').value = '';
+    document.getElementById('edit-agente-pct').value = '10';
+    document.getElementById('edit-agente-activo').value = 'true';
+    title.textContent = 'Nuevo Agente';
+  }
+  ov.style.display = 'flex';
+}
+
+function closeEditAgente() {
+  document.getElementById('edit-agente-overlay').style.display = 'none';
+}
+
+async function submitEditAgente() {
+  const id = document.getElementById('edit-agente-id').value;
+  const nombre = document.getElementById('edit-agente-nombre').value.trim();
+  const siglas = document.getElementById('edit-agente-siglas').value.trim().toUpperCase();
+  const pctVal = parseFloat(document.getElementById('edit-agente-pct').value);
+  const activo = document.getElementById('edit-agente-activo').value === 'true';
+
+  if (!nombre) { toast('⚠️ El nombre es requerido'); return; }
+  if (!siglas) { toast('⚠️ Las siglas son requeridas'); return; }
+  if (isNaN(pctVal) || pctVal < 0 || pctVal > 100) { toast('⚠️ % Comisión debe ser entre 0 y 100'); return; }
+
+  const agente = { nombre, siglas, pct_comision: pctVal / 100, activo };
+  if (id) agente.id = parseInt(id);
+
+  try {
+    await TPV.saveAgente(agente);
+    toast(`✅ Agente ${nombre} guardado`);
+    closeEditAgente();
+    await rTPVAgentes();
+  } catch (e) {
+    toast('❌ Error al guardar: ' + (e.message || e));
+  }
+}
+
+async function rTPVTerminales(){
   const tbody=document.getElementById('term-tbody');if(!tbody)return;
-  tbody.innerHTML=TPV_TERMINALES.map(t=>{
-    const dias=t.dias_sin_uso||0;
+  const terms = await TPV.terminalStatus() || [];
+  _termAllData = terms; // store for filtering
+  // Populate client dropdown + search cache
+  const clientes = [...new Set(terms.map(t => t.cliente))].sort();
+  _termClienteOptions = clientes.map(c => ({ value: c, label: c }));
+  const clienteFilter = document.getElementById('term-cliente-filter');
+  if (clienteFilter) {
+    const prev = clienteFilter.value;
+    clienteFilter.innerHTML = '<option value="">Todos los clientes</option>' +
+      clientes.map(c => `<option value="${c}" ${c === prev ? 'selected' : ''}>${c}</option>`).join('');
+  }
+  const termSearchEl = document.getElementById('term-search');
+  if (termSearchEl) termSearchEl.value = '';
+  // KPIs
+  const numTerm = new Set(terms.map(t=>t.terminal_id)).size;
+  const totIng = terms.reduce((s,t)=>s+parseFloat(t.ingresos||0),0);
+  const totTxn = terms.reduce((s,t)=>s+parseInt(t.transacciones||0),0);
+  const avgTicket = totTxn > 0 ? totIng / totTxn : 0;
+  const kEl=document.getElementById('tpv-term-kpis');
+  if(kEl)kEl.innerHTML=`
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Terminales</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🖥️</div></div><div class="kpi-val" style="color:#0073ea">${numTerm}</div><div class="kpi-d dnu">Total registradas</div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Ingresos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div><div class="kpi-val" style="color:var(--green)">${fmtTPV(totIng)}</div><div class="kpi-d dnu">Total período</div><div class="kbar"><div class="kfill" style="background:var(--green);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--purple)"><div class="kpi-top"><div class="kpi-lbl">Transacciones</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">🔢</div></div><div class="kpi-val" style="color:var(--purple)">${totTxn.toLocaleString()}</div><div class="kpi-d dnu">Pagos procesados</div><div class="kbar"><div class="kfill" style="background:var(--purple);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Ticket Promedio</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🎫</div></div><div class="kpi-val" style="color:var(--orange)">$${avgTicket.toFixed(0)}</div><div class="kpi-d dnu">Por transacción</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:65%"></div></div></div>`;
+  // Count active/inactive/warning
+  const activas = terms.filter(t=>(parseInt(t.dias_sin_uso)||0)<=14).length;
+  const warning = terms.filter(t=>{const d=parseInt(t.dias_sin_uso)||0; return d>14&&d<=30;}).length;
+  const inactivas = terms.filter(t=>(parseInt(t.dias_sin_uso)||0)>30).length;
+  const numClientes = new Set(terms.map(t=>t.cliente)).size;
+  const sub=document.getElementById('tpv-term-subtitle');
+  if(sub)sub.innerHTML=`${numTerm} terminales · ${numClientes} clientes · <span style="color:var(--green);font-weight:600">${activas} activas</span> · <span style="color:var(--orange)">${warning} alerta</span> · <span style="color:var(--red)">${inactivas} inactivas</span>`;
+  tbody.innerHTML=terms.map(t=>{
+    const dias=parseInt(t.dias_sin_uso)||0;
     const badge=dias<=14?'<span class="tpv-badge-ok">Activa</span>':dias<=30?`<span class="tpv-badge-warn">${dias}d sin uso</span>`:`<span class="tpv-badge-inact">Inactiva ${dias}d</span>`;
     const tid=t.terminal_id&&t.terminal_id!=='-'&&t.terminal_id!=='None'?`<span style="font-family:monospace;font-size:.67rem;color:var(--muted)">${t.terminal_id.slice(-10)}</span>`:'—';
     return`<tr>
@@ -70,32 +892,74 @@ function rTPVTerminales(){
       <td class="mo" style="text-align:center">${t.num_term}</td>
       <td>${tid}</td>
       <td style="font-size:.73rem">${t.ultimo_uso||'—'}</td>
-      <td class="mo pos bld">${t.ingresos>0?fmtTPVFull(t.ingresos):'—'}</td>
-      <td class="mo" style="text-align:center">${t.transacciones>0?t.transacciones.toLocaleString():'—'}</td>
-      <td class="mo">${t.promedio>0?'$'+t.promedio.toFixed(0):'—'}</td>
+      <td class="mo pos bld">${parseFloat(t.ingresos)>0?fmtTPVFull(t.ingresos):'—'}</td>
+      <td class="mo" style="text-align:center">${parseInt(t.transacciones)>0?parseInt(t.transacciones).toLocaleString():'—'}</td>
+      <td class="mo">${parseFloat(t.promedio)>0?'$'+parseFloat(t.promedio).toFixed(0):'—'}</td>
       <td class="mo" style="text-align:center;color:${dias>30?'var(--red)':dias>14?'var(--orange)':'var(--green)'}">${dias||'—'}</td>
       <td>${badge}</td></tr>`;
   }).join('');
+  // Terminal charts
+  setTimeout(()=>{
+    const isDark=document.body.classList.contains('dark');
+    const textC=isDark?'#9da0c5':'#8b8fb5';
+    const gridC=isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)';
+    // Top 10 bar chart
+    const top10=terms.slice(0,10);
+    if(TPV_CHARTS['term_top'])TPV_CHARTS['term_top'].destroy();
+    const c1=document.getElementById('c-tpv-term-top');
+    if(c1){TPV_CHARTS['term_top']=new Chart(c1,{type:'bar',
+      data:{labels:top10.map(t=>(t.cliente||'').substring(0,16)),datasets:[{data:top10.map(t=>parseFloat(t.ingresos)),backgroundColor:'#0073ea22',borderColor:'#0073ea',borderWidth:1.5,borderRadius:4}]},
+      options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v}},y:{grid:{display:false},ticks:{color:textC,font:{size:8}}}}}
+    });}
+    // Status doughnut
+    if(TPV_CHARTS['term_status'])TPV_CHARTS['term_status'].destroy();
+    const c2=document.getElementById('c-tpv-term-status');
+    if(c2){TPV_CHARTS['term_status']=new Chart(c2,{type:'doughnut',
+      data:{labels:['Activas (≤14d)','Alerta (15-30d)','Inactivas (>30d)'],datasets:[{data:[activas,warning,inactivas],backgroundColor:['#00b875','#ffa000','#e53935'],borderWidth:0}]},
+      options:{cutout:'65%',plugins:{legend:{position:'bottom',labels:{font:{size:9},color:textC,boxWidth:10,padding:8}}}}
+    });}
+  },50);
 }
 
-function rTPVCambios(){
+async function rTPVCambios(){
   const tbody=document.getElementById('cambios-tbody');if(!tbody)return;
-  tbody.innerHTML=TPV_CAMBIOS.map(c=>{
-    const badge=c.tipo.includes('⚠️')?'<span class="tpv-badge-warn">⚠️ Solapamiento</span>':'<span class="tpv-badge-ok">✅ Limpio</span>';
+  const cambios = await TPV.terminalChanges() || [];
+  const numSolap = cambios.filter(c=>(c.tipo||'').includes('⚠️')).length;
+  const numTerminals = new Set(cambios.map(c=>c.terminal)).size;
+  // KPIs
+  const kEl=document.getElementById('tpv-cambios-kpis');
+  if(kEl){
+    const pctSolap = cambios.length > 0 ? (numSolap / cambios.length * 100).toFixed(1) : '0.0';
+    kEl.innerHTML=`
+      <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Terminales con Cambio</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🔄</div></div><div class="kpi-val" style="color:var(--orange)">${numTerminals}</div><div class="kpi-d dnu">Terminales reasignadas</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:100%"></div></div></div>
+      <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Cambios Detectados</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">📋</div></div><div class="kpi-val" style="color:#0073ea">${cambios.length}</div><div class="kpi-d dnu">Movimientos registrados</div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
+      <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">⚠️ Solapamientos</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">🚨</div></div><div class="kpi-val" style="color:var(--red)">${numSolap}</div><div class="kpi-d dnu">${pctSolap}% del total</div><div class="kbar"><div class="kfill" style="background:var(--red);width:${pctSolap}%"></div></div></div>`;
+  }
+  const numLimpios = cambios.length - numSolap;
+  const sub=document.getElementById('tpv-cambios-subtitle');
+  if(sub)sub.innerHTML=cambios.length > 0
+    ? `${cambios.length} cambios detectados · <span style="color:var(--green);font-weight:600">✅ ${numLimpios} limpios</span> · <span style="color:var(--red);font-weight:600">⚠️ ${numSolap} solapamientos</span>`
+    : 'No se detectaron cambios de terminal entre clientes';
+  if (cambios.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:30px;color:var(--muted);font-size:.8rem">✅ No se detectaron reasignaciones de terminales entre clientes. Todas las terminales mantienen su asignación original.</td></tr>';
+    return;
+  }
+  tbody.innerHTML=cambios.map(c=>{
+    const badge=(c.tipo||'').includes('⚠️')?'<span class="tpv-badge-warn">⚠️ Solapamiento</span>':'<span class="tpv-badge-ok">✅ Limpio</span>';
     const tid=c.terminal?c.terminal.slice(-12):'-';
-    return`<tr style="${c.tipo.includes('⚠️')?'background:rgba(255,152,0,.04)':''}">
+    return`<tr style="${(c.tipo||'').includes('⚠️')?'background:rgba(255,152,0,.04)':''}">
       <td style="color:var(--muted);font-size:.72rem">${c.num}</td>
       <td><span style="font-family:monospace;font-size:.67rem;color:var(--muted)">${tid}</span></td>
       <td class="bld">${c.cliente_ant||'—'}</td>
-      <td style="font-size:.73rem">${c.fecha_ant_ini}</td>
-      <td style="font-size:.73rem">${c.fecha_ant_fin}</td>
-      <td class="mo" style="text-align:center">${c.txns_ant}</td>
-      <td class="mo">${c.monto_ant>0?fmtTPVFull(c.monto_ant):'—'}</td>
+      <td style="font-size:.73rem">${c.fecha_ant_ini||''}</td>
+      <td style="font-size:.73rem">${c.fecha_ant_fin||''}</td>
+      <td class="mo" style="text-align:center">${c.txns_ant||0}</td>
+      <td class="mo">${parseFloat(c.monto_ant)>0?fmtTPVFull(c.monto_ant):'—'}</td>
       <td>${badge}</td>
       <td class="bld" style="color:#0073ea">${c.cliente_act||'—'}</td>
-      <td style="font-size:.73rem">${c.fecha_act_ini}</td>
-      <td style="font-size:.73rem">${c.fecha_act_fin}</td>
-      <td class="mo" style="text-align:center">${c.txns_act}</td></tr>`;
+      <td style="font-size:.73rem">${c.fecha_act_ini||''}</td>
+      <td style="font-size:.73rem">${c.fecha_act_fin||''}</td>
+      <td class="mo" style="text-align:center">${c.txns_act||0}</td></tr>`;
   }).join('');
 }
 
@@ -105,75 +969,8 @@ function rTPVCambios(){
 // ==============================
 const TPV_CHARTS = {};
 
-function initTPVCharts_general() {
-  const isDark = document.body.classList.contains('dark');
-  const gridC = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
-  const textC = isDark ? '#9da0c5' : '#8b8fb5';
-
-  if(TPV_CHARTS['top10']) TPV_CHARTS['top10'].destroy();
-  TPV_CHARTS['top10'] = new Chart(document.getElementById('c-tpv-top10'), {
-    type: 'bar',
-    data: {
-      labels: ["C Cumbres", "La Churrasca Atlix", "Del Valle", "La Cantada", "Lucia Acapulco", "TONYS RESTAURANTE", "Flamingos Palace", "Carlevaro Muebleri", "Norday Termos", "ECYQ Medical Benef"],
-      datasets: [{ data: [14058828, 2272336, 1401845, 1322324, 1050979, 977002, 908373, 820195, 553199, 543863], backgroundColor: '#0073ea22', borderColor: '#0073ea', borderWidth: 1.5, borderRadius: 4 }]
-    },
-    options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{
-      x:{ grid:{color:gridC}, ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v} },
-      y:{ grid:{display:false}, ticks:{color:textC,font:{size:9}} }
-    }}
-  });
-
-  if(TPV_CHARTS['com_pie']) TPV_CHARTS['com_pie'].destroy();
-  TPV_CHARTS['com_pie'] = new Chart(document.getElementById('c-tpv-com-pie'), {
-    type: 'doughnut',
-    data: { labels: ["Efevoo", "Salem", "Convenia", "Comisionista"], datasets: [{ data: [791922, 410826, 21851, 19518], backgroundColor:['#9b51e0','#0073ea','#ff7043','#ffa000'], borderWidth:0 }] },
-    options: { cutout:'65%', plugins:{ legend:{position:'bottom',labels:{font:{size:9},color:textC,boxWidth:10,padding:8}} } }
-  });
-}
-
-function initTPVCharts_dashboard() {
-  const isDark = document.body.classList.contains('dark');
-  const gridC = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
-  const textC = isDark ? '#9da0c5' : '#8b8fb5';
-
-  if(TPV_CHARTS['dd_top']) TPV_CHARTS['dd_top'].destroy();
-  TPV_CHARTS['dd_top'] = new Chart(document.getElementById('c-tpv-dd-top'), {
-    type: 'bar',
-    data: {
-      labels: ["C CUMBRES", "La Churrasca Atlix", "Del Valle", "Lucia Acapulco", "LA CANTADA", "Carlevaro Muebleri", "Tonys Restaurante", "ECyQ Medical Benef", "Mato Grosso", "Focaccia"],
-      datasets: [{ data: [8313345, 2172516, 1401845, 871100, 821589, 655745, 607715, 543863, 412263, 404696], backgroundColor: '#00b87522', borderColor: '#00b875', borderWidth: 1.5, borderRadius: 4 }]
-    },
-    options: { indexAxis:'y', plugins:{legend:{display:false}}, scales:{
-      x:{ grid:{color:gridC}, ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v} },
-      y:{ grid:{display:false}, ticks:{color:textC,font:{size:9}} }
-    }}
-  });
-
-  if(TPV_CHARTS['dd_pie']) TPV_CHARTS['dd_pie'].destroy();
-  TPV_CHARTS['dd_pie'] = new Chart(document.getElementById('c-tpv-dd-pie'), {
-    type: 'doughnut',
-    data: { labels: ["Efevoo", "Salem", "Convenia", "Comisionista"], datasets: [{ data: [557644, 285164, 16294, 14686], backgroundColor:['#9b51e0','#0073ea','#ff7043','#ffa000'], borderWidth:0 }] },
-    options: { cutout:'65%', plugins:{ legend:{position:'bottom',labels:{font:{size:9},color:textC,boxWidth:10,padding:8}} } }
-  });
-}
-
-function initTPVCharts_agentes() {
-  const isDark = document.body.classList.contains('dark');
-  const textC = isDark ? '#9da0c5' : '#8b8fb5';
-
-  if(TPV_CHARTS['agentes']) TPV_CHARTS['agentes'].destroy();
-  TPV_CHARTS['agentes'] = new Chart(document.getElementById('c-tpv-agentes'), {
-    type: 'bar',
-    data: {
-      labels: ["Angel", "Javier", "Emiliano", "Joaquin", "Adrian", "Monica", "Jose"],
-      datasets: [{ data: [19032352, 2560591, 1083200, 0, 16195961, 7000, 42792], backgroundColor: ['#0073ea','#00b875','#9b51e0','#ff7043','#ffa000','#e53935','#00b8d9'], borderWidth: 0, borderRadius: 5 }]
-    },
-    options: { plugins:{legend:{display:false}}, scales:{
-      x:{ grid:{display:false}, ticks:{color:textC,font:{size:9}} },
-      y:{ grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'}, ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v} }
-    }}
-  });
-}
+// Charts now integrated into initTPVGeneral(), initTPVDashboard() and rTPVAgentes()
+// Old standalone chart functions removed
 
 
 
@@ -185,13 +982,13 @@ const PAGOS_KEY = 'vmcr_tpv_pagos';
 
 // Load payments from localStorage
 function pagosLoad() {
-  try { return JSON.parse(localStorage.getItem(PAGOS_KEY) || '{}'); }
+  try { return DB.get(PAGOS_KEY) || {}; }
   catch(e) { return {}; }
 }
 
 // Save payments to localStorage
 function pagosSave(data) {
-  localStorage.setItem(PAGOS_KEY, JSON.stringify(data));
+  DB.set(PAGOS_KEY, data);
 }
 
 // Get total paid for a client id
@@ -200,62 +997,87 @@ function pagosTotalCliente(id, data) {
   return pagos.reduce((s, p) => s + p.monto, 0);
 }
 
-// Get effective saldo for a client
+// Get effective saldo for a client (a_pagar = cobrado - comisiones, minus what's been paid)
 function pagosSaldo(cliente) {
   const data = pagosLoad();
   const pagado = pagosTotalCliente(cliente.id, data);
-  const base = cliente.monto_neto + cliente.sub_tarjeta + cliente.sub_bancario;
-  return Math.max(0, base - pagado - cliente.total_pagos);
+  const aPagar = cliente.a_pagar || (parseFloat(cliente.total_cobrado||0) - parseFloat(cliente.total_comisiones||0));
+  return Math.max(0, aPagar - pagado);
 }
 
 // ── RENDER rTPVPagos ──
-function rTPVPagos() {
+async function rTPVPagos() {
   const tbody = document.getElementById('pagos-tbody');
   if (!tbody) return;
 
   const data = pagosLoad();
   const today = new Date().toLocaleDateString('es-MX');
 
-  // Calculate effective totals
-  let totMonto = 0, totPagado = 0, totPend = 0, conSaldo = 0;
-  const rows = TPV_PAGOS.map(p => {
-    const extraPagado = pagosTotalCliente(p.id, data);
-    const totalPagado = p.total_pagos + extraPagado;
-    const saldo = Math.max(0, p.monto_neto + p.sub_tarjeta + p.sub_bancario - totalPagado);
-    totMonto  += p.monto_neto;
-    totPagado += totalPagado;
-    totPend   += saldo;
+  // Get date range from pickers (if available)
+  const fromDate = document.getElementById('pagos-from')?.value || null;
+  const toDate = document.getElementById('pagos-to')?.value || null;
+  const periodText = fromDate && toDate ? `${fromDate} → ${toDate}` : 'Histórico completo';
+
+  // Load client commissions from Supabase for the selected period
+  const comData = await TPV.clientCommissions(fromDate, toDate) || [];
+
+  // Calculate effective totals with corrected data model:
+  // total_cobrado = what clients' customers paid
+  // monto_neto (from RPC) = sum of all commissions
+  // a_pagar = total_cobrado - monto_neto = what we owe client
+  let totCobrado = 0, totComisiones = 0, totAPagar = 0, totPagado = 0, totPend = 0, conSaldo = 0;
+  const rows = comData.map(p => {
+    const cobrado = parseFloat(p.total_cobrado) || 0;
+    const comTotal = parseFloat(p.monto_neto) || 0;
+    const aPagar = cobrado - comTotal;
+    const pagado = pagosTotalCliente(p.client_id, data);
+    const saldo = Math.max(0, aPagar - pagado);
+    totCobrado += cobrado;
+    totComisiones += comTotal;
+    totAPagar += aPagar;
+    totPagado += pagado;
+    totPend += saldo;
     if (saldo > 0) conSaldo++;
-    return { ...p, _totalPagado: totalPagado, _saldo: saldo, _nPagos: (data[p.id] || []).length };
+    return {
+      id: p.client_id, cliente: p.cliente,
+      total_cobrado: cobrado, total_comisiones: comTotal,
+      com_efevoo: parseFloat(p.com_efevoo)||0, com_salem: parseFloat(p.com_salem)||0,
+      com_convenia: parseFloat(p.com_convenia)||0, com_comisionista: parseFloat(p.com_comisionista)||0,
+      a_pagar: aPagar, _totalPagado: pagado, _saldo: saldo,
+      _nPagos: (data[p.client_id] || []).length,
+      _rate_corrected: p._rate_corrected || false
+    };
   });
+
+  // Store in cache for modal functions
+  _tpvPagosCache = rows;
 
   // KPIs
   const kEl = document.getElementById('tpv-pagos-kpis');
   if (kEl) kEl.innerHTML = `
     <div class="kpi-card" style="--ac:#0073ea">
-      <div class="kpi-top"><div class="kpi-lbl">Total Monto Neto</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💰</div></div>
-      <div class="kpi-val" style="color:#0073ea">${fmtTPV(totMonto)}</div>
-      <div class="kpi-d dnu">${TPV_PAGOS.length} clientes</div>
+      <div class="kpi-top"><div class="kpi-lbl">Total Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💰</div></div>
+      <div class="kpi-val" style="color:#0073ea">${fmtTPV(totCobrado)}</div>
+      <div class="kpi-d dnu">${comData.length} clientes · ${periodText}</div>
       <div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div>
     </div>
+    <div class="kpi-card" style="--ac:var(--orange)">
+      <div class="kpi-top"><div class="kpi-lbl">Total Comisiones</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📊</div></div>
+      <div class="kpi-val" style="color:var(--orange)">${fmtTPV(totComisiones)}</div>
+      <div class="kpi-d dnu">${totCobrado > 0 ? (totComisiones/totCobrado*100).toFixed(2) : '0.0'}% del cobrado</div>
+      <div class="kbar"><div class="kfill" style="background:var(--orange);width:${totCobrado>0?Math.min(totComisiones/totCobrado*100,100).toFixed(0):0}%"></div></div>
+    </div>
     <div class="kpi-card" style="--ac:var(--green)">
-      <div class="kpi-top"><div class="kpi-lbl">Total Pagado</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">✅</div></div>
-      <div class="kpi-val" style="color:var(--green)">${fmtTPV(totPagado)}</div>
-      <div class="kpi-d dup">${(totPagado/totMonto*100).toFixed(1)}% liquidado</div>
-      <div class="kbar"><div class="kfill" style="background:var(--green);width:${Math.min(totPagado/totMonto*100,100).toFixed(0)}%"></div></div>
+      <div class="kpi-top"><div class="kpi-lbl">A Pagar (Clientes)</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💵</div></div>
+      <div class="kpi-val" style="color:var(--green)">${fmtTPV(totAPagar)}</div>
+      <div class="kpi-d dnu">Pagado: ${fmtTPV(totPagado)} (${totAPagar>0?(totPagado/totAPagar*100).toFixed(1):'0'}%)</div>
+      <div class="kbar"><div class="kfill" style="background:var(--green);width:${totAPagar>0?Math.min(totPagado/totAPagar*100,100).toFixed(0):0}%"></div></div>
     </div>
     <div class="kpi-card" style="--ac:var(--red)">
       <div class="kpi-top"><div class="kpi-lbl">Saldo Pendiente</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">⏳</div></div>
       <div class="kpi-val" style="color:var(--red)">${fmtTPV(totPend)}</div>
       <div class="kpi-d dnu">${conSaldo} clientes con saldo</div>
-      <div class="kbar"><div class="kfill" style="background:var(--red);width:${Math.min(totPend/totMonto*100,100).toFixed(0)}%"></div></div>
-    </div>
-    <div class="kpi-card kpi-clickable" style="--ac:var(--orange)" onclick="openPagoModal(null)">
-      <div class="kpi-hint">registrar →</div>
-      <div class="kpi-top"><div class="kpi-lbl">Pagos Registrados</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📋</div></div>
-      <div class="kpi-val" style="color:var(--orange)">${Object.values(data).flat().length}</div>
-      <div class="kpi-d dnu">en este navegador</div>
-      <div class="kbar"><div class="kfill" style="background:var(--orange);width:70%"></div></div>
+      <div class="kbar"><div class="kfill" style="background:var(--red);width:${totAPagar>0?Math.min(totPend/totAPagar*100,100).toFixed(0):0}%"></div></div>
     </div>
   `;
 
@@ -263,9 +1085,9 @@ function rTPVPagos() {
   const upd = document.getElementById('pagos-last-update');
   if (upd) upd.textContent = 'Actualizado: ' + today;
 
-  // Table rows
-  tbody.innerHTML = rows.filter(p => p.monto_neto > 0 || p._totalPagado > 0).map((p, i) => {
-    const pct = p.monto_neto > 0 ? (p._totalPagado / (p.monto_neto + p.sub_tarjeta + p.sub_bancario) * 100) : 0;
+  // Table rows - corrected columns
+  tbody.innerHTML = rows.filter(p => p.a_pagar > 0 || p._totalPagado > 0).map((p, i) => {
+    const pct = p.a_pagar > 0 ? (p._totalPagado / p.a_pagar * 100) : 0;
     const est = p._saldo <= 0
       ? '<span class="pill" style="background:var(--green-lt);color:#007a48">✓ Al día</span>'
       : pct > 0
@@ -276,20 +1098,39 @@ function rTPVPagos() {
       : '';
     return `<tr>
       <td style="padding:6px 8px;width:28px">
-        <button onclick="openHistorial(${p.id})" title="Ver historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px;border-radius:4px" ${p._nPagos===0?'style="opacity:.35"':''}>🕐${histBtn}</button>
+        <button onclick="openHistorial(${p.id})" title="Ver historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px;border-radius:4px;${p._nPagos===0?'opacity:.35':''}">🕐${histBtn}</button>
       </td>
-      <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}</td>
-      <td class="mo">${fmtTPVFull(p.monto_neto)}</td>
-      <td class="mo">${p.sub_tarjeta > 0 ? fmtTPVFull(p.sub_tarjeta) : '<span style="color:var(--muted)">—</span>'}</td>
-      <td class="mo">${p.sub_bancario > 0 ? fmtTPVFull(p.sub_bancario) : '<span style="color:var(--muted)">—</span>'}</td>
-      <td class="mo pos">${p._totalPagado > 0 ? fmtTPVFull(p._totalPagado) : '<span style="color:var(--muted)">—</span>'}</td>
-      <td class="mo ${p._saldo > 0 ? 'neg' : 'pos'}">${p._saldo > 0.01 ? fmtTPVFull(p._saldo) : '<span style="color:var(--green)">✓ $0</span>'}</td>
+      <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}${p._rate_corrected ? ' <span title="Comisiones corregidas por cambio de tasa histórica" style="font-size:.55rem;background:var(--purple-bg);color:var(--purple);border-radius:6px;padding:1px 5px;font-weight:700;cursor:help;vertical-align:middle">📊 Ajuste</span>' : ''}</td>
+      <td class="mo">${fmtTPVFull(p.total_cobrado,2)}</td>
+      <td class="mo" style="color:var(--orange)">${fmtTPVFull(p.total_comisiones,2)}</td>
+      <td class="mo bld pos">${fmtTPVFull(p.a_pagar,2)}</td>
+      <td class="mo pos">${p._totalPagado > 0 ? fmtTPVFull(p._totalPagado,2) : '<span style="color:var(--muted)">—</span>'}</td>
+      <td class="mo ${p._saldo > 0 ? 'neg' : 'pos'}">${p._saldo > 0.01 ? fmtTPVFull(p._saldo,2) : '<span style="color:var(--green)">✓ $0</span>'}</td>
       <td>${est}</td>
       <td style="text-align:center">
         <button onclick="openPagoModal(${p.id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
       </td>
     </tr>`;
   }).join('');
+
+  // Show correction info banner if any clients have rate corrections
+  const correctedCount = rows.filter(r => r._rate_corrected).length;
+  const pagosView = document.getElementById('view-tpv_pagos');
+  let banner = document.getElementById('rate-corr-banner');
+  if (correctedCount > 0) {
+    if (!banner && pagosView) {
+      banner = document.createElement('div');
+      banner.id = 'rate-corr-banner';
+      pagosView.appendChild(banner);
+    }
+    if (banner) banner.innerHTML = `<div style="margin-top:10px;padding:8px 14px;background:var(--purple-bg);border-radius:8px;font-size:.7rem;color:var(--purple);display:flex;align-items:center;gap:8px">
+      <span>📊</span>
+      <span><b>${correctedCount} cliente${correctedCount > 1 ? 's' : ''}</b> con comisiones ajustadas por cambios de tasa históricos.</span>
+      <button onclick="openRateChanges()" style="background:var(--purple);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif;white-space:nowrap">Ver Historial</button>
+    </div>`;
+  } else if (banner) {
+    banner.innerHTML = '';
+  }
 }
 
 // ── PAGO MODAL ──
@@ -306,16 +1147,20 @@ function openPagoModal(clienteId) {
   document.getElementById('pago-ref').value = '';
   document.getElementById('pago-monto-warn').style.display = 'none';
 
-  // Populate client selector
+  // Populate client selector + search cache
   const sel = document.getElementById('pago-cliente-sel');
   const wrap = document.getElementById('pago-cliente-wrap');
+  const eligibleClients = _tpvPagosCache.filter(p => (p.total_cobrado || 0) > 0);
+  _pagoClienteAllOptions = eligibleClients.map(p => ({ value: String(p.id), label: p.cliente }));
   sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
-    TPV_PAGOS.filter(p => p.monto_neto > 0).map(p =>
+    eligibleClients.map(p =>
       `<option value="${p.id}" ${p.id === clienteId ? 'selected' : ''}>${p.cliente}</option>`
     ).join('');
+  const pagoSearchEl = document.getElementById('pago-cliente-search');
+  if (pagoSearchEl) pagoSearchEl.value = '';
 
   if (clienteId !== null) {
-    const cli = TPV_PAGOS.find(p => p.id === clienteId);
+    const cli = _tpvPagosCache.find(p => p.id === clienteId);
     document.getElementById('pago-modal-cliente-nombre').textContent = cli ? cli.cliente : '';
     wrap.style.display = 'none';
   } else {
@@ -335,7 +1180,7 @@ function pagoUpdateSaldo() {
   const selId = _pagoClienteId || parseInt(document.getElementById('pago-cliente-sel').value);
   const info = document.getElementById('pago-saldo-info');
   if (!selId) { info.style.display = 'none'; return; }
-  const cli = TPV_PAGOS.find(p => p.id === selId);
+  const cli = _tpvPagosCache.find(p => p.id === selId);
   if (!cli) return;
   const saldo = pagosSaldo(cli);
   document.getElementById('pago-saldo-val').textContent = fmtTPVFull(saldo);
@@ -347,7 +1192,7 @@ function pagoValidateMonto() {
   const monto = parseFloat(document.getElementById('pago-monto').value) || 0;
   const warn = document.getElementById('pago-monto-warn');
   if (!selId) { warn.style.display = 'none'; return; }
-  const cli = TPV_PAGOS.find(p => p.id === selId);
+  const cli = _tpvPagosCache.find(p => p.id === selId);
   const saldo = pagosSaldo(cli);
   warn.style.display = (monto > saldo + 0.01) ? '' : 'none';
 }
@@ -376,7 +1221,7 @@ function submitPago() {
   });
   pagosSave(data);
 
-  const cli = TPV_PAGOS.find(p => p.id === selId);
+  const cli = _tpvPagosCache.find(p => p.id === selId);
   toast(`✅ Pago de ${fmtTPVFull(monto)} registrado — ${cli?.cliente || ''}`);
   closePagoModal();
   rTPVPagos();
@@ -384,21 +1229,25 @@ function submitPago() {
 
 // ── HISTORIAL MODAL ──
 function openHistorial(clienteId) {
-  const cli = TPV_PAGOS.find(p => p.id === clienteId);
+  const cli = _tpvPagosCache.find(p => p.id === clienteId);
   if (!cli) return;
 
   const data = pagosLoad();
   const pagos = (data[clienteId] || []).sort((a, b) => b.fecha.localeCompare(a.fecha));
-  const totalPagado = pagos.reduce((s, p) => s + p.monto, 0) + cli.total_pagos;
-  const saldo = Math.max(0, cli.monto_neto + cli.sub_tarjeta + cli.sub_bancario - totalPagado);
+  const totalPagado = pagos.reduce((s, p) => s + p.monto, 0);
+  const aPagar = cli.a_pagar || (parseFloat(cli.total_cobrado||0) - parseFloat(cli.total_comisiones||0));
+  const saldo = Math.max(0, aPagar - totalPagado);
 
   document.getElementById('hist-title').textContent = '🕐 Historial de Pagos — ' + cli.cliente;
   document.getElementById('hist-subtitle').textContent = `${pagos.length} pago${pagos.length !== 1 ? 's' : ''} registrado${pagos.length !== 1 ? 's' : ''}`;
 
+  // KPIs del historial: Cobrado, Comisiones, A Pagar, Pagado, Saldo
   document.getElementById('hist-kpis').innerHTML = `
-    <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Monto Neto</div><div class="m-kpi-val" style="color:#0073ea">${fmtTPVFull(cli.monto_neto)}</div></div>
-    <div class="m-kpi" style="--ac:var(--green)"><div class="m-kpi-lbl">Total Pagado</div><div class="m-kpi-val" style="color:var(--green)">${fmtTPVFull(totalPagado)}</div></div>
-    <div class="m-kpi" style="--ac:var(--red)"><div class="m-kpi-lbl">Saldo Pendiente</div><div class="m-kpi-val" style="color:var(--red)">${fmtTPVFull(saldo)}</div></div>
+    <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Total Cobrado</div><div class="m-kpi-val" style="color:#0073ea">${fmtTPVFull(cli.total_cobrado||0)}</div></div>
+    <div class="m-kpi" style="--ac:var(--orange)"><div class="m-kpi-lbl">Comisiones</div><div class="m-kpi-val" style="color:var(--orange)">${fmtTPVFull(cli.total_comisiones||0)}</div></div>
+    <div class="m-kpi" style="--ac:var(--purple)"><div class="m-kpi-lbl">A Pagar</div><div class="m-kpi-val" style="color:var(--purple)">${fmtTPVFull(aPagar)}</div></div>
+    <div class="m-kpi" style="--ac:var(--green)"><div class="m-kpi-lbl">Pagado</div><div class="m-kpi-val" style="color:var(--green)">${fmtTPVFull(totalPagado)}</div></div>
+    <div class="m-kpi" style="--ac:var(--red)"><div class="m-kpi-lbl">Saldo</div><div class="m-kpi-val" style="color:var(--red)">${fmtTPVFull(saldo)}</div></div>
   `;
 
   if (pagos.length === 0) {
@@ -455,7 +1304,7 @@ function deletePago(clienteId, pagoId) {
 function exportPagosCSV() {
   const data = pagosLoad();
   let rows = ['Cliente,Fecha,Monto,Destino,Referencia,Registrado'];
-  TPV_PAGOS.forEach(cli => {
+  _tpvPagosCache.forEach(cli => {
     (data[cli.id] || []).forEach(p => {
       rows.push(`"${cli.cliente}","${p.fecha}",${p.monto},"${p.destino==='tarjeta'?'Tarjeta':'Banco'}","${p.ref || ''}","${p.registrado}"`);
     });
@@ -471,123 +1320,420 @@ function exportPagosCSV() {
 
 
 // ==============================
-// TARJETAS CHARTS
+// TARJETAS CHARTS (Dynamic — TAR data service)
 // ==============================
 const TAR_CHARTS = {};
 
-function initTarCharts(view) {
+function _tarFmt(v) {
+  if (v == null || isNaN(v)) return '—';
+  const n = Number(v);
+  if (Math.abs(n) >= 1e6) return '$' + (n / 1e6).toFixed(2) + 'M';
+  if (Math.abs(n) >= 1e3) return '$' + (n / 1e3).toFixed(1) + 'K';
+  return '$' + n.toLocaleString('es-MX', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+}
+function _tarNum(v) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toLocaleString('es-MX');
+}
+function _tarPct(v) {
+  if (v == null || isNaN(v)) return '—';
+  return Number(v).toFixed(1) + '%';
+}
+function _tarSetEl(id, txt) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = txt;
+}
+function _tarNoData(canvasId) {
+  const c = document.getElementById(canvasId);
+  if (!c) return;
+  const ctx = c.getContext('2d');
+  ctx.clearRect(0, 0, c.width, c.height);
+  ctx.fillStyle = '#8b8fb5';
+  ctx.font = '13px Inter, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('Sin datos', c.width / 2, c.height / 2);
+}
+
+async function initTarCharts(view) {
   const isDark = document.body.classList.contains('dark');
   const gc = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
   const tc = isDark ? '#9da0c5' : '#8b8fb5';
   const colors10 = ['#0073ea','#00b875','#9b51e0','#ff7043','#e53935','#ffa000','#8b8fb5','#17a589','#2e86c1','#aaa'];
 
+  // ── TAR DASHBOARD ──────────────────────────────
   if (view === 'tar_dashboard') {
-    // Días bar chart
-    if(TAR_CHARTS.dias) TAR_CHARTS.dias.destroy();
-    TAR_CHARTS.dias = new Chart(document.getElementById('c-tar-dias'), {
-      data: {
-        labels: ["Lun", "Mar", "Mi\u00e9", "Jue", "Vie", "S\u00e1b", "Dom"],
-        datasets: [
-          { type:'bar', label:'Monto ($)', data:[3884834.29, 5126209.37, 2685603.26, 2968260.25, 6093542.11, 3705527.63, 959695.93], backgroundColor:'#0073ea22', borderColor:'#0073ea', borderWidth:1.5, borderRadius:4, yAxisID:'y' },
-          { type:'line', label:'Txns', data:[1105, 1159, 866, 677, 1768, 1093, 564], borderColor:'#00b875', backgroundColor:'#00b87520', pointRadius:4, pointBackgroundColor:'#00b875', tension:0.3, yAxisID:'y2' }
-        ]
-      },
-      options: { plugins:{legend:{labels:{font:{size:9},color:tc,boxWidth:10}}}, scales:{
-        y:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':v} },
-        y2:{ position:'right', grid:{display:false}, ticks:{color:tc,font:{size:9}} },
-        x:{ grid:{display:false}, ticks:{color:tc,font:{size:9}} }
-      }}
-    });
-    // Concepto pie
-    if(TAR_CHARTS.conc_pie) TAR_CHARTS.conc_pie.destroy();
-    TAR_CHARTS.conc_pie = new Chart(document.getElementById('c-tar-conc-pie'), {
-      type:'doughnut',
-      data:{ labels:["Compra", "Pago a Tarjeta", "Transferencia", "Retiro ATM", "Rechazada", "Dev. Pago", "Consulta Saldo", "Pago Servicio", "Dev. Transferencia", "Otros"], datasets:[{ data:[3133, 1613, 866, 660, 550, 117, 39, 55, 17, 182], backgroundColor:colors10, borderWidth:0 }] },
-      options:{ cutout:'60%', plugins:{ legend:{position:'bottom',labels:{font:{size:8},color:tc,boxWidth:9,padding:6}} } }
-    });
-    // Top10 bar
-    if(TAR_CHARTS.top10) TAR_CHARTS.top10.destroy();
-    TAR_CHARTS.top10 = new Chart(document.getElementById('c-tar-top10'), {
-      type:'bar',
-      data:{ labels:["GRUAS INTERNACIONALE", "-", "Centum Capital", "PIRENTHONS SA DE CV", "WATREL CONSULTORES S", "JUAN MANUEL DE LA CO", "BENJAMIN PAZ PAZ", "CARLEVARO MUEBLERIA", "TEMPLADOS VARSA", "TRINIDAD DESIGNER"], datasets:[{ data:[6165913.09, 5157349.56, 723184.31, 810357.87, 3055899.55, 1886757.42, 245436.06, 781542.29, 967556.58, 0.0], backgroundColor:'#0073ea22', borderColor:'#0073ea', borderWidth:1.5, borderRadius:4 }] },
-      options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
-        x:{ grid:{color:gc}, ticks:{color:tc,font:{size:8},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} },
-        y:{ grid:{display:false}, ticks:{color:tc,font:{size:8}} }
-      }}
-    });
-    // Rechazos bar
-    if(TAR_CHARTS.rec_dash) TAR_CHARTS.rec_dash.destroy();
-    TAR_CHARTS.rec_dash = new Chart(document.getElementById('c-tar-rechazos'), {
-      type:'bar',
-      data:{ labels:["Not sufficient funds", "Bad Track Data", "Over daily limit", "Do not honor", "Exceeds withdrawal limit", "Incorrect PIN", "Otras razones"], datasets:[{ data:[155, 143, 139, 38, 36, 19, 20], backgroundColor:'#e5393522', borderColor:'#e53935', borderWidth:1.5, borderRadius:4 }] },
-      options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
-        x:{ grid:{color:gc}, ticks:{color:tc,font:{size:8}} },
-        y:{ grid:{display:false}, ticks:{color:tc,font:{size:8}} }
-      }}
-    });
+    try {
+      const [kpis, weekday, conceptos, subclientes, rechazos] = await Promise.all([
+        TAR.dashboardKpis(),
+        TAR.activityByWeekday(),
+        TAR.byConcepto(),
+        TAR.bySubcliente(),
+        TAR.rechazosDetail()
+      ]);
+
+      if (!kpis || !kpis.total_txns) {
+        _tarSetEl('tar-d-txns', '0');
+        _tarSetEl('tar-d-monto', '$0');
+        _tarSetEl('tar-d-periodo', 'Sin datos — sube un archivo desde Carga de Datos');
+        ['c-tar-dias','c-tar-conc-pie','c-tar-top10','c-tar-rechazos'].forEach(id => _tarNoData(id));
+        return;
+      }
+
+      // KPIs
+      _tarSetEl('tar-d-txns', _tarNum(kpis.total_txns));
+      _tarSetEl('tar-d-txns-sub', 'Cargos: ' + _tarNum(kpis.txns_cargos) + ' · Abonos: ' + _tarNum(kpis.txns_abonos));
+      _tarSetEl('tar-d-monto', _tarFmt(kpis.monto_total));
+      _tarSetEl('tar-d-monto-sub', 'Cargos: ' + _tarFmt(kpis.total_cargos) + ' · Abonos: ' + _tarFmt(kpis.total_abonos));
+      _tarSetEl('tar-d-cargos', _tarFmt(kpis.total_cargos));
+      _tarSetEl('tar-d-cargos-sub', _tarNum(kpis.txns_cargos) + ' transacciones');
+      _tarSetEl('tar-d-abonos', _tarFmt(kpis.total_abonos));
+      _tarSetEl('tar-d-abonos-sub', _tarNum(kpis.txns_abonos) + ' transacciones');
+      _tarSetEl('tar-d-activas', _tarNum(kpis.tarjetas_activas));
+      _tarSetEl('tar-d-activas-sub', 'de ' + _tarNum(kpis.tarjetas_total) + ' tarjetas');
+      _tarSetEl('tar-d-saldo', _tarFmt(kpis.saldo_total));
+      _tarSetEl('tar-d-saldo-sub', _tarNum(kpis.tarjetas_total) + ' tarjetas');
+      _tarSetEl('tar-d-rechazo', _tarPct(kpis.tasa_rechazo));
+      _tarSetEl('tar-d-rechazo-sub', _tarNum(kpis.rechazadas) + ' rechazadas');
+      _tarSetEl('tar-d-ticket', _tarFmt(kpis.ticket_promedio));
+      _tarSetEl('tar-d-ticket-sub', 'promedio por txn');
+      _tarSetEl('tar-d-periodo', (kpis.fecha_min || '') + ' — ' + (kpis.fecha_max || ''));
+
+      // Días bar chart
+      if (weekday && weekday.length) {
+        const dLabels = weekday.map(r => r.day_name);
+        const dMontos = weekday.map(r => Number(r.monto));
+        const dTxns = weekday.map(r => Number(r.txn_count));
+        if (TAR_CHARTS.dias) TAR_CHARTS.dias.destroy();
+        TAR_CHARTS.dias = new Chart(document.getElementById('c-tar-dias'), {
+          data: {
+            labels: dLabels,
+            datasets: [
+              { type:'bar', label:'Monto ($)', data:dMontos, backgroundColor:'#0073ea22', borderColor:'#0073ea', borderWidth:1.5, borderRadius:4, yAxisID:'y' },
+              { type:'line', label:'Txns', data:dTxns, borderColor:'#00b875', backgroundColor:'#00b87520', pointRadius:4, pointBackgroundColor:'#00b875', tension:0.3, yAxisID:'y2' }
+            ]
+          },
+          options: { plugins:{legend:{labels:{font:{size:9},color:tc,boxWidth:10}}}, scales:{
+            y:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':v} },
+            y2:{ position:'right', grid:{display:false}, ticks:{color:tc,font:{size:9}} },
+            x:{ grid:{display:false}, ticks:{color:tc,font:{size:9}} }
+          }}
+        });
+      } else { _tarNoData('c-tar-dias'); }
+
+      // Concepto pie (top 9 + Otros)
+      if (conceptos && conceptos.length) {
+        const top9 = conceptos.slice(0, 9);
+        const rest = conceptos.slice(9);
+        const cLabels = top9.map(r => r.concepto);
+        const cTxns = top9.map(r => Number(r.txn_count));
+        if (rest.length) { cLabels.push('Otros'); cTxns.push(rest.reduce((s, r) => s + Number(r.txn_count), 0)); }
+        if (TAR_CHARTS.conc_pie) TAR_CHARTS.conc_pie.destroy();
+        TAR_CHARTS.conc_pie = new Chart(document.getElementById('c-tar-conc-pie'), {
+          type:'doughnut',
+          data:{ labels:cLabels, datasets:[{ data:cTxns, backgroundColor:colors10.slice(0, cLabels.length), borderWidth:0 }] },
+          options:{ cutout:'60%', plugins:{ legend:{position:'bottom',labels:{font:{size:8},color:tc,boxWidth:9,padding:6}} } }
+        });
+      } else { _tarNoData('c-tar-conc-pie'); }
+
+      // Top10 subclientes bar
+      if (subclientes && subclientes.length) {
+        const top10 = subclientes.slice(0, 10);
+        if (TAR_CHARTS.top10) TAR_CHARTS.top10.destroy();
+        TAR_CHARTS.top10 = new Chart(document.getElementById('c-tar-top10'), {
+          type:'bar',
+          data:{ labels:top10.map(r => r.subcliente), datasets:[{ data:top10.map(r => Number(r.monto)), backgroundColor:'#0073ea22', borderColor:'#0073ea', borderWidth:1.5, borderRadius:4 }] },
+          options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
+            x:{ grid:{color:gc}, ticks:{color:tc,font:{size:8},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} },
+            y:{ grid:{display:false}, ticks:{color:tc,font:{size:8}} }
+          }}
+        });
+      } else { _tarNoData('c-tar-top10'); }
+
+      // Rechazos bar (top 6 + Otras)
+      if (rechazos && rechazos.length) {
+        const top6 = rechazos.slice(0, 6);
+        const rRest = rechazos.slice(6);
+        const rLabels = top6.map(r => r.razon);
+        const rCounts = top6.map(r => Number(r.txn_count));
+        if (rRest.length) { rLabels.push('Otras razones'); rCounts.push(rRest.reduce((s, r) => s + Number(r.txn_count), 0)); }
+        if (TAR_CHARTS.rec_dash) TAR_CHARTS.rec_dash.destroy();
+        TAR_CHARTS.rec_dash = new Chart(document.getElementById('c-tar-rechazos'), {
+          type:'bar',
+          data:{ labels:rLabels, datasets:[{ data:rCounts, backgroundColor:'#e5393525', borderColor:'#e53935', borderWidth:1.5, borderRadius:4 }] },
+          options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
+            x:{ grid:{color:gc}, ticks:{color:tc,font:{size:8}} },
+            y:{ grid:{display:false}, ticks:{color:tc,font:{size:8}} }
+          }}
+        });
+      } else { _tarNoData('c-tar-rechazos'); }
+
+      // Hallazgos dinámicos
+      const hDiv = document.getElementById('tar-d-hallazgos');
+      if (hDiv && kpis) {
+        const items = [];
+        if (kpis.tasa_rechazo > 5) items.push('⚠️ Tasa de rechazo elevada: ' + _tarPct(kpis.tasa_rechazo));
+        if (rechazos && rechazos.length) items.push('🔴 Principal causa de rechazo: ' + rechazos[0].razon + ' (' + rechazos[0].txn_count + ' txns)');
+        if (subclientes && subclientes.length) items.push('🏆 Mayor volumen: ' + subclientes[0].subcliente + ' — ' + _tarFmt(subclientes[0].monto));
+        if (conceptos && conceptos.length) items.push('📊 Concepto líder: ' + conceptos[0].concepto + ' (' + _tarFmt(conceptos[0].monto) + ')');
+        if (weekday && weekday.length) {
+          const topDay = weekday.reduce((a, b) => Number(b.monto) > Number(a.monto) ? b : a, weekday[0]);
+          items.push('📅 Día más activo: ' + topDay.day_name + ' (' + _tarFmt(topDay.monto) + ')');
+        }
+        hDiv.innerHTML = items.length
+          ? items.map(i => '<div style="padding:6px 0;border-bottom:1px solid var(--border);font-size:13px">' + i + '</div>').join('')
+          : '<div style="padding:10px;color:#8b8fb5;font-size:13px">Sin hallazgos disponibles</div>';
+      }
+
+    } catch (e) {
+      console.error('[TAR] dashboard error:', e);
+      _tarSetEl('tar-d-periodo', 'Error al cargar datos');
+    }
   }
 
+  // ── TAR CONCEPTOS ──────────────────────────────
   if (view === 'tar_conceptos') {
-    if(TAR_CHARTS.conc_m) TAR_CHARTS.conc_m.destroy();
-    TAR_CHARTS.conc_m = new Chart(document.getElementById('c-tar-conc-monto'), {
-      type:'doughnut',
-      data:{ labels:["Compra", "Pago a Tarjeta", "Transferencia", "Retiro ATM", "Rechazada", "Dev. Pago", "Consulta Saldo", "Pago Servicio", "Dev. Transferencia", "Otros"], datasets:[{ data:[3962659.12, 12800856.37, 3411209.24, 2668262.57, 1442136.58, 828842.85, 237.22, 4183.0, 65219.57, 240066.32], backgroundColor:colors10, borderWidth:0 }] },
-      options:{ cutout:'55%', plugins:{ legend:{position:'right',labels:{font:{size:9},color:tc,boxWidth:10,padding:8}} } }
-    });
-    if(TAR_CHARTS.conc_t) TAR_CHARTS.conc_t.destroy();
-    TAR_CHARTS.conc_t = new Chart(document.getElementById('c-tar-conc-txns'), {
-      type:'doughnut',
-      data:{ labels:["Compra", "Pago a Tarjeta", "Transferencia", "Retiro ATM", "Rechazada", "Dev. Pago", "Consulta Saldo", "Pago Servicio", "Dev. Transferencia", "Otros"], datasets:[{ data:[3133, 1613, 866, 660, 550, 117, 39, 55, 17, 182], backgroundColor:colors10, borderWidth:0 }] },
-      options:{ cutout:'55%', plugins:{ legend:{position:'right',labels:{font:{size:9},color:tc,boxWidth:10,padding:8}} } }
-    });
+    try {
+      const conceptos = await TAR.byConcepto();
+      const kpis = await TAR.dashboardKpis();
+
+      if (!conceptos || !conceptos.length) {
+        _tarSetEl('tar-c-periodo', 'Sin datos — sube un archivo desde Carga de Datos');
+        ['c-tar-conc-monto','c-tar-conc-txns'].forEach(id => _tarNoData(id));
+        return;
+      }
+
+      // KPIs
+      const topMonto = conceptos[0];
+      const topTxns = [...conceptos].sort((a, b) => Number(b.txn_count) - Number(a.txn_count))[0];
+      const rechRow = conceptos.find(r => r.concepto === 'RECHAZADA');
+      _tarSetEl('tar-c-top-monto', topMonto ? topMonto.concepto : '—');
+      _tarSetEl('tar-c-top-monto-sub', topMonto ? _tarFmt(topMonto.monto) + ' (' + _tarPct(topMonto.pct_monto) + ')' : '');
+      _tarSetEl('tar-c-top-txns', topTxns ? topTxns.concepto : '—');
+      _tarSetEl('tar-c-top-txns-sub', topTxns ? _tarNum(topTxns.txn_count) + ' txns (' + _tarPct(topTxns.pct_txns) + ')' : '');
+      _tarSetEl('tar-c-rechazadas', rechRow ? _tarNum(rechRow.txn_count) : '0');
+      _tarSetEl('tar-c-rechazadas-sub', rechRow ? _tarFmt(rechRow.monto) + ' (' + _tarPct(rechRow.pct_txns) + ')' : '');
+      if (kpis) _tarSetEl('tar-c-periodo', (kpis.fecha_min || '') + ' — ' + (kpis.fecha_max || ''));
+
+      // Donut por monto (top 9 + Otros)
+      const top9 = conceptos.slice(0, 9);
+      const rest = conceptos.slice(9);
+      const mLabels = top9.map(r => r.concepto);
+      const mData = top9.map(r => Number(r.monto));
+      if (rest.length) { mLabels.push('Otros'); mData.push(rest.reduce((s, r) => s + Number(r.monto), 0)); }
+      if (TAR_CHARTS.conc_m) TAR_CHARTS.conc_m.destroy();
+      TAR_CHARTS.conc_m = new Chart(document.getElementById('c-tar-conc-monto'), {
+        type:'doughnut',
+        data:{ labels:mLabels, datasets:[{ data:mData, backgroundColor:colors10.slice(0, mLabels.length), borderWidth:0 }] },
+        options:{ cutout:'55%', plugins:{ legend:{position:'right',labels:{font:{size:9},color:tc,boxWidth:10,padding:8}} } }
+      });
+
+      // Donut por txns
+      const tLabels = top9.map(r => r.concepto);
+      const tData = top9.map(r => Number(r.txn_count));
+      if (rest.length) { tLabels.push('Otros'); tData.push(rest.reduce((s, r) => s + Number(r.txn_count), 0)); }
+      if (TAR_CHARTS.conc_t) TAR_CHARTS.conc_t.destroy();
+      TAR_CHARTS.conc_t = new Chart(document.getElementById('c-tar-conc-txns'), {
+        type:'doughnut',
+        data:{ labels:tLabels, datasets:[{ data:tData, backgroundColor:colors10.slice(0, tLabels.length), borderWidth:0 }] },
+        options:{ cutout:'55%', plugins:{ legend:{position:'right',labels:{font:{size:9},color:tc,boxWidth:10,padding:8}} } }
+      });
+
+      // Table
+      const tbody = document.getElementById('tar-c-tbody');
+      if (tbody) {
+        tbody.innerHTML = conceptos.map((r, i) =>
+          '<tr><td>' + (i + 1) + '</td><td><b>' + (r.concepto || '-') + '</b></td><td style="text-align:right">' +
+          _tarNum(r.txn_count) + '</td><td style="text-align:right">' + _tarPct(r.pct_txns) +
+          '</td><td style="text-align:right"><b>' + _tarFmt(r.monto) + '</b></td><td style="text-align:right">' +
+          _tarPct(r.pct_monto) + '</td><td style="text-align:right">' + _tarFmt(r.ticket_avg) + '</td></tr>'
+        ).join('');
+      }
+
+    } catch (e) {
+      console.error('[TAR] conceptos error:', e);
+      _tarSetEl('tar-c-periodo', 'Error al cargar datos');
+    }
   }
 
+  // ── TAR SUBCLIENTES ────────────────────────────
   if (view === 'tar_subclientes') {
-    if(TAR_CHARTS.sub_bar) TAR_CHARTS.sub_bar.destroy();
-    TAR_CHARTS.sub_bar = new Chart(document.getElementById('c-tar-sub-bar'), {
-      type:'bar',
-      data:{ labels:["GRUAS INTERNACIONALE", "-", "Centum Capital", "PIRENTHONS SA DE CV", "WATREL CONSULTORES S", "JUAN MANUEL DE LA CO", "BENJAMIN PAZ PAZ", "CARLEVARO MUEBLERIA", "TEMPLADOS VARSA", "TRINIDAD DESIGNER"], datasets:[{ data:[6165913.09, 5157349.56, 723184.31, 810357.87, 3055899.55, 1886757.42, 245436.06, 781542.29, 967556.58, 0.0], backgroundColor:colors10, borderWidth:0, borderRadius:5 }] },
-      options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
-        x:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} },
-        y:{ grid:{display:false}, ticks:{color:tc,font:{size:9}} }
-      }}
-    });
-    if(TAR_CHARTS.sub_pie) TAR_CHARTS.sub_pie.destroy();
-    TAR_CHARTS.sub_pie = new Chart(document.getElementById('c-tar-sub-pie'), {
-      type:'doughnut',
-      data:{ labels:["GRUAS INTERNACIONALE", "-", "Centum Capital", "PIRENTHONS SA DE CV", "WATREL CONSULTORES S", "JUAN MANUEL DE LA CO", "BENJAMIN PAZ PAZ", "CARLEVARO MUEBLERIA", "TEMPLADOS VARSA", "TRINIDAD DESIGNER"], datasets:[{ data:[6165913.09, 5157349.56, 723184.31, 810357.87, 3055899.55, 1886757.42, 245436.06, 781542.29, 967556.58, 0.0], backgroundColor:colors10, borderWidth:0 }] },
-      options:{ cutout:'55%', plugins:{ legend:{position:'bottom',labels:{font:{size:8},color:tc,boxWidth:9,padding:5}} } }
-    });
+    try {
+      const subs = await TAR.bySubcliente();
+      const kpis = await TAR.dashboardKpis();
+
+      if (!subs || !subs.length) {
+        _tarSetEl('tar-s-periodo', 'Sin datos — sube un archivo desde Carga de Datos');
+        ['c-tar-sub-bar','c-tar-sub-pie'].forEach(id => _tarNoData(id));
+        return;
+      }
+
+      if (kpis) _tarSetEl('tar-s-periodo', (kpis.fecha_min || '') + ' — ' + (kpis.fecha_max || ''));
+
+      const top10 = subs.slice(0, 10);
+
+      // Bar chart
+      if (TAR_CHARTS.sub_bar) TAR_CHARTS.sub_bar.destroy();
+      TAR_CHARTS.sub_bar = new Chart(document.getElementById('c-tar-sub-bar'), {
+        type:'bar',
+        data:{ labels:top10.map(r => r.subcliente), datasets:[{ data:top10.map(r => Number(r.monto)), backgroundColor:colors10, borderWidth:0, borderRadius:5 }] },
+        options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
+          x:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} },
+          y:{ grid:{display:false}, ticks:{color:tc,font:{size:9}} }
+        }}
+      });
+
+      // Pie chart
+      if (TAR_CHARTS.sub_pie) TAR_CHARTS.sub_pie.destroy();
+      TAR_CHARTS.sub_pie = new Chart(document.getElementById('c-tar-sub-pie'), {
+        type:'doughnut',
+        data:{ labels:top10.map(r => r.subcliente), datasets:[{ data:top10.map(r => Number(r.monto)), backgroundColor:colors10, borderWidth:0 }] },
+        options:{ cutout:'55%', plugins:{ legend:{position:'bottom',labels:{font:{size:8},color:tc,boxWidth:9,padding:5}} } }
+      });
+
+      // Table
+      const tbody = document.getElementById('tar-s-tbody');
+      if (tbody) {
+        tbody.innerHTML = subs.map((r, i) =>
+          '<tr><td>' + (i + 1) + '</td><td><b>' + (r.subcliente || '-') + '</b></td><td style="text-align:right">' +
+          _tarNum(r.txn_count) + '</td><td style="text-align:right"><b>' + _tarFmt(r.monto) +
+          '</b></td><td style="text-align:right">' + _tarPct(r.pct) + '</td></tr>'
+        ).join('');
+      }
+
+    } catch (e) {
+      console.error('[TAR] subclientes error:', e);
+      _tarSetEl('tar-s-periodo', 'Error al cargar datos');
+    }
   }
 
+  // ── TAR RECHAZOS ───────────────────────────────
   if (view === 'tar_rechazos') {
-    if(TAR_CHARTS.rec_pie) TAR_CHARTS.rec_pie.destroy();
-    TAR_CHARTS.rec_pie = new Chart(document.getElementById('c-tar-rec-pie'), {
-      type:'doughnut',
-      data:{ labels:["Not sufficient funds", "Bad Track Data", "Over daily limit", "Do not honor", "Exceeds withdrawal limit", "Incorrect PIN", "Otras razones"], datasets:[{ data:[155, 143, 139, 38, 36, 19, 20], backgroundColor:['#e53935','#ff7043','#ffa000','#ffcc02','#aaa','#ccc','#ddd'], borderWidth:0 }] },
-      options:{ cutout:'55%', plugins:{ legend:{position:'right',labels:{font:{size:9},color:tc,boxWidth:10,padding:8}} } }
-    });
-    if(TAR_CHARTS.rec_bar) TAR_CHARTS.rec_bar.destroy();
-    TAR_CHARTS.rec_bar = new Chart(document.getElementById('c-tar-rec-bar'), {
-      type:'bar',
-      data:{ labels:["Not sufficient funds", "Bad Track Data", "Over daily limit", "Do not honor", "Exceeds withdrawal limit", "Incorrect PIN", "Otras razones"], datasets:[{ data:[228805.31, 206415.61, 565761.33, 14607.33, 313110.92, 98966.64, 14469.44], backgroundColor:'#e5393520', borderColor:'#e53935', borderWidth:1.5, borderRadius:4 }] },
-      options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
-        x:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} },
-        y:{ grid:{display:false}, ticks:{color:tc,font:{size:9}} }
-      }}
-    });
+    try {
+      const rechazos = await TAR.rechazosDetail();
+      const kpis = await TAR.dashboardKpis();
+
+      if (!rechazos || !rechazos.length) {
+        _tarSetEl('tar-r-periodo', 'Sin datos — sube un archivo desde Carga de Datos');
+        ['c-tar-rec-pie','c-tar-rec-bar'].forEach(id => _tarNoData(id));
+        return;
+      }
+
+      if (kpis) _tarSetEl('tar-r-periodo', (kpis.fecha_min || '') + ' — ' + (kpis.fecha_max || ''));
+
+      // KPIs
+      _tarSetEl('tar-r-causa', rechazos[0].razon);
+      _tarSetEl('tar-r-causa-sub', _tarNum(rechazos[0].txn_count) + ' txns (' + _tarPct(rechazos[0].pct) + ')');
+      const totalRecMonto = rechazos.reduce((s, r) => s + Number(r.monto), 0);
+      _tarSetEl('tar-r-monto', _tarFmt(totalRecMonto));
+      _tarSetEl('tar-r-monto-sub', _tarNum(rechazos.reduce((s, r) => s + Number(r.txn_count), 0)) + ' rechazos totales');
+      _tarSetEl('tar-r-razones', String(rechazos.length));
+      _tarSetEl('tar-r-razones-sub', 'tipos distintos');
+
+      const recColors = ['#e53935','#ff7043','#ffa000','#ffcc02','#aaa','#ccc','#ddd'];
+      const top6 = rechazos.slice(0, 6);
+      const rRest = rechazos.slice(6);
+      const rLabels = top6.map(r => r.razon);
+      const rTxns = top6.map(r => Number(r.txn_count));
+      const rMontos = top6.map(r => Number(r.monto));
+      if (rRest.length) {
+        rLabels.push('Otras razones');
+        rTxns.push(rRest.reduce((s, r) => s + Number(r.txn_count), 0));
+        rMontos.push(rRest.reduce((s, r) => s + Number(r.monto), 0));
+      }
+
+      // Pie chart
+      if (TAR_CHARTS.rec_pie) TAR_CHARTS.rec_pie.destroy();
+      TAR_CHARTS.rec_pie = new Chart(document.getElementById('c-tar-rec-pie'), {
+        type:'doughnut',
+        data:{ labels:rLabels, datasets:[{ data:rTxns, backgroundColor:recColors.slice(0, rLabels.length), borderWidth:0 }] },
+        options:{ cutout:'55%', plugins:{ legend:{position:'right',labels:{font:{size:9},color:tc,boxWidth:10,padding:8}} } }
+      });
+
+      // Bar chart
+      if (TAR_CHARTS.rec_bar) TAR_CHARTS.rec_bar.destroy();
+      TAR_CHARTS.rec_bar = new Chart(document.getElementById('c-tar-rec-bar'), {
+        type:'bar',
+        data:{ labels:rLabels, datasets:[{ data:rMontos, backgroundColor:'#e5393520', borderColor:'#e53935', borderWidth:1.5, borderRadius:4 }] },
+        options:{ indexAxis:'y', plugins:{legend:{display:false}}, scales:{
+          x:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} },
+          y:{ grid:{display:false}, ticks:{color:tc,font:{size:9}} }
+        }}
+      });
+
+      // Table
+      const tbody = document.getElementById('tar-r-tbody');
+      if (tbody) {
+        tbody.innerHTML = rechazos.map((r, i) =>
+          '<tr><td>' + (i + 1) + '</td><td><b>' + (r.razon || '-') + '</b></td><td style="text-align:right">' +
+          _tarNum(r.txn_count) + '</td><td style="text-align:right"><b>' + _tarFmt(r.monto) +
+          '</b></td><td style="text-align:right">' + _tarPct(r.pct) + '</td></tr>'
+        ).join('');
+      }
+
+    } catch (e) {
+      console.error('[TAR] rechazos error:', e);
+      _tarSetEl('tar-r-periodo', 'Error al cargar datos');
+    }
   }
 
+  // ── TAR TARJETAHABIENTES ───────────────────────
   if (view === 'tar_tarjetahabientes') {
-    if(TAR_CHARTS.saldos) TAR_CHARTS.saldos.destroy();
-    TAR_CHARTS.saldos = new Chart(document.getElementById('c-tar-saldos'), {
-      type:'bar',
-      data:{ labels:["Negativo (< $0)", "$0.01 - $100", "$100 - $1,000", "$1,000 - $10,000", "$10,000 - $50,000", "> $50,000"], datasets:[{ data:[10772.33, 7317.91, 39395.04, 311254.91, 609993.52, 4248855.99], backgroundColor:['#e5393520','#8b8fb520','#0073ea20','#9b51e020','#00b87520','#ffa00020'], borderColor:['#e53935','#8b8fb5','#0073ea','#9b51e0','#00b875','#ffa000'], borderWidth:1.5, borderRadius:4 }] },
-      options:{ plugins:{legend:{display:false}}, scales:{
-        x:{ grid:{display:false}, ticks:{color:tc,font:{size:8}} },
-        y:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} }
-      }}
-    });
+    try {
+      const summary = await TAR.cardholdersSummary();
+      const kpis = await TAR.dashboardKpis();
+
+      if (!summary || !summary.totals) {
+        _tarSetEl('tar-t-periodo', 'Sin datos — sube un archivo desde Carga de Datos');
+        _tarNoData('c-tar-saldos');
+        return;
+      }
+
+      if (kpis) _tarSetEl('tar-t-periodo', (kpis.fecha_min || '') + ' — ' + (kpis.fecha_max || ''));
+      const t = summary.totals;
+      _tarSetEl('tar-t-activas', _tarNum(t.activas));
+      _tarSetEl('tar-t-activas-sub', _tarPct(t.total > 0 ? (t.activas / t.total * 100) : 0) + ' del total');
+      _tarSetEl('tar-t-bloqueadas', _tarNum(t.bloqueadas));
+      _tarSetEl('tar-t-bloqueadas-sub', _tarPct(t.total > 0 ? (t.bloqueadas / t.total * 100) : 0) + ' del total');
+      _tarSetEl('tar-t-inactivas', _tarNum(t.inactivas));
+      _tarSetEl('tar-t-inactivas-sub', _tarPct(t.total > 0 ? (t.inactivas / t.total * 100) : 0) + ' del total');
+
+      // Saldos chart
+      const sr = summary.saldo_ranges;
+      if (sr && sr.length) {
+        const sColors = ['#e53935','#8b8fb5','#0073ea','#9b51e0','#00b875','#ffa000'];
+        if (TAR_CHARTS.saldos) TAR_CHARTS.saldos.destroy();
+        TAR_CHARTS.saldos = new Chart(document.getElementById('c-tar-saldos'), {
+          type:'bar',
+          data:{ labels:sr.map(r => r.range_label), datasets:[{ data:sr.map(r => Number(r.saldo_total)), backgroundColor:sColors.slice(0, sr.length).map(c => c + '20'), borderColor:sColors.slice(0, sr.length), borderWidth:1.5, borderRadius:4 }] },
+          options:{ plugins:{legend:{display:false}}, scales:{
+            x:{ grid:{display:false}, ticks:{color:tc,font:{size:8}} },
+            y:{ grid:{color:gc}, ticks:{color:tc,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1e3?'$'+(v/1e3).toFixed(0)+'K':'$'+v} }
+          }}
+        });
+      } else { _tarNoData('c-tar-saldos'); }
+
+      // Saldos ranges table
+      const sTbody = document.getElementById('tar-t-saldos-tbody');
+      if (sTbody && sr && sr.length) {
+        sTbody.innerHTML = sr.map(r =>
+          '<tr><td>' + r.range_label + '</td><td style="text-align:right">' + _tarNum(r.count) +
+          '</td><td style="text-align:right"><b>' + _tarFmt(r.saldo_total) + '</b></td></tr>'
+        ).join('');
+      }
+
+      // Top clientes table
+      const cTbody = document.getElementById('tar-t-clientes-tbody');
+      if (cTbody && summary.top_clientes && summary.top_clientes.length) {
+        cTbody.innerHTML = summary.top_clientes.map((r, i) =>
+          '<tr><td>' + (i + 1) + '</td><td><b>' + (r.cliente || '-') + '</b></td><td style="text-align:right">' +
+          _tarNum(r.tarjetas) + '</td><td style="text-align:right"><b>' + _tarFmt(r.saldo_total) + '</b></td></tr>'
+        ).join('');
+      }
+
+    } catch (e) {
+      console.error('[TAR] tarjetahabientes error:', e);
+      _tarSetEl('tar-t-periodo', 'Error al cargar datos');
+    }
   }
 }
 
@@ -598,36 +1744,36 @@ function initTarCharts(view) {
 // ==============================
 const CAT_CD_DEFAULT = [
   {id:'cd1', nombre:'Nómina Operativa',      tipo:'Nómina',          empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'cd2', nombre:'Software',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:5000},
-  {id:'cd3', nombre:'Hardware',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:10000},
+  {id:'cd2', nombre:'Software',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'cd3', nombre:'Hardware',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
   {id:'cd4', nombre:'Liquidity Providers',   tipo:'Costos Directos', empresas:['Wirebit'], ppto:0},
-  {id:'cd5', nombre:'Comisiones Promotoría', tipo:'Com. Bancarias',  empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:13000},
+  {id:'cd5', nombre:'Comisiones Promotoría', tipo:'Com. Bancarias',  empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
 ];
 const CAT_GA_DEFAULT = [
-  {id:'ga1', nombre:'Nómina Administrativa', tipo:'Nómina', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:186000},
-  {id:'ga2', nombre:'Renta Oficina', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:36775},
-  {id:'ga3', nombre:'Mantenimiento', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:35000},
-  {id:'ga4', nombre:'Renta Impresora', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:2500},
-  {id:'ga5', nombre:'Software', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:5000},
-  {id:'ga6', nombre:'Hardware', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:10000},
-  {id:'ga7', nombre:'Efevoo Tarjetas', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:110000},
-  {id:'ga8', nombre:'Efevoo TPV', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:100000},
-  {id:'ga9', nombre:'Marketing', tipo:'Marketing', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:3000},
+  {id:'ga1', nombre:'Nómina Administrativa', tipo:'Nómina', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga2', nombre:'Renta Oficina', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga3', nombre:'Mantenimiento', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga4', nombre:'Renta Impresora', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga5', nombre:'Software', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga6', nombre:'Hardware', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga7', nombre:'Efevoo Tarjetas', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga8', nombre:'Efevoo TPV', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga9', nombre:'Marketing', tipo:'Marketing', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
   {id:'ga10', nombre:'Luz', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga11', nombre:'Insumos Oficina', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:2000},
-  {id:'ga12', nombre:'Viáticos', tipo:'Representación', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:10000},
+  {id:'ga11', nombre:'Insumos Oficina', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga12', nombre:'Viáticos', tipo:'Representación', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
   {id:'ga13', nombre:'Comisiones Bancarias', tipo:'Com. Bancarias', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga14', nombre:'Cumplimiento', tipo:'Regulatorio', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:17391},
+  {id:'ga14', nombre:'Cumplimiento', tipo:'Regulatorio', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
 ];
 
 function catGetData(sec){
   const key = sec==='cd' ? 'vmcr_cat_cd' : 'vmcr_cat_ga';
   const def = sec==='cd' ? CAT_CD_DEFAULT : CAT_GA_DEFAULT;
-  try { const s=JSON.parse(localStorage.getItem(key)); return (s&&s.length)?s:JSON.parse(JSON.stringify(def)); }
+  try { const s=DB.get(key); return (s&&s.length)?s:JSON.parse(JSON.stringify(def)); }
   catch(e){ return JSON.parse(JSON.stringify(def)); }
 }
 function catSetData(sec,data){
-  localStorage.setItem(sec==='cd'?'vmcr_cat_cd':'vmcr_cat_ga', JSON.stringify(data));
+  DB.set(sec==='cd'?'vmcr_cat_cd':'vmcr_cat_ga', data);
 }
 
 let _catTab = 'cd';
@@ -809,5 +1955,310 @@ function catToggleEmp(idx, sec, empresa, checked){
   toast('✅ Guardado');
 }
 
+
+// ══════════════════════════════════════
+// ═══  CONFIGURACIÓN DE COMISIONES  ═══
+// ══════════════════════════════════════
+
+let _comClientesCache = [];
+let _comAgentesCache = [];
+let _editingClientId = null;
+
+const _RATE_FIELDS = [
+  'rate_efevoo_tc','rate_efevoo_td','rate_efevoo_amex','rate_efevoo_ti',
+  'rate_salem_tc','rate_salem_td','rate_salem_amex','rate_salem_ti',
+  'rate_convenia_tc','rate_convenia_td','rate_convenia_amex','rate_convenia_ti',
+  'rate_comisionista_tc','rate_comisionista_td','rate_comisionista_amex','rate_comisionista_ti'
+];
+
+const _MSI_PLAZOS = [3, 6, 9, 12];
+const _MSI_ENTITIES = ['efevoo','salem','convenia','comisionista'];
+const _MSI_CARDS = ['TC','Amex'];
+
+function _fmtRate(v) {
+  const n = parseFloat(v) || 0;
+  if (n === 0) return '<span style="color:var(--muted)">—</span>';
+  return (n * 100).toFixed(4) + '%';
+}
+
+async function rTPVComisiones() {
+  try {
+    const [clients, agentes] = await Promise.all([TPV.getClients(), TPV.getAgentes()]);
+    _comClientesCache = clients || [];
+    _comAgentesCache = agentes || [];
+
+    // KPIs
+    const total = _comClientesCache.length;
+    const conAgente = _comClientesCache.filter(c => c.agente_id).length;
+    const conPromotor = _comClientesCache.filter(c => c.promotor && c.promotor !== 'Sin Promotor').length;
+    const sinConfig = _comClientesCache.filter(c => {
+      const hasRate = _RATE_FIELDS.some(f => parseFloat(c[f]) > 0);
+      return !hasRate;
+    }).length;
+
+    const kT = document.getElementById('com-kpi-total');
+    const kA = document.getElementById('com-kpi-agente');
+    const kP = document.getElementById('com-kpi-promotor');
+    const kS = document.getElementById('com-kpi-sinconfig');
+    if (kT) { kT.textContent = total; document.getElementById('com-kpi-total-sub').textContent = 'En base de datos'; }
+    if (kA) { kA.textContent = conAgente; document.getElementById('com-kpi-agente-sub').textContent = `${total - conAgente} sin agente`; }
+    if (kP) { kP.textContent = conPromotor; document.getElementById('com-kpi-promotor-sub').textContent = `${total - conPromotor} sin promotor`; }
+    if (kS) { kS.textContent = sinConfig; document.getElementById('com-kpi-sinconfig-sub').textContent = sinConfig > 0 ? 'Requieren configuración' : 'Todos configurados'; }
+
+    // Agente filter dropdown
+    const sel = document.getElementById('com-cfg-agente-filter');
+    if (sel) {
+      sel.innerHTML = '<option value="">Todos los agentes</option>';
+      _comAgentesCache.forEach(a => {
+        sel.innerHTML += `<option value="${a.id}">${a.nombre} (${a.siglas || ''})</option>`;
+      });
+    }
+
+    // Render table
+    _renderComTable(_comClientesCache);
+
+    // Clear search
+    const s = document.getElementById('com-cfg-search');
+    if (s) s.value = '';
+
+  } catch (e) {
+    console.error('[COM] rTPVComisiones error:', e);
+    toast('Error cargando clientes: ' + e.message);
+  }
+}
+
+function _renderComTable(clients) {
+  const tbody = document.getElementById('com-cfg-tbody');
+  if (!tbody) return;
+
+  if (!clients.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px">No hay clientes registrados</td></tr>';
+    const ct = document.getElementById('com-cfg-count');
+    if (ct) ct.textContent = '0 clientes';
+    return;
+  }
+
+  tbody.innerHTML = clients.map((c, i) => {
+    const agSig = c.tpv_agentes ? c.tpv_agentes.siglas || c.tpv_agentes.nombre : '';
+    const origIdx = _comClientesCache.indexOf(c);
+    return `<tr data-com-idx="${i}" data-com-nombre="${(c.nombre||'').toLowerCase()}" data-com-agente="${c.agente_id||''}">
+      <td style="font-weight:600;font-size:.72rem;white-space:nowrap">${c.nombre_display || c.nombre || '—'}</td>
+      <td style="font-size:.72rem">${agSig ? `<span class="pill" style="font-size:.62rem">${agSig}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_efevoo_tc)}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_efevoo_td)}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_salem_tc)}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_salem_td)}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_convenia_tc)}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_convenia_td)}</td>
+      <td class="r" style="font-size:.72rem">${c.factor_iva || 1.16}</td>
+      <td style="text-align:center"><button onclick="openComEdit(_comClientesCache[${origIdx}])" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Editar">✏️</button></td>
+    </tr>`;
+  }).join('');
+
+  const ct = document.getElementById('com-cfg-count');
+  if (ct) ct.textContent = `${clients.length} cliente${clients.length !== 1 ? 's' : ''}`;
+}
+
+function filterComClientes() {
+  const q = (document.getElementById('com-cfg-search')?.value || '').toLowerCase().trim();
+  const agId = document.getElementById('com-cfg-agente-filter')?.value || '';
+  const tbody = document.getElementById('com-cfg-tbody');
+  if (!tbody) return;
+
+  let visible = 0;
+  tbody.querySelectorAll('tr[data-com-idx]').forEach(tr => {
+    const nombre = tr.getAttribute('data-com-nombre') || '';
+    const agente = tr.getAttribute('data-com-agente') || '';
+    const matchQ = !q || nombre.includes(q);
+    const matchA = !agId || agente === agId;
+    const show = matchQ && matchA;
+    tr.style.display = show ? '' : 'none';
+    if (show) visible++;
+  });
+
+  const ct = document.getElementById('com-cfg-count');
+  if (ct) ct.textContent = `${visible} de ${_comClientesCache.length} clientes`;
+}
+
+async function openComEdit(client) {
+  _editingClientId = client?.id || null;
+
+  // Title
+  const title = document.getElementById('com-edit-title');
+  const sub = document.getElementById('com-edit-sub');
+  if (title) title.textContent = client ? `Editar: ${client.nombre_display || client.nombre}` : 'Nuevo Cliente';
+  if (sub) sub.textContent = client ? `ID: ${client.id} · Última actualización: ${client.updated_at ? new Date(client.updated_at).toLocaleDateString('es-MX') : '—'}` : 'Configura datos y tasas de comisión';
+
+  // Agent dropdown
+  const agSel = document.getElementById('com-edit-agente');
+  if (agSel) {
+    agSel.innerHTML = '<option value="">Sin agente</option>';
+    _comAgentesCache.forEach(a => {
+      agSel.innerHTML += `<option value="${a.id}">${a.nombre} (${a.siglas || ''})</option>`;
+    });
+    agSel.value = client?.agente_id || '';
+  }
+
+  // Fill basic fields
+  const _n = document.getElementById('com-edit-nombre');   if (_n) _n.value = client?.nombre || '';
+  const _p = document.getElementById('com-edit-promotor'); if (_p) _p.value = client?.promotor || '';
+  const _iv = document.getElementById('com-edit-iva');     if (_iv) _iv.value = client?.factor_iva ?? 1.16;
+  const _d = document.getElementById('com-edit-display');  if (_d) _d.value = client?.nombre_display || '';
+
+  // Fill rate fields
+  _RATE_FIELDS.forEach(f => {
+    const el = document.getElementById('com-edit-' + f);
+    if (el) el.value = client ? (parseFloat(client[f]) || 0) : 0;
+  });
+
+  // Fill MSI rates
+  const msiTbody = document.getElementById('com-edit-msi-tbody');
+  if (msiTbody) {
+    let msiData = [];
+    if (client?.id) {
+      try { msiData = await TPV.getClientMsiRates(client.id); } catch (e) { console.warn('MSI load error:', e); }
+    }
+
+    let msiHtml = '';
+    _MSI_PLAZOS.forEach(plazo => {
+      _MSI_CARDS.forEach((card, ci) => {
+        msiHtml += `<tr${ci === 0 ? ' style="border-top:2px solid var(--border)"' : ''}>`;
+        msiHtml += ci === 0 ? `<td rowspan="${_MSI_CARDS.length}" style="font-weight:600;font-size:.72rem;vertical-align:middle">${plazo} MSI</td>` : '';
+        msiHtml += `<td style="font-size:.72rem">${card}</td>`;
+        _MSI_ENTITIES.forEach(ent => {
+          const existing = msiData.find(r => r.plazo === plazo && r.entity === ent && r.card_type === card);
+          const val = existing ? existing.rate : 0;
+          msiHtml += `<td><input data-msi-plazo="${plazo}" data-msi-entity="${ent}" data-msi-card="${card}" type="number" step="0.00000001" min="0" max="1" value="${val}" style="width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:.72rem;text-align:right;background:var(--bg);color:var(--text);box-sizing:border-box"></td>`;
+        });
+        msiHtml += '</tr>';
+      });
+    });
+    msiTbody.innerHTML = msiHtml;
+  }
+
+  // Collapse MSI section
+  const msiSection = document.getElementById('com-msi-section');
+  if (msiSection) msiSection.style.display = 'none';
+
+  // Show overlay
+  const ov = document.getElementById('com-edit-overlay');
+  if (ov) ov.style.display = 'flex';
+}
+
+function closeComEdit() {
+  const ov = document.getElementById('com-edit-overlay');
+  if (ov) ov.style.display = 'none';
+  _editingClientId = null;
+}
+
+// ── RATE CHANGES HISTORY MODAL ──
+function openRateChanges() {
+  const ov = document.getElementById('rate-changes-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+
+  const changes = TPV.getRateChanges();
+  const tbody = document.getElementById('rate-changes-tbody');
+  const info = document.getElementById('rate-changes-info');
+  const sub = document.getElementById('rate-changes-subtitle');
+
+  if (!changes.length) {
+    if (sub) sub.textContent = 'No hay cambios de tasas registrados';
+    if (info) info.innerHTML = '<div style="padding:12px;background:var(--blue-bg);border-radius:8px;font-size:.72rem;color:var(--blue)">ℹ️ Para registrar cambios de tasas, usa la hoja <b>Cambios_Comisiones</b> en la plantilla de configuración Excel y súbela desde la sección de Carga de Datos.</div>';
+    if (tbody) tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--muted);font-size:.8rem">Sin cambios de tasas registrados</td></tr>';
+    return;
+  }
+
+  // Count unique clients
+  const uniqueClients = new Set(changes.map(c => c.cliente)).size;
+  if (sub) sub.textContent = `${changes.length} cambios registrados · ${uniqueClients} clientes afectados`;
+
+  if (info) info.innerHTML = '<div style="padding:10px 12px;background:var(--purple-bg);border-radius:8px;font-size:.72rem;color:var(--purple);margin-bottom:4px">📊 Las comisiones se corrigen automáticamente: para transacciones anteriores al cambio se usa la tasa anterior, para las posteriores la tasa nueva.</div>';
+
+  // Sort: most recent first (descending by fecha_cambio)
+  const sorted = [...changes].sort((a, b) =>
+    a.fecha_cambio < b.fecha_cambio ? 1 : a.fecha_cambio > b.fecha_cambio ? -1 : 0
+  );
+
+  if (tbody) {
+    tbody.innerHTML = sorted.map(ch => {
+      const delta = ch.tasa_nueva - ch.tasa_anterior;
+      const deltaColor = delta > 0 ? 'var(--red)' : delta < 0 ? 'var(--green)' : 'var(--muted)';
+      const deltaSign = delta > 0 ? '+' : '';
+      return `<tr>
+        <td class="bld" style="font-size:.73rem">${ch.cliente}</td>
+        <td style="font-size:.72rem"><span style="background:var(--blue-bg);color:var(--blue);padding:1px 6px;border-radius:4px;font-weight:600">${ch.campo}</span></td>
+        <td style="font-size:.73rem">${ch.fecha_cambio || '—'}</td>
+        <td class="mo" style="text-align:right;font-size:.73rem">${(ch.tasa_anterior * 100).toFixed(4)}%</td>
+        <td class="mo" style="text-align:right;font-size:.73rem;font-weight:700">${(ch.tasa_nueva * 100).toFixed(4)}%</td>
+        <td class="mo" style="text-align:right;font-size:.73rem;color:${deltaColor};font-weight:700">${deltaSign}${(delta * 100).toFixed(4)}%</td>
+        <td style="font-size:.7rem;color:var(--muted);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${ch.notas || '—'}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+
+function closeRateChanges() {
+  const ov = document.getElementById('rate-changes-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+async function saveComEdit() {
+  const nombre = document.getElementById('com-edit-nombre').value.trim();
+  if (!nombre) { toast('⚠️ El nombre del cliente es obligatorio'); return; }
+
+  const client = { nombre };
+
+  // Basic fields
+  const display = document.getElementById('com-edit-display').value.trim();
+  if (display) client.nombre_display = display;
+  const agenteId = document.getElementById('com-edit-agente').value;
+  client.agente_id = agenteId ? parseInt(agenteId) : null;
+  client.promotor = document.getElementById('com-edit-promotor').value.trim() || 'Sin Promotor';
+  client.factor_iva = parseFloat(document.getElementById('com-edit-iva').value) || 1.16;
+
+  // Rate fields
+  _RATE_FIELDS.forEach(f => {
+    const el = document.getElementById('com-edit-' + f);
+    client[f] = el ? parseFloat(el.value) || 0 : 0;
+  });
+
+  // If editing existing, pass id
+  if (_editingClientId) client.id = _editingClientId;
+
+  try {
+    const result = await TPV.saveClient(client);
+    const savedId = result?.[0]?.id || _editingClientId;
+
+    // Save MSI rates
+    if (savedId) {
+      const msiInputs = document.querySelectorAll('#com-edit-msi-tbody input[data-msi-plazo]');
+      if (msiInputs.length > 0) {
+        const rates = [];
+        msiInputs.forEach(inp => {
+          const rate = parseFloat(inp.value) || 0;
+          if (rate > 0) {
+            rates.push({
+              plazo: parseInt(inp.dataset.msiPlazo),
+              entity: inp.dataset.msiEntity,
+              card_type: inp.dataset.msiCard,
+              rate
+            });
+          }
+        });
+        if (rates.length > 0) {
+          await TPV.saveClientMsiRates(savedId, rates);
+        }
+      }
+    }
+
+    toast('✅ Cliente guardado correctamente');
+    closeComEdit();
+    rTPVComisiones();
+  } catch (e) {
+    console.error('[COM] saveComEdit error:', e);
+    toast('❌ Error al guardar: ' + e.message);
+  }
+}
 
 // ══════════════════════════════════════

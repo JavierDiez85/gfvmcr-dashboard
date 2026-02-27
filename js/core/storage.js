@@ -1,6 +1,7 @@
 // ══════════════════════════════════════
 // STORAGE — Capa de datos
-// Hoy: localStorage. Futuro: API REST.
+// localStorage = caché síncrona (lecturas rápidas)
+// Supabase = persistencia remota (escrituras async)
 // ══════════════════════════════════════
 
 const DB = {
@@ -10,21 +11,16 @@ const DB = {
   },
   set(key, val) {
     localStorage.setItem(key, JSON.stringify(val));
+    // Write-through: empujar a Supabase en background
+    if (typeof SB !== 'undefined' && SB.pushKey) {
+      SB.pushKey(key).catch(e => console.warn('[DB.set] push falló:', e.message));
+    }
   },
   remove(key) {
     localStorage.removeItem(key);
-  },
-  // Future API methods (uncomment when backend ready):
-  // async fetch(endpoint) {
-  //   const r = await fetch(`/api/${endpoint}`, { headers: authHeaders() });
-  //   return r.json();
-  // },
-  // async post(endpoint, data) {
-  //   const r = await fetch(`/api/${endpoint}`, {
-  //     method: 'POST',
-  //     headers: { ...authHeaders(), 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(data)
-  //   });
-  //   return r.json();
-  // }
+    // Sync removal a Supabase
+    if (typeof SB !== 'undefined' && SB.pushKey) {
+      SB.pushKey(key).catch(e => console.warn('[DB.remove] push falló:', e.message));
+    }
+  }
 };

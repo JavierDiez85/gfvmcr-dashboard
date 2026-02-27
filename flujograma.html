@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>GFVMCR — Flujograma de Datos</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a0e27;color:#e0e4f0;overflow-x:auto}
+h1{text-align:center;padding:24px 0 4px;font-size:1.4rem;color:#fff}
+.sub{text-align:center;font-size:.75rem;color:#8b8fb5;margin-bottom:20px}
+.legend{display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-bottom:20px;font-size:.72rem}
+.legend span{display:flex;align-items:center;gap:5px}
+.legend .dot{width:12px;height:12px;border-radius:3px}
+
+/* Canvas */
+.canvas{position:relative;width:1600px;min-height:1800px;margin:0 auto;padding:20px}
+
+/* Nodes */
+.node{position:absolute;border-radius:10px;padding:10px 14px;font-size:.72rem;line-height:1.35;cursor:default;transition:transform .15s,box-shadow .15s;z-index:2}
+.node:hover{transform:scale(1.04);box-shadow:0 0 20px rgba(255,255,255,.15)}
+.node .id{font-weight:800;font-size:.65rem;opacity:.6;margin-bottom:2px}
+.node .title{font-weight:700;font-size:.78rem;margin-bottom:3px}
+.node .detail{font-size:.65rem;opacity:.7;line-height:1.3}
+.node.ok{border:2px solid #00b875}
+.node.warn{border:2px solid #ffa000}
+.node.err{border:2px solid #ea3943}
+.node .status{position:absolute;top:6px;right:8px;font-size:.6rem;font-weight:700;padding:1px 6px;border-radius:4px}
+.node .status.ok{background:#00b87522;color:#00b875}
+.node .status.warn{background:#ffa00022;color:#ffa000}
+.node .status.err{background:#ea394322;color:#ea3943}
+
+/* Node types */
+.src{background:linear-gradient(135deg,#1a2550,#1e2d5a);border-color:#4a6cf7}
+.store{background:linear-gradient(135deg,#1a3025,#1e3d2a);border-color:#00b875}
+.pipe{background:linear-gradient(135deg,#3a1a40,#4a1e50);border-color:#9b51e0;text-align:center}
+.view{background:linear-gradient(135deg,#1a2040,#1e2850);border-color:#0073ea}
+.chart{background:linear-gradient(135deg,#2a1a10,#3a2520);border-color:#ff7043}
+.kpi{background:linear-gradient(135deg,#2a2a10,#3a3520);border-color:#ffa000}
+
+/* SVG arrows */
+svg.arrows{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
+svg.arrows line,svg.arrows path{stroke-width:1.5;fill:none}
+.arrow-ok{stroke:#00b87588}
+.arrow-data{stroke:#4a6cf788}
+.arrow-render{stroke:#0073ea55}
+.arrow-warn{stroke:#ffa00088;stroke-dasharray:6,4}
+
+/* Section labels */
+.section-label{position:absolute;font-size:.9rem;font-weight:800;color:#ffffff22;text-transform:uppercase;letter-spacing:3px;z-index:0}
+
+/* Interactive */
+.filter-bar{display:flex;gap:8px;justify-content:center;margin-bottom:16px;flex-wrap:wrap}
+.filter-bar button{background:#1a2040;border:1px solid #333;color:#aab;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:.72rem;transition:all .15s}
+.filter-bar button:hover,.filter-bar button.active{background:#0073ea;color:#fff;border-color:#0073ea}
+</style>
+</head>
+<body>
+
+<h1>GFVMCR — Flujograma de Conexiones de Datos</h1>
+<div class="sub">Febrero 2026 | Haz hover en los nodos para ver detalle</div>
+
+<div class="legend">
+  <span><div class="dot" style="background:#4a6cf7"></div> Fuentes (uploads/forms)</span>
+  <span><div class="dot" style="background:#00b875"></div> Almacenes de datos</span>
+  <span><div class="dot" style="background:#9b51e0"></div> Pipeline / Sync</span>
+  <span><div class="dot" style="background:#0073ea"></div> Vistas / Tablas</span>
+  <span><div class="dot" style="background:#ff7043"></div> Charts</span>
+  <span><div class="dot" style="background:#ffa000"></div> KPIs</span>
+</div>
+
+<div class="filter-bar">
+  <button class="active" onclick="filterAll(this)">Todo</button>
+  <button onclick="filterFlow(this,'salem')">Salem</button>
+  <button onclick="filterFlow(this,'endless')">Endless</button>
+  <button onclick="filterFlow(this,'dynamo')">Dynamo</button>
+  <button onclick="filterFlow(this,'wirebit')">Wirebit</button>
+  <button onclick="filterFlow(this,'tpv')">TPV</button>
+  <button onclick="filterFlow(this,'creditos')">Creditos</button>
+  <button onclick="filterFlow(this,'tesoreria')">Tesoreria</button>
+</div>
+
+<div class="canvas" id="canvas">
+
+<!-- ═══════ SECTION LABELS ═══════ -->
+<div class="section-label" style="top:10px;left:30px">Fuentes</div>
+<div class="section-label" style="top:340px;left:30px">Almacenes</div>
+<div class="section-label" style="top:600px;left:30px">Pipeline</div>
+<div class="section-label" style="top:750px;left:30px">Vistas P&L</div>
+<div class="section-label" style="top:1120px;left:30px">Consolidados</div>
+<div class="section-label" style="top:1420px;left:30px">Otras Vistas</div>
+
+<!-- ═══════ ROW 1: FUENTES DE DATOS ═══════ -->
+
+<div class="node src" id="F1" data-flow="tpv,salem" style="left:30px;top:50px;width:160px">
+  <div class="id">F1</div>
+  <div class="title">Upload TPV</div>
+  <div class="detail">Excel transacciones<br>startTxnUpload()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F4" data-flow="wirebit" style="left:220px;top:50px;width:160px">
+  <div class="id">F4</div>
+  <div class="title">Upload Wirebit</div>
+  <div class="detail">Excel fees<br>startWBUpload()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F6" data-flow="creditos,endless,dynamo" style="left:410px;top:50px;width:160px">
+  <div class="id">F6</div>
+  <div class="title">Upload PDF Creditos</div>
+  <div class="detail">Tablas amortizacion<br>rCargaCreditos()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F7" data-flow="salem,endless,dynamo,wirebit" style="left:600px;top:50px;width:160px">
+  <div class="id">F7</div>
+  <div class="title">Carga Masiva</div>
+  <div class="detail">Excel ing+gastos<br>startCargaMasiva()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F8" data-flow="salem,endless,dynamo,wirebit" style="left:790px;top:50px;width:160px">
+  <div class="id">F8</div>
+  <div class="title">Flujo Ingresos</div>
+  <div class="detail">Manual por fila<br>fiSave()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F9" data-flow="salem,endless,dynamo,wirebit" style="left:980px;top:50px;width:160px">
+  <div class="id">F9</div>
+  <div class="title">Flujo Gastos</div>
+  <div class="detail">Manual por fila<br>fgSave()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F10" data-flow="salem,endless,dynamo,wirebit" style="left:1170px;top:50px;width:150px">
+  <div class="id">F10</div>
+  <div class="title">Nomina</div>
+  <div class="detail">Config empleados<br>nomSave()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F11" data-flow="salem,endless,dynamo,wirebit" style="left:1350px;top:50px;width:160px">
+  <div class="id">F11</div>
+  <div class="title">Gastos Compartidos</div>
+  <div class="detail">Distribucion %<br>gcSave()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F5" data-flow="tesoreria" style="left:30px;top:170px;width:160px">
+  <div class="id">F5</div>
+  <div class="title">Upload Tesoreria</div>
+  <div class="detail">Excel movimientos<br>tesSubirExcel()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node src" id="F3" data-flow="tpv" style="left:220px;top:170px;width:160px">
+  <div class="id">F3</div>
+  <div class="title">Upload Tarjetas</div>
+  <div class="detail">Excel CENTUM<br>startTarUpload()</div>
+  <div class="status ok">OK</div>
+</div>
+
+<!-- ═══════ ROW 2: ALMACENES ═══════ -->
+
+<div class="node store" id="D12" data-flow="tpv,salem" style="left:30px;top:370px;width:170px">
+  <div class="id">D12</div>
+  <div class="title">TPV Data (Supabase)</div>
+  <div class="detail">Comisiones mensuales<br>vmcr_tpv_monthly_pl_*</div>
+</div>
+
+<div class="node store" id="D6" data-flow="wirebit" style="left:230px;top:370px;width:170px">
+  <div class="id">D6</div>
+  <div class="title">WB_ING</div>
+  <div class="detail">Wirebit ingresos fees<br>vmcr_wb_fees_2026</div>
+</div>
+
+<div class="node store" id="D4" data-flow="creditos,endless" style="left:430px;top:370px;width:160px">
+  <div class="id">D4</div>
+  <div class="title">END_CREDITS</div>
+  <div class="detail">3 creditos Endless<br>vmcr_cred_end</div>
+</div>
+
+<div class="node store" id="D5" data-flow="creditos,dynamo" style="left:620px;top:370px;width:160px">
+  <div class="id">D5</div>
+  <div class="title">DYN_CREDITS</div>
+  <div class="detail">7 creditos Dynamo<br>vmcr_cred_dyn</div>
+</div>
+
+<div class="node store" id="D2" data-flow="salem,endless,dynamo,wirebit" style="left:830px;top:370px;width:170px">
+  <div class="id">D2</div>
+  <div class="title">FI_ROWS</div>
+  <div class="detail">Flujo ingresos<br>manual + auto TPV + auto cred<br>vmcr_fi</div>
+</div>
+
+<div class="node store" id="D3" data-flow="salem,endless,dynamo,wirebit" style="left:1030px;top:370px;width:170px">
+  <div class="id">D3</div>
+  <div class="title">FG_ROWS</div>
+  <div class="detail">Flujo gastos<br>manual + auto TPV<br>vmcr_fg</div>
+</div>
+
+<div class="node store" id="D10" data-flow="salem,endless,dynamo,wirebit" style="left:1230px;top:370px;width:150px">
+  <div class="id">D10</div>
+  <div class="title">NOM_EDIT</div>
+  <div class="detail">Nomina empleados<br>% por empresa</div>
+</div>
+
+<div class="node store" id="D11" data-flow="salem,endless,dynamo,wirebit" style="left:1400px;top:370px;width:140px">
+  <div class="id">D11</div>
+  <div class="title">GC_EDIT</div>
+  <div class="detail">Gastos comp<br>% distribucion</div>
+</div>
+
+<div class="node store" id="D14" data-flow="tesoreria" style="left:30px;top:480px;width:170px">
+  <div class="id">D14</div>
+  <div class="title">Tesoreria</div>
+  <div class="detail">Movimientos por banco<br>vmcr_tesoreria</div>
+</div>
+
+<!-- ═══════ ROW 3: PIPELINE ═══════ -->
+
+<div class="node pipe" id="SYNC" data-flow="salem,endless,dynamo,wirebit,tpv,creditos" style="left:350px;top:590px;width:900px">
+  <div class="id">PIPELINE</div>
+  <div class="title">_syncAll() + syncFlujoToRecs()</div>
+  <div class="detail">wbLoadFees() → fiLoad() → fgLoad() → TPV.calcMonthlyPL() → fiInjectTPV() → fiInjectCredits() → syncFlujoToRecs()</div>
+</div>
+
+<div class="node store" id="D1" data-flow="salem,endless,dynamo,wirebit,tpv,creditos" style="left:550px;top:670px;width:500px;text-align:center;border-width:3px">
+  <div class="id">D1 — MASTER</div>
+  <div class="title" style="font-size:.95rem">S.recs — Todos los registros P&L consolidados</div>
+  <div class="detail">Ingresos + Gastos de Salem, Endless, Dynamo, Wirebit | fromFlujo, auto, autoTPV</div>
+</div>
+
+<!-- ═══════ ROW 4: VISTAS P&L POR EMPRESA ═══════ -->
+
+<div class="node view" id="V5" data-flow="salem,tpv" style="left:30px;top:790px;width:220px">
+  <div class="id">V5 — sal_res</div>
+  <div class="title">Salem P&L</div>
+  <div class="detail">
+    <b>KPIs:</b> Ingresos $904K, Gastos<br>
+    <b>Chart bar:</b> Gastos por cat (S.recs)<br>
+    <b>Chart pie:</b> Fuentes ingreso (TPV/Tarj)<br>
+    <b>Tabla:</b> Estado Resultados completo
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V8" data-flow="endless,creditos" style="left:280px;top:790px;width:220px">
+  <div class="id">V8 — end_res</div>
+  <div class="title">Endless P&L</div>
+  <div class="detail">
+    <b>KPIs:</b> Cartera $3.51M, Ingresos $565K<br>
+    <b>Chart bar:</b> Gastos por cat (S.recs)<br>
+    <b>Chart pie:</b> Cartera status (D4)<br>
+    <b>Tabla:</b> Estado Resultados
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V10" data-flow="dynamo,creditos" style="left:530px;top:790px;width:220px">
+  <div class="id">V10 — dyn_res</div>
+  <div class="title">Dynamo P&L</div>
+  <div class="detail">
+    <b>KPIs:</b> Cartera $33.17M, Ingresos<br>
+    <b>Chart bar:</b> Gastos por cat (S.recs)<br>
+    <b>Chart pie:</b> Cartera status (D5)<br>
+    <b>Tabla:</b> Estado Resultados
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V12" data-flow="wirebit" style="left:780px;top:790px;width:220px">
+  <div class="id">V12 — wb_res</div>
+  <div class="title">Wirebit P&L</div>
+  <div class="detail">
+    <b>KPIs:</b> Ingresos, Gastos, Nomina<br>
+    <b>Chart line:</b> Ing vs Costos (D6)<br>
+    <b>Chart pie:</b> Fuentes ingreso (D6)<br>
+    <b>Tabla:</b> Estado Resultados
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V9" data-flow="endless,creditos" style="left:1030px;top:790px;width:200px">
+  <div class="id">V9 — end_cred</div>
+  <div class="title">Endless Cartera</div>
+  <div class="detail">
+    <b>KPIs:</b> 5 cards cartera<br>
+    <b>Lista:</b> Cards creditos<br>
+    <b>Detalle:</b> Amortizacion
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V11" data-flow="dynamo,creditos" style="left:1260px;top:790px;width:200px">
+  <div class="id">V11 — dyn_cred</div>
+  <div class="title">Dynamo Cartera</div>
+  <div class="detail">
+    <b>KPIs:</b> 5 cards cartera<br>
+    <b>Lista:</b> Cards creditos<br>
+    <b>Detalle:</b> Amortizacion
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<!-- Row: Sub-views Salem -->
+<div class="node view" id="V7" data-flow="salem" style="left:30px;top:980px;width:170px">
+  <div class="id">V7 — sal_gas</div>
+  <div class="title">Salem Gastos</div>
+  <div class="detail">Tabla gastos detallados<br><b>PENDIENTE:</b> datos hardcodeados</div>
+  <div class="status warn">P4</div>
+</div>
+
+<div class="node view" id="V15" data-flow="creditos,endless,dynamo" style="left:280px;top:980px;width:200px">
+  <div class="id">V15 — cred_dash</div>
+  <div class="title">Creditos Dashboard</div>
+  <div class="detail">
+    <b>KPIs:</b> 6 consolidados<br>
+    <b>Charts:</b> Status + Entidad<br>
+    <b>Lista:</b> Todos creditos
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V16" data-flow="creditos,endless,dynamo" style="left:510px;top:980px;width:200px">
+  <div class="id">V16 — cred_cobr</div>
+  <div class="title">Cobranza</div>
+  <div class="detail">
+    <b>KPIs:</b> 4 cobranza<br>
+    <b>Charts:</b> Status + Vencida<br>
+    <b>Tabla:</b> Pagos pendientes
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V13" data-flow="wirebit" style="left:740px;top:980px;width:180px">
+  <div class="id">V13 — wb_ing</div>
+  <div class="title">Wirebit Ingresos</div>
+  <div class="detail">
+    <b>KPIs:</b> Total, Crecimiento<br>
+    <b>Charts:</b> Bar + Pie<br>
+    <b>Tabla:</b> Detalle fees
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V14" data-flow="wirebit" style="left:950px;top:980px;width:180px">
+  <div class="id">V14 — wb_nom</div>
+  <div class="title">Wirebit Nomina</div>
+  <div class="detail">
+    <b>KPIs:</b> Total, Empleados<br>
+    <b>Tabla:</b> Detalle empleados
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<!-- ═══════ ROW 5: CONSOLIDADOS ═══════ -->
+
+<div class="node view" id="V3" data-flow="salem,endless,dynamo,creditos" style="left:200px;top:1170px;width:280px">
+  <div class="id">V3 — centum</div>
+  <div class="title">Centum Capital — Consolidado</div>
+  <div class="detail">
+    <b>KPIs:</b> Ingresos $5.29M, Cartera $36.68M, Nomina<br>
+    <b>Chart bar:</b> Ingresos Salem+End+Dyn apilado<br>
+    <b>Chart pie:</b> Cartera End vs Dyn<br>
+    <b>Tabla:</b> Estado Resultados consolidado<br>
+    <b>Cards:</b> Salem, Endless, Dynamo → navTo P&L
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V4" data-flow="salem,endless,dynamo,wirebit,creditos" style="left:550px;top:1170px;width:300px">
+  <div class="id">V4 — grupo</div>
+  <div class="title">Grupo Financiero — Consolidado</div>
+  <div class="detail">
+    <b>KPIs:</b> Ingresos $5.33M, Gastos, Nomina<br>
+    <b>Chart bar:</b> 4 entidades ingresos apilado<br>
+    <b>Chart pie:</b> Nomina por entidad<br>
+    <b>Tabla:</b> Estado Resultados grupo<br>
+    <b>Cards:</b> Sal, End, Dyn, Wir → navTo
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V2" data-flow="salem,endless,dynamo,wirebit" style="left:920px;top:1170px;width:260px">
+  <div class="id">V2 — resumen</div>
+  <div class="title">Dashboard Grupo</div>
+  <div class="detail">
+    <b>KPIs:</b> Ingresos, Gastos, Nomina, Margen<br>
+    <b>Charts:</b> Ing vs Gas mensual<br>
+    <b>Cards:</b> Resumen por empresa
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<!-- ═══════ ROW 6: OTRAS VISTAS ═══════ -->
+
+<div class="node view" id="V21" data-flow="tpv" style="left:30px;top:1460px;width:175px">
+  <div class="id">V21-V28</div>
+  <div class="title">TPV / Terminales</div>
+  <div class="detail">
+    Dashboard General<br>
+    Dashboard Periodo<br>
+    Control Pagos<br>
+    Resumen Clientes<br>
+    Comisiones Agentes<br>
+    Terminales<br>
+    Cambios<br>
+    Config Comisiones
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V29" data-flow="tpv" style="left:230px;top:1460px;width:175px">
+  <div class="id">V29-V33</div>
+  <div class="title">Tarjetas CENTUM</div>
+  <div class="detail">
+    Dashboard<br>
+    Conceptos<br>
+    Subclientes<br>
+    Rechazos<br>
+    Tarjetahabientes
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V34" data-flow="tesoreria" style="left:430px;top:1460px;width:175px">
+  <div class="id">V34-V36</div>
+  <div class="title">Tesoreria</div>
+  <div class="detail">
+    Flujo de Caja<br>
+    Por Empresa<br>
+    Consolidado Grupo
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V17" data-flow="salem,endless,dynamo,wirebit" style="left:630px;top:1460px;width:160px">
+  <div class="id">V17-V20</div>
+  <div class="title">Carga Manual</div>
+  <div class="detail">
+    Nomina Compartida<br>
+    Gastos Compartidos<br>
+    Flujo Ingresos<br>
+    Flujo Gastos
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V37" data-flow="salem,endless,dynamo,wirebit" style="left:815px;top:1460px;width:160px">
+  <div class="id">V37-V41</div>
+  <div class="title">Uploads</div>
+  <div class="detail">
+    Carga Masiva<br>
+    Creditos PDF<br>
+    TPV Upload<br>
+    Tarjetas Upload<br>
+    Wirebit Upload
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<div class="node view" id="V42" style="left:1000px;top:1460px;width:160px">
+  <div class="id">V42-V46</div>
+  <div class="title">Configuracion</div>
+  <div class="detail">
+    Usuarios<br>
+    Apariencia<br>
+    Permisos<br>
+    Categorias P&L<br>
+    Bancos y Cuentas
+  </div>
+  <div class="status ok">OK</div>
+</div>
+
+<!-- ═══════ PROBLEMAS PENDIENTES ═══════ -->
+<div style="position:absolute;left:30px;top:1680px;width:1500px">
+  <div style="font-size:.9rem;font-weight:800;color:#ffa000;margin-bottom:12px">PENDIENTES (problemas conocidos)</div>
+  <div style="display:flex;gap:12px;flex-wrap:wrap">
+    <div class="node" style="position:static;width:220px;background:#2a2010;border:2px solid #ffa000">
+      <div class="id" style="color:#ffa000">P4</div>
+      <div class="title">Salem Gastos (V7)</div>
+      <div class="detail">Tabla con datos hardcodeados.<br>No conectada a FG_ROWS.</div>
+    </div>
+    <div class="node" style="position:static;width:220px;background:#2a2010;border:2px solid #ffa000">
+      <div class="id" style="color:#ffa000">P7</div>
+      <div class="title">fiInjectCredits()</div>
+      <div class="detail">Usa formula simple monto*tasa/12.<br>Deberia usar tabla amortizacion.</div>
+    </div>
+    <div class="node" style="position:static;width:220px;background:#2a2010;border:2px solid #ffa000">
+      <div class="id" style="color:#ffa000">P8</div>
+      <div class="title">Creditos calendario</div>
+      <div class="detail">Intereses llenan 12 meses iguales.<br>Deberia mapear periodos a meses.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ SVG ARROWS ═══════ -->
+<svg class="arrows" id="svg-arrows"></svg>
+
+</div>
+
+<script>
+// Arrow definitions: [fromId, toId, class]
+const arrows = [
+  // Sources → Stores
+  ['F1','D12','arrow-data'],
+  ['F4','D6','arrow-data'],
+  ['F6','D4','arrow-data'],
+  ['F6','D5','arrow-data'],
+  ['F7','D2','arrow-data'],
+  ['F7','D3','arrow-data'],
+  ['F8','D2','arrow-data'],
+  ['F9','D3','arrow-data'],
+  ['F10','D10','arrow-data'],
+  ['F11','D11','arrow-data'],
+  ['F5','D14','arrow-data'],
+
+  // Stores → Pipeline
+  ['D12','SYNC','arrow-ok'],
+  ['D6','SYNC','arrow-ok'],
+  ['D4','SYNC','arrow-ok'],
+  ['D5','SYNC','arrow-ok'],
+  ['D2','SYNC','arrow-ok'],
+  ['D3','SYNC','arrow-ok'],
+
+  // Pipeline → Master
+  ['SYNC','D1','arrow-ok'],
+
+  // Master → P&L Views
+  ['D1','V5','arrow-render'],
+  ['D1','V8','arrow-render'],
+  ['D1','V10','arrow-render'],
+  ['D1','V12','arrow-render'],
+
+  // Credits → Views directly (for KPIs/charts)
+  ['D4','V8','arrow-data'],
+  ['D4','V9','arrow-data'],
+  ['D5','V10','arrow-data'],
+  ['D5','V11','arrow-data'],
+  ['D4','V15','arrow-data'],
+  ['D5','V15','arrow-data'],
+  ['D4','V16','arrow-data'],
+  ['D5','V16','arrow-data'],
+
+  // WB direct
+  ['D6','V12','arrow-data'],
+  ['D6','V13','arrow-data'],
+
+  // P&L → Consolidados
+  ['D1','V3','arrow-render'],
+  ['D1','V4','arrow-render'],
+  ['D1','V2','arrow-render'],
+  ['D4','V3','arrow-data'],
+  ['D5','V3','arrow-data'],
+
+  // Nomina → views
+  ['D10','V3','arrow-data'],
+  ['D10','V4','arrow-data'],
+
+  // Tesoreria
+  ['D14','V34','arrow-render'],
+
+  // TPV
+  ['D12','V21','arrow-render'],
+];
+
+function drawArrows(){
+  const svg = document.getElementById('svg-arrows');
+  const canvas = document.getElementById('canvas');
+  const cr = canvas.getBoundingClientRect();
+  svg.innerHTML = '<defs><marker id="ah" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><polygon points="0 0, 8 3, 0 6" fill="#8888"/></marker></defs>';
+
+  arrows.forEach(([fid,tid,cls]) => {
+    const f = document.getElementById(fid);
+    const t = document.getElementById(tid);
+    if(!f||!t) return;
+
+    const fr = f.getBoundingClientRect();
+    const tr = t.getBoundingClientRect();
+
+    // Center bottom of source, center top of target
+    let x1 = fr.left + fr.width/2 - cr.left;
+    let y1 = fr.bottom - cr.top;
+    let x2 = tr.left + tr.width/2 - cr.left;
+    let y2 = tr.top - cr.top;
+
+    // If target is to the side, use side connections
+    if(Math.abs(y1 - (tr.top - cr.top)) < 30){
+      y1 = fr.top + fr.height/2 - cr.top;
+      y2 = tr.top + tr.height/2 - cr.top;
+      x1 = fr.right - cr.left;
+      x2 = tr.left - cr.left;
+    }
+
+    const mx = (x1+x2)/2;
+    const my = (y1+y2)/2;
+    const path = `M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}`;
+
+    svg.innerHTML += `<path d="${path}" class="${cls}" marker-end="url(#ah)"/>`;
+  });
+}
+
+function filterAll(btn){
+  document.querySelectorAll('.filter-bar button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.node').forEach(n=>{n.style.opacity='1';n.style.filter='';});
+  drawArrows();
+}
+
+function filterFlow(btn, flow){
+  document.querySelectorAll('.filter-bar button').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.querySelectorAll('.node').forEach(n=>{
+    const flows = (n.dataset.flow||'').split(',');
+    if(flows.includes(flow) || n.id==='D1' || n.id==='SYNC'){
+      n.style.opacity='1'; n.style.filter='';
+    } else {
+      n.style.opacity='.15'; n.style.filter='grayscale(1)';
+    }
+  });
+}
+
+// Draw on load
+setTimeout(drawArrows, 100);
+window.addEventListener('resize', drawArrows);
+</script>
+</body>
+</html>
