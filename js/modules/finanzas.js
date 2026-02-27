@@ -250,7 +250,7 @@ function rPLCharts(ent){
       {lbl:'Otros',        cats:['Administrativo','Operaciones','Regulatorio','Representación','Varios']},
     ];
     const salGasVals = salGasCats.map(gc => {
-      const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent==='Salem' && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())) && (!gc.concepts || gc.concepts.some(c=>r.concepto.toLowerCase().includes(c))));
+      const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent==='Salem' && r.yr==_year && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())) && (!gc.concepts || gc.concepts.some(c=>r.concepto.toLowerCase().includes(c))));
       return matched.reduce((s,r) => s + r.vals.reduce((a,b)=>a+b,0), 0);
     });
     if(salGasVals[0]===0){ try{ salGasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n.sal||0)/100,0) * 12; }catch(e){} }
@@ -260,9 +260,9 @@ function rPLCharts(ent){
 
     // TPV donut — ingresos por fuente from S.recs
     dc('c-sal-pie');
-    const tpvIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat==='TPV').reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
-    const tarIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&(r.cat.includes('Tarjeta')||r.cat.includes('Centum'))).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
-    const otrosIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat!=='TPV'&&!r.cat.includes('Tarjeta')&&!r.cat.includes('Centum')).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+    const tpvIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat==='TPV'&&r.yr==_year).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+    const tarIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&(r.cat.includes('Tarjeta')||r.cat.includes('Centum'))&&r.yr==_year).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+    const otrosIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat!=='TPV'&&!r.cat.includes('Tarjeta')&&!r.cat.includes('Centum')&&r.yr==_year).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
     const hasSalIng = tpvIng>0||tarIng>0||otrosIng>0;
     CH['c-sal-pie']=new Chart(document.getElementById('c-sal-pie'),{type:'doughnut',data:{
       labels: hasSalIng ? [`TPV ${fmtK(tpvIng)}`,`Tarjetas ${fmtK(tarIng)}`,`Otros ${fmtK(otrosIng)}`] : ['Sin datos'],
@@ -288,7 +288,7 @@ function rPLCharts(ent){
       {lbl:'Otros',        cats:['Administrativo','Representación','Varios','Costo Directo']},
     ];
     const gasVals = gasCats.map(gc => {
-      const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent===entName && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())));
+      const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent===entName && r.yr==_year && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())));
       return matched.reduce((s,r) => s + r.vals.reduce((a,b)=>a+b,0), 0);
     });
     // Add nómina from NOM_EDIT if not in S.recs
@@ -543,6 +543,7 @@ function rPL(ent){
   function recsVals(tipo, cats, concepts){
     const matches = S.recs.filter(r => {
       if(r.isSharedSource) return false;
+      if(r.yr!=_year) return false;
       if(r.tipo !== tipo) return false;
       if(r.ent !== entName) return false;
       if(cats && !cats.some(c => r.cat.toLowerCase().includes(c.toLowerCase()))) return false;
@@ -552,7 +553,7 @@ function rPL(ent){
     if(!matches.length) return null;
     return MO.map((_,i) => matches.reduce((a,r) => a+(r.vals[i]||0), 0));
   }
-  function hasRecs(tipo){ return S.recs.some(r=>!r.isSharedSource&&r.tipo===tipo&&r.ent===entName); }
+  function hasRecs(tipo){ return S.recs.some(r=>!r.isSharedSource&&r.yr==_year&&r.tipo===tipo&&r.ent===entName); }
 
   // ── Acumuladores ──
   let totIng  = MO.map(()=>0);
@@ -730,7 +731,7 @@ function rPL(ent){
 function rSalTPV(){
   const thead=document.getElementById('sal-tpv-thead');
   const tbody=document.getElementById('sal-tpv-tbody');
-  thead.innerHTML=`<th>Cliente</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th><th class="r">Ppto 2026</th>`;
+  thead.innerHTML=`<th>Cliente</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th><th class="r">Ppto ${_year}</th>`;
   tbody.innerHTML=SAL_TPV_CLIENTES.map(c=>`<tr>
     <td class="bld">${c}</td>${MO.map(()=>'<td class="mo" style="color:var(--muted)">—</td>').join('')}
     <td class="mo bld" style="color:var(--muted)">—</td>
@@ -769,11 +770,11 @@ function rEvoChart(canvasId, entKeys){
     const entName=cfg.fullName, nomK=cfg.nomKey;
 
     // Ingresos
-    (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===entName)
+    (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===entName&&r.yr==_year)
       .forEach(r=>r.vals.forEach((v,i)=>ingM[i]+=v));
 
     // Gastos (aggregate by concepto to avoid duplication)
-    const gastoRecs=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName);
+    const gastoRecs=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName&&r.yr==_year);
     const agg=new Map();
     gastoRecs.forEach(r=>{
       const key=r.concepto;
@@ -848,7 +849,7 @@ function rGasView(entKey){
   gasThead.innerHTML=hdr;
 
   // Filtrar gastos de S.recs para esta empresa
-  const gastos=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName);
+  const gastos=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName&&r.yr==_year);
 
   // Agregar por concepto
   const agg=new Map();
@@ -923,7 +924,7 @@ function rGasView(entKey){
   if(kGasD){kGasD.textContent=gasTotal>0?gasRows.length+' concepto'+(gasRows.length!==1?'s':''):'Sin gastos registrados';kGasD.className=gasTotal>0?'kpi-d':'kpi-d dnu';}
 
   if(kAnu){kAnu.textContent=grandTotal>0?fmtK(grandTotal):'Sin datos';kAnu.style.color=grandTotal>0?'var(--yellow)':'var(--muted)';kAnu.style.fontSize=grandTotal>0?'':'.85rem';}
-  if(kAnuD){kAnuD.textContent=grandTotal>0?'Acumulado 2026':'Pendiente de captura';kAnuD.className=grandTotal>0?'kpi-d':'kpi-d dnu';}
+  if(kAnuD){kAnuD.textContent=grandTotal>0?'Acumulado '+_year:'Pendiente de captura';kAnuD.className=grandTotal>0?'kpi-d':'kpi-d dnu';}
 }
 
 // ═══════════════════════════════════════
@@ -957,7 +958,7 @@ function rIngView(entKey){
   const tbody=document.getElementById(entKey+'-ing-tbody');
   if(!thead||!tbody) return;
 
-  const rows=FI_ROWS.filter(r=>r.ent===entName);
+  const rows=FI_ROWS.filter(r=>r.ent===entName&&r.yr==_year);
   const curMonth=new Date().getMonth();
   const totalAnual=rows.reduce((s,r)=>s+sum(r.vals),0);
   const totalMes=rows.reduce((s,r)=>s+(r.vals[curMonth]||0),0);
@@ -972,14 +973,14 @@ function rIngView(entKey){
 
   if(totalAnual>0){
     if(kT){kT.textContent=fmtK(totalAnual);kT.style.color=color;kT.style.fontSize='';}
-    if(kTs){kTs.textContent='Ingresos acumulados 2026';kTs.className='kpi-d';}
+    if(kTs){kTs.textContent='Ingresos acumulados '+_year;kTs.className='kpi-d';}
   } else {
     if(kT){kT.textContent='Sin datos';kT.style.color='var(--muted)';kT.style.fontSize='.85rem';}
     if(kTs){kTs.textContent='Pendiente de captura';kTs.className='kpi-d dnu';}
   }
   if(totalMes>0){
     if(kM){kM.textContent=fmtK(totalMes);kM.style.color='var(--blue)';kM.style.fontSize='';}
-    if(kMs){kMs.textContent=MO[curMonth]+' 2026';kMs.className='kpi-d';}
+    if(kMs){kMs.textContent=MO[curMonth]+' '+_year;kMs.className='kpi-d';}
   } else {
     if(kM){kM.textContent='—';kM.style.color='var(--muted)';kM.style.fontSize='.85rem';}
     if(kMs){kMs.textContent='Pendiente';kMs.className='kpi-d dnu';}
@@ -1068,7 +1069,7 @@ function rConsCharts(type){
     dc('c-centum-gas');
     const centumEnts = ['Salem','Endless','Dynamo'];
     const centumIngByEnt = centumEnts.map(e => {
-      return MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e).reduce((s,r)=>s+(r.vals[i]||0),0));
+      return MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0));
     });
     CH['c-centum-gas']=new Chart(document.getElementById('c-centum-gas'),{type:'bar',data:{labels:MO,
       datasets:[
@@ -1097,7 +1098,7 @@ function rConsCharts(type){
   if(type==='grupo'){
     // Ingresos por fuente — all entities
     dc('c-grupo-ing');
-    const _grpIng = (ent) => MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent).reduce((s,r)=>s+(r.vals[i]||0),0));
+    const _grpIng = (ent) => MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0));
     const salIngM = _grpIng('Salem'), endIngM = _grpIng('Endless'), dynIngM = _grpIng('Dynamo'), wbIngM = _grpIng('Wirebit');
     CH['c-grupo-ing']=new Chart(document.getElementById('c-grupo-ing'),{type:'bar',data:{labels:MO,
       datasets:[
@@ -1123,13 +1124,13 @@ function rConsolidado(type){
   const tid=isCentum?'centum':'grupo';
   const thead=document.getElementById(tid+'-thead');
   const tbody=document.getElementById(tid+'-tbody');
-  thead.innerHTML=`<th>Concepto</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total 2026</th>`;
+  thead.innerHTML=`<th>Concepto</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total ${_year}</th>`;
 
   // ── Helper: aggregate S.recs vals by entities and tipo ──
   function _rv(ents, tipo){
     const ea = Array.isArray(ents)?ents:[ents];
     return MO.map((_,i)=>
-      (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo===tipo&&ea.includes(r.ent))
+      (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo===tipo&&ea.includes(r.ent)&&r.yr==_year)
         .reduce((s,r)=>s+(r.vals[i]||0),0)
     );
   }
@@ -1286,7 +1287,7 @@ function fiInjectCredits(){
       hasAmort = true;
       cr.amort.slice(1).forEach(row => {
         const fecha = (typeof credParseDate==='function') ? credParseDate(row.fecha) : null;
-        if(!fecha || fecha.getFullYear() !== 2026) return;
+        if(!fecha || fecha.getFullYear() !== _year) return;
         vals[fecha.getMonth()] += Math.round(row.int || 0);
       });
     }
@@ -1306,7 +1307,7 @@ function fiInjectCredits(){
       concepto: 'Intereses — '+cr.cl,
       ent: cr.ent,
       cat: 'Crédito Simple',
-      yr: '2026',
+      yr: String(_year),
       vals: vals,
       auto: true,
       credId: cr.cl,
@@ -1318,14 +1319,14 @@ function fiInjectCredits(){
       const comMonto = Math.round(cr.monto * cr.com / 100);
       const comVals = Array(12).fill(0);
       const dDate = (typeof credParseDate==='function') ? credParseDate(cr.disbDate) : null;
-      const comMonth = (dDate && dDate.getFullYear() === 2026) ? dDate.getMonth() : 0;
+      const comMonth = (dDate && dDate.getFullYear() === _year) ? dDate.getMonth() : 0;
       comVals[comMonth] = comMonto;
       FI_ROWS.unshift({
         id: 'cred_com_'+cr.cl.replace(/[^a-zA-Z0-9]/g,'_'),
         concepto: 'Comisión Apertura — '+cr.cl,
         ent: cr.ent,
         cat: 'Crédito Simple',
-        yr: '2026',
+        yr: String(_year),
         vals: comVals,
         auto: true,
         credId: cr.cl,
@@ -1341,7 +1342,7 @@ function fiInjectTPV(){
   FI_ROWS = FI_ROWS.filter(r => !r.autoTPV);
   FG_ROWS = FG_ROWS.filter(r => !r.autoTPV);
 
-  const year = '2026';
+  const year = String(_year);
   const data = (typeof TPV !== 'undefined' && TPV.monthlyPLData)
     ? TPV.monthlyPLData(year) : null;
   if (!data || !data.monthly) return;
@@ -1523,7 +1524,7 @@ function rFlujoIng(){
 }
 
 function fiAddRow(){
-  FI_ROWS.push({id: Date.now(), concepto:'', ent:'Salem', cat:'TPV', yr:'2026', vals:Array(12).fill(0), auto:false});
+  FI_ROWS.push({id: Date.now(), concepto:'', ent:'Salem', cat:'TPV', yr:String(_year), vals:Array(12).fill(0), auto:false});
   rFlujoIng();
   // Scroll to last row
   setTimeout(()=>{
@@ -1652,7 +1653,7 @@ function rFlujoGas(){
 }
 
 function fgAddRow(){
-  FG_ROWS.push({id:Date.now(), concepto:'', ent:'Salem', cat:'Administrativo', yr:'2026', shared:false, gcConcept:'', vals:Array(12).fill(0)});
+  FG_ROWS.push({id:Date.now(), concepto:'', ent:'Salem', cat:'Administrativo', yr:String(_year), shared:false, gcConcept:'', vals:Array(12).fill(0)});
   rFlujoGas();
   setTimeout(()=>{
     const t=document.getElementById('fg-tbody');
@@ -1786,7 +1787,7 @@ function syncFlujoToRecs(){
         concepto: concepto,
         ent: 'Wirebit',
         cat: _WB_CAT[concepto] || 'Exchange',
-        yr: '2026',
+        yr: String(_year),
         vals: [...vals],
         fromFlujo: true
       });
@@ -1809,7 +1810,7 @@ function syncFlujoToRecs(){
           concepto: concepto,
           ent: 'Wirebit',
           cat: _WB_COST_MAP[concepto] || 'Costo Directo',
-          yr: '2026',
+          yr: String(_year),
           vals: [...vals],
           fromFlujo: true
         });
@@ -1886,8 +1887,8 @@ function openTopGastos(entity) {
   if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>';
 
   try {
-    // 1. Filter S.recs for gastos (exclude shared sources)
-    let gastos = (S.recs || []).filter(r => !r.isSharedSource && r.tipo === 'gasto');
+    // 1. Filter S.recs for gastos (exclude shared sources) + year
+    let gastos = (S.recs || []).filter(r => !r.isSharedSource && r.tipo === 'gasto' && r.yr==_year);
 
     // 2. If entity specified, filter
     if (entity) gastos = gastos.filter(r => r.ent === entity);

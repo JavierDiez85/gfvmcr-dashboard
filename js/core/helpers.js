@@ -3,6 +3,8 @@
 // STATE
 // ═══════════════════════════════════════
 let S = { recs: [], excelData: null };
+let _year = 2026;
+let _currentView = 'inicio';
 const CH = {};
 const dc = id => { if(CH[id]){ CH[id].destroy(); delete CH[id]; } };
 
@@ -21,7 +23,7 @@ const MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','D
 function periodColumns(mode) {
   if (mode === 'anual') return {
     cols: [Array(12).fill(0).map((_,i)=>i)],
-    colLabels: ['Total 2026']
+    colLabels: ['Total ' + _year]
   };
   if (mode === 'trimestral') {
     const qs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
