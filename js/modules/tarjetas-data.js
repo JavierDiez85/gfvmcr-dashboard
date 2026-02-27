@@ -1,4 +1,4 @@
-// GFVMCR — Tarjetas Data Service
+// GF — Tarjetas Data Service
 // Capa de acceso a datos: RPC wrappers + caché + offline fallback
 // Usa _sb (Supabase client) expuesto desde supabase.js
 

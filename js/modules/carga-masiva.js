@@ -64,7 +64,7 @@ function downloadPlantilla(){
   wsRef['!cols'] = [{wch:30},{wch:20},{wch:18},{wch:18},{wch:18},{wch:18}];
   XLSX.utils.book_append_sheet(wb, wsRef, 'Referencia');
 
-  XLSX.writeFile(wb, 'GFVMCR_Plantilla_Carga_Masiva.xlsx');
+  XLSX.writeFile(wb, 'GF_Plantilla_Carga_Masiva.xlsx');
   toast('Plantilla descargada');
 }
 

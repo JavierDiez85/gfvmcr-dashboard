@@ -1,4 +1,4 @@
-// GFVMCR — Créditos: carteras, PDF upload
+// GF — Créditos: carteras, PDF upload
 
 // RENDER: CARTERAS
 // ═══════════════════════════════════════
@@ -20,9 +20,14 @@ function credIngAnual(c){
   return credIntMes(c)*12 + credComApertura(c);
 }
 function credSaldoActual(c){
-  // Return current outstanding capital (last known saldo from amort table)
-  if(c.amort && c.amort.length>0) return c.amort[0].saldo||c.monto;
-  return c.monto;
+  // Return current outstanding capital based on last fully-paid period
+  if(!c.amort || c.amort.length<=1) return c.monto||0;
+  let lastPaid = 0;
+  for(let i=1; i<c.amort.length; i++){
+    const st = credPeriodStatus(c, c.amort[i]);
+    if(st === 'PAGADO') lastPaid = i;
+  }
+  return c.amort[lastPaid].saldo||0;
 }
 function credPagoFijo(c){
   if(c.amort && c.amort.length>1) return c.amort[1].pago||0;
@@ -82,7 +87,7 @@ function credCobranzaResumen(credit){
   if(!credit.amort || credit.amort.length<=1) return null;
   const rows = credit.amort.slice(1);
   let pagado=0, parcial=0, vencido=0, pendiente=0;
-  let montoVencido=0, montoPagado=0, maxAtraso=0;
+  let montoVencido=0, montoPagado=0, montoPendiente=0, maxAtraso=0;
   const pagos = credit.pagos || [];
 
   rows.forEach(r=>{
@@ -91,9 +96,9 @@ function credCobranzaResumen(credit){
     if(st==='PAGADO')   { pagado++;  montoPagado += pr ? pr.monto : 0; }
     else if(st==='PARCIAL'){ parcial++; montoPagado += pr ? pr.monto : 0; montoVencido += (r.pago||0) - (pr?pr.monto:0); }
     else if(st==='VENCIDO'){ vencido++; montoVencido += (r.pago||0); maxAtraso = Math.max(maxAtraso, credDiasAtraso(r)); }
-    else { pendiente++; }
+    else { pendiente++; montoPendiente += (r.pago||0); }
   });
-  return { pagado, parcial, vencido, pendiente, montoVencido, montoPagado, maxAtraso, total:rows.length };
+  return { pagado, parcial, vencido, pendiente, montoVencido, montoPagado, montoPendiente, maxAtraso, total:rows.length };
 }
 
 function credProximoPago(credit){
@@ -125,9 +130,15 @@ function rCredDash(){
   const pagados    = all.filter(c=>c.st==='Pagado');
 
   const montoTotal     = all.reduce((s,c)=>s+(c.monto||0),0);
-  const carteraActiva  = activos.reduce((s,c)=>s+credSaldoActual(c),0);
-  const carteraVencida = vencidos.reduce((s,c)=>s+credSaldoActual(c),0);
-  const carteraTotal   = carteraActiva + carteraVencida;
+  // Cartera vencida = suma de montos de periodos vencidos por fecha (no por estatus del crédito)
+  const activosYVencidos = all.filter(c=>c.st==='Activo'||c.st==='Vencido');
+  const carteraVencida = activosYVencidos.reduce((s,c)=>{
+    const res = credCobranzaResumen(c);
+    return s + (res ? res.montoVencido : 0);
+  },0);
+  const saldoTotal     = activosYVencidos.reduce((s,c)=>s+credSaldoActual(c),0);
+  const carteraActiva  = saldoTotal - carteraVencida;
+  const carteraTotal   = saldoTotal;
   const intTotal       = all.reduce((s,c)=>s+credTotalIntereses(c),0);
   const totalCreditos  = activos.length + vencidos.length + prospectos.length;
   const pctVencida     = carteraTotal>0 ? ((carteraVencida/carteraTotal)*100).toFixed(1) : '0';
@@ -211,9 +222,11 @@ function _credDashEntitySummary(entKey, credits, col){
   const activos = credits.filter(c=>c.st==='Activo');
   const vencidos = credits.filter(c=>c.st==='Vencido');
   const prospectos = credits.filter(c=>c.st==='Prospecto');
-  const carteraActiva = activos.reduce((s,c)=>s+credSaldoActual(c),0);
+  const activosYVenc = credits.filter(c=>c.st==='Activo'||c.st==='Vencido');
+  const carteraVencida = activosYVenc.reduce((s,c)=>{ const r=credCobranzaResumen(c); return s+(r?r.montoVencido:0); },0);
+  const saldoTotal = activosYVenc.reduce((s,c)=>s+credSaldoActual(c),0);
+  const carteraVigente = saldoTotal - carteraVencida;
   const montoOriginal = credits.reduce((s,c)=>s+(c.monto||0),0);
-  const intTotal = credits.reduce((s,c)=>s+credTotalIntereses(c),0);
   const total = activos.length+vencidos.length+prospectos.length;
 
   if(!total){
@@ -234,11 +247,11 @@ function _credDashEntitySummary(entKey, credits, col){
       </div>
       <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px">
         <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Cartera Vigente</div>
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:#0073ea">${fmtK(carteraActiva)}</div>
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:#0073ea">${fmtK(carteraVigente)}</div>
       </div>
       <div style="background:var(--bg);border-radius:var(--r);padding:10px 12px">
-        <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Intereses</div>
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:var(--purple)">${fmtK(intTotal)}</div>
+        <div style="font-size:.65rem;color:var(--muted);margin-bottom:3px">Cartera Vencida</div>
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:${carteraVencida>0?'var(--red)':'var(--green)'}">${fmtK(carteraVencida)}</div>
       </div>
     </div>`;
 }
@@ -324,18 +337,25 @@ function credRenderDashKPIs(credits, entKey){
   const prospectos = credits.filter(c=>c.st==='Prospecto');
   const total      = activos.length + vencidos.length + prospectos.length;
 
-  const carteraTotal   = credits.reduce((s,c)=>s+credSaldoActual(c),0);
-  const carteraActiva  = activos.reduce((s,c)=>s+credSaldoActual(c),0);
-  const carteraVencida = vencidos.reduce((s,c)=>s+credSaldoActual(c),0);
+  // Cartera vencida = montos de periodos vencidos por fecha de amortización
+  const activosYVenc = credits.filter(c=>c.st==='Activo'||c.st==='Vencido');
+  const carteraVencida = activosYVenc.reduce((s,c)=>{
+    const res = credCobranzaResumen(c);
+    return s + (res ? res.montoVencido : 0);
+  },0);
+  const saldoTotal     = activosYVenc.reduce((s,c)=>s+credSaldoActual(c),0);
+  const carteraActiva  = saldoTotal - carteraVencida;
+  const carteraTotal   = saldoTotal;
   const ganTotal       = credits.reduce((s,c)=>s+credTotalIntereses(c),0);
   const montoOriginal  = credits.reduce((s,c)=>s+(c.monto||0),0);
   const cobrado        = montoOriginal - carteraTotal + ganTotal;
+  const numConVencidos = activosYVenc.filter(c=>{ const r=credCobranzaResumen(c); return r&&r.montoVencido>0; }).length;
 
   const kpis = [
     {lbl:'Créditos', val:total, sub: `${activos.length} activos · ${vencidos.length} vencidos · ${prospectos.length} prospectos`, ico:'📋', color:col, bg:colBg},
     {lbl:'Monto Prestado', val:fmtK(montoOriginal), sub:'Capital total otorgado', ico:'💵', color:col, bg:colBg},
-    {lbl:'Cartera Vigente', val:fmtK(carteraActiva), sub:'Saldo activo pendiente', ico:'📈', color:'var(--blue)', bg:'var(--blue-bg)'},
-    {lbl:'Cartera Vencida', val:fmtK(carteraVencida), sub: carteraVencida>0 ? `${((carteraVencida/carteraTotal)*100).toFixed(1)}% del total` : 'Sin vencimientos', ico:'⚠️', color: carteraVencida>0?'var(--red)':'var(--green)', bg: carteraVencida>0?'var(--red-bg)':'var(--green-bg)'},
+    {lbl:'Cartera Vigente', val:fmtK(carteraActiva), sub:'Saldo al corriente', ico:'📈', color:'var(--blue)', bg:'var(--blue-bg)'},
+    {lbl:'Cartera Vencida', val:fmtK(carteraVencida), sub: carteraVencida>0 ? `${((carteraVencida/carteraTotal)*100).toFixed(1)}% del total · ${numConVencidos} créditos` : 'Sin vencimientos', ico:'⚠️', color: carteraVencida>0?'var(--red)':'var(--green)', bg: carteraVencida>0?'var(--red-bg)':'var(--green-bg)'},
     {lbl:'Intereses Totales', val:fmtK(ganTotal), sub:'Sobre tabla de amortización', ico:'💰', color:'var(--purple)', bg:'var(--purple-bg)'},
   ];
 
@@ -386,10 +406,13 @@ function credRenderList(credits, entKey){
     const intTot = credTotalIntereses(c);
     const pago  = credPagoFijo(c);
     const periodos = c.amort ? c.amort.length-1 : c.plazo;
-    const progreso = c.amort ? Math.round(((c.amort.length-1 - (c.amort.filter(r=>r.saldo>0).length-1)) / (c.amort.length-1))*100) : 0;
+    const cobr = credCobranzaResumen(c);
+    const mPagado    = cobr ? cobr.montoPagado : 0;
+    const mPendiente = cobr ? cobr.montoPendiente : 0;
+    const mVencido   = cobr ? cobr.montoVencido : 0;
 
     return `<div onclick="credOpenDetail('${entKey}','${c.cl.replace(/'/g,"\\'")}',${credits.indexOf(c)})"
-      style="display:flex;align-items:center;gap:14px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
+      style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
       onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
 
       <!-- Avatar -->
@@ -408,22 +431,28 @@ function credRenderList(credits, entKey){
       </div>
 
       <!-- Montos -->
-      <div style="text-align:right;flex-shrink:0;min-width:110px">
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.95rem;color:${col}">${fmtK(c.monto)}</div>
-        <div style="font-size:.68rem;color:var(--muted)">Monto original</div>
+      <div style="text-align:right;flex-shrink:0;min-width:90px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;color:${col}">${fmtK(c.monto)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Monto original</div>
       </div>
-      <div style="text-align:right;flex-shrink:0;min-width:100px">
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;color:var(--blue)">${fmtK(saldo)}</div>
-        <div style="font-size:.68rem;color:var(--muted)">Saldo actual</div>
+      <div style="text-align:right;flex-shrink:0;min-width:85px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;color:var(--blue)">${fmtK(saldo)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Saldo actual</div>
       </div>
-      <div style="text-align:right;flex-shrink:0;min-width:100px">
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem;color:var(--purple)">${fmtK(intTot)}</div>
-        <div style="font-size:.68rem;color:var(--muted)">Total intereses</div>
+
+      <!-- Cobranza columns -->
+      <div style="text-align:right;flex-shrink:0;min-width:80px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;color:var(--green)">${fmtK(mPagado)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Pagado</div>
       </div>
-      ${pago?`<div style="text-align:right;flex-shrink:0;min-width:100px">
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.88rem">${fmtK(pago)}</div>
-        <div style="font-size:.68rem;color:var(--muted)">Pago fijo</div>
-      </div>`:''}
+      <div style="text-align:right;flex-shrink:0;min-width:80px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;color:var(--orange)">${fmtK(mPendiente)}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Pendiente</div>
+      </div>
+      <div style="text-align:right;flex-shrink:0;min-width:80px">
+        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;color:${mVencido>0?'var(--red)':'var(--green)'}">${mVencido>0?fmtK(mVencido):'$0'}</div>
+        <div style="font-size:.62rem;color:var(--muted)">Vencido</div>
+      </div>
 
       <!-- Arrow -->
       <div style="color:var(--muted);font-size:1rem;flex-shrink:0">›</div>
@@ -463,12 +492,12 @@ function credOpenDetail(entKey, nombre, idx){
       if(st==='PAGADO'){
         cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);font-weight:700">Pagado</span><br><span style="font-size:.58rem;color:var(--muted)">${pr.fecha} · ${fmtFull(pr.monto)}</span></td>`;
       } else if(st==='PARCIAL'){
-        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(pr.monto)} de ${fmtFull(r.pago)}</span><br><button class="btn btn-out" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">+ Completar</button></td>`;
+        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(pr.monto)} de ${fmtFull(r.pago)}</span><br>${!isViewer() ? `<button class="btn btn-out" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">+ Completar</button>` : ''}</td>`;
       } else if(st==='VENCIDO'){
         const dias = credDiasAtraso(r);
-        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700">Vencido ${dias}d</span><br><button style="font-size:.58rem;margin-top:2px;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;border:none;cursor:pointer" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button></td>`;
+        cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700">Vencido ${dias}d</span><br>${!isViewer() ? `<button style="font-size:.58rem;margin-top:2px;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;border:none;cursor:pointer" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button>` : ''}</td>`;
       } else {
-        cobrCell = `<td style="text-align:center"><button class="btn btn-out" style="font-size:.58rem;padding:2px 8px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button></td>`;
+        cobrCell = !isViewer() ? `<td style="text-align:center"><button class="btn btn-out" style="font-size:.58rem;padding:2px 8px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button></td>` : '<td></td>';
       }
       return `<tr ${isPaid?'style="opacity:.6"':''}>
         <td class="r">${r.periodo}</td>
@@ -1408,7 +1437,7 @@ function exportHTML(){
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
   a.href = url;
-  a.download = 'GFVMCR-Dashboard-' + new Date().toISOString().slice(0,10) + '.html';
+  a.download = 'GF-Dashboard-' + new Date().toISOString().slice(0,10) + '.html';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);

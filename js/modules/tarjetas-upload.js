@@ -1,4 +1,4 @@
-// GFVMCR — Tarjetas Upload Pipeline
+// GF — Tarjetas Upload Pipeline
 // Sube Excel de transacciones + tarjetahabientes a Supabase
 // Usa: XLSX (SheetJS CDN), _sb (Supabase client), TAR (tarjetas-data.js)
 

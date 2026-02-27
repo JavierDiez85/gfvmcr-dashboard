@@ -1,4 +1,4 @@
-// GFVMCR — Finanzas: P&L, nómina, gastos compartidos
+// GF — Finanzas: P&L, nómina, gastos compartidos
 
 // RENDER: NOMINA
 // ═══════════════════════════════════════
@@ -742,100 +742,188 @@ function rSalTPV(){
 // ═══════════════════════════════════════
 // RENDER: SALEM GASTOS
 // ═══════════════════════════════════════
-function rSalGas(){
-  const thead=document.getElementById('sal-gas-thead');
-  const tbody=document.getElementById('sal-gas-tbody');
-  thead.innerHTML=`<th>Concepto</th><th>Categoría</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th>`;
+function rSalGas(){ rGasView('sal'); }
 
-  // Filtrar gastos Salem de S.recs
-  const gastos=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent==='Salem');
+// Categorías que son Costes Directos (variables, ligados al producto)
+const COST_CATS = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
 
-  // Agregar por concepto (sumar vals si hay duplicados)
+function _isCostRow(r){
+  // Nómina Operativa = costo directo, Nómina Administrativa = gasto
+  if(r.cat==='Nómina') return r.concepto.toLowerCase().includes('operativ') || r.concepto.toLowerCase().includes('directa');
+  return COST_CATS.some(c=>r.cat===c);
+}
+
+// ═══════════════════════════════════════
+// EVOLUCIÓN MENSUAL: Ingresos + Costes + Gastos + EBITDA
+// ═══════════════════════════════════════
+function rEvoChart(canvasId, entKeys){
+  const el=document.getElementById(canvasId);
+  if(!el) return;
+  dc(canvasId);
+
+  const keys=Array.isArray(entKeys)?entKeys:[entKeys];
+  const ingM=MO.map(()=>0), costM=MO.map(()=>0), gasM=MO.map(()=>0);
+
+  keys.forEach(ek=>{
+    const cfg=ENT_MAP[ek]; if(!cfg) return;
+    const entName=cfg.fullName, nomK=cfg.nomKey;
+
+    // Ingresos
+    (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===entName)
+      .forEach(r=>r.vals.forEach((v,i)=>ingM[i]+=v));
+
+    // Gastos (aggregate by concepto to avoid duplication)
+    const gastoRecs=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName);
+    const agg=new Map();
+    gastoRecs.forEach(r=>{
+      const key=r.concepto;
+      if(agg.has(key)){const e=agg.get(key);r.vals.forEach((v,i)=>e.vals[i]+=v);}
+      else agg.set(key,{concepto:r.concepto,cat:r.cat,vals:[...r.vals]});
+    });
+
+    // NOM_EDIT fallback
+    if(!gastoRecs.some(r=>r.cat==='Nómina')&&typeof NOM_EDIT!=='undefined'){
+      const op=Math.round(nomMesOp(entName)),adm=Math.round(nomMesAdm(entName));
+      if(op>0) agg.set(ek+'_NomOp',{concepto:'Nómina Operativa',cat:'Nómina',vals:Array(12).fill(op)});
+      if(adm>0) agg.set(ek+'_NomAdm',{concepto:'Nómina Administrativa',cat:'Nómina',vals:Array(12).fill(adm)});
+    }
+
+    // GC_EDIT (gastos compartidos)
+    if(typeof GC_EDIT!=='undefined'){
+      GC_EDIT.forEach(gc=>{
+        if(!gc.c||!gc[nomK]||gc[nomK]<=0) return;
+        if(agg.has(gc.c)) return;
+        const pptoMes=Math.round((gc.ppto||0)*gc[nomK]/100);
+        if(pptoMes>0) agg.set(gc.c+'_'+ek,{concepto:gc.c,cat:gc.cat||'Varios',vals:Array(12).fill(pptoMes)});
+      });
+    }
+
+    [...agg.values()].forEach(r=>{
+      if(_isCostRow(r)) r.vals.forEach((v,i)=>costM[i]+=v);
+      else r.vals.forEach((v,i)=>gasM[i]+=v);
+    });
+  });
+
+  const ebitdaM=MO.map((_,i)=>ingM[i]-costM[i]-gasM[i]);
+
+  CH[canvasId]=new Chart(el,{
+    type:'bar',
+    data:{
+      labels:MO,
+      datasets:[
+        {label:'Ingresos',data:ingM,backgroundColor:'rgba(46,184,92,.55)',borderColor:'rgba(46,184,92,.8)',borderWidth:1,borderRadius:3,order:2},
+        {label:'Costes Directos',data:costM,backgroundColor:'rgba(255,152,0,.50)',borderColor:'rgba(255,152,0,.8)',borderWidth:1,borderRadius:3,order:3},
+        {label:'Gastos Admin',data:gasM,backgroundColor:'rgba(239,68,68,.40)',borderColor:'rgba(239,68,68,.7)',borderWidth:1,borderRadius:3,order:4},
+        {type:'line',label:'EBITDA',data:ebitdaM,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6366f1',tension:.3,fill:true,order:1}
+      ]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:true,
+      interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{color:'#8b8fb5',font:{size:10},boxWidth:10,padding:10}},
+        tooltip:{...cOpts().plugins.tooltip,mode:'index',intersect:false}
+      },
+      scales:{
+        x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}},
+        y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}
+      }
+    }
+  });
+}
+
+function rGasView(entKey){
+  const cfg=ENT_MAP[entKey]; if(!cfg) return;
+  const entName=cfg.fullName, nomK=cfg.nomKey, color=cfg.color;
+
+  // Containers
+  const costThead=document.getElementById(entKey+'-cost-thead');
+  const costTbody=document.getElementById(entKey+'-cost-tbody');
+  const gasThead=document.getElementById(entKey+'-gas-thead');
+  const gasTbody=document.getElementById(entKey+'-gas-tbody');
+  if(!gasThead||!gasTbody) return;
+
+  const hdr='<th>Concepto</th><th>Categoría</th>'+MO.map(m=>'<th class="r">'+m+'</th>').join('')+'<th class="r">Total</th>';
+  if(costThead) costThead.innerHTML=hdr;
+  gasThead.innerHTML=hdr;
+
+  // Filtrar gastos de S.recs para esta empresa
+  const gastos=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName);
+
+  // Agregar por concepto
   const agg=new Map();
   gastos.forEach(r=>{
     const key=r.concepto;
-    if(agg.has(key)){
-      const e=agg.get(key);
-      r.vals.forEach((v,i)=>e.vals[i]+=v);
-    } else {
-      agg.set(key,{concepto:r.concepto, cat:r.cat, vals:[...r.vals]});
-    }
+    if(agg.has(key)){const e=agg.get(key);r.vals.forEach((v,i)=>e.vals[i]+=v);}
+    else agg.set(key,{concepto:r.concepto,cat:r.cat,vals:[...r.vals]});
   });
 
-  // ── Inyectar Nómina desde NOM_EDIT si no hay en S.recs ──
-  const hasNomRecs = gastos.some(r=>r.cat==='Nómina');
+  // Inyectar Nómina desde NOM_EDIT si no hay en S.recs
+  const hasNomRecs=gastos.some(r=>r.cat==='Nómina');
   if(!hasNomRecs && typeof NOM_EDIT!=='undefined'){
-    const nomOp = Math.round(nomMesOp('Salem'));
-    const nomAdm = Math.round(nomMesAdm('Salem'));
-    if(nomOp>0)  agg.set('Nómina Operativa',  {concepto:'Nómina Operativa',  cat:'Nómina', vals:Array(12).fill(nomOp),  ppto:true});
-    if(nomAdm>0) agg.set('Nómina Administrativa',{concepto:'Nómina Administrativa',cat:'Nómina', vals:Array(12).fill(nomAdm), ppto:true});
+    const nomOp=Math.round(nomMesOp(entName));
+    const nomAdm=Math.round(nomMesAdm(entName));
+    if(nomOp>0) agg.set('Nómina Operativa',{concepto:'Nómina Operativa',cat:'Nómina',vals:Array(12).fill(nomOp),ppto:true});
+    if(nomAdm>0) agg.set('Nómina Administrativa',{concepto:'Nómina Administrativa',cat:'Nómina',vals:Array(12).fill(nomAdm),ppto:true});
   }
 
-  // ── Inyectar Gastos Compartidos desde GC_EDIT si no hay en S.recs ──
+  // Inyectar Gastos Compartidos desde GC_EDIT
   if(typeof GC_EDIT!=='undefined'){
     GC_EDIT.forEach(gc=>{
-      if(!gc.c || !gc.sal || gc.sal<=0) return;
-      // Solo si no hay ya un concepto con este nombre en S.recs
+      if(!gc.c || !gc[nomK] || gc[nomK]<=0) return;
       if(agg.has(gc.c)) return;
-      const pptoMes = Math.round((gc.ppto||0) * gc.sal / 100);
-      if(pptoMes>0) agg.set(gc.c, {concepto:gc.c, cat:gc.cat||'Varios', vals:Array(12).fill(pptoMes), ppto:true});
+      const pptoMes=Math.round((gc.ppto||0)*gc[nomK]/100);
+      if(pptoMes>0) agg.set(gc.c,{concepto:gc.c,cat:gc.cat||'Varios',vals:Array(12).fill(pptoMes),ppto:true});
     });
   }
 
-  const rows=[...agg.values()].sort((a,b)=>sum(b.vals)-sum(a.vals));
+  const all=[...agg.values()];
+  const costRows=all.filter(r=>_isCostRow(r)).sort((a,b)=>sum(b.vals)-sum(a.vals));
+  const gasRows=all.filter(r=>!_isCostRow(r)).sort((a,b)=>sum(b.vals)-sum(a.vals));
 
-  if(rows.length===0){
-    tbody.innerHTML=`<tr><td colspan="15" style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem">Sin gastos registrados para Salem — usa <b>Carga Masiva</b> o <b>Flujo de Gastos</b> para agregar datos</td></tr>`;
-  } else {
+  const pillBg=color+'18';
+  function renderTable(rows, tbody, label){
+    if(rows.length===0){
+      tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:20px;color:var(--muted);font-size:.82rem">Sin registros</td></tr>';
+      return {totM:Array(12).fill(0),total:0};
+    }
     const totM=Array(12).fill(0);
     tbody.innerHTML=rows.map(g=>{
       const tot=sum(g.vals);
       g.vals.forEach((v,i)=>totM[i]+=v);
-      const pptoTag = g.ppto ? ' <span style="font-size:.55rem;color:var(--muted);font-weight:400">(ppto)</span>' : '';
-      return`<tr><td class="bld">${g.concepto}${pptoTag}</td>
-        <td><span class="pill" style="background:#f3eafd;color:#7a2eb8;font-size:.62rem">${g.cat}</span></td>
-        ${g.vals.map(v=>`<td class="mo${v?' neg':''}"${g.ppto?' style="opacity:.65"':''}>${v?fmtFull(v):'—'}</td>`).join('')}
-        <td class="mo bld neg">${fmtFull(tot)}</td></tr>`;
+      const pptoTag=g.ppto?' <span style="font-size:.55rem;color:var(--muted);font-weight:400">(ppto)</span>':'';
+      return '<tr><td class="bld">'+g.concepto+pptoTag+'</td><td><span class="pill" style="background:'+pillBg+';color:'+color+';font-size:.62rem">'+g.cat+'</span></td>'+g.vals.map(v=>'<td class="mo'+(v?' neg':'')+'"'+(g.ppto?' style="opacity:.65"':'')+'>'+(v?fmtFull(v):'—')+'</td>').join('')+'<td class="mo bld neg">'+fmtFull(tot)+'</td></tr>';
     }).join('');
-    const grandTotal=sum(totM);
-    tbody.innerHTML+=`<tr class="grp"><td colspan="2">TOTAL GASTOS SALEM</td>${totM.map(v=>`<td class="mo neg bld">${v?fmtFull(v):'—'}</td>`).join('')}<td class="mo neg bld">${fmtFull(grandTotal)}</td></tr>`;
+    const gt=sum(totM);
+    tbody.innerHTML+='<tr class="grp"><td colspan="2">'+label+'</td>'+totM.map(v=>'<td class="mo neg bld">'+(v?fmtFull(v):'—')+'</td>').join('')+'<td class="mo neg bld">'+fmtFull(gt)+'</td></tr>';
+    return {totM,total:gt};
   }
 
-  // ── Poblar KPIs ──
+  // Render both tables
+  const costRes=costTbody ? renderTable(costRows,costTbody,'TOTAL COSTES DIRECTOS') : {totM:Array(12).fill(0),total:0};
+  const gasRes=renderTable(gasRows,gasTbody,'TOTAL GASTOS ADMINISTRATIVOS');
+
+  // KPIs
   const curMonth=new Date().getMonth();
-  const allVals=rows.map(r=>({c:r.concepto,tot:sum(r.vals)}));
-  const mesTot=rows.reduce((s,r)=>s+(r.vals[curMonth]||0),0);
-  const anualTot=allVals.reduce((s,r)=>s+r.tot,0);
-  const mayor=allVals.sort((a,b)=>b.tot-a.tot)[0];
+  const costTotal=costRes.total;
+  const gasTotal=gasRes.total;
+  const grandTotal=costTotal+gasTotal;
 
-  const kMes=document.getElementById('sal-gas-kpi-mes');
-  const kMesD=document.getElementById('sal-gas-kpi-mes-d');
-  const kMay=document.getElementById('sal-gas-kpi-mayor');
-  const kMayD=document.getElementById('sal-gas-kpi-mayor-d');
-  const kAnu=document.getElementById('sal-gas-kpi-anual');
-  const kAnuD=document.getElementById('sal-gas-kpi-anual-d');
+  const kCost=document.getElementById(entKey+'-gas-kpi-cost');
+  const kCostD=document.getElementById(entKey+'-gas-kpi-cost-d');
+  const kGas=document.getElementById(entKey+'-gas-kpi-gas');
+  const kGasD=document.getElementById(entKey+'-gas-kpi-gas-d');
+  const kAnu=document.getElementById(entKey+'-gas-kpi-anual');
+  const kAnuD=document.getElementById(entKey+'-gas-kpi-anual-d');
 
-  if(mesTot>0){
-    if(kMes){kMes.textContent=fmtK(mesTot);kMes.style.color='var(--red)';kMes.style.fontSize='';}
-    if(kMesD){kMesD.textContent=MO[curMonth]+' 2026';kMesD.className='kpi-d';}
-  } else {
-    if(kMes){kMes.textContent='Sin datos';kMes.style.color='var(--muted)';kMes.style.fontSize='.85rem';}
-    if(kMesD){kMesD.textContent='Pendiente de captura';kMesD.className='kpi-d dnu';}
-  }
-  if(mayor&&mayor.tot>0){
-    if(kMay){kMay.textContent=fmtK(mayor.tot);kMay.style.color='var(--orange)';kMay.style.fontSize='';}
-    if(kMayD){kMayD.textContent=mayor.c;kMayD.className='kpi-d';}
-  } else {
-    if(kMay){kMay.textContent='—';kMay.style.color='var(--muted)';kMay.style.fontSize='.85rem';}
-    if(kMayD){kMayD.textContent='Pendiente de captura';kMayD.className='kpi-d dnu';}
-  }
-  if(anualTot>0){
-    if(kAnu){kAnu.textContent=fmtK(anualTot);kAnu.style.color='var(--yellow)';kAnu.style.fontSize='';}
-    if(kAnuD){kAnuD.textContent='Acumulado 2026';kAnuD.className='kpi-d';}
-  } else {
-    if(kAnu){kAnu.textContent='Sin datos';kAnu.style.color='var(--muted)';kAnu.style.fontSize='.85rem';}
-    if(kAnuD){kAnuD.textContent='Pendiente de captura';kAnuD.className='kpi-d dnu';}
-  }
+  if(kCost){kCost.textContent=costTotal>0?fmtK(costTotal):'—';kCost.style.color=costTotal>0?'var(--orange)':'var(--muted)';kCost.style.fontSize=costTotal>0?'':'.85rem';}
+  if(kCostD){kCostD.textContent=costTotal>0?costRows.length+' concepto'+(costRows.length!==1?'s':''):'Sin costes registrados';kCostD.className=costTotal>0?'kpi-d':'kpi-d dnu';}
+
+  if(kGas){kGas.textContent=gasTotal>0?fmtK(gasTotal):'—';kGas.style.color=gasTotal>0?'var(--red)':'var(--muted)';kGas.style.fontSize=gasTotal>0?'':'.85rem';}
+  if(kGasD){kGasD.textContent=gasTotal>0?gasRows.length+' concepto'+(gasRows.length!==1?'s':''):'Sin gastos registrados';kGasD.className=gasTotal>0?'kpi-d':'kpi-d dnu';}
+
+  if(kAnu){kAnu.textContent=grandTotal>0?fmtK(grandTotal):'Sin datos';kAnu.style.color=grandTotal>0?'var(--yellow)':'var(--muted)';kAnu.style.fontSize=grandTotal>0?'':'.85rem';}
+  if(kAnuD){kAnuD.textContent=grandTotal>0?'Acumulado 2026':'Pendiente de captura';kAnuD.className=grandTotal>0?'kpi-d':'kpi-d dnu';}
 }
 
 // ═══════════════════════════════════════
@@ -850,6 +938,121 @@ function rWBNom(){
   thead.innerHTML=`<th>Empleado</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th>`;
   tbody.innerHTML=WB_NOM_DETAIL.map(e=>`<tr><td class="bld">${e.n}</td>${e.vals.map(v=>`<td class="mo ${v>0?'neg':''}">${v?fmt(v):'—'}</td>`).join('')}<td class="mo bld neg">${fmt(e.total)}</td></tr>`).join('');
   tbody.innerHTML+=`<tr class="grp"><td>TOTAL NÓMINA WIREBIT</td>${WB_NOM_TOTAL.map(v=>`<td class="mo neg bld">${fmt(v)}</td>`).join('')}<td class="mo neg bld">${fmt(sum(WB_NOM_TOTAL))}</td></tr>`;
+}
+
+// ═══════════════════════════════════════
+// RENDER: INGRESOS & NÓMINA POR EMPRESA
+// ═══════════════════════════════════════
+const ENT_MAP = {
+  sal:{name:'Salem Internacional',fullName:'Salem',nomKey:'sal',color:'#0073ea'},
+  end:{name:'Endless Money',fullName:'Endless',nomKey:'end',color:'#00b875'},
+  dyn:{name:'Dynamo Finance',fullName:'Dynamo',nomKey:'dyn',color:'#ff7043'},
+  wb:{name:'Wirebit',fullName:'Wirebit',nomKey:'wb',color:'#9b51e0'},
+};
+
+function rIngView(entKey){
+  const cfg=ENT_MAP[entKey]; if(!cfg) return;
+  const entName=cfg.fullName, color=cfg.color;
+  const thead=document.getElementById(entKey+'-ing-thead');
+  const tbody=document.getElementById(entKey+'-ing-tbody');
+  if(!thead||!tbody) return;
+
+  const rows=FI_ROWS.filter(r=>r.ent===entName);
+  const curMonth=new Date().getMonth();
+  const totalAnual=rows.reduce((s,r)=>s+sum(r.vals),0);
+  const totalMes=rows.reduce((s,r)=>s+(r.vals[curMonth]||0),0);
+
+  // KPIs
+  const kT=document.getElementById(entKey+'-ing-kpi-total');
+  const kTs=document.getElementById(entKey+'-ing-kpi-total-sub');
+  const kM=document.getElementById(entKey+'-ing-kpi-mes');
+  const kMs=document.getElementById(entKey+'-ing-kpi-mes-sub');
+  const kC=document.getElementById(entKey+'-ing-kpi-count');
+  const kCs=document.getElementById(entKey+'-ing-kpi-count-sub');
+
+  if(totalAnual>0){
+    if(kT){kT.textContent=fmtK(totalAnual);kT.style.color=color;kT.style.fontSize='';}
+    if(kTs){kTs.textContent='Ingresos acumulados 2026';kTs.className='kpi-d';}
+  } else {
+    if(kT){kT.textContent='Sin datos';kT.style.color='var(--muted)';kT.style.fontSize='.85rem';}
+    if(kTs){kTs.textContent='Pendiente de captura';kTs.className='kpi-d dnu';}
+  }
+  if(totalMes>0){
+    if(kM){kM.textContent=fmtK(totalMes);kM.style.color='var(--blue)';kM.style.fontSize='';}
+    if(kMs){kMs.textContent=MO[curMonth]+' 2026';kMs.className='kpi-d';}
+  } else {
+    if(kM){kM.textContent='—';kM.style.color='var(--muted)';kM.style.fontSize='.85rem';}
+    if(kMs){kMs.textContent='Pendiente';kMs.className='kpi-d dnu';}
+  }
+  if(kC){kC.textContent=rows.length;kC.style.color=rows.length>0?'var(--green)':'var(--muted)';kC.style.fontSize=rows.length>0?'':'.85rem';}
+  if(kCs) kCs.textContent=rows.length+' concepto'+(rows.length!==1?'s':'')+' de ingreso';
+
+  // Chart bar
+  const ck='c'+entKey+'ingbar';
+  dc(ck);
+  const mTotals=MO.map((_,i)=>rows.reduce((s,r)=>s+(r.vals[i]||0),0));
+  const cv=document.getElementById('c-'+entKey+'-ing-bar');
+  if(cv){
+    CH[ck]=new Chart(cv,{
+      type:'bar',
+      data:{labels:MO,datasets:[{label:'Ingresos '+cfg.name,data:mTotals,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:4}]},
+      options:{...cOpts(),
+        plugins:{legend:{display:false},tooltip:cOpts().plugins?.tooltip},
+        scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}
+      }
+    });
+  }
+
+  // Table
+  thead.innerHTML='<th>Concepto</th><th>Categoría</th>'+MO.map(m=>'<th class="r">'+m+'</th>').join('')+'<th class="r">Total</th>';
+  if(rows.length===0){
+    tbody.innerHTML='<tr><td colspan="15" style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem">Sin ingresos registrados para '+cfg.name+' — usa <b>Flujo de Ingresos</b> o <b>Carga Masiva</b> para agregar datos</td></tr>';
+    return;
+  }
+  const totM=Array(12).fill(0);
+  tbody.innerHTML=rows.map(r=>{
+    const tot=sum(r.vals);
+    r.vals.forEach((v,i)=>totM[i]+=v);
+    const badge=r.auto?' <span style="font-size:.55rem;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto</span>':(r.autoTPV?' <span style="font-size:.55rem;background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto TPV</span>':'');
+    return '<tr><td class="bld">'+r.concepto+badge+'</td><td><span class="pill" style="background:'+color+'18;color:'+color+';font-size:.62rem">'+r.cat+'</span></td>'+r.vals.map(v=>'<td class="mo'+(v?' pos':'')+'">'+( v?fmtFull(v):'—')+'</td>').join('')+'<td class="mo bld pos">'+fmtFull(tot)+'</td></tr>';
+  }).join('');
+  tbody.innerHTML+='<tr class="grp"><td colspan="2">TOTAL INGRESOS '+entName.toUpperCase()+'</td>'+totM.map(v=>'<td class="mo pos bld">'+(v?fmtFull(v):'—')+'</td>').join('')+'<td class="mo pos bld">'+fmtFull(sum(totM))+'</td></tr>';
+}
+
+function rNomView(entKey){
+  const cfg=ENT_MAP[entKey]; if(!cfg) return;
+  const nomK=cfg.nomKey;
+  const thead=document.getElementById(entKey+'-nom-thead');
+  const tbody=document.getElementById(entKey+'-nom-tbody');
+  if(!thead||!tbody) return;
+
+  const emps=NOM_EDIT.filter(e=>(e[nomK]||0)>0);
+  const detail=emps.map(e=>{
+    const mc=Math.round(e.s*(e[nomK]||0)/100);
+    return {n:e.n,r:e.r,tipo:e.tipo,pct:e[nomK],vals:Array(12).fill(mc),total:mc*12};
+  });
+  const monthTotals=MO.map((_,i)=>detail.reduce((s,e)=>s+e.vals[i],0));
+  const annualTotal=sum(monthTotals);
+
+  // KPIs
+  const kT=document.getElementById(entKey+'-nom-kpi-total');
+  const kC=document.getElementById(entKey+'-nom-kpi-count');
+  const kA=document.getElementById(entKey+'-nom-kpi-avg');
+  if(kT){kT.textContent=annualTotal>0?fmtK(annualTotal):'—';kT.style.color=annualTotal>0?cfg.color:'var(--muted)';kT.style.fontSize=annualTotal>0?'':'.85rem';}
+  if(kC){kC.textContent=emps.length+' empleado'+(emps.length!==1?'s':'');kC.style.color='var(--blue)';}
+  if(kA){const avg=annualTotal/12;kA.textContent=avg>0?fmtK(avg):'—';kA.style.color=avg>0?'var(--green)':'var(--muted)';kA.style.fontSize=avg>0?'':'.85rem';}
+
+  // Table
+  thead.innerHTML='<th>Empleado</th><th>Rol</th><th class="r">Tipo</th><th class="r">%</th>'+MO.map(m=>'<th class="r">'+m+'</th>').join('')+'<th class="r">Total</th>';
+  if(detail.length===0){
+    tbody.innerHTML='<tr><td colspan="17" style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem">Sin empleados asignados a '+cfg.name+' — configura la distribución en <b>Nómina Compartida</b></td></tr>';
+    return;
+  }
+  tbody.innerHTML=detail.map(e=>{
+    const tc=e.tipo==='Operativo'?'#0073ea':'#9b51e0';
+    return '<tr><td class="bld">'+e.n+'</td><td style="color:var(--muted);font-size:.76rem">'+e.r+'</td><td style="text-align:right"><span style="font-size:.66rem;font-weight:600;color:'+tc+'">'+e.tipo+'</span></td><td class="mo" style="color:'+cfg.color+';font-weight:600">'+e.pct+'%</td>'+e.vals.map(v=>'<td class="mo'+(v?' neg':'')+'">'+(v?fmt(v):'—')+'</td>').join('')+'<td class="mo bld neg">'+fmt(e.total)+'</td></tr>';
+  }).join('');
+  tbody.innerHTML+='<tr class="grp"><td colspan="4">TOTAL NÓMINA '+cfg.fullName.toUpperCase()+'</td>'+monthTotals.map(v=>'<td class="mo neg bld">'+fmt(v)+'</td>').join('')+'<td class="mo neg bld">'+fmt(annualTotal)+'</td></tr>';
 }
 
 // ═══════════════════════════════════════
@@ -1300,7 +1503,7 @@ function rFlujoIng(){
       ${r.vals.map((v,i)=>`<td style="padding:2px 3px">${moInput(r.id,i,v,false)}</td>`).join('')}
       <td class="mo pos bld" style="font-size:.78rem;font-weight:700" id="fi-rtot-${r.id}">${fmt(r.vals.reduce((a,b)=>a+b,0))}</td>
       <td style="text-align:center;padding:2px">
-        ${!isAuto ? `<button onclick="fiDelRow('${r.id}')" title="Eliminar"
+        ${!isAuto && !isViewer() ? `<button onclick="fiDelRow('${r.id}')" title="Eliminar"
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px"
           onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>` : ''}
       </td>
@@ -1356,7 +1559,7 @@ function fiExport(){
   const ws = XLSX.utils.json_to_sheet(data);
   const wb2 = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb2, ws, 'Flujo Ingresos');
-  XLSX.writeFile(wb2, 'GFVMCR_Flujo_Ingresos.xlsx');
+  XLSX.writeFile(wb2, 'GF_Flujo_Ingresos.xlsx');
 }
 
 // ═══════════════════════════════════════
@@ -1429,9 +1632,9 @@ function rFlujoGas(){
       ${r.vals.map((v,i)=>`<td style="padding:2px 3px">${moInput(r.id,i,v,true)}</td>`).join('')}
       <td class="mo neg bld" style="font-size:.78rem;font-weight:700" id="fg-rtot-${r.id}">${r.vals.some(v=>v)?fmt(r.vals.reduce((a,b)=>a+b,0)):'—'}</td>
       <td style="text-align:center;padding:2px">
-        <button onclick="fgDelRow('${r.id}')" title="Eliminar"
+        ${!isViewer() ? `<button onclick="fgDelRow('${r.id}')" title="Eliminar"
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px"
-          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>` : ''}
       </td>
     </tr>`;
   }).join('') + `<tr>
@@ -1502,7 +1705,7 @@ function fgExport(){
   const ws = XLSX.utils.json_to_sheet(data);
   const wb2 = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb2, ws, 'Flujo Gastos');
-  XLSX.writeFile(wb2, 'GFVMCR_Flujo_Gastos.xlsx');
+  XLSX.writeFile(wb2, 'GF_Flujo_Gastos.xlsx');
 }
 
 // ═══════════════════════════════════════
@@ -1650,8 +1853,8 @@ function expData(){
   }));
   const ws=XLSX.utils.json_to_sheet(data);
   const wb2=XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb2,ws,'Flujo GFVMCR');
-  XLSX.writeFile(wb2,'GFVMCR_datos.xlsx');
+  XLSX.utils.book_append_sheet(wb2,ws,'Flujo GF');
+  XLSX.writeFile(wb2,'GF_datos.xlsx');
 }
 function refreshActivePL(){
   const active = document.querySelector('.view.active');

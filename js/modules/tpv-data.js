@@ -1,4 +1,4 @@
-// GFVMCR — TPV Data Service
+// GF — TPV Data Service
 // Capa de acceso a datos: RPC wrappers + caché + offline fallback
 // Usa _sb (Supabase client) expuesto desde supabase.js
 

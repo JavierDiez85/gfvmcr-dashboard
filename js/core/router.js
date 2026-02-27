@@ -1,4 +1,4 @@
-// GFVMCR — Router: navegación y routing de vistas
+// GF — Router: navegación y routing de vistas
 
 // VIEW ROUTING
 // ═══════════════════════════════════════
@@ -7,11 +7,11 @@ const VT = {
   resumen:'Dashboard Grupo Financiero',ingresar:'Ingresar Datos',
   flujo_ing:'Carga — Flujo de Ingresos',flujo_gas:'Carga — Flujo de Gastos',
   nomina:'Carga — Nómina Compartida',gastos_comp:'Carga — Gastos Compartidos',
-  sal_res:'Salem — P&L',sal_gas:'Salem — Gastos',
+  sal_res:'Salem — P&L',sal_ing:'Salem — Ingresos',sal_gas:'Salem — Costes y Gastos',sal_nom:'Salem — Nómina',
   cred_dash:'Créditos — Dashboard Consolidado',
   cred_cobr:'Créditos — Cobranza',
-  end_res:'Endless — P&L',end_cred:'Endless — Cartera',
-  dyn_res:'Dynamo — P&L',dyn_cred:'Dynamo — Cartera',
+  end_res:'Endless — P&L',end_ing:'Endless — Ingresos',end_gas:'Endless — Costes y Gastos',end_nom:'Endless — Nómina',end_cred:'Endless — Cartera',
+  dyn_res:'Dynamo — P&L',dyn_ing:'Dynamo — Ingresos',dyn_gas:'Dynamo — Costes y Gastos',dyn_nom:'Dynamo — Nómina',dyn_cred:'Dynamo — Cartera',
   tpv_general:'Terminales — Dashboard General', tpv_dashboard:'Terminales — Dashboard Periodo',
   tpv_pagos:'Terminales — Control de Pagos', tpv_resumen:'Terminales — Resumen por Cliente',
   tpv_agentes:'Terminales — Comisiones Agentes', tpv_terminales:'Terminales — Por Cliente',
@@ -19,7 +19,7 @@ const VT = {
   tpv_comisiones:'Terminales — Configuración de Comisiones',
   tpv_upload:'Carga — Datos TPV',
   tar_upload:'Carga — Tarjetas CENTUM',
-  wb_res:'Wirebit — P&L',wb_ing:'Wirebit — Ingresos',wb_nom:'Wirebit — Nómina',wb_upload:'Wirebit — Carga de Transacciones',
+  wb_res:'Wirebit — P&L',wb_ing:'Wirebit — Ingresos',wb_gas:'Wirebit — Costes y Gastos',wb_cripto:'Wirebit — Transacciones Cripto',wb_nom:'Wirebit — Nómina',wb_tarjetas:'Wirebit — Tarjetas WB',wb_upload:'Wirebit — Carga Transacciones Cripto',wb_tar_upload:'Carga — Tarjetas Wirebit',
   carga_masiva:'Carga — Masiva Ingresos y Gastos',
   centum:'Centum Capital',grupo:'Grupo Financiero',cfg_usuarios:'Configuración — Usuarios',cfg_apariencia:'Configuración — Apariencia',cfg_permisos:'Configuración — Permisos',cfg_categorias:'Configuración — Categorías P&L',cfg_bancos:'Configuración — Bancos y Cuentas',tes_flujo:'Tesorería — Flujo de Caja',tes_individual:'Tesorería — Por Empresa',tes_grupo:'Tesorería — Consolidado Grupo',carga_creditos:'Carga — Créditos PDF'
 };
@@ -95,20 +95,32 @@ function render(id){
     case 'tpv_comisiones': rTPVComisiones(); break;
     case 'tpv_upload': rTPVUpload(); break;
     case 'tar_upload': rTarUpload(); break;
-    case 'sal_res': _syncAll().then(()=>{rPL('sal'); rPLCharts('sal');}); break;
-    case 'sal_gas': _syncAll().then(()=>rSalGas()); break;
-    case 'end_res': _syncAll().then(()=>{rPL('end'); rPLCharts('end');}); break;
+    case 'sal_res': _syncAll().then(()=>{rPL('sal'); rPLCharts('sal'); rEvoChart('c-sal-evo','sal');}); break;
+    case 'sal_ing': _syncAll().then(()=>rIngView('sal')); break;
+    case 'sal_gas': _syncAll().then(()=>rGasView('sal')); break;
+    case 'sal_nom': rNomView('sal'); break;
+    case 'end_res': _syncAll().then(()=>{rPL('end'); rPLCharts('end'); rEvoChart('c-end-evo','end');}); break;
+    case 'end_ing': _syncAll().then(()=>rIngView('end')); break;
+    case 'end_gas': _syncAll().then(()=>rGasView('end')); break;
+    case 'end_nom': rNomView('end'); break;
     case 'cred_dash': rCredDash(); break;
     case 'cred_cobr': rCredCobr(); break;
     case 'end_cred': rEndCred(); break;
-    case 'dyn_res': _syncAll().then(()=>{rPL('dyn'); rPLCharts('dyn');}); break;
+    case 'dyn_res': _syncAll().then(()=>{rPL('dyn'); rPLCharts('dyn'); rEvoChart('c-dyn-evo','dyn');}); break;
+    case 'dyn_ing': _syncAll().then(()=>rIngView('dyn')); break;
+    case 'dyn_gas': _syncAll().then(()=>rGasView('dyn')); break;
+    case 'dyn_nom': rNomView('dyn'); break;
     case 'dyn_cred': rDynCred(); break;
-    case 'wb_res': _syncAll().then(()=>{rPL('wb'); rPLCharts('wb');}); break;
+    case 'wb_res': _syncAll().then(()=>{rPL('wb'); rPLCharts('wb'); rEvoChart('c-wb-evo','wb');}); break;
     case 'wb_ing': wbLoadFees(); rWBIng(); break;
+    case 'wb_gas': _syncAll().then(()=>rGasView('wb')); break;
     case 'wb_nom': rWBNom(); break;
     case 'wb_upload': rWBUpload(); break;
-    case 'centum': _syncAll().then(()=>{rConsolidado('centum'); rConsCharts('centum');}); break;
-    case 'grupo': _syncAll().then(()=>{rConsolidado('grupo'); rConsCharts('grupo');}); break;
+    case 'wb_cripto': rWBCripto(); break;
+    case 'wb_tarjetas': rWBTarjetas(); break;
+    case 'wb_tar_upload': rWBTarUpload(); break;
+    case 'centum': _syncAll().then(()=>{rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']);}); break;
+    case 'grupo': _syncAll().then(()=>{rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb']);}); break;
     case 'tes_flujo': rTesFlujo(); break;
     case 'tes_individual': rTesIndividual(); break;
     case 'tes_grupo': rTesGrupo(); break;
