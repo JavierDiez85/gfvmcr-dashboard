@@ -1,4 +1,4 @@
-// GFVMCR — TPV Upload Pipeline
+// GF — TPV Upload Pipeline
 // Sube Excel de transacciones + config de comisiones a Supabase
 // Usa: XLSX (SheetJS CDN), _sb (Supabase client), TPV (tpv-data.js)
 

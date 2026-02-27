@@ -1,4 +1,4 @@
-// GFVMCR — Helpers globales (toast, fmt, modals)
+// GF — Helpers globales (toast, fmt, modals)
 
 // STATE
 // ═══════════════════════════════════════

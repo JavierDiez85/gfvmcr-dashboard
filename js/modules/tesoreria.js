@@ -1,4 +1,4 @@
-// GFVMCR — Tesorería: flujo de caja, bancos, consolidado
+// GF — Tesorería: flujo de caja, bancos, consolidado
 
 // TESORERÍA — MÓDULO COMPLETO
 // ══════════════════════════════════════
@@ -98,8 +98,8 @@ function tesRenderTabla(){
       <td style="font-size:.72rem;color:var(--muted)">${m.cuenta||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${montoCol};white-space:nowrap">${montoSign}${tesFmt(m.monto).substring(1)}</td>
       <td style="text-align:center">
-        <button onclick="tesEditarMov('${m.id}')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer;margin-right:2px">✏️</button>
-        <button onclick="tesEliminarMov('${m.id}')" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer">🗑</button>
+        ${!isViewer() ? `<button onclick="tesEditarMov('${m.id}')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer;margin-right:2px">✏️</button>
+        <button onclick="tesEliminarMov('${m.id}')" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer">🗑</button>` : ''}
       </td>
     </tr>`;
   }).join('');
@@ -545,7 +545,7 @@ function tesDescargarPlantilla(){
   const blob = new Blob([csv+nota], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
-  a.href = url; a.download = 'Plantilla_Tesoreria_VMCR.csv'; a.click();
+  a.href = url; a.download = 'Plantilla_Tesoreria.csv'; a.click();
   URL.revokeObjectURL(url);
   toast('✅ Plantilla descargada');
 }
@@ -767,8 +767,8 @@ function rBancosView(){
         </div>
       </td>
       <td style="text-align:center;white-space:nowrap">
-        <button onclick="bancosEditModal(${i})" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>
-        <button onclick="bancosDelete(${i})" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>
+        ${!isViewer() ? `<button onclick="bancosEditModal(${i})" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>
+        <button onclick="bancosDelete(${i})" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>` : ''}
       </td>
     </tr>`).join('');
 
@@ -778,7 +778,7 @@ function rBancosView(){
         <div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700">🏦 Bancos y Cuentas</div>
         <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Configura las cuentas disponibles · Asigna cada una a sus empresas · Se usan en Flujo de Caja</div>
       </div>
-      <button onclick="bancosNewModal()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:600;cursor:pointer">+ Nueva Cuenta</button>
+      ${!isViewer() ? '<button onclick="bancosNewModal()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:600;cursor:pointer">+ Nueva Cuenta</button>' : ''}
     </div>
     <div class="kpi-row c3" style="margin-bottom:14px">
       <div class="kpi-card" style="--ac:#0073ea">

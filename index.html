@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grupo Financiero VMCR — Dashboard 2026</title>
+  <title>Grupo Financiero — Dashboard 2026</title>
 
   <!-- Fuentes -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -27,6 +27,19 @@
   <style>@keyframes vmcr-spin{to{transform:rotate(360deg)}}</style>
 </head>
 <body>
+
+<!-- Login overlay -->
+<div id="login-overlay" style="position:fixed;inset:0;background:var(--bg,#f5f6fa);z-index:10000;display:flex;align-items:center;justify-content:center">
+  <div style="background:var(--white,#fff);border-radius:16px;padding:36px 32px;width:380px;max-width:90vw;box-shadow:0 8px 40px rgba(0,0,0,.15);text-align:center">
+    <div style="font-size:2rem;margin-bottom:4px">📊</div>
+    <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:2px">Grupo Financiero</div>
+    <div style="font-size:.72rem;color:#8b8fb5;margin-bottom:24px">Iniciar sesión</div>
+    <input id="login-email" class="fi" type="email" placeholder="Correo electrónico" style="margin-bottom:10px;width:100%;box-sizing:border-box">
+    <input id="login-password" class="fi" type="password" placeholder="Contraseña" style="margin-bottom:16px;width:100%;box-sizing:border-box" onkeydown="if(event.key==='Enter')doLogin()">
+    <button id="login-btn" onclick="doLogin()" style="width:100%;padding:10px;background:#0073ea;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:'Figtree',sans-serif">Entrar</button>
+    <div id="login-error" style="color:#e53935;font-size:.72rem;margin-top:10px;display:none"></div>
+  </div>
+</div>
 
 <!-- Loading overlay -->
 <div id="app-loader" style="position:fixed;inset:0;background:var(--bg,#f5f6fa);display:flex;align-items:center;justify-content:center;z-index:9999;flex-direction:column;gap:12px">
@@ -56,13 +69,27 @@
           <div class="si" onclick="sv('centum',this)" data-view="centum"><div class="ic">🏢</div>Centum Capital</div>
           <div class="sb-sec">Salem Internacional</div>
           <div class="si" onclick="sv('sal_res',this)" data-view="sal_res"><div class="ic">📊</div>Resumen P&L</div>
-          <div class="si" onclick="sv('sal_gas',this)" data-view="sal_gas"><div class="ic">💸</div>Gastos Salem</div>
-          <div class="sb-sec">SOFOMs — Crédito</div>
-          <div class="si" onclick="sv('end_res',this)" data-view="end_res"><div class="ic">📊</div>Endless Money P&L</div>
-          <div class="si" onclick="sv('dyn_res',this)" data-view="dyn_res"><div class="ic">📊</div>Dynamo Finance P&L</div>
-          <div class="sb-sec">Wirebit — Cripto</div>
+          <div class="si" onclick="sv('sal_ing',this)" data-view="sal_ing"><div class="ic">💰</div>Ingresos</div>
+          <div class="si" onclick="sv('sal_gas',this)" data-view="sal_gas"><div class="ic">💸</div>Costes y Gastos</div>
+          <div class="si" onclick="sv('sal_nom',this)" data-view="sal_nom"><div class="ic">👥</div>Nómina</div>
+          <div class="sb-sec">Endless Money</div>
+          <div class="si" onclick="sv('end_res',this)" data-view="end_res"><div class="ic">📊</div>Resumen P&L</div>
+          <div class="si" onclick="sv('end_ing',this)" data-view="end_ing"><div class="ic">💰</div>Ingresos</div>
+          <div class="si" onclick="sv('end_gas',this)" data-view="end_gas"><div class="ic">💸</div>Costes y Gastos</div>
+          <div class="si" onclick="sv('end_nom',this)" data-view="end_nom"><div class="ic">👥</div>Nómina</div>
+          <div class="si" onclick="sv('end_cred',this)" data-view="end_cred"><div class="ic">📋</div>Cartera</div>
+          <div class="sb-sec">Dynamo Finance</div>
+          <div class="si" onclick="sv('dyn_res',this)" data-view="dyn_res"><div class="ic">📊</div>Resumen P&L</div>
+          <div class="si" onclick="sv('dyn_ing',this)" data-view="dyn_ing"><div class="ic">💰</div>Ingresos</div>
+          <div class="si" onclick="sv('dyn_gas',this)" data-view="dyn_gas"><div class="ic">💸</div>Costes y Gastos</div>
+          <div class="si" onclick="sv('dyn_nom',this)" data-view="dyn_nom"><div class="ic">👥</div>Nómina</div>
+          <div class="si" onclick="sv('dyn_cred',this)" data-view="dyn_cred"><div class="ic">📋</div>Cartera</div>
+          <div class="sb-sec">Wirebit</div>
           <div class="si" onclick="sv('wb_res',this)" data-view="wb_res"><div class="ic">📊</div>Resumen P&L</div>
           <div class="si" onclick="sv('wb_ing',this)" data-view="wb_ing"><div class="ic">⛓</div>Ingresos 2026</div>
+          <div class="si" onclick="sv('wb_gas',this)" data-view="wb_gas"><div class="ic">💸</div>Costes y Gastos</div>
+          <div class="si" onclick="sv('wb_cripto',this)" data-view="wb_cripto"><div class="ic">🔍</div>Transacciones Cripto</div>
+          <div class="si" onclick="sv('wb_tarjetas',this)" data-view="wb_tarjetas"><div class="ic">💳</div>Transacciones Tarjetas</div>
           <div class="si" onclick="sv('wb_nom',this)" data-view="wb_nom"><div class="ic">👥</div>Nómina Wirebit</div>
         </div>
       </div>
@@ -120,7 +147,7 @@
       </div>
 
       <!-- 6. Carga de Datos -->
-      <div class="mi-wrap">
+      <div class="mi-wrap edit-action">
         <div class="mi" id="mi-carga" onclick="openMenu('carga',this)"><div class="mic">📥</div>Carga de Datos<span class="mi-arr">›</span></div>
         <div class="mi-sub" id="sub-carga">
           <div class="sb-sec">Masiva</div>
@@ -138,7 +165,8 @@
           <div class="sb-sec">Tarjetas</div>
           <div class="si" onclick="sv('tar_upload',this)" data-view="tar_upload"><div class="ic">💳</div>Carga Tarjetas</div>
           <div class="sb-sec">Wirebit</div>
-          <div class="si" onclick="sv('wb_upload',this)" data-view="wb_upload"><div class="ic">⛓</div>Transacciones</div>
+          <div class="si" onclick="sv('wb_upload',this)" data-view="wb_upload"><div class="ic">⛓</div>Transacciones Cripto</div>
+          <div class="si" onclick="sv('wb_tar_upload',this)" data-view="wb_tar_upload"><div class="ic">💳</div>Transacciones Tarjetas</div>
           <div class="sb-sec">Tesorería</div>
           <div class="si" onclick="sv('tes_flujo',this)" data-view="tes_flujo"><div class="ic">📥</div>Flujo de Caja</div>
         </div>
@@ -151,8 +179,8 @@
       <div class="mi-wrap">
         <div class="mi" id="mi-config" onclick="openMenu('config',this)"><div class="mic">⚙️</div>Configuración<span class="mi-arr">›</span></div>
         <div class="mi-sub" id="sub-config">
-          <div class="si" onclick="sv('cfg_usuarios',this)" data-view="cfg_usuarios"><div class="ic">👤</div>Usuarios</div>
-          <div class="si" onclick="sv('cfg_permisos',this)" data-view="cfg_permisos"><div class="ic">🔐</div>Permisos</div>
+          <div class="si admin-only" onclick="sv('cfg_usuarios',this)" data-view="cfg_usuarios"><div class="ic">👤</div>Usuarios</div>
+          <div class="si admin-only" onclick="sv('cfg_permisos',this)" data-view="cfg_permisos"><div class="ic">🔐</div>Permisos</div>
           <div class="si" onclick="sv('cfg_apariencia',this)" data-view="cfg_apariencia"><div class="ic">🎨</div>Apariencia</div>
           <div class="si" onclick="sv('cfg_categorias',this)" data-view="cfg_categorias"><div class="ic">📂</div>Categorías P&L</div>
           <div class="si" onclick="sv('cfg_bancos',this)" data-view="cfg_bancos"><div class="ic">🏦</div>Bancos y Cuentas</div>
@@ -177,10 +205,12 @@
         <button class="pbtn" onclick="setDashMode('trimestral',this)">Trimestral</button>
         <button class="pbtn" onclick="setDashMode('anual',this)">Anual</button>
       </div>
-      <button class="btn btn-green" style="font-size:.73rem" onclick="openMenu('carga',document.getElementById('mi-carga'),'flujo_ing')">📥 Ingresos</button>
-      <button class="btn btn-out" style="font-size:.73rem;border-color:var(--orange);color:var(--orange)" onclick="openMenu('carga',document.getElementById('mi-carga'),'flujo_gas')">📤 Gastos</button>
+      <button class="btn btn-green edit-action" style="font-size:.73rem" onclick="openMenu('carga',document.getElementById('mi-carga'),'flujo_ing')">📥 Ingresos</button>
+      <button class="btn btn-out edit-action" style="font-size:.73rem;border-color:var(--orange);color:var(--orange)" onclick="openMenu('carga',document.getElementById('mi-carga'),'flujo_gas')">📤 Gastos</button>
       <button class="btn btn-out" onclick="exportHTML()" title="Exportar HTML con todos los datos guardados" style="font-size:.73rem">💾 Exportar</button>
       <button class="btn btn-out" onclick="setTheme(_theme==='dark'?'light':'dark')" id="theme-toggle-btn" title="Cambiar tema" style="padding:6px 10px;font-size:.8rem">☀️</button>
+      <span id="tb-user" style="font-size:.65rem;color:var(--muted);font-weight:600;white-space:nowrap"></span>
+      <button class="btn btn-ghost" onclick="doLogout()" title="Cerrar sesión" style="font-size:.7rem;padding:5px 8px;color:var(--muted)">🚪</button>
     </div>
   </div>
 
@@ -333,7 +363,7 @@
       <div style="padding:12px">
         <div style="display:flex;gap:6px;margin-bottom:10px">
           <input id="inicio-tarea-input" type="text" placeholder="Nueva tarea..." onkeydown="if(event.key==='Enter')addTarea()" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">
-          <button class="btn btn-blue" style="font-size:.7rem;white-space:nowrap" onclick="addTarea()">+ Agregar</button>
+          <button class="btn btn-blue edit-action" style="font-size:.7rem;white-space:nowrap" onclick="addTarea()">+ Agregar</button>
         </div>
         <div id="inicio-tareas-body"></div>
       </div>
@@ -562,7 +592,7 @@
       <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👤 Gestión de Usuarios</div>
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Alta, baja y control de acceso por sección</div>
     </div>
-    <button class="btn btn-blue" onclick="uNewUser()">+ Nuevo Usuario</button>
+    <button class="btn btn-blue admin-only" onclick="uNewUser()">+ Nuevo Usuario</button>
   </div>
 
   <!-- Lista de usuarios -->
@@ -593,7 +623,11 @@
           </div>
           <div>
             <label style="font-size:.72rem;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">Correo electrónico *</label>
-            <input id="u-email" class="fi" type="email" placeholder="juan@vmcr.mx" style="width:100%">
+            <input id="u-email" class="fi" type="email" placeholder="correo@empresa.mx" style="width:100%">
+          </div>
+          <div>
+            <label style="font-size:.72rem;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">Contraseña *</label>
+            <input id="u-password" class="fi" type="password" placeholder="Min. 6 caracteres (vacío = sin cambios)" style="width:100%">
           </div>
           <div>
             <label style="font-size:.72rem;font-weight:600;color:var(--text2);display:block;margin-bottom:4px">Teléfono</label>
@@ -627,9 +661,9 @@
         </div>
 
         <div style="display:flex;gap:8px;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
-          <button class="btn btn-blue" onclick="uSaveUser()">💾 Guardar usuario</button>
+          <button class="btn btn-blue admin-only" onclick="uSaveUser()">💾 Guardar usuario</button>
           <button class="btn btn-out" onclick="uCancelForm()">Cancelar</button>
-          <button id="u-del-btn" class="btn" style="margin-left:auto;background:var(--red-bg);color:var(--red);border:1px solid var(--red-lt);display:none" onclick="uDeleteUser()">🗑 Eliminar</button>
+          <button id="u-del-btn" class="btn admin-only" style="margin-left:auto;background:var(--red-bg);color:var(--red);border:1px solid var(--red-lt);display:none" onclick="uDeleteUser()">🗑 Eliminar</button>
         </div>
       </div>
     </div>
@@ -737,7 +771,7 @@
           <!-- rendered by uRenderPerms() -->
         </div>
         <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px;display:flex;gap:8px">
-          <button class="btn btn-blue" onclick="pSavePerms()">💾 Guardar permisos</button>
+          <button class="btn btn-blue admin-only" onclick="pSavePerms()">💾 Guardar permisos</button>
           <button class="btn btn-out" onclick="pCancelPerms()">Cancelar</button>
         </div>
       </div>
@@ -850,8 +884,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Ajusta sueldos y porcentajes · El sistema calcula automáticamente la distribución por empresa</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center">
-      <button class="btn btn-blue" onclick="nomAddRow()" style="font-size:.72rem">+ Empleado</button>
-      <button class="btn btn-out" onclick="nomSave()" style="font-size:.72rem">💾 Guardar</button>
+      <button class="btn btn-blue edit-action" onclick="nomAddRow()" style="font-size:.72rem">+ Empleado</button>
+      <button class="btn btn-out edit-action" onclick="nomSave()" style="font-size:.72rem">💾 Guardar</button>
     </div>
   </div>
 
@@ -948,8 +982,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Define qué conceptos son compartidos y en qué % · Al subir un gasto con ese nombre se divide automáticamente</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-blue" onclick="gcAddRow()" style="font-size:.72rem">+ Concepto</button>
-      <button class="btn btn-out" onclick="gcSave()" style="font-size:.72rem">💾 Guardar</button>
+      <button class="btn btn-blue edit-action" onclick="gcAddRow()" style="font-size:.72rem">+ Concepto</button>
+      <button class="btn btn-out edit-action" onclick="gcSave()" style="font-size:.72rem">💾 Guardar</button>
     </div>
   </div>
 
@@ -1080,6 +1114,11 @@
       <div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div>
     </div>
   </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Salem Internacional</div><div class="cc-s">Ingresos, costes, gastos y EBITDA</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-sal-evo" height="130"></canvas></div>
+  </div>
   <!-- Gráfica compacta -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
     <div class="cc cc-clickable" onclick="openTopGastos('Salem')">
@@ -1101,17 +1140,206 @@
 <!-- ══════════ SALEM TPV ══════════ -->
 <!-- ══════════ SALEM GASTOS ══════════ -->
 <div id="view-sal_gas" class="view">
-  <div style="font-family:'Poppins',sans-serif;font-size:1.05rem;font-weight:700;margin-bottom:16px">💸 Salem — Gastos Detallados 2026</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💸 Salem — Costes y Gastos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Costes directos y gastos administrativos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#0073ea;color:#0073ea" onclick="navTo('sal_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_gas')">📤 Flujo Gastos</button>
+    </div>
+  </div>
   <div class="kpi-row c3">
-    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Gastos Mes</div><div class="kpi-ico" style="background:var(--red-bg)">📉</div></div><div class="kpi-val" id="sal-gas-kpi-mes" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="sal-gas-kpi-mes-d">Pendiente de captura</div></div>
-    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Mayor Gasto</div><div class="kpi-ico" style="background:var(--orange-bg)">🔝</div></div><div class="kpi-val" id="sal-gas-kpi-mayor" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="sal-gas-kpi-mayor-d">Pendiente de captura</div></div>
-    <div class="kpi-card" style="--ac:var(--yellow)"><div class="kpi-top"><div class="kpi-lbl">Anual Estimado</div><div class="kpi-ico" style="background:var(--yellow-bg)">📅</div></div><div class="kpi-val" id="sal-gas-kpi-anual" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="sal-gas-kpi-anual-d">Pendiente de captura</div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Costes Directos</div><div class="kpi-ico" style="background:var(--orange-bg)">⚙️</div></div><div class="kpi-val" id="sal-gas-kpi-cost" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="sal-gas-kpi-cost-d">Sin costes registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Gastos Administrativos</div><div class="kpi-ico" style="background:var(--red-bg)">📉</div></div><div class="kpi-val" id="sal-gas-kpi-gas" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="sal-gas-kpi-gas-d">Sin gastos registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--yellow)"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:var(--yellow-bg)">📅</div></div><div class="kpi-val" id="sal-gas-kpi-anual" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="sal-gas-kpi-anual-d">Pendiente de captura</div></div>
   </div>
   <div style="height:14px"></div>
-  <div class="tw"><div class="tw-h"><div class="tw-ht">Gastos Salem Internacional</div></div>
-  <div style="overflow-x:auto"><table class="bt" id="sal-gas-table">
-    <thead><tr id="sal-gas-thead"></tr></thead><tbody id="sal-gas-tbody"></tbody>
-  </table></div></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Costes Directos — Salem Internacional</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="sal-cost-thead"></tr></thead><tbody id="sal-cost-tbody"></tbody></table></div></div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Gastos Administrativos — Salem Internacional</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="sal-gas-thead"></tr></thead><tbody id="sal-gas-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ SALEM INGRESOS ══════════ -->
+<div id="view-sal_ing" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💰 Salem Internacional — Ingresos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Conceptos de ingreso desde Flujo de Ingresos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#0073ea;color:#0073ea" onclick="navTo('sal_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_ing')">📥 Flujo Ingresos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#0073ea22;color:#0073ea">💰</div></div><div class="kpi-val" id="sal-ing-kpi-total" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="sal-ing-kpi-total-sub">Pendiente de captura</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Mes Actual</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📅</div></div><div class="kpi-val" id="sal-ing-kpi-mes" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="sal-ing-kpi-mes-sub">Pendiente</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl"># Conceptos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📋</div></div><div class="kpi-val" id="sal-ing-kpi-count" style="color:var(--muted);font-size:.85rem">0</div><div class="kpi-d dnu" id="sal-ing-kpi-count-sub">Conceptos de ingreso</div></div>
+  </div>
+  <div class="cc" style="margin-bottom:14px"><div class="cc-h"><div><div class="cc-t">Ingresos Mensuales — Salem 2026</div><div class="cc-s">Datos desde Flujo de Ingresos</div></div></div><div class="cc-b"><canvas id="c-sal-ing-bar" height="160"></canvas></div></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Detalle de Ingresos — Salem Internacional</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="sal-ing-thead"></tr></thead><tbody id="sal-ing-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ SALEM NÓMINA ══════════ -->
+<div id="view-sal_nom" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👥 Salem Internacional — Nómina 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Distribución desde Nómina Compartida</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#0073ea;color:#0073ea" onclick="navTo('sal_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('nomina')">👥 Config Nómina</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#0073ea22;color:#0073ea">💰</div></div><div class="kpi-val" id="sal-nom-kpi-total" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu">Desde config nóminas</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Empleados</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🧑‍💼</div></div><div class="kpi-val" id="sal-nom-kpi-count">—</div><div class="kpi-d dnu">Staff asignado</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Promedio/Mes</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📊</div></div><div class="kpi-val" id="sal-nom-kpi-avg">—</div><div class="kpi-d dnu">Pago mensual</div></div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Nómina Salem Internacional por Empleado</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="sal-nom-thead"></tr></thead><tbody id="sal-nom-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ ENDLESS INGRESOS ══════════ -->
+<div id="view-end_ing" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💰 Endless Money — Ingresos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Conceptos de ingreso desde Flujo de Ingresos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#00b875;color:#00b875" onclick="navTo('end_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_ing')">📥 Flujo Ingresos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#00b875"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#00b87522;color:#00b875">💰</div></div><div class="kpi-val" id="end-ing-kpi-total" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="end-ing-kpi-total-sub">Pendiente de captura</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Mes Actual</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📅</div></div><div class="kpi-val" id="end-ing-kpi-mes" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="end-ing-kpi-mes-sub">Pendiente</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl"># Conceptos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📋</div></div><div class="kpi-val" id="end-ing-kpi-count" style="color:var(--muted);font-size:.85rem">0</div><div class="kpi-d dnu" id="end-ing-kpi-count-sub">Conceptos de ingreso</div></div>
+  </div>
+  <div class="cc" style="margin-bottom:14px"><div class="cc-h"><div><div class="cc-t">Ingresos Mensuales — Endless Money 2026</div><div class="cc-s">Datos desde Flujo de Ingresos</div></div></div><div class="cc-b"><canvas id="c-end-ing-bar" height="160"></canvas></div></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Detalle de Ingresos — Endless Money</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="end-ing-thead"></tr></thead><tbody id="end-ing-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ ENDLESS NÓMINA ══════════ -->
+<div id="view-end_nom" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👥 Endless Money — Nómina 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Distribución desde Nómina Compartida</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#00b875;color:#00b875" onclick="navTo('end_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('nomina')">👥 Config Nómina</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#00b875"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#00b87522;color:#00b875">💰</div></div><div class="kpi-val" id="end-nom-kpi-total" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu">Desde config nóminas</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Empleados</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🧑‍💼</div></div><div class="kpi-val" id="end-nom-kpi-count">—</div><div class="kpi-d dnu">Staff asignado</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Promedio/Mes</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📊</div></div><div class="kpi-val" id="end-nom-kpi-avg">—</div><div class="kpi-d dnu">Pago mensual</div></div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Nómina Endless Money por Empleado</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="end-nom-thead"></tr></thead><tbody id="end-nom-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ ENDLESS GASTOS ══════════ -->
+<div id="view-end_gas" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💸 Endless — Costes y Gastos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Costes directos y gastos administrativos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#00b875;color:#00b875" onclick="navTo('end_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_gas')">📤 Flujo Gastos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3">
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Costes Directos</div><div class="kpi-ico" style="background:var(--orange-bg)">⚙️</div></div><div class="kpi-val" id="end-gas-kpi-cost" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="end-gas-kpi-cost-d">Sin costes registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Gastos Administrativos</div><div class="kpi-ico" style="background:var(--red-bg)">📉</div></div><div class="kpi-val" id="end-gas-kpi-gas" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="end-gas-kpi-gas-d">Sin gastos registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--yellow)"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:var(--yellow-bg)">📅</div></div><div class="kpi-val" id="end-gas-kpi-anual" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="end-gas-kpi-anual-d">Pendiente de captura</div></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Costes Directos — Endless Money</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="end-cost-thead"></tr></thead><tbody id="end-cost-tbody"></tbody></table></div></div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Gastos Administrativos — Endless Money</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="end-gas-thead"></tr></thead><tbody id="end-gas-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ DYNAMO INGRESOS ══════════ -->
+<div id="view-dyn_ing" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💰 Dynamo Finance — Ingresos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Conceptos de ingreso desde Flujo de Ingresos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#ff7043;color:#ff7043" onclick="navTo('dyn_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_ing')">📥 Flujo Ingresos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#ff7043"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#ff704322;color:#ff7043">💰</div></div><div class="kpi-val" id="dyn-ing-kpi-total" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="dyn-ing-kpi-total-sub">Pendiente de captura</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Mes Actual</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📅</div></div><div class="kpi-val" id="dyn-ing-kpi-mes" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="dyn-ing-kpi-mes-sub">Pendiente</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl"># Conceptos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📋</div></div><div class="kpi-val" id="dyn-ing-kpi-count" style="color:var(--muted);font-size:.85rem">0</div><div class="kpi-d dnu" id="dyn-ing-kpi-count-sub">Conceptos de ingreso</div></div>
+  </div>
+  <div class="cc" style="margin-bottom:14px"><div class="cc-h"><div><div class="cc-t">Ingresos Mensuales — Dynamo Finance 2026</div><div class="cc-s">Datos desde Flujo de Ingresos</div></div></div><div class="cc-b"><canvas id="c-dyn-ing-bar" height="160"></canvas></div></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Detalle de Ingresos — Dynamo Finance</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="dyn-ing-thead"></tr></thead><tbody id="dyn-ing-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ DYNAMO NÓMINA ══════════ -->
+<div id="view-dyn_nom" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👥 Dynamo Finance — Nómina 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Distribución desde Nómina Compartida</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#ff7043;color:#ff7043" onclick="navTo('dyn_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('nomina')">👥 Config Nómina</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#ff7043"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#ff704322;color:#ff7043">💰</div></div><div class="kpi-val" id="dyn-nom-kpi-total" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu">Desde config nóminas</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Empleados</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🧑‍💼</div></div><div class="kpi-val" id="dyn-nom-kpi-count">—</div><div class="kpi-d dnu">Staff asignado</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Promedio/Mes</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📊</div></div><div class="kpi-val" id="dyn-nom-kpi-avg">—</div><div class="kpi-d dnu">Pago mensual</div></div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Nómina Dynamo Finance por Empleado</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="dyn-nom-thead"></tr></thead><tbody id="dyn-nom-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ DYNAMO GASTOS ══════════ -->
+<div id="view-dyn_gas" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💸 Dynamo — Costes y Gastos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Costes directos y gastos administrativos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#ff7043;color:#ff7043" onclick="navTo('dyn_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_gas')">📤 Flujo Gastos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3">
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Costes Directos</div><div class="kpi-ico" style="background:var(--orange-bg)">⚙️</div></div><div class="kpi-val" id="dyn-gas-kpi-cost" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="dyn-gas-kpi-cost-d">Sin costes registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Gastos Administrativos</div><div class="kpi-ico" style="background:var(--red-bg)">📉</div></div><div class="kpi-val" id="dyn-gas-kpi-gas" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="dyn-gas-kpi-gas-d">Sin gastos registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--yellow)"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:var(--yellow-bg)">📅</div></div><div class="kpi-val" id="dyn-gas-kpi-anual" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="dyn-gas-kpi-anual-d">Pendiente de captura</div></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Costes Directos — Dynamo Finance</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="dyn-cost-thead"></tr></thead><tbody id="dyn-cost-tbody"></tbody></table></div></div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Gastos Administrativos — Dynamo Finance</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="dyn-gas-thead"></tr></thead><tbody id="dyn-gas-tbody"></tbody></table></div></div>
 </div>
 
 <!-- ══════════ ENDLESS P&L ══════════ -->
@@ -1148,6 +1376,11 @@
       <div class="kpi-d" id="end-kpi-pipeline-sub">Sin prospectos</div>
     </div>
   </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Endless Money</div><div class="cc-s">Ingresos, costes, gastos y EBITDA</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-end-evo" height="130"></canvas></div>
+  </div>
   <!-- Gráfica compacta -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
     <div class="cc cc-clickable" onclick="openTopGastos('Endless')">
@@ -1176,7 +1409,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Endless Money + Dynamo Finance · Haz clic en las tarjetas para ver detalle</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-out" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
+      <button class="btn btn-out edit-action" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
     </div>
   </div>
 
@@ -1232,8 +1465,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Créditos ordenados por fecha de desembolso · Clic en un crédito para ver detalle y tabla de amortización</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-out" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
-      <button class="btn" style="font-size:.72rem;background:#00b875;color:white;border:none" onclick="credAddRow('end')">+ Manual</button>
+      <button class="btn btn-out edit-action" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
+      <button class="btn edit-action" style="font-size:.72rem;background:#00b875;color:white;border:none" onclick="credAddRow('end')">+ Manual</button>
     </div>
   </div>
   <!-- KPIs -->
@@ -1244,7 +1477,7 @@
       <div class="tw-ht">Créditos <span id="end-cred-count" class="pill" style="background:rgba(0,184,117,.12);color:#00b875">0</span></div>
       <div style="font-size:.67rem;color:var(--muted)">Ordenados por fecha de desembolso</div>
     </div>
-    <div id="end-cred-list"></div>
+    <div id="end-cred-list" style="overflow-x:auto"></div>
   </div>
 </div>
 
@@ -1256,8 +1489,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Créditos ordenados por fecha de desembolso · Clic en un crédito para ver detalle y tabla de amortización</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-out" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
-      <button class="btn" style="font-size:.72rem;background:#ff7043;color:white;border:none" onclick="credAddRow('dyn')">+ Manual</button>
+      <button class="btn btn-out edit-action" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
+      <button class="btn edit-action" style="font-size:.72rem;background:#ff7043;color:white;border:none" onclick="credAddRow('dyn')">+ Manual</button>
     </div>
   </div>
   <!-- KPIs -->
@@ -1268,7 +1501,7 @@
       <div class="tw-ht">Créditos <span id="dyn-cred-count" class="pill" style="background:rgba(255,112,67,.12);color:#ff7043">0</span></div>
       <div style="font-size:.67rem;color:var(--muted)">Ordenados por fecha de desembolso</div>
     </div>
-    <div id="dyn-cred-list"></div>
+    <div id="dyn-cred-list" style="overflow-x:auto"></div>
   </div>
 </div>
 
@@ -1343,6 +1576,11 @@
       <div class="kpi-d" id="dyn-kpi-pipeline-sub">Sin prospectos</div>
     </div>
   </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Dynamo Finance</div><div class="cc-s">Ingresos, costes, gastos y EBITDA</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-dyn-evo" height="130"></canvas></div>
+  </div>
   <!-- Gráficas -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
     <div class="cc cc-clickable" onclick="openTopGastos('Dynamo')">
@@ -1401,6 +1639,11 @@
       <div class="kpi-d dnu">Pendiente de captura</div>
     </div>
   </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Wirebit</div><div class="cc-s">Ingresos, costes, gastos y EBITDA</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-wb-evo" height="130"></canvas></div>
+  </div>
   <!-- Gráficas compactas -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
     <div class="cc cc-clickable" onclick="openModal('wb_ingresos_chart')">
@@ -1427,7 +1670,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Registra ingresos y gastos de todas las empresas del grupo</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button onclick="tesOpenModal()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:600;cursor:pointer">+ Movimiento</button>
+      <button class="edit-action" onclick="tesOpenModal()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:600;cursor:pointer">+ Movimiento</button>
     </div>
   </div>
 
@@ -1489,7 +1732,7 @@
   <div class="tw">
     <div class="tw-h">
       <div class="tw-ht">Movimientos</div>
-      <button onclick="tesEliminarSeleccionados()" id="tes-btn-eliminar" style="display:none;background:#fde8e8;color:#c62828;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">🗑 Eliminar seleccionados</button>
+      <button class="edit-action" onclick="tesEliminarSeleccionados()" id="tes-btn-eliminar" style="display:none;background:#fde8e8;color:#c62828;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">🗑 Eliminar seleccionados</button>
     </div>
     <div style="overflow-x:auto">
       <table class="bt" id="tes-tabla">
@@ -1521,7 +1764,7 @@
 
 <!-- ══════════ TESORERÍA: CONSOLIDADO GRUPO ══════════ -->
 <div id="view-tes_grupo" class="view">
-  <div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700;margin-bottom:14px">🌐 Tesorería Consolidada — Grupo VMCR</div>
+  <div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700;margin-bottom:14px">🌐 Tesorería Consolidada — Grupo Financiero</div>
   <div id="tes-grupo-content"></div>
 </div>
 
@@ -1583,7 +1826,7 @@
     <div class="tw">
       <div class="tw-h">
         <div class="tw-ht">Costos Directos</div>
-        <button onclick="catNew()" style="background:transparent;color:#0073ea;border:1px solid #0073ea;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">+ Agregar</button>
+        <button class="edit-action" onclick="catNew()" style="background:transparent;color:#0073ea;border:1px solid #0073ea;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">+ Agregar</button>
       </div>
       <table class="bt">
         <thead><tr><th>Categoría</th><th>Tipo</th><th>Aplica a</th><th style="text-align:right">Ppto/Mes</th><th style="text-align:center">Acciones</th></tr></thead>
@@ -1600,7 +1843,7 @@
     <div class="tw">
       <div class="tw-h">
         <div class="tw-ht">Gastos Administrativos</div>
-        <button onclick="catNew()" style="background:transparent;color:#0073ea;border:1px solid #0073ea;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">+ Agregar</button>
+        <button class="edit-action" onclick="catNew()" style="background:transparent;color:#0073ea;border:1px solid #0073ea;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">+ Agregar</button>
       </div>
       <table class="bt">
         <thead><tr><th>Categoría</th><th>Tipo</th><th>Aplica a</th><th style="text-align:right">Ppto/Mes</th><th style="text-align:center">Acciones</th></tr></thead>
@@ -1728,6 +1971,136 @@
   </table></div></div>
 </div>
 
+<!-- ══════════ WIREBIT GASTOS ══════════ -->
+<div id="view-wb_gas" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💸 Wirebit — Costes y Gastos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Costes directos y gastos administrativos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#9b51e0;color:#9b51e0" onclick="navTo('wb_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('flujo_gas')">📤 Flujo Gastos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3">
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Costes Directos</div><div class="kpi-ico" style="background:var(--orange-bg)">⚙️</div></div><div class="kpi-val" id="wb-gas-kpi-cost" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="wb-gas-kpi-cost-d">Sin costes registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Gastos Administrativos</div><div class="kpi-ico" style="background:var(--red-bg)">📉</div></div><div class="kpi-val" id="wb-gas-kpi-gas" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="wb-gas-kpi-gas-d">Sin gastos registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--yellow)"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:var(--yellow-bg)">📅</div></div><div class="kpi-val" id="wb-gas-kpi-anual" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="wb-gas-kpi-anual-d">Pendiente de captura</div></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Costes Directos — Wirebit</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="wb-cost-thead"></tr></thead><tbody id="wb-cost-tbody"></tbody></table></div></div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Gastos Administrativos — Wirebit</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="wb-gas-thead"></tr></thead><tbody id="wb-gas-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ WIREBIT TRANSACCIONES CRIPTO ══════════ -->
+<div id="view-wb_cripto" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🔍 Wirebit — Transacciones Cripto 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Analisis de fees por tipo de transaccion, volumen mensual y clientes</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#9b51e0;color:#9b51e0" onclick="navTo('wb_upload')">⬆️ Cargar Datos</button>
+      <button class="btn btn-out" style="font-size:.7rem" onclick="navTo('wb_ing')">⛓ Ingresos</button>
+    </div>
+  </div>
+  <!-- KPIs -->
+  <div class="kpi-row" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Total Transacciones</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🔢</div></div><div class="kpi-val" id="wbc-kpi-txns" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbc-kpi-txns-sub">Sin datos cargados</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Total Fees USD</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💵</div></div><div class="kpi-val" id="wbc-kpi-usd" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbc-kpi-usd-sub">Fees acumulados</div></div>
+    <div class="kpi-card" style="--ac:var(--purple)"><div class="kpi-top"><div class="kpi-lbl">Total Fees MXN</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">💰</div></div><div class="kpi-val" id="wbc-kpi-mxn" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbc-kpi-mxn-sub">Conversion diaria</div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">TC Promedio</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📈</div></div><div class="kpi-val" id="wbc-kpi-fx" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbc-kpi-fx-sub">USD/MXN promedio ponderado</div></div>
+  </div>
+  <!-- Charts -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px">
+    <div class="cc"><div class="cc-h"><div><div class="cc-t">Volumen Mensual (MXN)</div><div class="cc-s">Fees convertidos por mes + transacciones</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbc-monthly" height="160"></canvas></div></div>
+    <div class="cc"><div class="cc-h"><div><div class="cc-t">Por Tipo de Transaccion</div><div class="cc-s">Distribucion anual de fees</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbc-types" height="160"></canvas></div></div>
+  </div>
+  <!-- Client Table -->
+  <div class="tw">
+    <div class="tw-h"><div class="tw-ht">👥 Clientes por Volumen</div></div>
+    <div style="overflow-x:auto"><table class="bt">
+      <thead><tr><th>#</th><th>Cliente</th><th class="r">Transacciones</th><th class="r">Total USD</th><th class="r">Total MXN</th><th class="r">% del Total</th></tr></thead>
+      <tbody id="wbc-clients-tbody"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sin datos. Sube el Excel de transacciones Wirebit.</td></tr></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- ══════════ WIREBIT TARJETAS (Placeholder) ══════════ -->
+<div id="view-wb_tarjetas" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💳 Wirebit — Transacciones Tarjetas WB</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Analisis de transacciones con tarjetas Wirebit</div>
+    </div>
+    <button class="btn" style="font-size:.7rem;background:#9b51e0;color:white;border:none" onclick="navTo('wb_tar_upload')">⬆️ Subir Datos</button>
+  </div>
+  <!-- Empty state -->
+  <div id="wbt-empty" style="text-align:center;padding:60px 20px">
+    <div style="font-size:3rem;margin-bottom:16px">💳</div>
+    <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text);margin-bottom:8px">Sin datos de tarjetas Wirebit</div>
+    <div style="font-size:.82rem;color:var(--muted);max-width:400px;margin:0 auto 24px;line-height:1.5">Para ver el analisis de transacciones con tarjetas, primero sube el archivo Excel desde la seccion de Carga de Datos.</div>
+    <button class="btn" style="font-size:.8rem;padding:10px 24px;background:#9b51e0;color:white;border:none" onclick="navTo('wb_tar_upload')">⬆️ Ir a Carga de Datos — Tarjetas WB</button>
+  </div>
+  <!-- Content (hidden until data loaded) -->
+  <div id="wbt-content" style="display:none">
+    <div class="kpi-row" style="margin-bottom:14px">
+      <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Total Transacciones</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🔢</div></div><div class="kpi-val" id="wbt-kpi-txns">—</div><div class="kpi-d dnu" id="wbt-kpi-txns-sub">Tarjetas WB</div></div>
+      <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Monto Total</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div><div class="kpi-val" id="wbt-kpi-monto">—</div><div class="kpi-d dnu" id="wbt-kpi-monto-sub">Volumen operado</div></div>
+      <div class="kpi-card" style="--ac:var(--purple)"><div class="kpi-top"><div class="kpi-lbl">Ticket Promedio</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">📊</div></div><div class="kpi-val" id="wbt-kpi-avg">—</div><div class="kpi-d dnu" id="wbt-kpi-avg-sub">Por transaccion</div></div>
+      <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Clientes</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">👥</div></div><div class="kpi-val" id="wbt-kpi-clients">—</div><div class="kpi-d dnu" id="wbt-kpi-clients-sub">Unicos</div></div>
+    </div>
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px">
+      <div class="cc"><div class="cc-h"><div><div class="cc-t">Volumen Mensual — Tarjetas WB</div><div class="cc-s">Monto operado por mes</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbt-monthly" height="160"></canvas></div></div>
+      <div class="cc"><div class="cc-h"><div><div class="cc-t">Por Tipo de Transaccion</div><div class="cc-s">Distribucion anual</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbt-types" height="160"></canvas></div></div>
+    </div>
+    <div class="tw"><div class="tw-h"><div class="tw-ht">👥 Clientes — Tarjetas WB</div></div>
+    <div style="overflow-x:auto"><table class="bt"><thead><tr><th>#</th><th>Cliente</th><th class="r">Transacciones</th><th class="r">Monto Total</th><th class="r">Ticket Prom.</th><th class="r">% del Total</th></tr></thead>
+    <tbody id="wbt-clients-tbody"></tbody></table></div></div>
+  </div>
+</div>
+
+<!-- ══════════ WIREBIT TARJETAS UPLOAD ══════════ -->
+<div id="view-wb_tar_upload" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">⬆️ Carga de Datos — Tarjetas Wirebit</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Sube el Excel de transacciones con tarjetas Wirebit.</div>
+    </div>
+    <button class="btn btn-out" style="font-size:.7rem" onclick="navTo('wb_tarjetas')">💳 Ver Dashboard</button>
+  </div>
+  <!-- KPIs -->
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Transacciones Cargadas</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🔢</div></div><div class="kpi-val" id="wbtu-kpi-txns" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbtu-kpi-txns-sub">Sin datos cargados</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Monto Total</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div><div class="kpi-val" id="wbtu-kpi-monto" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbtu-kpi-monto-sub">Sube el Excel de tarjetas</div></div>
+    <div class="kpi-card" style="--ac:var(--purple)"><div class="kpi-top"><div class="kpi-lbl">Ultima Carga</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">📅</div></div><div class="kpi-val" id="wbtu-kpi-last" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbtu-kpi-last-sub">Sin cargas registradas</div></div>
+  </div>
+  <!-- Upload Card -->
+  <div class="tw" style="margin-bottom:14px">
+    <div class="tw-h"><div class="tw-ht">📄 Subir Transacciones Tarjetas Wirebit (Excel)</div></div>
+    <div style="padding:16px">
+      <p style="font-size:.75rem;color:var(--muted);margin:0 0 12px">Selecciona el Excel de transacciones con tarjetas WB. El sistema detectara automaticamente las columnas disponibles.</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <input type="file" id="wbtu-file" accept=".xlsx,.xls" style="font-size:.75rem;flex:1;min-width:200px">
+        <button class="btn" style="font-size:.72rem;white-space:nowrap;background:#9b51e0;color:white;border:none" onclick="startWBTarUpload()">⬆️ Subir y Procesar</button>
+      </div>
+      <div id="wbtu-progress" style="display:none;margin-top:12px">
+        <div style="background:var(--border);border-radius:8px;height:8px;overflow:hidden"><div id="wbtu-bar" style="background:#9b51e0;height:100%;width:0%;transition:width .3s"></div></div>
+        <div id="wbtu-msg" style="font-size:.7rem;color:var(--muted);margin-top:4px">Preparando...</div>
+      </div>
+      <div id="wbtu-result" style="display:none;margin-top:10px;padding:10px;border-radius:8px;font-size:.72rem"></div>
+    </div>
+  </div>
+  <!-- Monthly Summary -->
+  <div class="tw"><div class="tw-h"><div class="tw-ht">📊 Resumen Mensual — Tarjetas WB</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr><th>Periodo</th><th class="r">Transacciones</th><th class="r">Monto Total</th><th class="r">Ticket Prom.</th></tr></thead>
+  <tbody id="wbtu-summary-tbody"><tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Sin datos. Sube el Excel de tarjetas Wirebit.</td></tr></tbody></table></div></div>
+</div>
+
 <!-- ══════════ CENTUM CAPITAL ══════════ -->
 <div id="view-centum" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
@@ -1785,6 +2158,11 @@
       <div style="font-size:.67rem;color:var(--muted);margin-bottom:4px">Crédito Simple SOFOM CNBV</div>
       <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.85rem;color:#ff7043">—<span style="font-size:.6rem;font-weight:400;color:var(--muted)"> ver P&L</span></div>
     </div>
+  </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Centum Capital</div><div class="cc-s">Ingresos, costes, gastos y EBITDA consolidado</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-centum-evo" height="130"></canvas></div>
   </div>
   <!-- Gráficas compactas -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
@@ -1867,6 +2245,11 @@
       <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.82rem;color:#9b51e0;margin-top:3px">— <span style="font-size:.6rem;color:var(--muted)">ver P&L</span></div>
     </div>
   </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Grupo Financiero</div><div class="cc-s">Ingresos, costes, gastos y EBITDA consolidado</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-grupo-evo" height="130"></canvas></div>
+  </div>
   <!-- Gráficas compactas -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
     <div class="cc cc-clickable" onclick="openModal('grupo_mix_modal')">
@@ -1893,8 +2276,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Una fila por concepto · Edita directamente en la tabla · Los P&L se actualizan al guardar</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-green" onclick="fiAddRow()" style="font-size:.72rem">+ Fila</button>
-      <button class="btn btn-blue" onclick="fiSave()" style="font-size:.72rem" id="fi-save-btn">💾 Guardar</button>
+      <button class="btn btn-green edit-action" onclick="fiAddRow()" style="font-size:.72rem">+ Fila</button>
+      <button class="btn btn-blue edit-action" onclick="fiSave()" style="font-size:.72rem" id="fi-save-btn">💾 Guardar</button>
       <button class="btn btn-out" onclick="fiExport()" style="font-size:.72rem">⬇ Excel</button>
     </div>
   </div>
@@ -1969,8 +2352,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Sube un Excel con datos de ingresos, costos y gastos para todas las empresas</div>
     </div>
     <div style="display:flex;gap:6px">
-      <button class="btn btn-out" style="font-size:.7rem" onclick="sv('flujo_ing',null)">📥 Ver Ingresos</button>
-      <button class="btn btn-out" style="font-size:.7rem" onclick="sv('flujo_gas',null)">📤 Ver Gastos</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="sv('flujo_ing',null)">📥 Ver Ingresos</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="sv('flujo_gas',null)">📤 Ver Gastos</button>
     </div>
   </div>
   <!-- KPIs -->
@@ -2049,8 +2432,8 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Una fila por gasto · Toggle 🔀 para distribuir entre empresas · Los P&L se actualizan al guardar</div>
     </div>
     <div style="display:flex;gap:8px">
-      <button class="btn btn-out" onclick="fgAddRow()" style="font-size:.72rem;border-color:var(--orange);color:var(--orange)">+ Fila</button>
-      <button class="btn btn-blue" onclick="fgSave()" style="font-size:.72rem" id="fg-save-btn">💾 Guardar</button>
+      <button class="btn btn-out edit-action" onclick="fgAddRow()" style="font-size:.72rem;border-color:var(--orange);color:var(--orange)">+ Fila</button>
+      <button class="btn btn-blue edit-action" onclick="fgSave()" style="font-size:.72rem" id="fg-save-btn">💾 Guardar</button>
       <button class="btn btn-out" onclick="fgExport()" style="font-size:.72rem">⬇ Excel</button>
     </div>
   </div>
@@ -2238,7 +2621,7 @@
     </div>
     <div style="display:flex;gap:6px;align-items:center">
       <button class="btn btn-out" style="font-size:.7rem" onclick="exportPagosCSV()">⬇️ CSV</button>
-      <button class="btn btn-blue" style="font-size:.7rem" onclick="openPagoModal(null)">+ Registrar Pago</button>
+      <button class="btn btn-blue edit-action" style="font-size:.7rem" onclick="openPagoModal(null)">+ Registrar Pago</button>
     </div>
   </div>
   <!-- Date range picker for payment period -->
@@ -2310,7 +2693,7 @@
       </div>
       <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px">Referencia (opcional)</label><input type="text" id="pago-ref" placeholder="Transferencia, cheque..." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)"></div>
     </div>
-    <button onclick="submitPago()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Figtree',sans-serif">✅ Registrar Pago</button>
+    <button class="edit-action" onclick="submitPago()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Figtree',sans-serif">✅ Registrar Pago</button>
   </div>
 </div>
 
@@ -2389,7 +2772,7 @@
       </select>
       <button class="btn btn-out" style="font-size:.7rem" onclick="exportAgentesCSV()">⬇️ CSV</button>
       <button class="btn btn-blue" style="font-size:.7rem" onclick="openPagoAgenteModal(null)">+ Pagar Agente</button>
-      <button class="btn btn-out" style="font-size:.7rem;border-color:var(--green);color:var(--green)" onclick="openEditAgente(null)">+ Nuevo Agente</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem;border-color:var(--green);color:var(--green)" onclick="openEditAgente(null)">+ Nuevo Agente</button>
     </div>
   </div>
   <div id="agentes-kpis" class="kpi-row" style="margin-bottom:14px"></div>
@@ -2426,7 +2809,7 @@
       <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px">Monto</label><input type="number" id="pago-agente-monto" placeholder="$0.00" step="0.01" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)"></div>
     </div>
     <div style="margin-bottom:12px"><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px">Referencia (opcional)</label><input type="text" id="pago-agente-ref" placeholder="Transferencia, cheque, etc." style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)"></div>
-    <button onclick="submitPagoAgente()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Figtree',sans-serif">✅ Registrar Pago</button>
+    <button class="edit-action" onclick="submitPagoAgente()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Figtree',sans-serif">✅ Registrar Pago</button>
   </div>
 </div>
 
@@ -2471,7 +2854,7 @@
         <option value="false">Inactivo</option>
       </select>
     </div>
-    <button onclick="submitEditAgente()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Figtree',sans-serif">💾 Guardar Agente</button>
+    <button class="edit-action" onclick="submitEditAgente()" style="width:100%;padding:10px;background:var(--blue);color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.8rem;cursor:pointer;font-family:'Figtree',sans-serif">💾 Guardar Agente</button>
   </div>
 </div>
 
@@ -2598,7 +2981,7 @@
     </div>
     <div style="display:flex;gap:6px">
       <button class="btn btn-out" style="font-size:.72rem" onclick="openRateChanges()">📊 Historial de Tasas</button>
-      <button class="btn btn-green" style="font-size:.72rem" onclick="openComEdit(null)">+ Nuevo Cliente</button>
+      <button class="btn btn-green edit-action" style="font-size:.72rem" onclick="openComEdit(null)">+ Nuevo Cliente</button>
     </div>
   </div>
 
@@ -2758,7 +3141,7 @@
     <!-- Botones -->
     <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
       <button class="btn btn-out" style="font-size:.75rem" onclick="closeComEdit()">Cancelar</button>
-      <button class="btn btn-blue" style="font-size:.75rem" onclick="saveComEdit()">💾 Guardar Cliente</button>
+      <button class="btn btn-blue edit-action" style="font-size:.75rem" onclick="saveComEdit()">💾 Guardar Cliente</button>
     </div>
   </div>
 </div>
@@ -3294,6 +3677,7 @@
   <!-- ── Scripts: Core ── -->
   <script src="js/core/storage.js"></script>
   <script src="js/core/supabase.js"></script>
+  <script src="js/core/login.js"></script>
   <script src="js/core/helpers.js"></script>
   <script src="js/core/router.js"></script>
   <script src="js/core/auth.js"></script>
@@ -3307,6 +3691,7 @@
   <script src="js/modules/tarjetas-data.js"></script>
   <script src="js/modules/tarjetas-upload.js"></script>
   <script src="js/modules/wirebit-upload.js"></script>
+  <script src="js/modules/wirebit-data.js"></script>
   <script src="js/modules/carga-masiva.js"></script>
   <script src="js/modules/terminales.js"></script>
   <script src="js/modules/tesoreria.js"></script>

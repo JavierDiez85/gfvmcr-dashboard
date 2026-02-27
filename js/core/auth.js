@@ -1,14 +1,14 @@
-// GFVMCR — Auth: usuarios, permisos y sesión
+// GF — Auth: usuarios, permisos y sesión
 
 // USUARIOS & PERMISOS
 // ═══════════════════════════════════════
 const MENU_PERMS = {
   finanzas:   { label:'💹 Finanzas', subs:[
     {id:'resumen',label:'Dashboard Grupo'},{id:'centum',label:'Centum Capital'},
-    {id:'sal_res',label:'Salem — P&L'},{id:'sal_tpv',label:'Salem — TPV'},{id:'sal_gas',label:'Salem — Gastos'},
-    {id:'end_res',label:'Endless — P&L'},{id:'end_cred',label:'Cartera Endless'},
-    {id:'dyn_res',label:'Dynamo — P&L'},{id:'dyn_cred',label:'Cartera Dynamo'},
-    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit Ingresos'},{id:'wb_nom',label:'Nómina Wirebit'},
+    {id:'sal_res',label:'Salem — P&L'},{id:'sal_ing',label:'Salem — Ingresos'},{id:'sal_tpv',label:'Salem — TPV'},{id:'sal_gas',label:'Salem — Costes y Gastos'},{id:'sal_nom',label:'Salem — Nómina'},
+    {id:'end_res',label:'Endless — P&L'},{id:'end_ing',label:'Endless — Ingresos'},{id:'end_gas',label:'Endless — Costes y Gastos'},{id:'end_nom',label:'Endless — Nómina'},{id:'end_cred',label:'Cartera Endless'},
+    {id:'dyn_res',label:'Dynamo — P&L'},{id:'dyn_ing',label:'Dynamo — Ingresos'},{id:'dyn_gas',label:'Dynamo — Costes y Gastos'},{id:'dyn_nom',label:'Dynamo — Nómina'},{id:'dyn_cred',label:'Cartera Dynamo'},
+    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit Ingresos'},{id:'wb_gas',label:'Wirebit — Costes y Gastos'},{id:'wb_nom',label:'Nómina Wirebit'},
     {id:'flujo_ing',label:'Flujo Ingresos'},{id:'flujo_gas',label:'Flujo Gastos'},
     {id:'nomina',label:'Nómina Compartida'},{id:'gastos_comp',label:'Gastos Compartidos'},
   ]},
@@ -157,6 +157,7 @@ function uNewUser(){
   document.getElementById('u-form-title').textContent = '+ Nuevo Usuario';
   document.getElementById('u-nombre').value = '';
   document.getElementById('u-email').value = '';
+  document.getElementById('u-password').value = '';
   document.getElementById('u-tel').value = '';
   document.getElementById('u-empresa').value = '';
   document.getElementById('u-rol').value = 'viewer';
@@ -176,6 +177,7 @@ function uEditUser(id){
   document.getElementById('u-form-title').textContent = '✏️ Editar — ' + u.nombre;
   document.getElementById('u-nombre').value = u.nombre;
   document.getElementById('u-email').value = u.email;
+  document.getElementById('u-password').value = '';
   document.getElementById('u-tel').value = u.tel||'';
   document.getElementById('u-empresa').value = u.empresa||'';
   document.getElementById('u-rol').value = u.rol||'viewer';
@@ -186,17 +188,23 @@ function uEditUser(id){
   document.getElementById('u-form-wrap').scrollIntoView({behavior:'smooth'});
 }
 
-function uSaveUser(){
+async function uSaveUser(){
   const nombre  = document.getElementById('u-nombre').value.trim();
   const email   = document.getElementById('u-email').value.trim();
+  const pwd     = document.getElementById('u-password').value;
   if(!nombre || !email){ toast('⚠️ Nombre y correo son requeridos'); return; }
+
+  // Contraseña obligatoria para usuarios nuevos
+  if(!_uEditId && (!pwd || pwd.length<6)){ toast('⚠️ La contraseña debe tener al menos 6 caracteres'); return; }
 
   uLoad();
   // Preserve existing perms when editing, start empty for new users
   const existingPerms = _uEditId ? (USUARIOS.find(x=>x.id===_uEditId)?.perms||{}) : {};
+  const existingHash  = _uEditId ? (USUARIOS.find(x=>x.id===_uEditId)?.passwordHash||'') : '';
   const data = {
     id: _uEditId || 'u_'+Date.now(),
     nombre, email,
+    passwordHash: pwd ? await hashPassword(pwd) : existingHash,
     tel:     document.getElementById('u-tel').value.trim(),
     empresa: document.getElementById('u-empresa').value,
     rol:     document.getElementById('u-rol').value,

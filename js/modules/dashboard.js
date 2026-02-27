@@ -1,4 +1,4 @@
-// GFVMCR — Dashboard Grupo
+// GF — Dashboard Grupo
 
 // Capture HTML source at load time for export
 window._htmlSource = document.documentElement.outerHTML;
@@ -352,7 +352,7 @@ function renderTareas() {
     `<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);${t.done ? 'opacity:.5' : ''}">
       <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTarea(${t.id})" style="cursor:pointer;accent-color:var(--green)">
       <span style="flex:1;font-size:.72rem;${t.done ? 'text-decoration:line-through;color:var(--muted)' : 'color:var(--text)'}">${t.text}</span>
-      <button onclick="deleteTarea(${t.id})" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>
+      ${!isViewer() ? `<button onclick="deleteTarea(${t.id})" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>` : ''}
     </div>`
   ).join('');
 }

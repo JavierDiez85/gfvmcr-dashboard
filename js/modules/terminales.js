@@ -1,4 +1,4 @@
-// GFVMCR — Terminales TPV
+// GF — Terminales TPV
 
 // TPV DATA + RENDER FUNCTIONS
 // ═══════════════════════════════════════
@@ -622,8 +622,8 @@ async function rTPVAgentes(){
       <td>${badge}</td>
       <td style="text-align:center;white-space:nowrap">
         <button onclick="openHistorialAgente(${ag.agente_id})" title="Historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px">🕐${histBtn}</button>
-        <button onclick="openEditAgente(${ag.agente_id})" title="Editar" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--blue);padding:2px 4px">✏️</button>
-        <button onclick="openPagoAgenteModal(${ag.agente_id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
+        ${!isViewer() ? `<button onclick="openEditAgente(${ag.agente_id})" title="Editar" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--blue);padding:2px 4px">✏️</button>
+        <button onclick="openPagoAgenteModal(${ag.agente_id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>` : ''}
       </td></tr>`;
   }).join('');
   // Chart
@@ -706,7 +706,7 @@ function openHistorialAgente(agenteId) {
     document.getElementById('hist-agente-body').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem">Sin pagos registrados</div>';
   } else {
     document.getElementById('hist-agente-body').innerHTML = `<table class="bt"><thead><tr><th>Fecha</th><th class="r">Monto</th><th>Referencia</th><th>Registrado</th><th></th></tr></thead><tbody>
-      ${pagos.map(p => `<tr><td class="bld">${p.fecha}</td><td class="mo pos">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td><button onclick="deletePagoAgente(${agenteId},${p.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem">🗑</button></td></tr>`).join('')}
+      ${pagos.map(p => `<tr><td class="bld">${p.fecha}</td><td class="mo pos">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td>${!isViewer() ? `<button onclick="deletePagoAgente(${agenteId},${p.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem">🗑</button>` : ''}</td></tr>`).join('')}
     </tbody></table>`;
   }
   document.getElementById('historial-agente-overlay').style.display = 'flex';
@@ -1817,8 +1817,8 @@ function rCatView(){
         +'<td><div style="display:flex;gap:3px;flex-wrap:wrap">'+boxes+'</div></td>'
         +'<td style="text-align:right">'+pp+'</td>'
         +'<td style="text-align:center;white-space:nowrap">'
-          +'<button onclick="catEdit('+i+',\''+sec+'\')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>'
-          +'<button onclick="catDel('+i+',\''+sec+'\')" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>'
+          +(!isViewer() ? '<button onclick="catEdit('+i+',\''+sec+'\')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>'
+          +'<button onclick="catDel('+i+',\''+sec+'\')" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>' : '')
         +'</td></tr>';
     }).join('');
   }
@@ -2051,7 +2051,7 @@ function _renderComTable(clients) {
       <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_convenia_tc)}</td>
       <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_convenia_td)}</td>
       <td class="r" style="font-size:.72rem">${c.factor_iva || 1.16}</td>
-      <td style="text-align:center"><button onclick="openComEdit(_comClientesCache[${origIdx}])" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Editar">✏️</button></td>
+      <td style="text-align:center">${!isViewer() ? `<button onclick="openComEdit(_comClientesCache[${origIdx}])" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Editar">✏️</button>` : ''}</td>
     </tr>`;
   }).join('');
 

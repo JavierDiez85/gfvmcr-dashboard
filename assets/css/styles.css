@@ -1,4 +1,4 @@
-/* GFVMCR — Estilos globales */
+/* GF — Estilos globales */
 
 :root {
   --sb: #1c1e2e; --sb-h: #272942; --sb-a: #32355a; --sb-t: #c5c7e0; --sb-m: #6165a0;
@@ -230,3 +230,7 @@ body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;fon
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
 @media(max-width:1100px){.kpi-row,.ent-grid,.nom-grid,.sem-grid{grid-template-columns:repeat(2,1fr);}.g2,.g31,.ef-grid{grid-template-columns:1fr;}}
+
+/* ── READ-ONLY MODE (viewer) ── */
+body[data-role="viewer"] .edit-action,
+body[data-role="viewer"] .admin-only { display:none !important; }
