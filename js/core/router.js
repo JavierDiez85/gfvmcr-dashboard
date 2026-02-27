@@ -20,6 +20,7 @@ const VT = {
   tpv_upload:'Carga — Datos TPV',
   tar_upload:'Carga — Tarjetas CENTUM',
   wb_res:'Wirebit — P&L',wb_ing:'Wirebit — Ingresos',wb_gas:'Wirebit — Costes y Gastos',wb_cripto:'Wirebit — Transacciones Cripto',wb_nom:'Wirebit — Nómina',wb_tarjetas:'Wirebit — Tarjetas WB',wb_upload:'Wirebit — Carga Transacciones Cripto',wb_tar_upload:'Carga — Tarjetas Wirebit',
+  tar_dashboard:'Tarjetas — Dashboard CENTUM',tar_conceptos:'Tarjetas — Conceptos',tar_subclientes:'Tarjetas — Subclientes',tar_rechazos:'Tarjetas — Rechazos',tar_tarjetahabientes:'Tarjetas — Tarjetahabientes',
   carga_masiva:'Carga — Masiva Ingresos y Gastos',
   centum:'Centum Capital',grupo:'Grupo Financiero',cfg_usuarios:'Configuración — Usuarios',cfg_apariencia:'Configuración — Apariencia',cfg_permisos:'Configuración — Permisos',cfg_categorias:'Configuración — Categorías P&L',cfg_bancos:'Configuración — Bancos y Cuentas',tes_flujo:'Tesorería — Flujo de Caja',tes_individual:'Tesorería — Por Empresa',tes_grupo:'Tesorería — Consolidado Grupo',carga_creditos:'Carga — Créditos PDF'
 };
@@ -53,8 +54,15 @@ function sv(id, navEl){
   const v = document.getElementById('view-'+id);
   if(v) v.classList.add('active');
   if(navEl) navEl.classList.add('active');
-  document.getElementById('vt').textContent = VT[id]||id;
-  document.getElementById('vbc').textContent = VT[id]||id;
+  const _label = VT[id]||id;
+  const _parts = _label.split(' — ');
+  const _sec = _parts.length>1 ? _parts[0] : null;
+  const _pg  = _parts.length>1 ? _parts.slice(1).join(' — ') : _label;
+  document.getElementById('vt').textContent = _pg;
+  const _vbc = document.getElementById('vbc');
+  _vbc.innerHTML = _sec
+    ? `<span>Grupo Financiero</span><span>›</span><span>${_sec}</span><span>›</span><span style="color:var(--blue)">${_pg}</span>`
+    : `<span>Grupo Financiero</span><span>›</span><span style="color:var(--blue)">${_pg}</span>`;
   render(id);
 }
 
