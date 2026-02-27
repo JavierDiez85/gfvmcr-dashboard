@@ -16,6 +16,7 @@ const VT = {
   tpv_pagos:'Terminales — Control de Pagos', tpv_resumen:'Terminales — Resumen por Cliente',
   tpv_agentes:'Terminales — Comisiones Agentes', tpv_terminales:'Terminales — Por Cliente',
   tpv_cambios:'Terminales — Cambios de Terminal',
+  tpv_historial:'Terminales — Historial de Pagos',
   tpv_comisiones:'Terminales — Configuración de Comisiones',
   tpv_upload:'Carga — Datos TPV',
   tar_upload:'Carga — Tarjetas CENTUM',
@@ -101,6 +102,7 @@ function render(id){
     case 'tar_tarjetahabientes': setTimeout(()=>initTarCharts('tar_tarjetahabientes'),50); break;
     case 'tpv_terminales': rTPVTerminales(); break;
     case 'tpv_cambios': rTPVCambios(); break;
+    case 'tpv_historial': rTPVHistorial(); break;
     case 'tpv_comisiones': rTPVComisiones(); break;
     case 'tpv_upload': rTPVUpload(); break;
     case 'tar_upload': rTarUpload(); break;
