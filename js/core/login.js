@@ -85,26 +85,44 @@ function applyRoleRestrictions(){
 function applyMenuPermissions(){
   const user=getCurrentUser();
   if(!user) return;
-  // Admins ven todo
-  if(user.rol==='admin') return;
 
   const perms=user.perms||{};
+
+  // Admins: si no tienen perms específicos, ven todo
+  const hasCustomPerms=Object.keys(perms).length>0;
+  if(user.rol==='admin'&&!hasCustomPerms) return;
 
   // Buscar todos los items del sidebar con data-view
   document.querySelectorAll('.si[data-view]').forEach(si=>{
     const viewId=si.getAttribute('data-view')||si.dataset.view;
-    // Si tiene permiso explícito true o el menú padre es 'menu', mostrar
-    if(perms[viewId]===true) return;
-    // Verificar si algún menú padre da acceso global
-    if(typeof MENU_PERMS!=='undefined'){
-      for(const menuId of Object.keys(MENU_PERMS)){
-        if(perms[menuId]==='menu'){
-          const subs=MENU_PERMS[menuId].subs||[];
-          if(subs.some(s=>s.id===viewId)) return;
-        }
-      }
+    // Detectar menú padre real desde el DOM
+    const panel=si.closest('.mi-sub');
+    const menuId=panel?panel.id.replace('sub-',''):null;
+
+    if(user.rol==='admin'){
+      // Admin: ocultar si el menú padre no está habilitado
+      if(menuId&&perms[menuId]!=='menu'&&perms[menuId]!==true){ si.style.display='none'; return; }
+      // Sub explícitamente deshabilitado
+      if(perms[viewId]===false){ si.style.display='none'; return; }
+      return; // Admin — módulo habilitado → mostrar
     }
-    // No tiene permiso → ocultar
+    // No-admin: necesita permiso explícito
+    if(perms[viewId]===true) return;
+    if(menuId&&(perms[menuId]==='menu'||perms[menuId]===true)) return;
     si.style.display='none';
   });
+
+  // Ocultar menú padre si todos sus subs están ocultos
+  if(typeof MENU_PERMS!=='undefined'){
+    for(const menuId of Object.keys(MENU_PERMS)){
+      const panel=document.getElementById('sub-'+menuId);
+      if(!panel) continue;
+      const visibleSubs=panel.querySelectorAll('.si:not([style*="display: none"])');
+      if(visibleSubs.length===0){
+        const mi=document.getElementById('mi-'+menuId);
+        if(mi) mi.style.display='none';
+        panel.style.display='none';
+      }
+    }
+  }
 }
