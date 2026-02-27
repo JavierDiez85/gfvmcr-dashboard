@@ -991,10 +991,10 @@ function pagosSave(data) {
   DB.set(PAGOS_KEY, data);
 }
 
-// Get total paid for a client id
+// Get total paid for a client id (excludes voided payments)
 function pagosTotalCliente(id, data) {
   const pagos = (data[id] || []);
-  return pagos.reduce((s, p) => s + p.monto, 0);
+  return pagos.filter(p => !p.anulado).reduce((s, p) => s + p.monto, 0);
 }
 
 // Get effective saldo for a client (a_pagar = cobrado - comisiones, minus what's been paid)
@@ -1318,6 +1318,252 @@ function exportPagosCSV() {
 }
 
 
+
+// ── HISTORIAL DE PAGOS (vista global) ──
+let _historialCache = [];
+let _historialFiltered = [];
+
+async function rTPVHistorial() {
+  const data = pagosLoad();
+
+  // Build client name map — try _tpvPagosCache first, fallback to TPV.getClients()
+  let clientMap = {};
+  if (_tpvPagosCache && _tpvPagosCache.length > 0) {
+    _tpvPagosCache.forEach(c => { clientMap[c.id] = c.cliente; });
+  } else {
+    try {
+      const clients = await TPV.getClients();
+      if (clients) clients.forEach(c => { clientMap[c.id] = c.nombre_display || c.nombre; });
+    } catch(e) {}
+  }
+
+  // Flatten payments: {clienteId: [pagos]} → [{clienteId, cliente, ...pago}]
+  const flat = [];
+  for (const cid in data) {
+    const nombre = clientMap[cid] || clientMap[parseInt(cid)] || 'Cliente #' + cid;
+    (data[cid] || []).forEach(p => {
+      flat.push({ clienteId: cid, cliente: nombre, ...p });
+    });
+  }
+  flat.sort((a, b) => (b.fecha || '').localeCompare(a.fecha || '') || b.id - a.id);
+  _historialCache = flat;
+
+  // Populate client filter dropdown
+  const sel = document.getElementById('hist-pg-cliente');
+  if (sel) {
+    const uniqueClients = [...new Map(flat.map(p => [p.clienteId, p.cliente])).entries()]
+      .sort((a, b) => a[1].localeCompare(b[1]));
+    sel.innerHTML = '<option value="">Todos</option>' +
+      uniqueClients.map(([id, name]) => `<option value="${id}">${name}</option>`).join('');
+  }
+
+  // Set default dates (current month)
+  const fromEl = document.getElementById('hist-pg-from');
+  const toEl = document.getElementById('hist-pg-to');
+  if (fromEl && !fromEl.value) {
+    const now = new Date();
+    fromEl.value = now.getFullYear() + '-' + String(now.getMonth() + 1).padStart(2, '0') + '-01';
+    toEl.value = now.toISOString().split('T')[0];
+  }
+
+  filterHistorial();
+}
+
+function filterHistorial() {
+  const fromVal = document.getElementById('hist-pg-from')?.value || '';
+  const toVal = document.getElementById('hist-pg-to')?.value || '';
+  const clienteVal = document.getElementById('hist-pg-cliente')?.value || '';
+
+  let filtered = _historialCache;
+  if (fromVal) filtered = filtered.filter(p => p.fecha >= fromVal);
+  if (toVal) filtered = filtered.filter(p => p.fecha <= toVal);
+  if (clienteVal) filtered = filtered.filter(p => String(p.clienteId) === clienteVal);
+
+  _historialFiltered = filtered;
+  _renderHistorial(filtered);
+}
+
+function searchHistorial(q) {
+  if (!q) { _renderHistorial(_historialFiltered); return; }
+  const lq = q.toLowerCase();
+  const results = _historialFiltered.filter(p =>
+    (p.cliente || '').toLowerCase().includes(lq) ||
+    (p.ref || '').toLowerCase().includes(lq) ||
+    (p.fecha || '').includes(lq)
+  );
+  _renderHistorial(results);
+}
+
+function resetHistorialFilters() {
+  const fromEl = document.getElementById('hist-pg-from');
+  const toEl = document.getElementById('hist-pg-to');
+  const selEl = document.getElementById('hist-pg-cliente');
+  const searchEl = document.getElementById('hist-pg-search');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (selEl) selEl.value = '';
+  if (searchEl) searchEl.value = '';
+  _historialFiltered = _historialCache;
+  _renderHistorial(_historialCache);
+}
+
+function _renderHistorial(rows) {
+  const tbody = document.getElementById('hist-pg-tbody');
+  if (!tbody) return;
+
+  // KPIs
+  const activos = rows.filter(p => !p.anulado);
+  const anulados = rows.filter(p => p.anulado);
+  const totalMonto = activos.reduce((s, p) => s + (p.monto || 0), 0);
+  const kEl = document.getElementById('hist-pg-kpis');
+  if (kEl) kEl.innerHTML = `
+    <div class="kpi-card" style="--ac:#0073ea">
+      <div class="kpi-top"><div class="kpi-lbl">Total Pagos</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">📋</div></div>
+      <div class="kpi-val" style="color:#0073ea">${activos.length}</div>
+      <div class="kpi-d dnu">${rows.length} registros en total</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--green)">
+      <div class="kpi-top"><div class="kpi-lbl">Monto Total</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div>
+      <div class="kpi-val" style="color:var(--green)">${fmtTPV(totalMonto)}</div>
+      <div class="kpi-d dnu">Suma de pagos activos</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--red)">
+      <div class="kpi-top"><div class="kpi-lbl">Anulados</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">🚫</div></div>
+      <div class="kpi-val" style="color:var(--red)">${anulados.length}</div>
+      <div class="kpi-d dnu">${anulados.length > 0 ? fmtTPV(anulados.reduce((s,p)=>s+p.monto,0)) + ' excluidos' : 'Sin anulaciones'}</div>
+    </div>
+  `;
+
+  // Table title
+  const tt = document.getElementById('hist-pg-table-title');
+  if (tt) tt.textContent = `${rows.length} pago${rows.length !== 1 ? 's' : ''} encontrado${rows.length !== 1 ? 's' : ''}`;
+
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:var(--muted);font-size:.8rem">No hay pagos en el rango seleccionado</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = rows.map(p => {
+    const isAnulado = p.anulado;
+    const destPill = p.destino === 'tarjeta'
+      ? '<span class="pill" style="background:var(--blue-lt);color:#003d7a">💳 Tarjeta</span>'
+      : '<span class="pill" style="background:var(--green-lt);color:#007a48">🏦 Banco</span>';
+    const estadoPill = isAnulado
+      ? '<span class="pill" style="background:var(--red-lt);color:#b02020">🚫 Anulado</span>'
+      : '<span class="pill" style="background:var(--green-lt);color:#007a48">✓ Activo</span>';
+    const rowStyle = isAnulado ? 'opacity:.5;text-decoration:line-through' : '';
+    const anularBtn = isAnulado
+      ? `<span style="font-size:.62rem;color:var(--muted)" title="Anulado el ${p.anulado_fecha||''}">—</span>`
+      : `<button onclick="anularPago('${p.clienteId}',${p.id})" style="background:none;border:1px solid var(--red-lt);border-radius:5px;cursor:pointer;color:var(--red);font-size:.65rem;padding:2px 8px;font-family:'Figtree',sans-serif" title="Anular pago">Anular</button>`;
+    return `<tr style="${rowStyle}">
+      <td class="bld">${p.fecha || '—'}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}</td>
+      <td class="mo r">${fmtTPVFull(p.monto)}</td>
+      <td>${destPill}</td>
+      <td style="color:var(--muted);font-size:.72rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.ref || '—'}</td>
+      <td style="color:var(--muted);font-size:.66rem">${p.registrado || '—'}</td>
+      <td>${estadoPill}</td>
+      <td style="text-align:center">${anularBtn}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── ANULAR PAGO ──
+function anularPago(clienteId, pagoId) {
+  const data = pagosLoad();
+  const pagos = data[clienteId] || [];
+  const pago = pagos.find(p => p.id === pagoId);
+  if (!pago) { toast('⚠️ Pago no encontrado'); return; }
+
+  const montoStr = fmtTPVFull(pago.monto);
+  customConfirm(
+    `¿Anular pago de ${montoStr} del ${pago.fecha}?\n\nEsta acción marcará el pago como anulado. No se eliminará del historial.`,
+    'Anular Pago',
+    (ok) => {
+      if (!ok) return;
+      const d = pagosLoad();
+      const p = (d[clienteId] || []).find(x => x.id === pagoId);
+      if (p) {
+        p.anulado = true;
+        p.anulado_fecha = new Date().toLocaleString('es-MX');
+        p.anulado_por = (getCurrentUser()?.nombre || 'Admin');
+        pagosSave(d);
+        toast('🚫 Pago anulado — ' + montoStr);
+        rTPVHistorial();
+      }
+    }
+  );
+}
+
+// ── EXPORTAR HISTORIAL ──
+function exportHistorialCSV() {
+  const rows = _historialFiltered || _historialCache;
+  if (!rows.length) { toast('⚠️ No hay datos para exportar'); return; }
+  let csv = ['Fecha,Cliente,Monto,Destino,Referencia,Registrado,Estado'];
+  rows.forEach(p => {
+    csv.push(`"${p.fecha}","${p.cliente}",${p.monto},"${p.destino==='tarjeta'?'Tarjeta':'Banco'}","${(p.ref||'').replace(/"/g,'""')}","${p.registrado||''}","${p.anulado?'Anulado':'Activo'}"`);
+  });
+  const blob = new Blob(['\uFEFF'+csv.join('\n')], {type:'text/csv;charset=utf-8;'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'historial_pagos_' + new Date().toISOString().split('T')[0] + '.csv';
+  a.click();
+  toast('📥 CSV descargado');
+}
+
+function exportHistorialXLSX() {
+  const rows = _historialFiltered || _historialCache;
+  if (!rows.length) { toast('⚠️ No hay datos para exportar'); return; }
+  if (typeof XLSX === 'undefined') { toast('⚠️ Librería XLSX no disponible'); return; }
+  const data = rows.map(p => ({
+    Fecha: p.fecha,
+    Cliente: p.cliente,
+    Monto: p.monto,
+    Destino: p.destino === 'tarjeta' ? 'Tarjeta' : 'Banco',
+    Referencia: p.ref || '',
+    Registrado: p.registrado || '',
+    Estado: p.anulado ? 'Anulado' : 'Activo'
+  }));
+  const ws = XLSX.utils.json_to_sheet(data);
+  ws['!cols'] = [{wch:12},{wch:30},{wch:14},{wch:10},{wch:25},{wch:20},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Historial de Pagos');
+  XLSX.writeFile(wb, 'historial_pagos_' + new Date().toISOString().split('T')[0] + '.xlsx');
+  toast('📥 Excel descargado');
+}
+
+function exportHistorialPDF() {
+  const rows = _historialFiltered || _historialCache;
+  if (!rows.length) { toast('⚠️ No hay datos para exportar'); return; }
+  const activos = rows.filter(p => !p.anulado);
+  const totalMonto = activos.reduce((s, p) => s + (p.monto || 0), 0);
+  const w = window.open('', '_blank');
+  w.document.write(`<!DOCTYPE html><html><head><title>Historial de Pagos TPV</title>
+<style>
+  body{font-family:'Segoe UI',Arial,sans-serif;padding:20px;color:#1a1c2e;font-size:12px}
+  h1{font-size:16px;margin:0 0 4px}
+  .sub{font-size:11px;color:#666;margin-bottom:16px}
+  .kpis{display:flex;gap:20px;margin-bottom:16px}
+  .kpi{background:#f5f6fa;padding:8px 14px;border-radius:8px}
+  .kpi-lbl{font-size:10px;color:#888;font-weight:600}
+  .kpi-val{font-size:16px;font-weight:700}
+  table{width:100%;border-collapse:collapse;margin-top:8px}
+  th{background:#f0f2f8;padding:6px 8px;text-align:left;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid #ddd}
+  td{padding:5px 8px;border-bottom:1px solid #eee;font-size:11px}
+  .r{text-align:right}
+  .anulado{opacity:.5;text-decoration:line-through}
+  @media print{body{padding:0}@page{margin:1cm}}
+</style></head><body>
+<h1>📋 Historial de Pagos TPV</h1>
+<div class="sub">Generado: ${new Date().toLocaleString('es-MX')} · ${rows.length} pagos · Monto activo: $${totalMonto.toLocaleString('es-MX',{minimumFractionDigits:2})}</div>
+<table>
+<thead><tr><th>Fecha</th><th>Cliente</th><th class="r">Monto</th><th>Destino</th><th>Referencia</th><th>Estado</th></tr></thead>
+<tbody>${rows.map(p=>`<tr class="${p.anulado?'anulado':''}"><td>${p.fecha}</td><td>${p.cliente}</td><td class="r">$${(p.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</td><td>${p.destino==='tarjeta'?'Tarjeta':'Banco'}</td><td>${p.ref||'—'}</td><td>${p.anulado?'Anulado':'Activo'}</td></tr>`).join('')}</tbody>
+</table></body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 300);
+  toast('🖨 Preparando impresión...');
+}
 
 // ==============================
 // TARJETAS CHARTS (Dynamic — TAR data service)

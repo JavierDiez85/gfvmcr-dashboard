@@ -105,6 +105,7 @@
           <div class="si" onclick="sv('tpv_agentes',this)" data-view="tpv_agentes"><div class="ic">🤝</div>Comisiones Agentes</div>
           <div class="si" onclick="sv('tpv_terminales',this)" data-view="tpv_terminales"><div class="ic">🖥️</div>Terminales por Cliente</div>
           <div class="si" onclick="sv('tpv_cambios',this)" data-view="tpv_cambios"><div class="ic">🔄</div>Cambios de Terminal</div>
+          <div class="si" onclick="sv('tpv_historial',this)" data-view="tpv_historial"><div class="ic">📋</div>Historial de Pagos</div>
         </div>
       </div>
 
@@ -2971,7 +2972,56 @@
   </table></div></div>
 </div>
 
-
+<!-- ══════════ TPV: HISTORIAL DE PAGOS ══════════ -->
+<div id="view-tpv_historial" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">📋 Historial de Pagos</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px" id="hist-pg-subtitle">Todos los pagos registrados a clientes TPV</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-out" onclick="exportHistorialCSV()" style="font-size:.68rem;padding:5px 10px">⬇ CSV</button>
+      <button class="btn btn-out" onclick="exportHistorialXLSX()" style="font-size:.68rem;padding:5px 10px">⬇ Excel</button>
+      <button class="btn btn-out" onclick="exportHistorialPDF()" style="font-size:.68rem;padding:5px 10px">🖨 PDF</button>
+    </div>
+  </div>
+  <!-- Filtros -->
+  <div style="display:flex;gap:10px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:4px">
+      <label style="font-size:.7rem;color:var(--muted);font-weight:600">Desde</label>
+      <input type="date" id="hist-pg-from" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <label style="font-size:.7rem;color:var(--muted);font-weight:600">Hasta</label>
+      <input type="date" id="hist-pg-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">
+    </div>
+    <div style="display:flex;align-items:center;gap:4px">
+      <label style="font-size:.7rem;color:var(--muted);font-weight:600">Cliente</label>
+      <select id="hist-pg-cliente" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);max-width:220px">
+        <option value="">Todos</option>
+      </select>
+    </div>
+    <button class="btn btn-blue" onclick="filterHistorial()" style="font-size:.7rem;padding:5px 14px">Filtrar</button>
+    <button class="btn btn-out" onclick="resetHistorialFilters()" style="font-size:.68rem;padding:5px 10px;color:var(--muted)">Limpiar</button>
+  </div>
+  <!-- KPIs -->
+  <div class="kpi-row c3" id="hist-pg-kpis" style="margin-bottom:14px"></div>
+  <!-- Tabla -->
+  <div class="tw">
+    <div class="tw-h">
+      <div class="tw-ht" id="hist-pg-table-title">Pagos registrados</div>
+      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar..." id="hist-pg-search" oninput="searchHistorial(this.value)">
+    </div>
+    <div style="overflow-x:auto">
+      <table class="bt" id="hist-pg-table">
+        <thead><tr>
+          <th>Fecha</th><th>Cliente</th><th class="r">Monto</th><th>Destino</th><th>Referencia</th><th>Registrado</th><th>Estado</th><th style="width:60px"></th>
+        </tr></thead>
+        <tbody id="hist-pg-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
 
 <!-- ══════════ TPV: CONFIGURACIÓN DE COMISIONES ══════════ -->
