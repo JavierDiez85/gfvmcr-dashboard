@@ -49,6 +49,7 @@ function navTo(id){
 }
 
 function sv(id, navEl){
+  _currentView = id;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   document.querySelectorAll('.si').forEach(n=>n.classList.remove('active'));
   const v = document.getElementById('view-'+id);
@@ -76,7 +77,7 @@ async function _syncAll(){
   fiLoad(); fgLoad();
   // Pre-fetch TPV commission data from Supabase into cache
   if(typeof TPV !== 'undefined' && TPV.calcMonthlyPL){
-    try { await TPV.calcMonthlyPL('2026'); } catch(e){ console.warn('[_syncAll] TPV fetch:', e.message); }
+    try { await TPV.calcMonthlyPL(String(_year)); } catch(e){ console.warn('[_syncAll] TPV fetch:', e.message); }
   }
   fiInjectTPV(); fiInjectCredits();
   syncFlujoToRecs();

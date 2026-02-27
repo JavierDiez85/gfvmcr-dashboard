@@ -200,13 +200,15 @@
       <div class="tb-bc" id="vbc"><span>Grupo Financiero</span><span>›</span><span style="color:var(--blue)">Panel de Control</span></div>
     </div>
     <div class="tb-r">
-      <div class="pbar">
+      <div class="pbar" id="pbar-year">
+        <button class="pbtn" onclick="setYear(2025,this)">2025</button>
+        <button class="pbtn active" onclick="setYear(2026,this)">2026</button>
+      </div>
+      <div class="pbar" id="pbar-mode">
         <button class="pbtn active" onclick="setDashMode('mensual',this)">Mensual</button>
         <button class="pbtn" onclick="setDashMode('trimestral',this)">Trimestral</button>
         <button class="pbtn" onclick="setDashMode('anual',this)">Anual</button>
       </div>
-      <button class="btn btn-green edit-action" style="font-size:.73rem" onclick="openMenu('carga',document.getElementById('mi-carga'),'flujo_ing')">📥 Ingresos</button>
-      <button class="btn btn-out edit-action" style="font-size:.73rem;border-color:var(--orange);color:var(--orange)" onclick="openMenu('carga',document.getElementById('mi-carga'),'flujo_gas')">📤 Gastos</button>
       <button class="btn btn-out" onclick="exportHTML()" title="Exportar HTML con todos los datos guardados" style="font-size:.73rem">💾 Exportar</button>
       <button class="btn btn-out" onclick="setTheme(_theme==='dark'?'light':'dark')" id="theme-toggle-btn" title="Cambiar tema" style="padding:6px 10px;font-size:.8rem">☀️</button>
       <span id="tb-user" style="font-size:.65rem;color:var(--muted);font-weight:600;white-space:nowrap"></span>

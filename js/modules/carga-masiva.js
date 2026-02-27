@@ -216,7 +216,7 @@ async function startCargaMasiva(){
         concepto: r.concepto,
         ent: r.empresa,
         cat: r.categoria,
-        yr: '2026',
+        yr: String(_year),
         vals: r.vals,
         auto: false
       });
@@ -228,7 +228,7 @@ async function startCargaMasiva(){
         concepto: r.concepto,
         ent: r.empresa,
         cat: r.categoria,
-        yr: '2026',
+        yr: String(_year),
         shared: r.compartido,
         gcConcept: r.conceptoGC || '',
         vals: r.vals
