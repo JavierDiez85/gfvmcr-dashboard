@@ -2,14 +2,14 @@
 
 // APARIENCIA / TEMA
 // ═══════════════════════════════════════
-let _theme = localStorage.getItem('vmcr_theme') || 'light';
+let _theme = DB.get('vmcr_theme') || 'light';
 
 function applyTheme(t){
   _theme = t;
   document.body.classList.toggle('dark', t === 'dark');
   const tb = document.getElementById('theme-toggle-btn');
   if(tb) tb.textContent = t === 'dark' ? '☀️' : '🌙';
-  localStorage.setItem('vmcr_theme', t);
+  DB.set('vmcr_theme', t);
   // Update chart defaults
   const textColor = t === 'dark' ? '#9da0c5' : '#8b8fb5';
   const gridColor = t === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(228,232,244,.7)';

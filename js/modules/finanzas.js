@@ -239,40 +239,82 @@ function rPLCharts(ent){
   const compactOpts=(noLeg=true)=>({...cOpts(),plugins:{legend:{display:!noLeg,labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:cOpts().plugins.tooltip},scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}});
 
   if(ent==='sal'){
-    // Gastos bar
-    const labels=['Efevoo Tar.','Efevoo TPV','Nómina','SitesPay','Renta','Marketing','Otros'];
-    const vals=[110000,100000,186000,13000,35000,5000,34000];
+    // Gastos bar — from S.recs
+    const salGasCats = [
+      {lbl:'Nómina',       cats:['Nómina']},
+      {lbl:'Efevoo Tar.',  cats:['Costo Directo','Marketing'], concepts:['efevoo tarjetas']},
+      {lbl:'Efevoo TPV',   cats:['Costo Directo'], concepts:['efevoo tpv']},
+      {lbl:'Com. TPV',     cats:['Com. Bancarias','TPV Comisiones']},
+      {lbl:'Renta',        cats:['Renta']},
+      {lbl:'Marketing',    cats:['Marketing']},
+      {lbl:'Otros',        cats:['Administrativo','Operaciones','Regulatorio','Representación','Varios']},
+    ];
+    const salGasVals = salGasCats.map(gc => {
+      const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent==='Salem' && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())) && (!gc.concepts || gc.concepts.some(c=>r.concepto.toLowerCase().includes(c))));
+      return matched.reduce((s,r) => s + r.vals.reduce((a,b)=>a+b,0), 0);
+    });
+    if(salGasVals[0]===0){ try{ salGasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n.sal||0)/100,0) * 12; }catch(e){} }
     const colors=['rgba(229,57,53,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,160,0,.7)','rgba(134,134,134,.5)'];
     dc('c-sal-gas');
-    CH['c-sal-gas']=new Chart(document.getElementById('c-sal-gas'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:colors,borderWidth:0}]},options:compactOpts()});
-    // TPV donut — just show # of clients as a visual
+    CH['c-sal-gas']=new Chart(document.getElementById('c-sal-gas'),{type:'bar',data:{labels:salGasCats.map(g=>g.lbl),datasets:[{data:salGasVals,backgroundColor:colors,borderWidth:0}]},options:compactOpts()});
+
+    // TPV donut — ingresos por fuente from S.recs
     dc('c-sal-pie');
+    const tpvIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat==='TPV').reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+    const tarIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&(r.cat.includes('Tarjeta')||r.cat.includes('Centum'))).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+    const otrosIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat!=='TPV'&&!r.cat.includes('Tarjeta')&&!r.cat.includes('Centum')).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+    const hasSalIng = tpvIng>0||tarIng>0||otrosIng>0;
     CH['c-sal-pie']=new Chart(document.getElementById('c-sal-pie'),{type:'doughnut',data:{
-      labels:['Restaurantes','Comercios','Servicios','Otros'],datasets:[{data:[5,4,3,2],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.5)'],borderWidth:0}]
+      labels: hasSalIng ? [`TPV ${fmtK(tpvIng)}`,`Tarjetas ${fmtK(tarIng)}`,`Otros ${fmtK(otrosIng)}`] : ['Sin datos'],
+      datasets:[{data: hasSalIng ? [tpvIng||0.01,tarIng||0.01,otrosIng||0.01] : [1],
+        backgroundColor: hasSalIng ? ['rgba(0,115,234,.6)','rgba(155,81,224,.6)','rgba(134,134,134,.4)'] : ['rgba(200,200,200,.3)'],
+        borderColor: hasSalIng ? ['#0073ea','#9b51e0','#888'] : ['transparent'],
+        borderWidth: hasSalIng ? 2 : 0}]
     },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
   }
-  if(ent==='end'){
-    // Gastos bar
-    const labels=['Nómina','CNBV','Icarus','Circ.Créd.','Alestra','Renta','Otros'];
-    const vals=[23000,5006,16211,17391,17391,7155,4000];
-    dc('c-end-gas');
-    CH['c-end-gas']=new Chart(document.getElementById('c-end-gas'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:['rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(255,112,67,.7)','rgba(0,184,117,.7)','rgba(255,160,0,.7)','rgba(229,57,53,.7)','rgba(134,134,134,.5)'],borderWidth:0}]},options:compactOpts()});
-    // Cartera donut
-    dc('c-end-pie');
-    CH['c-end-pie']=new Chart(document.getElementById('c-end-pie'),{type:'doughnut',data:{
-      labels:['Activo $100K','Prospecto $3M'],datasets:[{data:[100000,3000000],backgroundColor:['rgba(0,184,117,.7)','rgba(255,160,0,.5)'],borderWidth:0}]
-    },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
-  }
-  if(ent==='dyn'){
-    // Gastos bar
-    const labels=['Nómina','CNBV','Icarus','Circ.Créd.','Alestra','Renta','Otros'];
-    const vals=[23000,5006,16211,17391,17391,7155,4000];
-    dc('c-dyn-gas');
-    if(document.getElementById('c-dyn-gas')) CH['c-dyn-gas']=new Chart(document.getElementById('c-dyn-gas'),{type:'bar',data:{labels,datasets:[{data:vals,backgroundColor:['rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(255,112,67,.7)','rgba(0,184,117,.7)','rgba(255,160,0,.7)','rgba(229,57,53,.7)','rgba(134,134,134,.5)'],borderWidth:0}]},options:compactOpts()});
-    // Cartera donut
-    dc('c-dyn-pie');
-    if(document.getElementById('c-dyn-pie')) CH['c-dyn-pie']=new Chart(document.getElementById('c-dyn-pie'),{type:'doughnut',data:{
-      labels:['Activo $100K','Vencido $2.5M','Prospecto $2.25M'],datasets:[{data:[100000,2500000,2250000],backgroundColor:['rgba(0,184,117,.7)','rgba(229,57,53,.7)','rgba(255,160,0,.5)'],borderWidth:0}]
+  if(ent==='end' || ent==='dyn'){
+    const entName = ent==='end' ? 'Endless' : 'Dynamo';
+    const credits = ent==='end' ? END_CREDITS : DYN_CREDITS;
+    const colors = ['rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(255,112,67,.7)','rgba(0,184,117,.7)','rgba(255,160,0,.7)','rgba(229,57,53,.7)','rgba(134,134,134,.5)'];
+
+    // Gastos bar — from S.recs
+    const gasCats = [
+      {lbl:'Nómina',       cats:['Nómina']},
+      {lbl:'Regulatorio',  cats:['Regulatorio']},
+      {lbl:'Renta',        cats:['Renta']},
+      {lbl:'Operaciones',  cats:['Operaciones']},
+      {lbl:'Marketing',    cats:['Marketing']},
+      {lbl:'Com. Banc.',   cats:['Com. Bancarias']},
+      {lbl:'Otros',        cats:['Administrativo','Representación','Varios','Costo Directo']},
+    ];
+    const gasVals = gasCats.map(gc => {
+      const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent===entName && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())));
+      return matched.reduce((s,r) => s + r.vals.reduce((a,b)=>a+b,0), 0);
+    });
+    // Add nómina from NOM_EDIT if not in S.recs
+    if(gasVals[0]===0){
+      try{ gasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n[ent]||0)/100,0) * 12; }catch(e){}
+    }
+    dc('c-'+ent+'-gas');
+    if(document.getElementById('c-'+ent+'-gas')) CH['c-'+ent+'-gas']=new Chart(document.getElementById('c-'+ent+'-gas'),{type:'bar',data:{labels:gasCats.map(g=>g.lbl),datasets:[{data:gasVals,backgroundColor:colors,borderWidth:0}]},options:compactOpts()});
+
+    // Cartera donut — from credits
+    dc('c-'+ent+'-pie');
+    const activos = credits.filter(c=>c.st==='Activo');
+    const vencidos = credits.filter(c=>c.st==='Vencido');
+    const prospectos = credits.filter(c=>c.st==='Prospecto');
+    const cAct = activos.reduce((s,c)=>s+credSaldoActual(c),0);
+    const cVen = vencidos.reduce((s,c)=>s+credSaldoActual(c),0);
+    const cPro = prospectos.reduce((s,c)=>s+(c.monto||0),0);
+    const hasCartera = cAct>0 || cVen>0 || cPro>0;
+    if(document.getElementById('c-'+ent+'-pie')) CH['c-'+ent+'-pie']=new Chart(document.getElementById('c-'+ent+'-pie'),{type:'doughnut',data:{
+      labels: hasCartera ? [`Activa ${fmtK(cAct)}`,`Vencida ${fmtK(cVen)}`,`Prospectos ${fmtK(cPro)}`] : ['Sin datos de cartera'],
+      datasets:[{
+        data: hasCartera ? [cAct||0.01, cVen||0.01, cPro||0.01] : [1],
+        backgroundColor: hasCartera ? ['rgba(0,184,117,.6)','rgba(234,57,67,.6)','rgba(255,160,0,.4)'] : ['rgba(134,134,134,.2)'],
+        borderColor: hasCartera ? ['#00b875','#ea3943','#ffa000'] : ['rgba(134,134,134,.3)'],
+        borderWidth: hasCartera ? 2 : 0
+      }]
     },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
   }
   if(ent==='wb'){
@@ -289,6 +331,17 @@ function rPLCharts(ent){
       labels:wbAnn.map(x=>x[0]),datasets:[{data:wbAnn.map(x=>x[1]),backgroundColor:['rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(255,160,0,.7)'],borderWidth:0}]
     },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
   }
+}
+
+// ═══════════════════════════════════════
+// P&L PERIOD TOGGLE
+// ═══════════════════════════════════════
+const _plMode = {sal:'mensual', end:'mensual', dyn:'mensual', wb:'mensual'};
+function setPLMode(ent, mode, btn){
+  _plMode[ent] = mode;
+  btn.closest('.pbar').querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  rPL(ent); rPLCharts(ent);
 }
 
 function rPL(ent){
@@ -324,17 +377,18 @@ function rPL(ent){
     sal: { id:'sal-res', entName:'Salem', acColor:'#0073ea',
       sections:[
         { type:'header', label:'▶ INGRESOS' },
-        { type:'ing',  label:'  Comisiones TPV',                    cats:['TPV'] },
-        { type:'ing',  label:'  Fondeo Tarjetas Transferencias',     cats:['Tarjeta Centum Black'] },
-        { type:'ing',  label:'  Fondeo Tarjetas Efectivo',           cats:['Tarjeta Centum Black'] },
-        { type:'ing',  label:'  Venta Terminal',                     cats:['TPV'] },
+        { type:'ing',  label:'  Comisiones TPV',                    cats:['TPV'], concepts:['comision','comisión','com ','fee','auto'] },
+        { type:'ing',  label:'  Fondeo Tarjetas Transferencias',     cats:['Tarjeta Centum Black'], concepts:['transferencia','spei','clabe'] },
+        { type:'ing',  label:'  Fondeo Tarjetas Efectivo',           cats:['Tarjeta Centum Black'], concepts:['efectivo','cash','depósito','deposito'] },
+        { type:'ing',  label:'  Venta Terminal',                     cats:['TPV','Otros Ingresos'], concepts:['venta'] },
         { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
                 { type:'header', label:'▶ COSTES DIRECTOS', note:'Variables ligados al producto' },
         { type:'gasto', label:'  Nómina Directa',         cats:['Nómina'], ppto: ()=>nomMesOp('Salem') },
         { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
         { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-        { type:'gasto', label:'  Comisiones Promotoría',  cats:['Com. Bancarias'], concepts:['sitespay','promotor','promotoría'] },
+        { type:'gasto', label:'  Comisiones Promotoría',  cats:['Com. Bancarias','TPV Comisiones'], concepts:['sitespay','promotor','promotoría'] },
+        { type:'gasto', label:'  Comisiones Internas',    cats:['Com. Bancarias','TPV Comisiones'], concepts:['internas'] },
         { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
         { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
@@ -567,12 +621,21 @@ function rPL(ent){
     }
   }
 
+  // ── Period columns ──
+  const {cols: _pCols, colLabels: _pLabels} = periodColumns(_plMode[ent]||'mensual');
+  // For mensual: 12 data cols + Total; for trimestral: Q1-Q4 + Total; for anual: Total 2026
+  const _pAgg = (arr) => {
+    const agg = _pCols.map(idxs=>colVal(arr,idxs));
+    if(_plMode[ent]==='mensual') agg.push(sum(arr)); // append annual total for mensual
+    return agg;
+  };
+  const nCols = _pLabels.length; // includes Total column
+
   // ── Renderizar ──
   const thead = document.getElementById(cfg.id+'-thead');
   const tbody  = document.getElementById(cfg.id+'-tbody');
   thead.innerHTML = `<th style="min-width:180px">Concepto</th>`
-    + MO.map(m=>`<th class="r" style="min-width:72px">${m}</th>`).join('')
-    + `<th class="r" style="min-width:88px">Total Anual</th>`;
+    + _pLabels.map(l=>`<th class="r" style="min-width:72px">${l}</th>`).join('');
 
   const acC = cfg.acColor;
 
@@ -580,14 +643,13 @@ function rPL(ent){
     if(r._type === 'hdr'){
       const note = r.note ? ` <span style="font-size:.62rem;font-weight:400;opacity:.75">${r.note}</span>` : '';
       return `<tr class="grp" style="background:${acC}22;border-left:3px solid ${acC}">
-        <td colspan="${MO.length+2}" style="color:${acC};font-weight:700;padding:7px 12px;font-size:.8rem">${r.label}${note}</td></tr>`;
+        <td colspan="${nCols+1}" style="color:${acC};font-weight:700;padding:7px 12px;font-size:.8rem">${r.label}${note}</td></tr>`;
     }
 
-    const v    = r._vals || MO.map(()=>0);
-    const tot  = sum(v);
-    const hasData = v.some(x=>x!==0);
-
-    const badge = '';
+    const v12   = r._vals || Array(12).fill(0);
+    const agg   = _pAgg(v12);
+    const tot   = sum(v12);
+    const hasData = v12.some(x=>x!==0);
 
     if(r._type === 'util' || r._type === 'subtotal'){
       const bg = r._type==='util'
@@ -598,8 +660,7 @@ function rPL(ent){
         : (r._cls==='pos' ? '#1565c0' : '#444');
       return `<tr style="background:${bg}">
         <td style="padding:7px 12px;font-weight:800;font-size:.82rem;color:${color};border-left:3px solid ${acC}">${r.label}</td>
-        ${v.map(x=>`<td class="mo" style="font-weight:700;color:${color}">${x?fmtFull(x):'—'}</td>`).join('')}
-        <td class="mo" style="font-weight:800;color:${color};font-size:.9rem">${hasData||r._type==='util'?fmtFull(tot):'—'}</td>
+        ${agg.map((x,i)=>`<td class="mo" style="font-weight:${i===agg.length-1?800:700};color:${color}${i===agg.length-1?';font-size:.9rem':''}">${x?fmtFull(x):'—'}</td>`).join('')}
       </tr>`;
     }
 
@@ -607,16 +668,61 @@ function rPL(ent){
     const isIng = r.type==='ing' || r.type==='ing_ppto';
     const valColor = isIng ? '#1b5e20' : '#555';
     return `<tr style="border-bottom:1px solid var(--border)">
-      <td style="padding:6px 12px 6px 20px;font-size:.8rem;color:var(--text)">${r.label}${badge}</td>
-      ${v.map(x=>`<td class="mo" style="color:${x?valColor:'var(--muted)'}; font-size:.78rem">${x?fmtFull(x):'—'}</td>`).join('')}
-      <td class="mo" style="color:${hasData?valColor:'var(--muted)'};font-weight:600;font-size:.8rem">${hasData?fmtFull(tot):'—'}</td>
+      <td style="padding:6px 12px 6px 20px;font-size:.8rem;color:var(--text)">${r.label}</td>
+      ${agg.map((x,i)=>`<td class="mo" style="color:${x?valColor:'var(--muted)'};font-size:.78rem${i===agg.length-1?';font-weight:600':''}">${x?fmtFull(x):'—'}</td>`).join('')}
     </tr>`;
   }).join('');
   // Update entity dashboard KPI cards with real totals
   const kIngEl = document.getElementById(ent+'-k-ing');
+  const kCostEl = document.getElementById(ent+'-k-cost');
   const kGasEl = document.getElementById(ent+'-k-gas');
-  if(kIngEl) kIngEl.textContent = totIng.reduce((a,b)=>a+b,0) > 0 ? fmtK(totIng.reduce((a,b)=>a+b,0)) : '—';
-  if(kGasEl) kGasEl.textContent = totGas.reduce((a,b)=>a+b,0) > 0 ? fmtK(totGas.reduce((a,b)=>a+b,0)) : '—';
+  const annIng = totIng.reduce((a,b)=>a+b,0);
+  const annCost = totCost.reduce((a,b)=>a+b,0);
+  const annGas = totGas.reduce((a,b)=>a+b,0);
+  if(kIngEl) kIngEl.textContent = annIng > 0 ? fmtK(annIng) : '—';
+  if(kCostEl){
+    kCostEl.textContent = annCost > 0 ? fmtK(annCost) : '—';
+    kCostEl.style.color = annCost > 0 ? 'var(--red)' : 'var(--muted)';
+    kCostEl.style.fontSize = annCost > 0 ? '' : '.85rem';
+  }
+  const kCostD = document.getElementById(ent+'-k-cost-d');
+  if(kCostD) kCostD.textContent = annCost > 0 ? 'Nómina + comisiones' : 'Pendiente de captura';
+  if(kGasEl){
+    kGasEl.textContent = annGas > 0 ? fmtK(annGas) : '—';
+    kGasEl.style.color = annGas > 0 ? 'var(--purple)' : 'var(--muted)';
+    kGasEl.style.fontSize = annGas > 0 ? '' : '.85rem';
+  }
+  const kGasD = document.getElementById(ent+'-k-gas-d');
+  if(kGasD) kGasD.textContent = annGas > 0 ? 'Renta, admin, regulatorio' : 'Pendiente de captura';
+
+  // ── Poblar KPIs de créditos para Endless / Dynamo ──
+  if(ent==='end' || ent==='dyn'){
+    const credits = ent==='end' ? END_CREDITS : DYN_CREDITS;
+    const activos = credits.filter(c=>c.st==='Activo');
+    const prospectos = credits.filter(c=>c.st==='Prospecto');
+    // Cartera Total
+    const cartera = activos.reduce((s,c)=>s+credSaldoActual(c),0);
+    const elCart = document.getElementById(ent+'-kpi-cartera');
+    const elCartSub = document.getElementById(ent+'-kpi-cartera-sub');
+    if(elCart) elCart.textContent = cartera > 0 ? fmtK(cartera) : '—';
+    if(elCartSub) elCartSub.textContent = activos.length + ' crédito' + (activos.length!==1?'s':'') + ' activo' + (activos.length!==1?'s':'');
+    // Ingresos sub
+    const elIngSub = document.getElementById(ent+'-kpi-ing-sub');
+    if(elIngSub) elIngSub.textContent = annIng > 0 ? 'Intereses + comisiones' : 'Pendiente datos';
+    // Pipeline
+    const pipeline = prospectos.reduce((s,c)=>s+(c.monto||0),0);
+    const elPipe = document.getElementById(ent+'-kpi-pipeline');
+    const elPipeSub = document.getElementById(ent+'-kpi-pipeline-sub');
+    if(elPipe) elPipe.textContent = pipeline > 0 ? fmtK(pipeline) : '—';
+    if(elPipeSub) elPipeSub.textContent = prospectos.length > 0 ? prospectos.length + ' prospecto' + (prospectos.length!==1?'s':'') : 'Sin prospectos';
+  }
+
+  // ── Poblar KPI de nómina Wirebit ──
+  if(ent==='wb'){
+    const wbNom = nomMesTotal('Wirebit');
+    const elNom = document.getElementById('wb-kpi-nomina');
+    if(elNom){ elNom.textContent = fmtK(wbNom) + '/mes'; elNom.style.color=''; elNom.style.fontSize=''; }
+  }
 }
 // ═══════════════════════════════════════
 // RENDER: SALEM TPV
@@ -639,17 +745,97 @@ function rSalTPV(){
 function rSalGas(){
   const thead=document.getElementById('sal-gas-thead');
   const tbody=document.getElementById('sal-gas-tbody');
-  thead.innerHTML=`<th>Concepto</th><th>Categoría</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th><th class="r">Ppto/Mes</th>`;
-  let totalPpto=0;
-  tbody.innerHTML=SAL_GASTOS_ITEMS.map(g=>{
-    totalPpto+=g.ppto;
-    return`<tr><td class="bld">${g.c}</td>
-      <td><span class="pill" style="background:#f3eafd;color:#7a2eb8;font-size:.62rem">${g.cat}</span></td>
-      ${MO.map(()=>'<td class="mo" style="color:var(--muted)">—</td>').join('')}
-      <td class="mo bld neg">$0</td>
-      <td class="mo">${fmt(g.ppto)}</td></tr>`;
-  }).join('');
-  tbody.innerHTML+=`<tr class="grp"><td colspan="2">TOTAL GASTOS SALEM</td>${MO.map(()=>'<td class="mo neg bld">$0</td>').join('')}<td class="mo neg bld">$0</td><td class="mo bld">${fmt(totalPpto)}</td></tr>`;
+  thead.innerHTML=`<th>Concepto</th><th>Categoría</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th>`;
+
+  // Filtrar gastos Salem de S.recs
+  const gastos=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent==='Salem');
+
+  // Agregar por concepto (sumar vals si hay duplicados)
+  const agg=new Map();
+  gastos.forEach(r=>{
+    const key=r.concepto;
+    if(agg.has(key)){
+      const e=agg.get(key);
+      r.vals.forEach((v,i)=>e.vals[i]+=v);
+    } else {
+      agg.set(key,{concepto:r.concepto, cat:r.cat, vals:[...r.vals]});
+    }
+  });
+
+  // ── Inyectar Nómina desde NOM_EDIT si no hay en S.recs ──
+  const hasNomRecs = gastos.some(r=>r.cat==='Nómina');
+  if(!hasNomRecs && typeof NOM_EDIT!=='undefined'){
+    const nomOp = Math.round(nomMesOp('Salem'));
+    const nomAdm = Math.round(nomMesAdm('Salem'));
+    if(nomOp>0)  agg.set('Nómina Operativa',  {concepto:'Nómina Operativa',  cat:'Nómina', vals:Array(12).fill(nomOp),  ppto:true});
+    if(nomAdm>0) agg.set('Nómina Administrativa',{concepto:'Nómina Administrativa',cat:'Nómina', vals:Array(12).fill(nomAdm), ppto:true});
+  }
+
+  // ── Inyectar Gastos Compartidos desde GC_EDIT si no hay en S.recs ──
+  if(typeof GC_EDIT!=='undefined'){
+    GC_EDIT.forEach(gc=>{
+      if(!gc.c || !gc.sal || gc.sal<=0) return;
+      // Solo si no hay ya un concepto con este nombre en S.recs
+      if(agg.has(gc.c)) return;
+      const pptoMes = Math.round((gc.ppto||0) * gc.sal / 100);
+      if(pptoMes>0) agg.set(gc.c, {concepto:gc.c, cat:gc.cat||'Varios', vals:Array(12).fill(pptoMes), ppto:true});
+    });
+  }
+
+  const rows=[...agg.values()].sort((a,b)=>sum(b.vals)-sum(a.vals));
+
+  if(rows.length===0){
+    tbody.innerHTML=`<tr><td colspan="15" style="text-align:center;padding:24px;color:var(--muted);font-size:.82rem">Sin gastos registrados para Salem — usa <b>Carga Masiva</b> o <b>Flujo de Gastos</b> para agregar datos</td></tr>`;
+  } else {
+    const totM=Array(12).fill(0);
+    tbody.innerHTML=rows.map(g=>{
+      const tot=sum(g.vals);
+      g.vals.forEach((v,i)=>totM[i]+=v);
+      const pptoTag = g.ppto ? ' <span style="font-size:.55rem;color:var(--muted);font-weight:400">(ppto)</span>' : '';
+      return`<tr><td class="bld">${g.concepto}${pptoTag}</td>
+        <td><span class="pill" style="background:#f3eafd;color:#7a2eb8;font-size:.62rem">${g.cat}</span></td>
+        ${g.vals.map(v=>`<td class="mo${v?' neg':''}"${g.ppto?' style="opacity:.65"':''}>${v?fmtFull(v):'—'}</td>`).join('')}
+        <td class="mo bld neg">${fmtFull(tot)}</td></tr>`;
+    }).join('');
+    const grandTotal=sum(totM);
+    tbody.innerHTML+=`<tr class="grp"><td colspan="2">TOTAL GASTOS SALEM</td>${totM.map(v=>`<td class="mo neg bld">${v?fmtFull(v):'—'}</td>`).join('')}<td class="mo neg bld">${fmtFull(grandTotal)}</td></tr>`;
+  }
+
+  // ── Poblar KPIs ──
+  const curMonth=new Date().getMonth();
+  const allVals=rows.map(r=>({c:r.concepto,tot:sum(r.vals)}));
+  const mesTot=rows.reduce((s,r)=>s+(r.vals[curMonth]||0),0);
+  const anualTot=allVals.reduce((s,r)=>s+r.tot,0);
+  const mayor=allVals.sort((a,b)=>b.tot-a.tot)[0];
+
+  const kMes=document.getElementById('sal-gas-kpi-mes');
+  const kMesD=document.getElementById('sal-gas-kpi-mes-d');
+  const kMay=document.getElementById('sal-gas-kpi-mayor');
+  const kMayD=document.getElementById('sal-gas-kpi-mayor-d');
+  const kAnu=document.getElementById('sal-gas-kpi-anual');
+  const kAnuD=document.getElementById('sal-gas-kpi-anual-d');
+
+  if(mesTot>0){
+    if(kMes){kMes.textContent=fmtK(mesTot);kMes.style.color='var(--red)';kMes.style.fontSize='';}
+    if(kMesD){kMesD.textContent=MO[curMonth]+' 2026';kMesD.className='kpi-d';}
+  } else {
+    if(kMes){kMes.textContent='Sin datos';kMes.style.color='var(--muted)';kMes.style.fontSize='.85rem';}
+    if(kMesD){kMesD.textContent='Pendiente de captura';kMesD.className='kpi-d dnu';}
+  }
+  if(mayor&&mayor.tot>0){
+    if(kMay){kMay.textContent=fmtK(mayor.tot);kMay.style.color='var(--orange)';kMay.style.fontSize='';}
+    if(kMayD){kMayD.textContent=mayor.c;kMayD.className='kpi-d';}
+  } else {
+    if(kMay){kMay.textContent='—';kMay.style.color='var(--muted)';kMay.style.fontSize='.85rem';}
+    if(kMayD){kMayD.textContent='Pendiente de captura';kMayD.className='kpi-d dnu';}
+  }
+  if(anualTot>0){
+    if(kAnu){kAnu.textContent=fmtK(anualTot);kAnu.style.color='var(--yellow)';kAnu.style.fontSize='';}
+    if(kAnuD){kAnuD.textContent='Acumulado 2026';kAnuD.className='kpi-d';}
+  } else {
+    if(kAnu){kAnu.textContent='Sin datos';kAnu.style.color='var(--muted)';kAnu.style.fontSize='.85rem';}
+    if(kAnuD){kAnuD.textContent='Pendiente de captura';kAnuD.className='kpi-d dnu';}
+  }
 }
 
 // ═══════════════════════════════════════
@@ -675,36 +861,56 @@ function rConsCharts(type){
   const smOpts=(noLeg=true)=>({...cOpts(),plugins:{legend:{display:!noLeg,labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:cOpts().plugins.tooltip},scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}});
 
   if(type==='centum'){
-    // Gastos por entidad bar
+    // Ingresos por entidad bar (Salem vs Endless vs Dynamo)
     dc('c-centum-gas');
-    CH['c-centum-gas']=new Chart(document.getElementById('c-centum-gas'),{type:'bar',data:{
-      labels:['Nómina Salem','Efevoo Tar.','Efevoo TPV','Nóm. Endless','Nóm. Dynamo','CNBV+Reg.','Otros'],
-      datasets:[{data:[186000,110000,100000,23000,23000,49000,20000],
-        backgroundColor:['rgba(155,81,224,.7)','rgba(229,57,53,.7)','rgba(255,112,67,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.5)','rgba(0,115,234,.7)','rgba(134,134,134,.5)'],borderWidth:0}]
-    },options:smOpts()});
-    // Cartera donut
+    const centumEnts = ['Salem','Endless','Dynamo'];
+    const centumIngByEnt = centumEnts.map(e => {
+      return MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e).reduce((s,r)=>s+(r.vals[i]||0),0));
+    });
+    CH['c-centum-gas']=new Chart(document.getElementById('c-centum-gas'),{type:'bar',data:{labels:MO,
+      datasets:[
+        {label:'Salem',data:centumIngByEnt[0],backgroundColor:'rgba(0,115,234,.5)',borderWidth:0},
+        {label:'Endless',data:centumIngByEnt[1],backgroundColor:'rgba(0,184,117,.5)',borderWidth:0},
+        {label:'Dynamo',data:centumIngByEnt[2],backgroundColor:'rgba(255,112,67,.5)',borderWidth:0},
+      ]
+    },options:{...smOpts(false),scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}},stacked:true},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
+
+    // Cartera donut from END_CREDITS + DYN_CREDITS
     dc('c-centum-pie');
+    const endCart = END_CREDITS.filter(c=>c.st==='Activo'||c.st==='Vencido').reduce((s,c)=>s+credSaldoActual(c),0);
+    const dynCart = DYN_CREDITS.filter(c=>c.st==='Activo'||c.st==='Vencido').reduce((s,c)=>s+credSaldoActual(c),0);
+    const totCart = endCart + dynCart;
     CH['c-centum-pie']=new Chart(document.getElementById('c-centum-pie'),{type:'doughnut',data:{
-      labels:['Activo $200K','Vencido $2.5M','Prospecto $5.25M'],
-      datasets:[{data:[200000,2500000,5250000],backgroundColor:['rgba(0,184,117,.7)','rgba(229,57,53,.7)','rgba(255,160,0,.5)'],borderWidth:0}]
+      labels: totCart>0 ? [`Endless ${fmtK(endCart)}`,`Dynamo ${fmtK(dynCart)}`] : ['Sin datos de cartera'],
+      datasets:[{
+        data: totCart>0 ? [endCart||0.01, dynCart||0.01] : [1],
+        backgroundColor: totCart>0 ? ['rgba(0,184,117,.6)','rgba(255,112,67,.6)'] : ['rgba(134,134,134,.2)'],
+        borderColor: totCart>0 ? ['#00b875','#ff7043'] : ['rgba(134,134,134,.3)'],
+        borderWidth: totCart>0 ? 2 : 0
+      }]
     },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
   }
 
   if(type==='grupo'){
-    // Ingresos vs Costos grupo (Wirebit ppto + Centum = 0 pending)
+    // Ingresos por fuente — all entities
     dc('c-grupo-ing');
+    const _grpIng = (ent) => MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent).reduce((s,r)=>s+(r.vals[i]||0),0));
+    const salIngM = _grpIng('Salem'), endIngM = _grpIng('Endless'), dynIngM = _grpIng('Dynamo'), wbIngM = _grpIng('Wirebit');
     CH['c-grupo-ing']=new Chart(document.getElementById('c-grupo-ing'),{type:'bar',data:{labels:MO,
       datasets:[
-        {label:'Wirebit Ingresos',data:WB_ING_TOTAL,backgroundColor:'rgba(155,81,224,.5)',borderWidth:0,stack:'ing'},
-        {label:'WB Costos',data:WB_COSTO_TOTAL,backgroundColor:'rgba(229,57,53,.5)',borderWidth:0,stack:'cost'},
-        {label:'WB Nómina',data:WB_NOM_TOTAL,backgroundColor:'rgba(229,57,53,.3)',borderWidth:0,stack:'cost'},
+        {label:'Salem',data:salIngM,backgroundColor:'rgba(0,115,234,.5)',borderWidth:0},
+        {label:'Endless',data:endIngM,backgroundColor:'rgba(0,184,117,.5)',borderWidth:0},
+        {label:'Dynamo',data:dynIngM,backgroundColor:'rgba(255,112,67,.5)',borderWidth:0},
+        {label:'Wirebit',data:wbIngM,backgroundColor:'rgba(155,81,224,.5)',borderWidth:0},
       ]
-    },options:{...smOpts(false),scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}},stacked:true},y:{stacked:false,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
+    },options:{...smOpts(false),scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}},stacked:true},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
     // Nómina por empresa donut
     dc('c-grupo-nom');
+    const _nomE={Salem:0,Endless:0,Dynamo:0,Wirebit:0};
+    try{NOM_EDIT.forEach(n=>{_nomE.Salem+=n.s*(n.sal||0)/100;_nomE.Endless+=n.s*(n.end||0)/100;_nomE.Dynamo+=n.s*(n.dyn||0)/100;_nomE.Wirebit+=n.s*(n.wb||0)/100;})}catch(e){}
     CH['c-grupo-nom']=new Chart(document.getElementById('c-grupo-nom'),{type:'doughnut',data:{
-      labels:['Salem $186K','Endless $23K','Dynamo $23K','Wirebit $320K'],
-      datasets:[{data:[186000,23000,23000,320000],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)'],borderWidth:0}]
+      labels:['Salem '+fmtK(_nomE.Salem),'Endless '+fmtK(_nomE.Endless),'Dynamo '+fmtK(_nomE.Dynamo),'Wirebit '+fmtK(_nomE.Wirebit)],
+      datasets:[{data:[_nomE.Salem,_nomE.Endless,_nomE.Dynamo,_nomE.Wirebit],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)'],borderWidth:0}]
     },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
   }
 }
@@ -715,30 +921,110 @@ function rConsolidado(type){
   const thead=document.getElementById(tid+'-thead');
   const tbody=document.getElementById(tid+'-tbody');
   thead.innerHTML=`<th>Concepto</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total 2026</th>`;
-  const rows=isCentum?[
-    {l:'▸ CENTUM CAPITAL — Ingresos',hdr:true},
-    {l:'  · Salem TPV + Fondeo',vals:MO.map(()=>0),t:'ing'},{l:'  · Endless — Crédito Simple',vals:MO.map(()=>0),t:'ing'},{l:'  · Dynamo — Crédito Simple',vals:MO.map(()=>0),t:'ing'},
-    {l:'TOTAL INGRESOS CENTUM',vals:MO.map(()=>0),t:'total',bold:true},
-    {l:'COSTOS DIRECTOS',vals:MO.map(()=>0),t:'gasto',bold:true},
-    {l:'MARGEN BRUTO',vals:MO.map(()=>0),t:'util',bold:true},
-    {l:'GASTOS OPERATIVOS',vals:MO.map((_,i)=>186000+23000+23000),t:'gasto',bold:true},
-    {l:'EBITDA CENTUM CAPITAL',vals:MO.map(()=>0),t:'util',bold:true},
-  ]:[
-    {l:'▸ CENTUM CAPITAL — Ingresos',vals:MO.map(()=>0),t:'ing'},{l:'▸ WIREBIT — Ingresos',vals:WB_ING_TOTAL,t:'ing'},
-    {l:'TOTAL INGRESOS GRUPO',vals:WB_ING_TOTAL,t:'total',bold:true},
-    {l:'▸ CENTUM CAPITAL — Costos Dir.',vals:MO.map(()=>0),t:'gasto'},{l:'▸ WIREBIT — Costos Directos',vals:WB_COSTO_TOTAL,t:'gasto'},
-    {l:'TOTAL COSTOS DIRECTOS',vals:WB_COSTO_TOTAL,t:'total',bold:true},
-    {l:'MARGEN BRUTO GRUPO',vals:WB_MARGEN,t:'util',bold:true},
-    {l:'▸ CENTUM CAPITAL — Gastos Op.',vals:MO.map(()=>186000+23000+23000),t:'gasto'},{l:'▸ WIREBIT — Gastos Operativos',vals:WB_NOM_TOTAL,t:'gasto'},
-    {l:'TOTAL GASTOS OPERATIVOS',vals:WB_MARGEN.map((v,i)=>-(186000+23000+23000+WB_NOM_TOTAL[i])),t:'total',bold:true},
-    {l:'EBITDA GRUPO',vals:WB_MARGEN.map((v,i)=>v-(186000+23000+23000+WB_NOM_TOTAL[i])),t:'util',bold:true},
-  ];
+
+  // ── Helper: aggregate S.recs vals by entities and tipo ──
+  function _rv(ents, tipo){
+    const ea = Array.isArray(ents)?ents:[ents];
+    return MO.map((_,i)=>
+      (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo===tipo&&ea.includes(r.ent))
+        .reduce((s,r)=>s+(r.vals[i]||0),0)
+    );
+  }
+  // Nómina mensual por entidades
+  function _nom(ents){
+    const ea = Array.isArray(ents)?ents:[ents];
+    let total=0;
+    try{ NOM_EDIT.forEach(n=>{
+      ea.forEach(e=>{
+        const k=e==='Salem'?'sal':e==='Endless'?'end':e==='Dynamo'?'dyn':'wb';
+        total+=n.s*(n[k]||0)/100;
+      });
+    });}catch(e){}
+    return MO.map(()=>Math.round(total));
+  }
+  const _add=(a,b)=>a.map((v,i)=>v+(b[i]||0));
+  const _sub=(a,b)=>a.map((v,i)=>v-(b[i]||0));
+
+  const centumEnts=['Salem','Endless','Dynamo'];
+  let rows;
+
+  if(isCentum){
+    const salIng=_rv('Salem','ingreso'), endIng=_rv('Endless','ingreso'), dynIng=_rv('Dynamo','ingreso');
+    const totIng=_add(_add(salIng,endIng),dynIng);
+    const totGas=_rv(centumEnts,'gasto');
+    const nom=_nom(centumEnts);
+    const margen=_sub(totIng,totGas);
+    const ebitda=_sub(margen,nom);
+    rows=[
+      {l:'▸ CENTUM CAPITAL — Ingresos',hdr:true},
+      {l:'  · Salem',vals:salIng,t:'ing'},
+      {l:'  · Endless',vals:endIng,t:'ing'},
+      {l:'  · Dynamo',vals:dynIng,t:'ing'},
+      {l:'TOTAL INGRESOS CENTUM',vals:totIng,t:'total',bold:true},
+      {l:'COSTOS + GASTOS OPERATIVOS',vals:totGas,t:'gasto',bold:true},
+      {l:'MARGEN BRUTO',vals:margen,t:'util',bold:true},
+      {l:'NÓMINA CENTUM',vals:nom,t:'gasto',bold:true},
+      {l:'EBITDA CENTUM CAPITAL',vals:ebitda,t:'util',bold:true},
+    ];
+  } else {
+    // Grupo Financiero
+    const cIng=_rv(centumEnts,'ingreso'), wIng=_rv('Wirebit','ingreso');
+    const totIng=_add(cIng,wIng);
+    const cGas=_rv(centumEnts,'gasto'), wGas=_rv('Wirebit','gasto');
+    const totGas=_add(cGas,wGas);
+    const margen=_sub(totIng,totGas);
+    const cNom=_nom(centumEnts), wNom=_nom('Wirebit');
+    const totNom=_add(cNom,wNom);
+    const ebitda=_sub(margen,totNom);
+    rows=[
+      {l:'▸ CENTUM CAPITAL — Ingresos',vals:cIng,t:'ing'},
+      {l:'▸ WIREBIT — Ingresos',vals:wIng,t:'ing'},
+      {l:'TOTAL INGRESOS GRUPO',vals:totIng,t:'total',bold:true},
+      {l:'▸ CENTUM CAPITAL — Gastos',vals:cGas,t:'gasto'},
+      {l:'▸ WIREBIT — Gastos',vals:wGas,t:'gasto'},
+      {l:'TOTAL GASTOS',vals:totGas,t:'total',bold:true},
+      {l:'MARGEN BRUTO GRUPO',vals:margen,t:'util',bold:true},
+      {l:'▸ CENTUM CAPITAL — Nómina',vals:cNom,t:'gasto'},
+      {l:'▸ WIREBIT — Nómina',vals:wNom,t:'gasto'},
+      {l:'TOTAL NÓMINA GRUPO',vals:totNom,t:'total',bold:true},
+      {l:'EBITDA GRUPO',vals:ebitda,t:'util',bold:true},
+    ];
+  }
+
   tbody.innerHTML=rows.map(r=>{
     if(r.hdr) return`<tr class="grp"><td colspan="${MO.length+2}">${r.l}</td></tr>`;
     const tot=sum(r.vals);
     const cls=r.t==='util'?(tot>=0?'pos':'neg'):'';
     return`<tr><td${r.bold?' class="bld"':''}>${r.l}</td>${r.vals.map(v=>`<td class="mo ${v<0?'neg':v>0&&r.t==='ing'?'pos':''}">${v?fmtFull(v):'—'}</td>`).join('')}<td class="mo bld ${cls}">${fmtFull(tot)}</td></tr>`;
   }).join('');
+
+  // ── KPIs ──
+  if(isCentum){
+    const centumNom = nomMesTotal('Salem') + nomMesTotal('Endless') + nomMesTotal('Dynamo');
+    const el = document.getElementById('centum-kpi-nomina');
+    if(el){ el.textContent = fmtK(centumNom) + '/mes'; el.style.color=''; el.style.fontSize=''; }
+    // Ingresos + Gastos KPIs
+    const kIng = document.getElementById('centum-k-ing');
+    const kGas = document.getElementById('centum-k-gas');
+    const totI = _rv(centumEnts,'ingreso').reduce((a,b)=>a+b,0);
+    const totG = _rv(centumEnts,'gasto').reduce((a,b)=>a+b,0);
+    if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '—';
+    if(kGas) kGas.textContent = totG>0 ? fmtK(totG) : '—';
+    // Cartera Crédito KPI
+    const allCred = [...END_CREDITS,...DYN_CREDITS].filter(c=>c.st==='Activo'||c.st==='Vencido');
+    const carteraTotal = allCred.reduce((s,c)=>s+credSaldoActual(c),0);
+    const kCart = document.getElementById('centum-kpi-cartera');
+    const kCartSub = document.getElementById('centum-kpi-cartera-sub');
+    if(kCart) kCart.textContent = carteraTotal > 0 ? fmtK(carteraTotal) : '—';
+    if(kCartSub) kCartSub.textContent = allCred.length + ' crédito' + (allCred.length!==1?'s':'') + ' (End+Dyn)';
+  } else {
+    const totI = _rv(['Salem','Endless','Dynamo','Wirebit'],'ingreso').reduce((a,b)=>a+b,0);
+    const totG = _rv(['Salem','Endless','Dynamo','Wirebit'],'gasto').reduce((a,b)=>a+b,0);
+    const kIng = document.getElementById('grupo-k-ing');
+    const kGas = document.getElementById('grupo-k-gas');
+    if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '—';
+    if(kGas) kGas.textContent = totG>0 ? fmtK(totG) : '—';
+  }
 }
 
 // ═══════════════════════════════════════
@@ -772,12 +1058,12 @@ const ENT_COLOR = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#
 
 // ── Cargar desde localStorage ──
 function fiLoad(){
-  try{ FI_ROWS = JSON.parse(localStorage.getItem('vmcr_fi')||'[]'); }catch(e){FI_ROWS=[];}
+  try{ FI_ROWS = DB.get('vmcr_fi') || []; }catch(e){FI_ROWS=[];}
   // Reinject créditos automáticos
   fiInjectCredits();
 }
 function fgLoad(){
-  try{ FG_ROWS = JSON.parse(localStorage.getItem('vmcr_fg')||'[]'); }catch(e){FG_ROWS=[];}
+  try{ FG_ROWS = DB.get('vmcr_fg') || []; }catch(e){FG_ROWS=[];}
 }
 
 // ── Inyectar créditos activos como filas automáticas de ingresos ──
@@ -789,35 +1075,116 @@ function fiInjectCredits(){
     ...DYN_CREDITS.filter(c=>c.st==='Activo').map(c=>({...c, ent:'Dynamo'})),
   ];
   allCredits.forEach(cr => {
-    const intMes = Math.round(cr.monto * (cr.tasa/100) / 12);
-    if(!intMes) return;
-    // Intereses mensuales
+    const vals = Array(12).fill(0);
+    let hasAmort = false;
+
+    // Usar tabla de amortización real si existe
+    if(cr.amort && cr.amort.length > 1){
+      hasAmort = true;
+      cr.amort.slice(1).forEach(row => {
+        const fecha = (typeof credParseDate==='function') ? credParseDate(row.fecha) : null;
+        if(!fecha || fecha.getFullYear() !== 2026) return;
+        vals[fecha.getMonth()] += Math.round(row.int || 0);
+      });
+    }
+
+    // Fallback: fórmula simplificada si no hay tabla de amortización
+    if(!hasAmort){
+      const intMes = Math.round(cr.monto * (cr.tasa/100) / 12);
+      if(!intMes) return;
+      vals.fill(intMes);
+    }
+
+    if(!vals.some(v => v > 0)) return;
+
+    // Intereses — vals ahora reflejan el periodo real (mensual/trim/sem/anual)
     FI_ROWS.unshift({
       id: 'cred_int_'+cr.cl.replace(/[^a-zA-Z0-9]/g,'_'),
       concepto: 'Intereses — '+cr.cl,
       ent: cr.ent,
       cat: 'Crédito Simple',
       yr: '2026',
-      vals: Array(12).fill(intMes),
+      vals: vals,
       auto: true,
       credId: cr.cl,
-      note: `${cr.tasa} anual · ${fmt(cr.monto)}`
+      note: `${cr.tasa}% anual · ${fmt(cr.monto)}` + (hasAmort ? ' · amort' : ' · fórmula')
     });
-    // Comisión de apertura (sólo mes 1 si la hay)
-    if(cr.com && cr.com>0){
-      const comMonto = Math.round(cr.monto * cr.com/100);
+
+    // Comisión de apertura — en el mes real de desembolso
+    if(cr.com && cr.com > 0){
+      const comMonto = Math.round(cr.monto * cr.com / 100);
+      const comVals = Array(12).fill(0);
+      const dDate = (typeof credParseDate==='function') ? credParseDate(cr.disbDate) : null;
+      const comMonth = (dDate && dDate.getFullYear() === 2026) ? dDate.getMonth() : 0;
+      comVals[comMonth] = comMonto;
       FI_ROWS.unshift({
         id: 'cred_com_'+cr.cl.replace(/[^a-zA-Z0-9]/g,'_'),
         concepto: 'Comisión Apertura — '+cr.cl,
         ent: cr.ent,
         cat: 'Crédito Simple',
         yr: '2026',
-        vals: [comMonto,0,0,0,0,0,0,0,0,0,0,0],
+        vals: comVals,
         auto: true,
         credId: cr.cl,
-        note: cr.com+' comisión'
+        note: cr.com + '% comisión'
       });
     }
+  });
+}
+
+// ── Inyectar datos TPV como filas automáticas de ingresos y gastos ──
+function fiInjectTPV(){
+  // Quitar filas auto TPV anteriores
+  FI_ROWS = FI_ROWS.filter(r => !r.autoTPV);
+  FG_ROWS = FG_ROWS.filter(r => !r.autoTPV);
+
+  const year = '2026';
+  const data = (typeof TPV !== 'undefined' && TPV.monthlyPLData)
+    ? TPV.monthlyPLData(year) : null;
+  if (!data || !data.monthly) return;
+
+  const vals_salem = data.monthly.map(m => Math.round(m.com_salem || 0));
+  const vals_promo = data.monthly.map(m => Math.round(m.com_comisionista || 0));
+  const vals_internas = data.monthly.map(m => Math.round(m.com_agentes || 0));
+
+  // Ingreso: Comisiones TPV (Salem)
+  // NOTE: Do NOT set auto:true here — fiInjectCredits() removes all r.auto rows.
+  // Use autoTPV:true exclusively to avoid interference with credit injection.
+  FI_ROWS.unshift({
+    id: 'tpv_com_salem',
+    concepto: 'Comisiones TPV (auto)',
+    ent: 'Salem',
+    cat: 'TPV',
+    yr: year,
+    vals: vals_salem,
+    autoTPV: true,
+    note: 'Auto-inyectado desde datos TPV'
+  });
+
+  // Gasto: Comisiones Promotoría (external promoters)
+  // Use 'TPV Comisiones' category to avoid double-counting with
+  // the generic "Comisiones Bancarias" line in Gastos Administrativos
+  FG_ROWS.unshift({
+    id: 'tpv_com_promo',
+    concepto: 'Comisiones Promotoría TPV',
+    ent: 'Salem',
+    cat: 'TPV Comisiones',
+    yr: year,
+    vals: vals_promo,
+    autoTPV: true,
+    note: 'Auto-inyectado desde datos TPV'
+  });
+
+  // Gasto: Comisiones Internas (agent commissions)
+  FG_ROWS.unshift({
+    id: 'tpv_com_internas',
+    concepto: 'Comisiones Internas TPV',
+    ent: 'Salem',
+    cat: 'TPV Comisiones',
+    yr: year,
+    vals: vals_internas,
+    autoTPV: true,
+    note: 'Auto-inyectado desde datos TPV'
   });
 }
 
@@ -899,11 +1266,11 @@ function rFlujoIng(){
   if(notice) notice.style.display = FI_ROWS.some(r=>r.auto) ? 'flex' : 'none';
 
   tbody.innerHTML = FI_ROWS.map((r,ri) => {
-    const isAuto = r.auto;
-    const rowBg  = isAuto ? 'background:rgba(0,184,117,.04)' : '';
-    const badge  = isAuto
-      ? `<span style="font-size:.57rem;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto</span>`
-      : '';
+    const isAuto = r.auto || r.autoTPV;
+    const rowBg  = isAuto ? (r.autoTPV ? 'background:rgba(0,115,234,.04)' : 'background:rgba(0,184,117,.04)') : '';
+    const badge  = r.autoTPV
+      ? `<span style="font-size:.57rem;background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto TPV</span>`
+      : (isAuto ? `<span style="font-size:.57rem;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto</span>` : '');
     const noteEl = r.note ? `<div style="font-size:.6rem;color:var(--muted);margin-top:1px">${r.note}</div>` : '';
     const entC   = ENT_COLOR[r.ent]||'#555';
 
@@ -968,9 +1335,9 @@ function fiDelRow(id){
 }
 
 function fiSave(){
-  // Persist only non-auto rows
-  const toSave = FI_ROWS.filter(r=>!r.auto);
-  localStorage.setItem('vmcr_fi', JSON.stringify(toSave));
+  // Persist only non-auto rows (exclude credit auto AND TPV auto)
+  const toSave = FI_ROWS.filter(r=>!r.auto && !r.autoTPV);
+  DB.set('vmcr_fi', toSave);
   // Sync to S.recs for P&L compatibility
   syncFlujoToRecs();
   refreshActivePL();
@@ -1000,7 +1367,27 @@ function rFlujoGas(){
   const tbody = document.getElementById('fg-tbody');
   if(!tbody) return;
 
+  // Show TPV auto notice if any autoTPV rows
+  const fgTpvNotice = document.getElementById('fg-tpv-notice');
+  if(fgTpvNotice) fgTpvNotice.style.display = FG_ROWS.some(r=>r.autoTPV) ? 'flex' : 'none';
+
   tbody.innerHTML = FG_ROWS.map((r,ri) => {
+    // Auto-injected TPV rows: non-editable display
+    if(r.autoTPV) {
+      const entC = ENT_COLOR[r.ent]||'#555';
+      const rowTot = r.vals.reduce((a,b)=>a+b,0);
+      return `<tr style="background:rgba(0,115,234,.04);border-bottom:1px solid var(--border)">
+        <td style="padding:4px 8px"><div style="font-size:.78rem;font-weight:600;color:var(--text)">${r.concepto}<span style="font-size:.57rem;background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto TPV</span></div>
+        <div style="font-size:.6rem;color:var(--muted);margin-top:1px">${r.note||''}</div></td>
+        <td style="padding:4px 6px"><span style="font-weight:600;font-size:.76rem;color:${entC}">${r.ent}</span></td>
+        <td style="padding:4px 6px;font-size:.73rem">${r.cat}</td>
+        <td style="padding:4px 6px;font-size:.73rem;color:var(--muted);text-align:center">${r.yr}</td>
+        <td></td><td></td>
+        ${r.vals.map(v=>`<td class="mo" style="font-size:.74rem;color:var(--muted);padding:2px 3px">${v?fmt(v):'—'}</td>`).join('')}
+        <td class="mo neg bld" style="font-size:.78rem;font-weight:700">${rowTot?fmt(rowTot):'—'}</td>
+        <td></td></tr>`;
+    }
+
     const entC = ENT_COLOR[r.ent]||'#555';
     const isShared = r.shared;
     const sharedBg = isShared ? 'background:rgba(230,81,0,.03)' : '';
@@ -1094,7 +1481,9 @@ function fgAutoDetect(ri){
 function fgUpdateKPIs(){ flUpdateKPIs('fg'); }
 
 function fgSave(){
-  localStorage.setItem('vmcr_fg', JSON.stringify(FG_ROWS));
+  // Persist only non-auto rows (exclude TPV auto-injected)
+  const toSave = FG_ROWS.filter(r => !r.autoTPV);
+  DB.set('vmcr_fg', toSave);
   syncFlujoToRecs();
   refreshActivePL();
   const btn = document.getElementById('fg-save-btn');
@@ -1125,7 +1514,7 @@ function syncFlujoToRecs(){
 
   // Ingresos
   FI_ROWS.forEach(r => {
-    if(!r.concepto && !r.auto) return;
+    if(!r.concepto && !r.auto && !r.autoTPV) return;
     S.recs.push({
       id: 'fi_'+r.id,
       tipo: 'ingreso',
@@ -1177,7 +1566,55 @@ function syncFlujoToRecs(){
     });
   });
 
-  localStorage.setItem('vmcr4', JSON.stringify(S.recs.filter(r=>!r.fromFlujo)));
+  // ── Wirebit upload fees → S.recs ──
+  const _WB_CAT = {
+    'Fees Fondeo Tarjetas':'Tarjeta Wirebit',
+    'Fees Fondeo Tarjeta CRM':'Tarjeta Wirebit',
+    'Fees VEX Retail':'Exchange',
+    'Fees VEX Ecommerce':'Exchange',
+    'Fees Retiros / OTC':'OTC',
+  };
+  if(typeof WB_ING !== 'undefined'){
+    for(const [concepto, vals] of Object.entries(WB_ING)){
+      if(!vals.some(v=>v>0)) continue;
+      S.recs.push({
+        id: 'wb_fee_'+concepto.replace(/[^a-zA-Z0-9]/g,'_'),
+        tipo: 'ingreso',
+        concepto: concepto,
+        ent: 'Wirebit',
+        cat: _WB_CAT[concepto] || 'Exchange',
+        yr: '2026',
+        vals: [...vals],
+        fromFlujo: true
+      });
+    }
+  }
+
+  // ── Wirebit costos directos → S.recs ──
+  if(typeof WB_COSTO_TOTAL !== 'undefined' && WB_COSTO_TOTAL.some(v=>v>0)){
+    const _WB_COST_MAP = {
+      'Bitfinex':'Costo Directo','Lmax':'Costo Directo','Bitso':'Costo Directo',
+      'Efevoo Fondeo':'Costo Directo','Efevoo Tarjetas':'Costo Directo',
+      'Efevoo SaaS':'Costo Directo','Comisiones BBVA':'Com. Bancarias',
+    };
+    if(typeof WB_COSTOS !== 'undefined'){
+      for(const [concepto, vals] of Object.entries(WB_COSTOS)){
+        if(!vals.some(v=>v>0)) continue;
+        S.recs.push({
+          id: 'wb_cost_'+concepto.replace(/[^a-zA-Z0-9]/g,'_'),
+          tipo: 'gasto',
+          concepto: concepto,
+          ent: 'Wirebit',
+          cat: _WB_COST_MAP[concepto] || 'Costo Directo',
+          yr: '2026',
+          vals: [...vals],
+          fromFlujo: true
+        });
+      }
+    }
+  }
+
+  DB.set('vmcr4', S.recs.filter(r=>!r.fromFlujo));
 }
 
 // ═══════════════════════════════════════
@@ -1191,16 +1628,16 @@ function clearData(){
   customConfirm('¿Borrar todos los registros?', 'Borrar', (ok)=>{
     if(!ok) return;
     S.recs=[]; FI_ROWS=[]; FG_ROWS=[];
-    localStorage.removeItem('vmcr4');
-    localStorage.removeItem('vmcr_fi');
-    localStorage.removeItem('vmcr_fg');
+    DB.remove('vmcr4');
+    DB.remove('vmcr_fi');
+    DB.remove('vmcr_fg');
     refreshActivePL();
     toast('🗑 Datos borrados');
   });
 }
 function delRec(id){
   S.recs=S.recs.filter(r=>String(r.id)!==String(id));
-  localStorage.setItem('vmcr4',JSON.stringify(S.recs));
+  DB.set('vmcr4', S.recs);
   refreshActivePL();
 }
 function expData(){
@@ -1228,3 +1665,102 @@ function refreshActivePL(){
 }
 
 // ═══════════════════════════════════════
+// TOP 10 GASTOS MODAL
+// ═══════════════════════════════════════
+function openTopGastos(entity) {
+  const ov = document.getElementById('top-gastos-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+
+  const tbody = document.getElementById('top-gas-tbody');
+  const kpisDiv = document.getElementById('top-gas-kpis');
+  const subDiv = document.getElementById('top-gas-subtitle');
+  const thEnt = document.getElementById('top-gas-th-ent');
+
+  // Show/hide entity column
+  if (thEnt) thEnt.style.display = entity ? 'none' : '';
+
+  if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>';
+
+  try {
+    // 1. Filter S.recs for gastos (exclude shared sources)
+    let gastos = (S.recs || []).filter(r => !r.isSharedSource && r.tipo === 'gasto');
+
+    // 2. If entity specified, filter
+    if (entity) gastos = gastos.filter(r => r.ent === entity);
+
+    // 3. Aggregate by concepto + ent
+    const map = {};
+    gastos.forEach(r => {
+      const key = (r.concepto || '?') + '|' + (r.ent || '?');
+      if (!map[key]) map[key] = { concepto: r.concepto || '?', ent: r.ent || '?', cat: r.cat || '-', total: 0 };
+      map[key].total += (r.vals || []).reduce((a, v) => a + (v || 0), 0);
+    });
+
+    // 4. Sort descending and take top 10
+    const sorted = Object.values(map).filter(r => r.total > 0).sort((a, b) => b.total - a.total);
+    const top10 = sorted.slice(0, 10);
+    const totalGas = sorted.reduce((s, r) => s + r.total, 0);
+    const top10Tot = top10.reduce((s, r) => s + r.total, 0);
+    const top10Pct = totalGas > 0 ? (top10Tot / totalGas * 100).toFixed(1) : '0';
+
+    // 5. Handle empty state
+    if (!sorted.length) {
+      if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--muted)">Sin gastos capturados</td></tr>';
+      if (kpisDiv) kpisDiv.innerHTML = '';
+      if (subDiv) subDiv.textContent = entity ? 'Gastos · ' + entity : 'Gastos por empresa · Grupo';
+      return;
+    }
+
+    // 6. Subtitle
+    if (subDiv) subDiv.textContent = entity
+      ? 'Gastos · ' + entity + ' · ' + sorted.length + ' conceptos'
+      : 'Gastos por empresa · Grupo · ' + sorted.length + ' conceptos';
+
+    // 7. KPI chips
+    if (kpisDiv) {
+      kpisDiv.innerHTML = `
+        <div style="background:var(--orange-bg);color:var(--orange);padding:6px 14px;border-radius:8px;font-size:.72rem;font-weight:600">
+          Total: ${fmtK(totalGas)}
+        </div>
+        <div style="background:var(--blue-bg);color:#0073ea;padding:6px 14px;border-radius:8px;font-size:.72rem;font-weight:600">
+          Top 10: ${fmtK(top10Tot)} (${top10Pct}%)
+        </div>
+        <div style="background:var(--purple-bg);color:var(--purple);padding:6px 14px;border-radius:8px;font-size:.72rem;font-weight:600">
+          ${sorted.length} conceptos
+        </div>`;
+    }
+
+    // 8. Render table rows
+    const entColors = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
+    if (tbody) {
+      tbody.innerHTML = top10.map((r, i) => {
+        const pct = totalGas > 0 ? (r.total / totalGas * 100).toFixed(1) : '0.0';
+        const barW = top10[0] && top10[0].total > 0 ? (r.total / top10[0].total * 100).toFixed(0) : 0;
+        const ec = entColors[r.ent] || '#555';
+        return `<tr>
+          <td style="font-weight:700;color:var(--orange)">${i + 1}</td>
+          <td><b>${r.concepto}</b></td>
+          ${entity ? '' : `<td><span style="color:${ec};font-weight:600">${r.ent}</span></td>`}
+          <td style="color:var(--muted)">${r.cat}</td>
+          <td style="text-align:right"><b style="color:var(--orange)">${fmtK(r.total)}</b>
+            <div style="height:3px;background:var(--border);border-radius:2px;margin-top:3px">
+              <div style="height:100%;background:var(--orange);border-radius:2px;width:${barW}%"></div>
+            </div>
+          </td>
+          <td style="text-align:right;font-weight:600">${pct}%</td>
+        </tr>`;
+      }).join('');
+    }
+  } catch (e) {
+    console.error('[Gastos] openTopGastos error:', e);
+    if (tbody) tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:20px;color:#e53935">Error al cargar datos</td></tr>';
+  }
+}
+
+function closeTopGastos() {
+  const ov = document.getElementById('top-gastos-overlay');
+  if (ov) ov.style.display = 'none';
+}
+
+// ═══════════════════════════════════════ END

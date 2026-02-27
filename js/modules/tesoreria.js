@@ -10,8 +10,8 @@ const TES_CATS_ING = ['Comisiones TPV','Fondeo Tarjetas','Intereses Crédito','C
 const TES_CATS_GAS = ['Nómina Operativa','Nómina Administrativa','Renta Oficina','Mantenimiento','Renta Impresora','Software','Hardware','Efevoo Tarjetas','Efevoo TPV','Marketing','Luz','Insumos Oficina','Viáticos','Comisiones Bancarias','Cumplimiento','Liquidity Providers','Comisiones Promotoría','Otros Gastos'];
 const TES_CUENTAS = ['BBVA Operaciones','BBVA Nómina','STP','Bitso','Bitfinex','LMAX','Efectivo','Otra'];
 
-function tesLoad(){ try{ const s=JSON.parse(localStorage.getItem(TES_KEY)); return Array.isArray(s)?s:[]; }catch(e){return [];} }
-function tesSave(data){ localStorage.setItem(TES_KEY, JSON.stringify(data)); }
+function tesLoad(){ try{ const s=DB.get(TES_KEY); return Array.isArray(s)?s:[]; }catch(e){return [];} }
+function tesSave(data){ DB.set(TES_KEY, data); }
 function tesFmt(n){ return '$'+Number(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function tesFmtSigned(n){ const s=n>=0?'+':'-'; return s+'$'+Math.abs(n).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 
@@ -725,10 +725,10 @@ const BANCOS_DEFAULT = [
 ];
 
 function tesBancosLoad(){
-  try{ const s=JSON.parse(localStorage.getItem(BANCOS_KEY)); return Array.isArray(s)&&s.length?s:JSON.parse(JSON.stringify(BANCOS_DEFAULT)); }
+  try{ const s=DB.get(BANCOS_KEY); return Array.isArray(s)&&s.length?s:JSON.parse(JSON.stringify(BANCOS_DEFAULT)); }
   catch(e){ return JSON.parse(JSON.stringify(BANCOS_DEFAULT)); }
 }
-function tesBancosSave(data){ localStorage.setItem(BANCOS_KEY, JSON.stringify(data)); }
+function tesBancosSave(data){ DB.set(BANCOS_KEY, data); }
 
 let _bancosEditId = null;
 const EMP_COLS_B = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};

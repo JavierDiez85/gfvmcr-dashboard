@@ -2,7 +2,7 @@
 
 // STATE
 // ═══════════════════════════════════════
-let S = { recs: JSON.parse(localStorage.getItem('vmcr4')||'[]'), excelData: null };
+let S = { recs: [], excelData: null };
 const CH = {};
 const dc = id => { if(CH[id]){ CH[id].destroy(); delete CH[id]; } };
 
@@ -15,6 +15,21 @@ Chart.defaults.borderColor='#e4e8f4';
 // UTILS
 // ═══════════════════════════════════════
 const sum = a=>a.reduce((x,y)=>(x+(+y||0)),0);
+const MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+
+/** Period column grouping utility — shared by EDO, P&L, Dashboard charts */
+function periodColumns(mode) {
+  if (mode === 'anual') return {
+    cols: [Array(12).fill(0).map((_,i)=>i)],
+    colLabels: ['Total 2026']
+  };
+  if (mode === 'trimestral') {
+    const qs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
+    return { cols: [...qs, Array(12).fill(0).map((_,i)=>i)], colLabels: ['Q1','Q2','Q3','Q4','Total'] };
+  }
+  return { cols: Array(12).fill(0).map((_,i)=>[i]), colLabels: [...MO, 'Total'] };
+}
+const colVal = (arr, idxs) => idxs.reduce((a,i) => a + (arr[i]||0), 0);
 function fmt(n,d=0){
   if(n==null||isNaN(n)) return '—';
   const neg=n<0,a=Math.abs(n),s=(neg?'-':'')+'$';
@@ -65,19 +80,7 @@ function mkMo(ids,pref){
 function sp(btn,p){ document.querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active')); btn.classList.add('active'); }
 function toast(m){ const t=document.getElementById('toast'); t.textContent=m; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),3200); }
 
-// INIT
-// Init: restaurar créditos guardados
-try{const ec=JSON.parse(localStorage.getItem('vmcr_cred_end'));if(ec&&ec.length){END_CREDITS.length=0;ec.forEach(c=>END_CREDITS.push(c));}}catch(e){}
-try{const dc=JSON.parse(localStorage.getItem('vmcr_cred_dyn'));if(dc&&dc.length){DYN_CREDITS.length=0;dc.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
-
-// Init flujos — carga ingresos/gastos guardados
-// Note: credits persist from localStorage
-uLoad(); ccLoad(); fiLoad(); fgLoad(); syncFlujoToRecs();
-applyTheme(_theme);
-renderReg();
-render('resumen');
-// Init: open finanzas submenu by default
-document.getElementById('main').classList.add('sub-open');
-updateToggleBtn();
+// INIT — ahora manejado por initApp() en supabase.js
+// La secuencia de init se ejecuta después de jalar datos de Supabase
 
 // ═══════════════════════════════════════
