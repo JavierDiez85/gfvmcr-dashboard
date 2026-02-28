@@ -106,6 +106,7 @@
           <div class="si" onclick="sv('tpv_terminales',this)" data-view="tpv_terminales"><div class="ic">🖥️</div>Terminales por Cliente</div>
           <div class="si" onclick="sv('tpv_cambios',this)" data-view="tpv_cambios"><div class="ic">🔄</div>Cambios de Terminal</div>
           <div class="si" onclick="sv('tpv_historial',this)" data-view="tpv_historial"><div class="ic">📋</div>Historial de Pagos</div>
+          <div class="si" onclick="sv('tpv_promotores',this)" data-view="tpv_promotores"><div class="ic">👥</div>Promotores</div>
         </div>
       </div>
 
@@ -3021,6 +3022,92 @@
       </table>
     </div>
   </div>
+</div>
+
+
+<!-- ══════════ TPV: PROMOTORES ══════════ -->
+<div id="view-tpv_promotores" class="view">
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👥 Promotores</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px" id="prom-subtitle">Selecciona un promotor y periodo</div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <button class="btn btn-out" style="font-size:.68rem;padding:5px 10px" onclick="exportPromotoresCSV()">⬇ CSV</button>
+    </div>
+  </div>
+
+  <!-- Promotor Selector + Date Picker -->
+  <div style="display:flex;gap:6px;align-items:center;margin-bottom:14px;flex-wrap:wrap;padding:10px 14px;background:var(--white);border:1px solid var(--border);border-radius:10px">
+    <span style="font-size:.72rem;font-weight:600;color:var(--text)">👤 Promotor:</span>
+    <input type="text" id="prom-search" placeholder="Buscar..." oninput="filterPromotorOptions(this.value)" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--text);width:120px">
+    <select id="prom-sel" onchange="rTPVPromotoresDetail()" style="padding:5px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);min-width:180px">
+      <option value="">— Seleccionar promotor —</option>
+    </select>
+    <span style="font-size:.72rem;font-weight:600;color:var(--text);margin-left:10px">📅 Período:</span>
+    <span style="font-size:.68rem;color:var(--muted)">Desde</span>
+    <input type="date" id="prom-from" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--text)" onchange="rTPVPromotoresDetail()">
+    <span style="font-size:.68rem;color:var(--muted)">Hasta</span>
+    <input type="date" id="prom-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--text)" onchange="rTPVPromotoresDetail()">
+    <div style="display:flex;gap:3px">
+      <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setPromDates('this_month')">Este mes</button>
+      <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setPromDates('last_month')">Mes anterior</button>
+      <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setPromDates('last_3')">Últimos 3m</button>
+      <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setPromDates('all')">Todo</button>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div id="prom-kpis" class="kpi-row" style="margin-bottom:14px"></div>
+
+  <!-- Section: Client Breakdown -->
+  <div class="tw" style="margin-bottom:14px">
+    <div class="tw-h">
+      <div class="tw-ht" id="prom-clients-title">Clientes del Promotor</div>
+      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="filterTPVTable('prom-clients-tbody',this.value)">
+    </div>
+    <div style="overflow-x:auto"><table class="bt">
+      <thead><tr>
+        <th>Cliente</th>
+        <th class="r">Total Cobrado</th>
+        <th class="r" style="color:var(--orange)">Comisiones</th>
+        <th class="r" style="color:var(--green)">A Pagar</th>
+        <th class="r">Pagado</th>
+        <th class="r" style="color:var(--red)">Saldo</th>
+        <th>Estado</th>
+        <th style="text-align:center">Acción</th>
+      </tr></thead>
+      <tbody id="prom-clients-tbody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Section: Comisión del Promotor -->
+  <div class="tw" style="margin-bottom:14px">
+    <div class="tw-h">
+      <div class="tw-ht" id="prom-com-title">Comisión del Promotor</div>
+    </div>
+    <div id="prom-com-kpis" style="display:flex;gap:10px;margin:10px 14px;flex-wrap:wrap"></div>
+    <div style="overflow-x:auto;padding:0 14px 14px"><table class="bt">
+      <thead><tr><th>Concepto</th><th class="r">Monto</th></tr></thead>
+      <tbody id="prom-com-tbody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Section: Pagos al Promotor -->
+  <div class="tw">
+    <div class="tw-h">
+      <div class="tw-ht" id="prom-pagos-title">Pagos Realizados al Promotor</div>
+      <button class="btn btn-blue edit-action" style="font-size:.7rem" onclick="openPromPagoModal()">+ Registrar Pago Comisión</button>
+    </div>
+    <div style="overflow-x:auto"><table class="bt">
+      <thead><tr><th>Fecha</th><th class="r">Monto</th><th>Referencia</th><th>Registrado</th><th style="width:40px"></th></tr></thead>
+      <tbody id="prom-pagos-tbody"></tbody>
+    </table></div>
+  </div>
+
+  <!-- Resumen Consolidado -->
+  <div id="prom-totals" style="margin-top:14px;padding:14px;background:var(--white);border:1px solid var(--border);border-radius:10px;display:none"></div>
 </div>
 
 
