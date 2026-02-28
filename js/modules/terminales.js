@@ -1107,6 +1107,12 @@ function exportPromotoresCSV(){
   toast('✅ CSV exportado');
 }
 
+// ── WRAPPER: Vista unificada Terminales + Cambios ──
+async function rTPVTerminalesView(){
+  await rTPVTerminales();
+  await rTPVCambios();
+}
+
 async function rTPVTerminales(){
   const tbody=document.getElementById('term-tbody');if(!tbody)return;
   const terms = await TPV.terminalStatus() || [];
@@ -1260,6 +1266,12 @@ function pagosSaldo(cliente) {
   const pagado = pagosTotalCliente(cliente.id, data);
   const aPagar = cliente.a_pagar || (parseFloat(cliente.total_cobrado||0) - parseFloat(cliente.total_comisiones||0));
   return Math.max(0, aPagar - pagado);
+}
+
+// ── WRAPPER: Vista unificada Pagos + Historial ──
+async function rTPVPagosView(){
+  await rTPVPagos();
+  await rTPVHistorial();
 }
 
 // ── RENDER rTPVPagos ──
