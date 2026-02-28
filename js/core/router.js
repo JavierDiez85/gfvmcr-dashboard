@@ -14,9 +14,7 @@ const VT = {
   dyn_res:'Dynamo — P&L',dyn_ing:'Dynamo — Ingresos',dyn_gas:'Dynamo — Costes y Gastos',dyn_nom:'Dynamo — Nómina',dyn_cred:'Dynamo — Cartera',
   tpv_general:'Terminales — Dashboard General', tpv_dashboard:'Terminales — Dashboard Periodo',
   tpv_pagos:'Terminales — Control de Pagos', tpv_resumen:'Terminales — Resumen por Cliente',
-  tpv_agentes:'Terminales — Comisiones Agentes', tpv_terminales:'Terminales — Por Cliente',
-  tpv_cambios:'Terminales — Cambios de Terminal',
-  tpv_historial:'Terminales — Historial de Pagos',
+  tpv_agentes:'Terminales — Comisiones Agentes', tpv_terminales:'Terminales — Gestión de Terminales',
   tpv_promotores:'Terminales — Promotores',
   tpv_comisiones:'Terminales — Configuración de Comisiones',
   tpv_upload:'Carga — Datos TPV',
@@ -93,7 +91,7 @@ function render(id){
     case 'gastos_comp': rGastosComp(); break;
     case 'tpv_general': initTPVGeneral(); break;
     case 'tpv_dashboard': initTPVDashboard(); break;
-    case 'tpv_pagos': rTPVPagos(); break;
+    case 'tpv_pagos': rTPVPagosView(); break;
     case 'tpv_resumen': rTPVResumen(); break;
     case 'tpv_agentes': rTPVAgentes(); break;
     case 'tar_dashboard': setTimeout(()=>initTarCharts('tar_dashboard'),50); break;
@@ -101,9 +99,7 @@ function render(id){
     case 'tar_subclientes': setTimeout(()=>initTarCharts('tar_subclientes'),50); break;
     case 'tar_rechazos': setTimeout(()=>initTarCharts('tar_rechazos'),50); break;
     case 'tar_tarjetahabientes': setTimeout(()=>initTarCharts('tar_tarjetahabientes'),50); break;
-    case 'tpv_terminales': rTPVTerminales(); break;
-    case 'tpv_cambios': rTPVCambios(); break;
-    case 'tpv_historial': rTPVHistorial(); break;
+    case 'tpv_terminales': rTPVTerminalesView(); break;
     case 'tpv_promotores': rTPVPromotores(); break;
     case 'tpv_comisiones': rTPVComisiones(); break;
     case 'tpv_upload': rTPVUpload(); break;

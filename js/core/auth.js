@@ -14,7 +14,7 @@ const MENU_PERMS = {
   terminales: { label:'🖥️ Terminales', subs:[
     {id:'tpv_general',label:'Dashboard General'},{id:'tpv_dashboard',label:'Dashboard Periodo'},
     {id:'tpv_pagos',label:'Control de Pagos'},{id:'tpv_resumen',label:'Resumen por Cliente'},
-    {id:'tpv_agentes',label:'Comisiones Agentes'},{id:'tpv_terminales',label:'Por Cliente'},{id:'tpv_cambios',label:'Cambios de Terminal'},{id:'tpv_historial',label:'Historial de Pagos'},{id:'tpv_promotores',label:'Promotores'},
+    {id:'tpv_agentes',label:'Comisiones Agentes'},{id:'tpv_terminales',label:'Gestión de Terminales'},{id:'tpv_promotores',label:'Promotores'},
   ]},
   tarjetas:   { label:'💳 Tarjetas', subs:[
     {id:'tar_dashboard',label:'Dashboard CENTUM'},{id:'tar_conceptos',label:'Conceptos'},
