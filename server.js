@@ -1,4 +1,5 @@
 const http = require('http');
+const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
@@ -22,7 +23,120 @@ const MIME = {
   '.eot': 'application/vnd.ms-fontobject',
 };
 
-http.createServer((req, res) => {
+// ══════════════════════════════════════
+// RATE LIMITER — 20 requests / minuto por IP
+// ══════════════════════════════════════
+const _rl = {};
+function isRateLimited(ip) {
+  const now = Date.now(), win = 60000, max = 20;
+  if (!_rl[ip]) _rl[ip] = [];
+  _rl[ip] = _rl[ip].filter(t => now - t < win);
+  if (_rl[ip].length >= max) return true;
+  _rl[ip].push(now);
+  return false;
+}
+
+// ══════════════════════════════════════
+// BODY PARSER — leer JSON del request
+// ══════════════════════════════════════
+function readBody(req, maxBytes = 51200) {
+  return new Promise((resolve, reject) => {
+    const chunks = [];
+    let size = 0;
+    req.on('data', c => {
+      size += c.length;
+      if (size > maxBytes) { req.destroy(); reject(new Error('Body too large')); return; }
+      chunks.push(c);
+    });
+    req.on('end', () => {
+      try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
+      catch (e) { reject(e); }
+    });
+    req.on('error', reject);
+  });
+}
+
+// ══════════════════════════════════════
+// SERVER
+// ══════════════════════════════════════
+http.createServer(async (req, res) => {
+
+  // ── API: AI Chat proxy ──
+  if (req.method === 'POST' && req.url === '/api/chat') {
+    const API_KEY = process.env.ANTHROPIC_API_KEY;
+    if (!API_KEY) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY no configurada en el servidor' }));
+      return;
+    }
+
+    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+    if (isRateLimited(ip)) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Demasiadas solicitudes. Espera un momento.' }));
+      return;
+    }
+
+    try {
+      const body = await readBody(req);
+
+      const systemPrompt = [
+        'Eres el asistente financiero inteligente del dashboard de Grupo Financiero VMCR.',
+        'Responde siempre en español. Sé conciso, preciso y profesional.',
+        'Usa los datos del CONTEXTO para responder preguntas sobre tickets, pagos TPV, créditos, tesorería, terminales, nómina y finanzas del grupo.',
+        'Si no tienes suficiente información en el contexto para responder, dilo claramente.',
+        'Cuando muestres montos usa formato $X,XXX.XX con separador de miles.',
+        'Las entidades del grupo son: Salem, Endless, Dynamo, Wirebit y Centum Capital.',
+        '',
+        'CONTEXTO ACTUAL DEL DASHBOARD:',
+        body.context || '(sin contexto disponible)'
+      ].join('\n');
+
+      const payload = JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1024,
+        system: systemPrompt,
+        messages: body.messages || []
+      });
+
+      const options = {
+        hostname: 'api.anthropic.com',
+        path: '/v1/messages',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-api-key': API_KEY,
+          'anthropic-version': '2023-06-01',
+          'Content-Length': Buffer.byteLength(payload)
+        }
+      };
+
+      const apiReq = https.request(options, apiRes => {
+        const chunks = [];
+        apiRes.on('data', c => chunks.push(c));
+        apiRes.on('end', () => {
+          const raw = Buffer.concat(chunks).toString();
+          res.writeHead(apiRes.statusCode, { 'Content-Type': 'application/json' });
+          res.end(raw);
+        });
+      });
+
+      apiReq.on('error', e => {
+        res.writeHead(502, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Error al conectar con Anthropic: ' + e.message }));
+      });
+
+      apiReq.write(payload);
+      apiReq.end();
+
+    } catch (e) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Solicitud inválida: ' + e.message }));
+    }
+    return;
+  }
+
+  // ── Archivos estáticos ──
   let url = decodeURIComponent(req.url.split('?')[0]);
   if (url === '/') url = '/index.html';
 
@@ -48,4 +162,5 @@ http.createServer((req, res) => {
       res.end(data);
     });
   });
+
 }).listen(PORT, () => console.log('Grupo Financiero Dashboard listening on port ' + PORT));
