@@ -40,7 +40,7 @@ body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;fon
 
 /* ── Accordion sub-items ── */
 .mi-sub{max-height:0;overflow:hidden;transition:max-height .28s cubic-bezier(.4,0,.2,1),background .22s;padding-left:10px;border-radius:0 0 8px 8px;margin:0 4px;}
-.mi-sub.open{max-height:800px;background:rgba(255,255,255,.04);}
+.mi-sub.open{max-height:800px;background:rgba(255,255,255,.10);}
 
 /* ── Toggle button ── */
 #sb-toggle{position:fixed;top:12px;left:248px;z-index:200;width:26px;height:26px;border-radius:6px;border:1px solid var(--border);background:var(--white);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:.8rem;color:var(--text2);box-shadow:var(--sh);transition:left .22s cubic-bezier(.4,0,.2,1),background .12s,color .12s;}
