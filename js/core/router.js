@@ -17,6 +17,7 @@ const VT = {
   tpv_agentes:'Terminales — Comisiones Agentes', tpv_terminales:'Terminales — Gestión de Terminales',
   tpv_promotores:'Terminales — Promotores',
   tpv_comisiones:'Terminales — Configuración de Comisiones',
+  tk_pagos_tpv:'Tickets — Pagos TPV',
   tpv_upload:'Carga — Datos TPV',
   tar_upload:'Carga — Tarjetas CENTUM',
   wb_res:'Wirebit — P&L',wb_ing:'Wirebit — Ingresos',wb_gas:'Wirebit — Costes y Gastos',wb_cripto:'Wirebit — Transacciones Cripto',wb_nom:'Wirebit — Nómina',wb_tarjetas:'Wirebit — Tarjetas WB',wb_upload:'Wirebit — Carga Transacciones Cripto',wb_tar_upload:'Carga — Tarjetas Wirebit',
@@ -103,6 +104,7 @@ function render(id){
     case 'tpv_promotores': rTPVPromotores(); break;
     case 'tpv_comisiones': rTPVComisiones(); break;
     case 'tpv_upload': rTPVUpload(); break;
+    case 'tk_pagos_tpv': rTkPagosTpv(); break;
     case 'tar_upload': rTarUpload(); break;
     case 'sal_res': _syncAll().then(()=>{rPL('sal'); rPLCharts('sal'); rEvoChart('c-sal-evo','sal');}); break;
     case 'sal_ing': _syncAll().then(()=>rIngView('sal')); break;
