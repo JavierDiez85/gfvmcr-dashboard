@@ -185,12 +185,12 @@ function tkModalAddPago(){
       '<div style="display:flex;gap:8px;margin-bottom:8px">' +
         '<div style="flex:1">' +
           '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Tipo de monto</label>' +
-          '<select data-field="monto_tipo" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
+          '<select data-field="monto_tipo" onchange="tkToggleMontoInput(this)" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
             '<option value="fijo">$ Monto fijo</option>' +
             '<option value="porcentaje">% Porcentaje</option>' +
           '</select>' +
         '</div>' +
-        '<div style="flex:1">' +
+        '<div style="flex:1" class="tk-m-monto-field">' +
           '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Valor *</label>' +
           '<input type="number" data-field="monto" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text);box-sizing:border-box">' +
         '</div>' +
@@ -207,6 +207,7 @@ function tkModalRemovePago(idx){
   const el = document.getElementById('tk-m-pago-' + idx);
   if(el) el.remove();
   tkModalRenumberPagos();
+  tkUpdatePctBar();
 }
 
 function tkModalRenumberPagos(){
@@ -234,6 +235,51 @@ function tkModalToggleBanco(sel){
   const card = sel.closest('.tk-m-pago');
   const bancoField = card.querySelector('.tk-m-banco-field');
   if(bancoField) bancoField.style.display = sel.value === 'banco' ? '' : 'none';
+}
+
+function _tkPctOptions(){
+  let opts = '<option value="">— Selecciona —</option>';
+  for(let i = 5; i <= 100; i += 5) opts += `<option value="${i}">${i}%</option>`;
+  return opts;
+}
+
+function tkToggleMontoInput(sel){
+  const card = sel.closest('.tk-m-pago');
+  const montoField = card.querySelector('.tk-m-monto-field');
+  if(!montoField) return;
+  const labelStyle = 'font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px';
+  const inputStyle = 'width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text);box-sizing:border-box';
+  if(sel.value === 'porcentaje'){
+    montoField.innerHTML = `<label style="${labelStyle}">Valor *</label><select data-field="monto" onchange="tkUpdatePctBar()" style="${inputStyle}">${_tkPctOptions()}</select>`;
+  } else {
+    montoField.innerHTML = `<label style="${labelStyle}">Valor *</label><input type="number" data-field="monto" placeholder="0.00" step="0.01" min="0" style="${inputStyle}">`;
+  }
+  tkUpdatePctBar();
+}
+
+function tkUpdatePctBar(){
+  const cards = document.querySelectorAll('#tk-f-pagos-container .tk-m-pago');
+  let total = 0, hasPct = false;
+  cards.forEach(card => {
+    const tipoSel = card.querySelector('[data-field="monto_tipo"]');
+    if(tipoSel && tipoSel.value === 'porcentaje'){
+      hasPct = true;
+      total += parseFloat(card.querySelector('[data-field="monto"]')?.value) || 0;
+    }
+  });
+  const wrap = document.getElementById('tk-pct-bar-wrap');
+  if(!wrap) return;
+  if(!hasPct){ wrap.style.display = 'none'; return; }
+  wrap.style.display = 'block';
+  const remaining = 100 - total;
+  const fill = document.getElementById('tk-pct-bar-fill');
+  const assignedEl = document.getElementById('tk-pct-assigned');
+  const remainingEl = document.getElementById('tk-pct-remaining');
+  fill.style.width = Math.min(total, 100) + '%';
+  fill.style.background = total > 100 ? 'var(--red)' : total === 100 ? 'var(--green)' : 'var(--blue)';
+  assignedEl.textContent = 'Asignado: ' + total + '%';
+  remainingEl.textContent = total > 100 ? 'Excede por ' + (total - 100) + '%' : 'Restante: ' + remaining + '%';
+  remainingEl.style.color = total > 100 ? 'var(--red)' : 'var(--muted)';
 }
 
 function _tkModalCollectPagos(){
@@ -269,6 +315,8 @@ function openNewTicketModal(){
   if(container) container.innerHTML = '';
   _tkModalPagoIdx = 0;
   tkModalAddPago(); // start with one payment line
+  const pctWrap = document.getElementById('tk-pct-bar-wrap');
+  if(pctWrap) pctWrap.style.display = 'none';
   document.getElementById('tk-new-modal').style.display = 'flex';
 }
 

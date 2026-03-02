@@ -242,6 +242,8 @@ async function initApp() {
 
     // Init existente
     uLoad(); ccLoad(); fiLoad(); fgLoad(); fiInjectTPV(); syncFlujoToRecs();
+    // Re-leer theme de localStorage (pudo cambiar después de pullAll)
+    _theme = DB.get('vmcr_theme') || 'light';
     applyTheme(_theme);
     renderReg();
     sv('inicio', null);
