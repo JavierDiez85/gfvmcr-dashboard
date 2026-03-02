@@ -11,18 +11,17 @@
     *{margin:0;padding:0;box-sizing:border-box}
     :root{--blue:#0073ea;--green:#00b875;--red:#e53935;--purple:#9c27b0;--text:#23243a;--muted:#8b8fb5;--bg:#f0f2f8;--white:#fff;--border:#e4e8f4;--r:8px;--rlg:14px}
     body{font-family:'Figtree',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-    .card{background:var(--white);border-radius:var(--rlg);box-shadow:0 4px 24px rgba(0,0,0,.08);max-width:520px;width:100%;padding:32px 28px;position:relative}
+    .card{background:var(--white);border-radius:var(--rlg);box-shadow:0 4px 24px rgba(0,0,0,.08);max-width:580px;width:100%;padding:32px 28px;position:relative}
     .logo{text-align:center;margin-bottom:20px}
-    .logo img{width:50px;height:50px;object-fit:contain;margin-bottom:8px}
     .logo h1{font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text)}
     .logo p{font-size:.72rem;color:var(--muted);margin-top:2px}
-    label{display:block;font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
-    input,select,textarea{width:100%;padding:9px 12px;border-radius:var(--r);border:1px solid var(--border);font-size:.8rem;font-family:'Figtree',sans-serif;color:var(--text);background:var(--white);transition:border-color .2s}
+    label{display:block;font-size:.68rem;font-weight:600;color:var(--muted);margin-bottom:3px;text-transform:uppercase;letter-spacing:.3px}
+    input,select,textarea{width:100%;padding:8px 10px;border-radius:var(--r);border:1px solid var(--border);font-size:.78rem;font-family:'Figtree',sans-serif;color:var(--text);background:var(--white);transition:border-color .2s}
     input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
-    textarea{resize:vertical;min-height:70px}
-    .row{display:flex;gap:12px}
+    textarea{resize:vertical;min-height:60px}
+    .row{display:flex;gap:10px}
     .row>div{flex:1}
-    .field{margin-bottom:14px}
+    .field{margin-bottom:12px}
     .btn{width:100%;padding:11px;border:none;border-radius:var(--r);background:var(--blue);color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Figtree',sans-serif;transition:opacity .2s}
     .btn:hover{opacity:.9}
     .btn:disabled{opacity:.5;cursor:not-allowed}
@@ -34,7 +33,15 @@
     .success p{color:var(--muted);font-size:.75rem;line-height:1.5}
     .success .btn{margin-top:16px;background:var(--purple)}
     .req{color:var(--red)}
-    @media(max-width:480px){.card{padding:24px 18px}.row{flex-direction:column;gap:0}}
+    .sec-title{font-size:.7rem;font-weight:700;color:var(--text);text-transform:uppercase;letter-spacing:.4px;margin:18px 0 10px;padding-bottom:6px;border-bottom:2px solid var(--border);display:flex;align-items:center;gap:6px}
+    .pago-card{border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:10px;position:relative;background:var(--bg);transition:border-color .2s}
+    .pago-card:hover{border-color:var(--blue)}
+    .pago-num{position:absolute;top:8px;left:10px;font-size:.6rem;font-weight:700;color:var(--muted);background:var(--white);padding:1px 6px;border-radius:10px;border:1px solid var(--border)}
+    .pago-del{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;border-radius:4px;width:auto;transition:color .2s}
+    .pago-del:hover{color:var(--red)}
+    .btn-add{width:100%;padding:9px;border:2px dashed var(--border);border-radius:var(--r);background:transparent;color:var(--blue);font-size:.75rem;font-weight:600;cursor:pointer;font-family:'Figtree',sans-serif;transition:all .2s;margin-bottom:16px}
+    .btn-add:hover{border-color:var(--blue);background:rgba(0,115,234,.04)}
+    @media(max-width:480px){.card{padding:24px 16px}.row{flex-direction:column;gap:0}.pago-card{padding:12px 10px}}
   </style>
 </head>
 <body>
@@ -58,33 +65,29 @@
 
       <div class="field">
         <label>Asunto <span class="req">*</span></label>
-        <input type="text" id="pub-asunto" placeholder="Ej: Pago no reflejado en terminal">
+        <input type="text" id="pub-asunto" placeholder="Ej: Pagos pendientes febrero">
       </div>
 
       <div class="field">
-        <label>Descripcion</label>
-        <textarea id="pub-desc" placeholder="Describe el problema o situacion con detalle..."></textarea>
-      </div>
-
-      <div class="row">
-        <div class="field">
-          <label>Prioridad</label>
-          <select id="pub-prioridad">
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
-            <option value="baja">Baja</option>
-          </select>
-        </div>
-        <div class="field">
-          <label>Monto (MXN)</label>
-          <input type="number" id="pub-monto" placeholder="0.00" step="0.01">
-        </div>
+        <label>Descripcion general</label>
+        <textarea id="pub-desc" placeholder="Describe la situacion general (opcional)..."></textarea>
       </div>
 
       <div class="field">
-        <label>Referencia de Pago</label>
-        <input type="text" id="pub-ref" placeholder="No. de referencia, folio o transaccion">
+        <label>Prioridad</label>
+        <select id="pub-prioridad">
+          <option value="media">Media</option>
+          <option value="alta">Alta</option>
+          <option value="baja">Baja</option>
+        </select>
       </div>
+
+      <!-- PAGOS SECTION -->
+      <div class="sec-title">💳 Pagos <span style="font-weight:400;color:var(--muted);font-size:.62rem;text-transform:none">(agrega uno o mas)</span></div>
+
+      <div id="pagos-container"></div>
+
+      <button type="button" class="btn-add" onclick="addPago()">+ Agregar otro pago</button>
 
       <button class="btn" id="tk-submit-btn" onclick="submitTicket()">Enviar Ticket</button>
     </div>
@@ -94,7 +97,7 @@
       <div class="ico">✅</div>
       <h2>Ticket enviado correctamente</h2>
       <div class="num" id="tk-success-num">#000</div>
-      <p>Tu ticket ha sido recibido y sera atendido a la brevedad. Guarda tu numero de referencia para seguimiento.</p>
+      <p>Tu ticket ha sido recibido y sera atendido a la brevedad.<br>Guarda tu numero de referencia para seguimiento.</p>
       <button class="btn" onclick="resetForm()">Enviar otro ticket</button>
     </div>
   </div>
@@ -104,6 +107,7 @@
     const SUPABASE_KEY = '***REDACTED_SUPABASE_ANON_KEY***';
     const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     const TK_KEY = 'vmcr_tickets_pagos_tpv';
+    let _pagoIdx = 0;
 
     // ── Load clients for dropdown ──
     async function loadClients(){
@@ -114,8 +118,8 @@
           .order('nombre');
         if(error) throw error;
         sel.innerHTML = '<option value="">— Selecciona tu empresa —</option>' +
-          (data||[]).map(c => {
-            const display = c.nombre_display || c.nombre;
+          (data||[]).map(function(c){
+            var display = c.nombre_display || c.nombre;
             return '<option value="' + display + '">' + display + '</option>';
           }).join('');
       } catch(e){
@@ -124,9 +128,111 @@
       }
     }
 
+    // ── Dynamic payment lines ──
+    function addPago(){
+      _pagoIdx++;
+      var container = document.getElementById('pagos-container');
+      var div = document.createElement('div');
+      div.className = 'pago-card';
+      div.id = 'pago-' + _pagoIdx;
+      div.innerHTML =
+        '<span class="pago-num">Pago ' + _pagoIdx + '</span>' +
+        (_pagoIdx > 1 ? '<button type="button" class="pago-del" onclick="removePago(' + _pagoIdx + ')" title="Eliminar pago">✕</button>' : '') +
+        '<div style="margin-top:16px">' +
+          '<div class="row">' +
+            '<div class="field">' +
+              '<label>Destino <span class="req">*</span></label>' +
+              '<select data-field="tipo" onchange="toggleBanco(this)">' +
+                '<option value="banco">Banco</option>' +
+                '<option value="tarjetas_centum">Tarjetas Centum</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="field banco-field">' +
+              '<label>Nombre del Banco</label>' +
+              '<input type="text" data-field="banco" placeholder="Ej: BBVA, Banorte...">' +
+            '</div>' +
+          '</div>' +
+          '<div class="row">' +
+            '<div class="field">' +
+              '<label>Tipo de monto</label>' +
+              '<select data-field="monto_tipo">' +
+                '<option value="fijo">$ Monto fijo</option>' +
+                '<option value="porcentaje">% Porcentaje</option>' +
+              '</select>' +
+            '</div>' +
+            '<div class="field">' +
+              '<label>Valor <span class="req">*</span></label>' +
+              '<input type="number" data-field="monto" placeholder="0.00" step="0.01" min="0">' +
+            '</div>' +
+          '</div>' +
+          '<div class="field" style="margin-bottom:0">' +
+            '<label>Descripcion del pago</label>' +
+            '<input type="text" data-field="descripcion" placeholder="Ej: Deposito quincenal, comision marzo...">' +
+          '</div>' +
+        '</div>';
+      container.appendChild(div);
+    }
+
+    function removePago(idx){
+      var el = document.getElementById('pago-' + idx);
+      if(el) el.remove();
+      renumberPagos();
+    }
+
+    function renumberPagos(){
+      var cards = document.querySelectorAll('#pagos-container .pago-card');
+      cards.forEach(function(card, i){
+        var num = card.querySelector('.pago-num');
+        if(num) num.textContent = 'Pago ' + (i + 1);
+        // Only first card can't be deleted
+        var del = card.querySelector('.pago-del');
+        if(i === 0 && del) del.remove();
+        if(i > 0 && !del){
+          var id = card.id.replace('pago-','');
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'pago-del';
+          btn.title = 'Eliminar pago';
+          btn.textContent = '✕';
+          btn.onclick = function(){ removePago(id); };
+          card.appendChild(btn);
+        }
+      });
+    }
+
+    function toggleBanco(sel){
+      var card = sel.closest('.pago-card');
+      var bancoField = card.querySelector('.banco-field');
+      if(bancoField) bancoField.style.display = sel.value === 'banco' ? '' : 'none';
+    }
+
+    function collectPagos(){
+      var cards = document.querySelectorAll('#pagos-container .pago-card');
+      var pagos = [];
+      var valid = true;
+      cards.forEach(function(card){
+        var tipo = card.querySelector('[data-field="tipo"]').value;
+        var banco = (card.querySelector('[data-field="banco"]') || {}).value || '';
+        var monto_tipo = card.querySelector('[data-field="monto_tipo"]').value;
+        var monto = parseFloat(card.querySelector('[data-field="monto"]').value);
+        var descripcion = (card.querySelector('[data-field="descripcion"]') || {}).value || '';
+
+        if(isNaN(monto) || monto <= 0){ valid = false; return; }
+
+        pagos.push({
+          tipo: tipo,
+          banco: tipo === 'banco' ? banco.trim() : '',
+          monto_tipo: monto_tipo,
+          monto: monto,
+          descripcion: descripcion.trim()
+        });
+      });
+      return valid ? pagos : null;
+    }
+
     // ── Show/hide error ──
     function showErr(msg){
-      const el = document.getElementById('tk-err');
+      var el = document.getElementById('tk-err');
       el.textContent = msg;
       el.style.display = msg ? 'block' : 'none';
     }
@@ -134,40 +240,39 @@
     // ── Submit ticket ──
     async function submitTicket(){
       showErr('');
-      const cliente = document.getElementById('pub-cliente').value;
-      const asunto = document.getElementById('pub-asunto').value.trim();
+      var cliente = document.getElementById('pub-cliente').value;
+      var asunto = document.getElementById('pub-asunto').value.trim();
       if(!cliente){ showErr('Selecciona tu empresa'); return; }
       if(!asunto){ showErr('Escribe un asunto para el ticket'); return; }
 
-      const btn = document.getElementById('tk-submit-btn');
+      var pagos = collectPagos();
+      if(!pagos || pagos.length === 0){ showErr('Agrega al menos un pago con monto valido'); return; }
+
+      var btn = document.getElementById('tk-submit-btn');
       btn.disabled = true;
       btn.textContent = 'Enviando...';
 
       try {
-        // 1. Read current tickets from Supabase
-        const { data: row, error: readErr } = await _sb
+        var { data: row, error: readErr } = await _sb
           .from('app_data')
           .select('value')
           .eq('key', TK_KEY)
           .maybeSingle();
 
-        let tickets = [];
+        var tickets = [];
         if(!readErr && row && row.value){
           tickets = Array.isArray(row.value) ? row.value : [];
         }
 
-        // 2. Generate next ID
-        const maxId = tickets.reduce(function(mx,t){ return Math.max(mx, Number(t.id)||0); }, 0);
+        var maxId = tickets.reduce(function(mx,t){ return Math.max(mx, Number(t.id)||0); }, 0);
 
-        // 3. Build ticket
         var ticket = {
           id: String(maxId + 1).padStart(3, '0'),
           cliente: cliente,
           asunto: asunto,
           descripcion: document.getElementById('pub-desc').value.trim(),
           prioridad: document.getElementById('pub-prioridad').value || 'media',
-          monto: parseFloat(document.getElementById('pub-monto').value) || null,
-          referencia: document.getElementById('pub-ref').value.trim(),
+          pagos: pagos,
           estado: 'pendiente',
           leido: false,
           origen: 'cliente',
@@ -178,8 +283,7 @@
 
         tickets.push(ticket);
 
-        // 4. Write back to Supabase
-        const { error: writeErr } = await _sb
+        var { error: writeErr } = await _sb
           .from('app_data')
           .upsert({
             key: TK_KEY,
@@ -190,7 +294,6 @@
 
         if(writeErr) throw writeErr;
 
-        // 5. Show success
         document.getElementById('tk-success-num').textContent = '#' + ticket.id;
         document.getElementById('tk-form').style.display = 'none';
         document.getElementById('tk-success').style.display = 'block';
@@ -211,14 +314,16 @@
       document.getElementById('pub-asunto').value = '';
       document.getElementById('pub-desc').value = '';
       document.getElementById('pub-prioridad').value = 'media';
-      document.getElementById('pub-monto').value = '';
-      document.getElementById('pub-ref').value = '';
       document.getElementById('pub-cliente').value = '';
+      document.getElementById('pagos-container').innerHTML = '';
+      _pagoIdx = 0;
+      addPago();
       showErr('');
     }
 
     // ── Init ──
     loadClients();
+    addPago(); // start with one payment line
   </script>
 </body>
 </html>

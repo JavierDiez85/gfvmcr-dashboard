@@ -1,12 +1,37 @@
-// GFVMCR — Tickets: sistema de tickets para pagos TPV
+// GFVMCR — Tickets: sistema de tickets para pagos TPV (con pagos múltiples)
 
 const TK_STORAGE_KEY = 'vmcr_tickets_pagos_tpv';
+let _tkModalPagoIdx = 0;
 
 function _tkLoad(){
   try { return DB.get(TK_STORAGE_KEY) || []; } catch(e){ return []; }
 }
 function _tkSave(tickets){
   DB.set(TK_STORAGE_KEY, tickets);
+}
+
+// Helper: extract total from pagos[] or fallback to legacy monto
+function _tkPagosTotal(t){
+  if(Array.isArray(t.pagos) && t.pagos.length){
+    let fijo = 0, hasPct = false;
+    t.pagos.forEach(p => {
+      if(p.monto_tipo === 'porcentaje') hasPct = true;
+      else fijo += (Number(p.monto)||0);
+    });
+    return { fijo, hasPct };
+  }
+  // Legacy: single monto
+  if(typeof t.monto === 'number') return { fijo: t.monto, hasPct: false };
+  return { fijo: 0, hasPct: false };
+}
+
+function _tkFmtMonto(t){
+  const { fijo, hasPct } = _tkPagosTotal(t);
+  const fmt = n => '$' + n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(fijo > 0 && hasPct) return fmt(fijo) + ' <span style="font-size:.55rem;color:var(--muted)">+%</span>';
+  if(fijo > 0) return fmt(fijo);
+  if(hasPct) return '<span style="font-size:.7rem;color:var(--muted)">% (ver detalle)</span>';
+  return '—';
 }
 
 // ═══════════════════════════════════════
@@ -74,19 +99,19 @@ function rTkPagosList(){
     baja:  '<span style="color:var(--muted);font-weight:600;font-size:.7rem">● Baja</span>',
   };
 
-  const fmt = n => typeof n === 'number' ? '$' + n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
-
   tbody.innerHTML = filtered.map(t => {
     const unreadDot = t.leido === false ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#9c27b0;margin-right:4px" title="No leído"></span>' : '';
     const rowBg = t.leido === false ? 'background:rgba(156,39,176,.04);' : '';
     const origenBadge = t.origen === 'cliente' ? ' <span style="font-size:.55rem;background:rgba(0,115,234,.1);color:var(--blue);padding:1px 5px;border-radius:8px">Externo</span>' : '';
+    const pagosCount = Array.isArray(t.pagos) ? t.pagos.length : 0;
+    const pagosHint = pagosCount > 1 ? ` <span style="font-size:.55rem;color:var(--muted)">(${pagosCount})</span>` : '';
     return `<tr style="cursor:pointer;${rowBg}" onclick="openTkDetail('${t.id}')">
     <td style="font-size:.7rem;color:var(--muted);font-weight:600">${unreadDot}#${t.id}</td>
     <td style="font-size:.75rem;font-weight:600">${t.cliente||'—'}${origenBadge}</td>
     <td style="font-size:.73rem">${t.asunto||'—'}</td>
     <td>${priorBadge[t.prioridad]||'—'}</td>
     <td>${statusBadge[t.estado]||'—'}</td>
-    <td class="r" style="font-size:.75rem;font-weight:600">${fmt(t.monto)}</td>
+    <td class="r" style="font-size:.75rem;font-weight:600">${_tkFmtMonto(t)}${pagosHint}</td>
     <td style="font-size:.68rem;color:var(--muted)">${t.creado ? new Date(t.creado).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : '—'}</td>
     <td><button class="btn btn-out" style="font-size:.6rem;padding:2px 8px" onclick="event.stopPropagation();changeTkStatus('${t.id}')">⋮</button></td>
   </tr>`;
@@ -119,15 +144,118 @@ function _tkUpdateBadge(){
 }
 
 // ═══════════════════════════════════════
-// MODAL: NUEVO TICKET (INTERNO)
+// MODAL: NUEVO TICKET (INTERNO) — Pagos múltiples
 // ═══════════════════════════════════════
 function _tkPopulateClientes(){
   const sel = document.getElementById('tk-f-cliente');
   if(!sel) return;
   const clients = DB.get('vmcr_tpv_clients') || [];
-  const names = [...new Set(clients.map(c => c.nombre || c.client_name).filter(Boolean))].sort();
+  const names = [...new Set(clients.map(c => c.nombre_display || c.nombre || c.client_name).filter(Boolean))].sort();
   sel.innerHTML = '<option value="">— Selecciona —</option>' +
     names.map(n => `<option value="${n}">${n}</option>`).join('');
+}
+
+function tkModalAddPago(){
+  _tkModalPagoIdx++;
+  const container = document.getElementById('tk-f-pagos-container');
+  if(!container) return;
+  const idx = _tkModalPagoIdx;
+  const div = document.createElement('div');
+  div.className = 'tk-m-pago';
+  div.id = 'tk-m-pago-' + idx;
+  div.style.cssText = 'border:1px solid var(--border2);border-radius:var(--r);padding:14px 12px;margin-bottom:8px;position:relative;background:var(--bg);transition:border-color .2s;';
+  const canDel = container.children.length > 0;
+  div.innerHTML =
+    '<span style="position:absolute;top:6px;left:10px;font-size:.58rem;font-weight:700;color:var(--muted);background:var(--white);padding:1px 6px;border-radius:10px;border:1px solid var(--border2)">Pago ' + (container.children.length + 1) + '</span>' +
+    (canDel ? '<button type="button" onclick="tkModalRemovePago(' + idx + ')" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;width:auto" title="Eliminar pago">✕</button>' : '') +
+    '<div style="margin-top:18px">' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+        '<div style="flex:1">' +
+          '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Destino *</label>' +
+          '<select data-field="tipo" onchange="tkModalToggleBanco(this)" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
+            '<option value="banco">Banco</option>' +
+            '<option value="tarjetas_centum">Tarjetas Centum</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="flex:1" class="tk-m-banco-field">' +
+          '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Nombre del Banco</label>' +
+          '<input type="text" data-field="banco" placeholder="Ej: BBVA, Banorte..." style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text);box-sizing:border-box">' +
+        '</div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:8px">' +
+        '<div style="flex:1">' +
+          '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Tipo de monto</label>' +
+          '<select data-field="monto_tipo" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
+            '<option value="fijo">$ Monto fijo</option>' +
+            '<option value="porcentaje">% Porcentaje</option>' +
+          '</select>' +
+        '</div>' +
+        '<div style="flex:1">' +
+          '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Valor *</label>' +
+          '<input type="number" data-field="monto" placeholder="0.00" step="0.01" min="0" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text);box-sizing:border-box">' +
+        '</div>' +
+      '</div>' +
+      '<div>' +
+        '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Descripción del pago</label>' +
+        '<input type="text" data-field="descripcion" placeholder="Ej: Deposito quincenal, comision marzo..." style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text);box-sizing:border-box">' +
+      '</div>' +
+    '</div>';
+  container.appendChild(div);
+}
+
+function tkModalRemovePago(idx){
+  const el = document.getElementById('tk-m-pago-' + idx);
+  if(el) el.remove();
+  tkModalRenumberPagos();
+}
+
+function tkModalRenumberPagos(){
+  const cards = document.querySelectorAll('#tk-f-pagos-container .tk-m-pago');
+  cards.forEach((card, i) => {
+    const num = card.querySelector('span');
+    if(num) num.textContent = 'Pago ' + (i + 1);
+    // First card can't be deleted
+    const del = card.querySelector('button[title="Eliminar pago"]');
+    if(i === 0 && del) del.remove();
+    if(i > 0 && !del){
+      const id = card.id.replace('tk-m-pago-','');
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.title = 'Eliminar pago';
+      btn.style.cssText = 'position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;width:auto';
+      btn.textContent = '✕';
+      btn.onclick = function(){ tkModalRemovePago(id); };
+      card.appendChild(btn);
+    }
+  });
+}
+
+function tkModalToggleBanco(sel){
+  const card = sel.closest('.tk-m-pago');
+  const bancoField = card.querySelector('.tk-m-banco-field');
+  if(bancoField) bancoField.style.display = sel.value === 'banco' ? '' : 'none';
+}
+
+function _tkModalCollectPagos(){
+  const cards = document.querySelectorAll('#tk-f-pagos-container .tk-m-pago');
+  const pagos = [];
+  let valid = true;
+  cards.forEach(card => {
+    const tipo = card.querySelector('[data-field="tipo"]').value;
+    const banco = (card.querySelector('[data-field="banco"]') || {}).value || '';
+    const monto_tipo = card.querySelector('[data-field="monto_tipo"]').value;
+    const monto = parseFloat(card.querySelector('[data-field="monto"]').value);
+    const descripcion = (card.querySelector('[data-field="descripcion"]') || {}).value || '';
+    if(isNaN(monto) || monto <= 0){ valid = false; return; }
+    pagos.push({
+      tipo,
+      banco: tipo === 'banco' ? banco.trim() : '',
+      monto_tipo,
+      monto,
+      descripcion: descripcion.trim()
+    });
+  });
+  return valid ? pagos : null;
 }
 
 function openNewTicketModal(){
@@ -135,9 +263,12 @@ function openNewTicketModal(){
   document.getElementById('tk-f-asunto').value = '';
   document.getElementById('tk-f-desc').value = '';
   document.getElementById('tk-f-prioridad').value = 'media';
-  document.getElementById('tk-f-monto').value = '';
-  document.getElementById('tk-f-ref').value = '';
   document.getElementById('tk-f-cliente').value = '';
+  // Reset pagos
+  const container = document.getElementById('tk-f-pagos-container');
+  if(container) container.innerHTML = '';
+  _tkModalPagoIdx = 0;
+  tkModalAddPago(); // start with one payment line
   document.getElementById('tk-new-modal').style.display = 'flex';
 }
 
@@ -150,6 +281,9 @@ function saveTkPago(){
   const asunto = document.getElementById('tk-f-asunto').value.trim();
   if(!cliente || !asunto){ toast('⚠️ Cliente y Asunto son obligatorios'); return; }
 
+  const pagos = _tkModalCollectPagos();
+  if(!pagos || pagos.length === 0){ toast('⚠️ Agrega al menos un pago con monto válido'); return; }
+
   const tickets = _tkLoad();
   const maxId = tickets.reduce((mx,t) => Math.max(mx, Number(t.id)||0), 0);
 
@@ -159,8 +293,7 @@ function saveTkPago(){
     asunto,
     descripcion: document.getElementById('tk-f-desc').value.trim(),
     prioridad: document.getElementById('tk-f-prioridad').value,
-    monto: parseFloat(document.getElementById('tk-f-monto').value) || null,
-    referencia: document.getElementById('tk-f-ref').value.trim(),
+    pagos,
     estado: 'abierto',
     leido: true,
     origen: 'interno',
@@ -228,7 +361,7 @@ function changeTkStatus(id){
 }
 
 // ═══════════════════════════════════════
-// DETALLE DE TICKET
+// DETALLE DE TICKET (con desglose de pagos)
 // ═══════════════════════════════════════
 function openTkDetail(id){
   const tickets = _tkLoad();
@@ -249,6 +382,47 @@ function openTkDetail(id){
   const origenLabels = {cliente:'Externo (cliente)',interno:'Interno'};
   const fmt = n => typeof n === 'number' ? '$' + n.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2}) : '—';
 
+  // Build pagos table
+  let pagosHTML = '';
+  if(Array.isArray(t.pagos) && t.pagos.length){
+    const tipoLabels = { banco:'🏦 Banco', tarjetas_centum:'💳 Tarjetas Centum' };
+    pagosHTML = `
+      <div style="margin-top:14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text);margin-bottom:6px">💳 Pagos (${t.pagos.length})</div>
+      <div style="border:1px solid var(--border2);border-radius:var(--r);overflow:hidden">
+        <table style="width:100%;border-collapse:collapse;font-size:.7rem">
+          <thead>
+            <tr style="background:var(--bg)">
+              <th style="text-align:left;padding:6px 8px;font-weight:600;color:var(--muted);font-size:.62rem;text-transform:uppercase">#</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600;color:var(--muted);font-size:.62rem;text-transform:uppercase">Destino</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600;color:var(--muted);font-size:.62rem;text-transform:uppercase">Banco</th>
+              <th style="text-align:right;padding:6px 8px;font-weight:600;color:var(--muted);font-size:.62rem;text-transform:uppercase">Monto</th>
+              <th style="text-align:left;padding:6px 8px;font-weight:600;color:var(--muted);font-size:.62rem;text-transform:uppercase">Descripción</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${t.pagos.map((p, i) => {
+              const montoStr = p.monto_tipo === 'porcentaje' ? p.monto + '%' : fmt(p.monto);
+              const tipoLabel = tipoLabels[p.tipo] || p.tipo;
+              return `<tr style="border-top:1px solid var(--border2)">
+                <td style="padding:6px 8px;color:var(--muted)">${i+1}</td>
+                <td style="padding:6px 8px;font-weight:600">${tipoLabel}</td>
+                <td style="padding:6px 8px">${p.banco || '—'}</td>
+                <td style="padding:6px 8px;text-align:right;font-weight:600;color:${p.monto_tipo==='porcentaje'?'#ff9800':'var(--text)'}">${montoStr}</td>
+                <td style="padding:6px 8px;color:var(--muted)">${p.descripcion || '—'}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>`;
+  } else if(typeof t.monto === 'number'){
+    // Legacy single monto
+    pagosHTML = `
+      <div style="margin-top:14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text);margin-bottom:6px">💳 Pago</div>
+      <div style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:.75rem;background:var(--bg)">
+        <span style="font-weight:600">${fmt(t.monto)}</span>${t.referencia ? ` · Ref: ${t.referencia}` : ''}
+      </div>`;
+  }
+
   const overlay = document.getElementById('confirm-overlay');
   const msg = document.getElementById('confirm-msg');
   const okBtn = document.getElementById('confirm-ok');
@@ -261,13 +435,12 @@ function openTkDetail(id){
       <div style="color:var(--muted);font-weight:600">Asunto:</div><div>${t.asunto}</div>
       <div style="color:var(--muted);font-weight:600">Estado:</div><div>${statusLabels[t.estado]||t.estado}</div>
       <div style="color:var(--muted);font-weight:600">Prioridad:</div><div>${priorLabels[t.prioridad]||t.prioridad}</div>
-      <div style="color:var(--muted);font-weight:600">Monto:</div><div>${fmt(t.monto)}</div>
-      <div style="color:var(--muted);font-weight:600">Referencia:</div><div>${t.referencia||'—'}</div>
       <div style="color:var(--muted);font-weight:600">Origen:</div><div>${origenLabels[t.origen]||'—'}</div>
       <div style="color:var(--muted);font-weight:600">Creado:</div><div>${new Date(t.creado).toLocaleString('es-MX')}</div>
       <div style="color:var(--muted);font-weight:600">Actualizado:</div><div>${new Date(t.actualizado).toLocaleString('es-MX')}</div>
     </div>
-    ${t.descripcion ? `<div style="margin-top:10px;font-size:.73rem;padding:8px;background:var(--bg);border-radius:var(--r)">${t.descripcion}</div>` : ''}`;
+    ${t.descripcion ? `<div style="margin-top:10px;font-size:.73rem;padding:8px;background:var(--bg);border-radius:var(--r)">${t.descripcion}</div>` : ''}
+    ${pagosHTML}`;
 
   okBtn.textContent = 'Cerrar';
   okBtn.style.background = 'var(--blue)';
