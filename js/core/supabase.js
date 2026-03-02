@@ -17,7 +17,8 @@ const CLIENT_ID = localStorage.getItem('_vmcr_client_id') ||
 const APP_KEYS = [
   'vmcr4','vmcr_fi','vmcr_fg','vmcr_cred_end','vmcr_cred_dyn',
   'vmcr_cc_hist','vmcr_usuarios','vmcr_theme','vmcr_tesoreria',
-  'vmcr_bancos','vmcr_tpv_pagos','vmcr_cat_cd','vmcr_cat_ga'
+  'vmcr_bancos','vmcr_tpv_pagos','vmcr_cat_cd','vmcr_cat_ga',
+  'vmcr_tickets_pagos_tpv'
 ];
 
 // Estado de sync
@@ -158,6 +159,8 @@ function _refreshAppState() {
     if (v && typeof render === 'function') {
       render(v.id.replace('view-', ''));
     }
+    // Update ticket badge on sync
+    if (typeof _tkUpdateBadge === 'function') _tkUpdateBadge();
   } catch (e) {
     console.warn('[SB] _refreshAppState error:', e);
   }
@@ -243,6 +246,7 @@ async function initApp() {
     renderReg();
     sv('inicio', null);
     if (typeof updateToggleBtn === 'function') updateToggleBtn();
+    if (typeof _tkUpdateBadge === 'function') _tkUpdateBadge();
   } catch (e) {
     console.error('[initApp] Error en secuencia de init:', e);
   }

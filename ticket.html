@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grupo Financiero — Enviar Ticket</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    :root{--blue:#0073ea;--green:#00b875;--red:#e53935;--purple:#9c27b0;--text:#23243a;--muted:#8b8fb5;--bg:#f0f2f8;--white:#fff;--border:#e4e8f4;--r:8px;--rlg:14px}
+    body{font-family:'Figtree',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+    .card{background:var(--white);border-radius:var(--rlg);box-shadow:0 4px 24px rgba(0,0,0,.08);max-width:520px;width:100%;padding:32px 28px;position:relative}
+    .logo{text-align:center;margin-bottom:20px}
+    .logo img{width:50px;height:50px;object-fit:contain;margin-bottom:8px}
+    .logo h1{font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700;color:var(--text)}
+    .logo p{font-size:.72rem;color:var(--muted);margin-top:2px}
+    label{display:block;font-size:.7rem;font-weight:600;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.3px}
+    input,select,textarea{width:100%;padding:9px 12px;border-radius:var(--r);border:1px solid var(--border);font-size:.8rem;font-family:'Figtree',sans-serif;color:var(--text);background:var(--white);transition:border-color .2s}
+    input:focus,select:focus,textarea:focus{outline:none;border-color:var(--blue)}
+    textarea{resize:vertical;min-height:70px}
+    .row{display:flex;gap:12px}
+    .row>div{flex:1}
+    .field{margin-bottom:14px}
+    .btn{width:100%;padding:11px;border:none;border-radius:var(--r);background:var(--blue);color:#fff;font-size:.82rem;font-weight:600;cursor:pointer;font-family:'Figtree',sans-serif;transition:opacity .2s}
+    .btn:hover{opacity:.9}
+    .btn:disabled{opacity:.5;cursor:not-allowed}
+    .err{color:var(--red);font-size:.72rem;text-align:center;margin-bottom:10px;display:none}
+    .success{display:none;text-align:center;padding:30px 20px}
+    .success .ico{font-size:3rem;margin-bottom:12px}
+    .success h2{font-family:'Poppins',sans-serif;font-size:1rem;margin-bottom:6px}
+    .success .num{color:var(--purple);font-size:1.4rem;font-weight:700;margin:8px 0}
+    .success p{color:var(--muted);font-size:.75rem;line-height:1.5}
+    .success .btn{margin-top:16px;background:var(--purple)}
+    .req{color:var(--red)}
+    @media(max-width:480px){.card{padding:24px 18px}.row{flex-direction:column;gap:0}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- FORM -->
+    <div id="tk-form">
+      <div class="logo">
+        <div style="font-size:2rem">🎫</div>
+        <h1>Enviar Ticket</h1>
+        <p>Grupo Financiero — Pagos TPV</p>
+      </div>
+
+      <div class="err" id="tk-err"></div>
+
+      <div class="field">
+        <label>Empresa <span class="req">*</span></label>
+        <select id="pub-cliente">
+          <option value="">Cargando empresas...</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label>Asunto <span class="req">*</span></label>
+        <input type="text" id="pub-asunto" placeholder="Ej: Pago no reflejado en terminal">
+      </div>
+
+      <div class="field">
+        <label>Descripcion</label>
+        <textarea id="pub-desc" placeholder="Describe el problema o situacion con detalle..."></textarea>
+      </div>
+
+      <div class="row">
+        <div class="field">
+          <label>Prioridad</label>
+          <select id="pub-prioridad">
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Monto (MXN)</label>
+          <input type="number" id="pub-monto" placeholder="0.00" step="0.01">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Referencia de Pago</label>
+        <input type="text" id="pub-ref" placeholder="No. de referencia, folio o transaccion">
+      </div>
+
+      <button class="btn" id="tk-submit-btn" onclick="submitTicket()">Enviar Ticket</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div class="success" id="tk-success">
+      <div class="ico">✅</div>
+      <h2>Ticket enviado correctamente</h2>
+      <div class="num" id="tk-success-num">#000</div>
+      <p>Tu ticket ha sido recibido y sera atendido a la brevedad. Guarda tu numero de referencia para seguimiento.</p>
+      <button class="btn" onclick="resetForm()">Enviar otro ticket</button>
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = 'https://ofuzwfiqjvlronulhwbw.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mdXp3ZmlxanZscm9udWxod2J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTQ4NDcsImV4cCI6MjA4NzYzMDg0N30.Ftw2fNM9pLxm09odMa_-zUM7YStK93lMkffZKLnxUMU';
+    const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    const TK_KEY = 'vmcr_tickets_pagos_tpv';
+
+    // ── Load clients for dropdown ──
+    async function loadClients(){
+      const sel = document.getElementById('pub-cliente');
+      try {
+        const { data, error } = await _sb.from('tpv_clients')
+          .select('id, nombre, nombre_display')
+          .order('nombre');
+        if(error) throw error;
+        sel.innerHTML = '<option value="">— Selecciona tu empresa —</option>' +
+          (data||[]).map(c => {
+            const display = c.nombre_display || c.nombre;
+            return '<option value="' + display + '">' + display + '</option>';
+          }).join('');
+      } catch(e){
+        console.error('[ticket] loadClients:', e);
+        sel.innerHTML = '<option value="">— Error cargando empresas —</option>';
+      }
+    }
+
+    // ── Show/hide error ──
+    function showErr(msg){
+      const el = document.getElementById('tk-err');
+      el.textContent = msg;
+      el.style.display = msg ? 'block' : 'none';
+    }
+
+    // ── Submit ticket ──
+    async function submitTicket(){
+      showErr('');
+      const cliente = document.getElementById('pub-cliente').value;
+      const asunto = document.getElementById('pub-asunto').value.trim();
+      if(!cliente){ showErr('Selecciona tu empresa'); return; }
+      if(!asunto){ showErr('Escribe un asunto para el ticket'); return; }
+
+      const btn = document.getElementById('tk-submit-btn');
+      btn.disabled = true;
+      btn.textContent = 'Enviando...';
+
+      try {
+        // 1. Read current tickets from Supabase
+        const { data: row, error: readErr } = await _sb
+          .from('app_data')
+          .select('value')
+          .eq('key', TK_KEY)
+          .maybeSingle();
+
+        let tickets = [];
+        if(!readErr && row && row.value){
+          tickets = Array.isArray(row.value) ? row.value : [];
+        }
+
+        // 2. Generate next ID
+        const maxId = tickets.reduce(function(mx,t){ return Math.max(mx, Number(t.id)||0); }, 0);
+
+        // 3. Build ticket
+        var ticket = {
+          id: String(maxId + 1).padStart(3, '0'),
+          cliente: cliente,
+          asunto: asunto,
+          descripcion: document.getElementById('pub-desc').value.trim(),
+          prioridad: document.getElementById('pub-prioridad').value || 'media',
+          monto: parseFloat(document.getElementById('pub-monto').value) || null,
+          referencia: document.getElementById('pub-ref').value.trim(),
+          estado: 'pendiente',
+          leido: false,
+          origen: 'cliente',
+          creado: new Date().toISOString(),
+          actualizado: new Date().toISOString(),
+          notas: []
+        };
+
+        tickets.push(ticket);
+
+        // 4. Write back to Supabase
+        const { error: writeErr } = await _sb
+          .from('app_data')
+          .upsert({
+            key: TK_KEY,
+            value: tickets,
+            updated_at: new Date().toISOString(),
+            updated_by: 'public_form'
+          });
+
+        if(writeErr) throw writeErr;
+
+        // 5. Show success
+        document.getElementById('tk-success-num').textContent = '#' + ticket.id;
+        document.getElementById('tk-form').style.display = 'none';
+        document.getElementById('tk-success').style.display = 'block';
+
+      } catch(e){
+        console.error('[ticket] submit:', e);
+        showErr('Error al enviar. Intenta de nuevo en unos segundos.');
+      } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enviar Ticket';
+      }
+    }
+
+    // ── Reset for another ticket ──
+    function resetForm(){
+      document.getElementById('tk-form').style.display = 'block';
+      document.getElementById('tk-success').style.display = 'none';
+      document.getElementById('pub-asunto').value = '';
+      document.getElementById('pub-desc').value = '';
+      document.getElementById('pub-prioridad').value = 'media';
+      document.getElementById('pub-monto').value = '';
+      document.getElementById('pub-ref').value = '';
+      document.getElementById('pub-cliente').value = '';
+      showErr('');
+    }
+
+    // ── Init ──
+    loadClients();
+  </script>
+</body>
+</html>

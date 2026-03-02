@@ -280,6 +280,13 @@ async function _inicioAlertas() {
       if(pagosVencidos>0) alertas.push({ icon:'🚨', text:`${pagosVencidos} pagos vencidos por ${typeof fmtK==='function'?fmtK(montoVencido):'$'+montoVencido} total`, color:'var(--red)', action:"openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
     } catch(e){ console.warn('[Inicio] Cobranza alertas error:',e); }
 
+    // 7. Tickets pendientes de lectura
+    try {
+      const tkData = DB.get('vmcr_tickets_pagos_tpv') || [];
+      const tkPend = tkData.filter(t => t.leido === false).length;
+      if(tkPend > 0) alertas.push({ icon:'🎫', text:`${tkPend} ticket${tkPend>1?'s':''} pendiente${tkPend>1?'s':''} de lectura`, color:'#9c27b0', action:"openMenu('tickets',document.getElementById('mi-tickets'),'tk_pagos_tpv')" });
+    } catch(e){ console.warn('[Inicio] Tickets alertas error:',e); }
+
   } catch (e) { console.warn('[Inicio] Alertas error:', e); }
 
   // Render alertas
