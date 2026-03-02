@@ -62,6 +62,7 @@ async function doLogin(){
   try{ await initApp(); }catch(e){ console.error('[login] initApp falló:', e); }
   applyRoleRestrictions();
   applyMenuPermissions();
+  if (typeof initAIChat === 'function') initAIChat();
 }
 
 // ── Logout ──

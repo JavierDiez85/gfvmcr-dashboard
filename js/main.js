@@ -26,6 +26,9 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     applyRoleRestrictions();
     applyMenuPermissions();
+
+    // AI Chat assistant
+    if (typeof initAIChat === 'function') initAIChat();
   } else {
     // No hay sesión → ocultar loader, mostrar login
     const loader = document.getElementById('app-loader');
