@@ -513,13 +513,22 @@ async function _chatBuildContext() {
     const credDyn = DB.get('vmcr_cred_dyn') || [];
     if (credEnd.length || credDyn.length) {
       lines.push('\nCRÉDITOS:');
+      const _isActivo = c => c.st === 'Activo' || c.status === 'Activo' || c.estado === 'Activo';
       if (credEnd.length) {
-        const endAct = credEnd.filter(c => c.status === 'Activo' || c.estado === 'Activo').length;
-        lines.push('  Endless: ' + credEnd.length + ' créditos (' + endAct + ' activos)');
+        const activos = credEnd.filter(_isActivo);
+        const totalMonto = activos.reduce((s, c) => s + (Number(c.monto) || 0), 0);
+        lines.push('  Endless: ' + credEnd.length + ' créditos (' + activos.length + ' activos), cartera $' + totalMonto.toLocaleString('es-MX'));
+        activos.forEach(c => {
+          lines.push('    ' + (c.cl || '?') + ': $' + (Number(c.monto) || 0).toLocaleString('es-MX') + ', tasa ' + (c.tasa || '?') + '%, ' + (c.tipo || '') + ' ' + (c.plazo || '?') + ' meses');
+        });
       }
       if (credDyn.length) {
-        const dynAct = credDyn.filter(c => c.status === 'Activo' || c.estado === 'Activo').length;
-        lines.push('  Dynamo: ' + credDyn.length + ' créditos (' + dynAct + ' activos)');
+        const activos = credDyn.filter(_isActivo);
+        const totalMonto = activos.reduce((s, c) => s + (Number(c.monto) || 0), 0);
+        lines.push('  Dynamo: ' + credDyn.length + ' créditos (' + activos.length + ' activos), cartera $' + totalMonto.toLocaleString('es-MX'));
+        activos.forEach(c => {
+          lines.push('    ' + (c.cl || '?') + ': $' + (Number(c.monto) || 0).toLocaleString('es-MX') + ', tasa ' + (c.tasa || '?') + '%, ' + (c.tipo || '') + ' ' + (c.plazo || '?') + ' meses');
+        });
       }
     }
   } catch (e) {}
