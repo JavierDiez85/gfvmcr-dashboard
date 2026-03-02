@@ -3897,7 +3897,7 @@
 
 <!-- ── Modal: Nuevo Ticket Pagos TPV ── -->
 <div id="tk-new-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9990;align-items:center;justify-content:center">
-  <div style="background:var(--white);border-radius:var(--rlg);padding:24px 28px;max-width:520px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto">
+  <div style="background:var(--white);border-radius:var(--rlg);padding:24px 28px;max-width:580px;width:94%;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div style="font-weight:700;font-size:.9rem">🎫 Nuevo Ticket — Pagos TPV</div>
       <span onclick="closeTkModal()" style="cursor:pointer;font-size:1.1rem;color:var(--muted)">✕</span>
@@ -3914,27 +3914,25 @@
         <input type="text" id="tk-f-asunto" placeholder="Descripción breve del problema" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
       </div>
       <div>
-        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Descripción</label>
-        <textarea id="tk-f-desc" rows="3" placeholder="Detalles adicionales del ticket..." style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;resize:vertical;background:var(--white);color:var(--text);box-sizing:border-box"></textarea>
-      </div>
-      <div style="display:flex;gap:10px">
-        <div style="flex:1">
-          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Prioridad</label>
-          <select id="tk-f-prioridad" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
-            <option value="media">Media</option>
-            <option value="alta">Alta</option>
-            <option value="baja">Baja</option>
-          </select>
-        </div>
-        <div style="flex:1">
-          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Monto (MXN)</label>
-          <input type="number" id="tk-f-monto" placeholder="0.00" step="0.01" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
-        </div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Descripción general</label>
+        <textarea id="tk-f-desc" rows="2" placeholder="Detalles adicionales del ticket (opcional)..." style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;resize:vertical;background:var(--white);color:var(--text);box-sizing:border-box"></textarea>
       </div>
       <div>
-        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Referencia de Pago</label>
-        <input type="text" id="tk-f-ref" placeholder="No. de referencia o folio" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Prioridad</label>
+        <select id="tk-f-prioridad" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
+          <option value="media">Media</option>
+          <option value="alta">Alta</option>
+          <option value="baja">Baja</option>
+        </select>
       </div>
+
+      <!-- Pagos section -->
+      <div style="font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.4px;margin-top:6px;padding-bottom:6px;border-bottom:2px solid var(--border2);display:flex;align-items:center;gap:6px;color:var(--text)">💳 Pagos <span style="font-weight:400;color:var(--muted);font-size:.62rem;text-transform:none">(agrega uno o mas)</span></div>
+
+      <div id="tk-f-pagos-container"></div>
+
+      <button type="button" onclick="tkModalAddPago()" style="width:100%;padding:8px;border:2px dashed var(--border2);border-radius:var(--r);background:transparent;color:var(--blue);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s">+ Agregar otro pago</button>
+
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
         <button class="btn btn-out" style="font-size:.72rem" onclick="closeTkModal()">Cancelar</button>
         <button class="btn" style="font-size:.72rem" onclick="saveTkPago()">Guardar Ticket</button>
