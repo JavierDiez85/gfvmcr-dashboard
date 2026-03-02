@@ -343,7 +343,7 @@ async function _chatBuildContext() {
       ]);
 
       const totalTxns = totalCount.count || 0;
-      lines.push('\n═══ TRANSACCIONES TPV (Supabase en vivo) ═══');
+      lines.push('\n═══ TERMINALES PUNTO DE VENTA (TPV) ═══');
       lines.push('Total histórico: ' + totalTxns.toLocaleString() + ' transacciones');
       lines.push('Clientes configurados: ' + (clientCount.count || 0));
 
@@ -431,23 +431,55 @@ async function _chatBuildContext() {
   // LOCALSTORAGE: Tickets, P&L, Créditos, etc.
   // ══════════════════════════════════════
 
-  // ── Tickets ──
+  // ── Tickets (detallado) ──
   try {
     const tickets = DB.get('vmcr_tickets_pagos_tpv') || [];
     if (tickets.length) {
+      lines.push('\n═══ TICKETS ═══');
       const byStatus = {};
+      let montoTotalFijo = 0, montoTotalPct = 0;
       tickets.forEach(t => {
         const st = t.estado || 'sin_estado';
         byStatus[st] = (byStatus[st] || 0) + 1;
+        if (Array.isArray(t.pagos)) {
+          t.pagos.forEach(p => {
+            if (p.monto_tipo === 'porcentaje') montoTotalPct += (Number(p.monto) || 0);
+            else montoTotalFijo += (Number(p.monto) || 0);
+          });
+        } else if (t.monto) {
+          montoTotalFijo += Number(t.monto) || 0;
+        }
       });
       const statusStr = Object.entries(byStatus).map(([k, v]) => v + ' ' + k).join(', ');
-      lines.push('\nTICKETS (' + tickets.length + ' total): ' + statusStr);
+      lines.push('Total: ' + tickets.length + ' tickets (' + statusStr + ')');
+      lines.push('Monto total en tickets: $' + montoTotalFijo.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + (montoTotalPct ? ' + porcentajes aplicados' : ''));
+
+      // Abiertos y pendientes primero
+      const abiertos = tickets.filter(t => t.estado === 'abierto' || t.estado === 'pendiente' || t.estado === 'aprobado');
+      if (abiertos.length) {
+        lines.push('Tickets activos (' + abiertos.length + '):');
+        abiertos.forEach(t => {
+          let montoStr = '';
+          if (Array.isArray(t.pagos) && t.pagos.length) {
+            const parts = [];
+            t.pagos.forEach(p => {
+              if (p.monto_tipo === 'porcentaje') parts.push(p.monto + '% ' + (p.concepto || ''));
+              else parts.push('$' + Number(p.monto).toLocaleString('es-MX') + ' ' + (p.concepto || ''));
+            });
+            montoStr = parts.join(' + ');
+          } else if (t.monto) {
+            montoStr = '$' + Number(t.monto).toLocaleString('es-MX');
+          }
+          lines.push('  #' + (t.id || '?') + ' | ' + (t.estado || '?') + ' | ' + (t.asunto || t.cliente || '?') + ' | ' + montoStr + (t.fecha ? ' | ' + t.fecha : ''));
+        });
+      }
+
+      // Últimos 5 más recientes
       const recent = tickets.slice(-5);
-      lines.push('Últimos 5:');
+      lines.push('Últimos 5 creados:');
       recent.forEach(t => {
-        const pagosCount = Array.isArray(t.pagos) ? t.pagos.length : 0;
         let montoStr = '';
-        if (pagosCount) {
+        if (Array.isArray(t.pagos) && t.pagos.length) {
           let fijo = 0, pcts = 0;
           t.pagos.forEach(p => {
             if (p.monto_tipo === 'porcentaje') pcts += (Number(p.monto) || 0);
@@ -458,109 +490,313 @@ async function _chatBuildContext() {
         } else if (t.monto) {
           montoStr = '$' + Number(t.monto).toLocaleString('es-MX');
         }
-        lines.push('  #' + (t.id || '?') + ' | ' + (t.asunto || t.cliente || '?') + ' | ' + (t.estado || '?') + ' | ' + montoStr);
+        lines.push('  #' + (t.id || '?') + ' | ' + (t.asunto || t.cliente || '?') + ' | ' + (t.estado || '?') + ' | ' + montoStr + (t.fecha ? ' | ' + t.fecha : ''));
       });
     } else {
       lines.push('\nTICKETS: 0');
     }
   } catch (e) {}
 
-  // ── P&L Records ──
+  // ── P&L Records (con desglose mensual) ──
   try {
     const recs = DB.get('vmcr4') || [];
     if (recs.length) {
-      lines.push('\nREGISTROS P&L: ' + recs.length + ' transacciones');
+      lines.push('\n═══ ESTADO DE RESULTADOS (P&L) ═══');
+      lines.push('Total: ' + recs.length + ' transacciones registradas');
+
+      // Por entidad
       const ents = {};
+      let grandIng = 0, grandGas = 0;
       recs.forEach(r => {
         const ent = r.ent || r.empresa || 'otro';
-        if (!ents[ent]) ents[ent] = { ing: 0, gas: 0, n: 0 };
+        if (!ents[ent]) ents[ent] = { ing: 0, gas: 0, n: 0, byMonth: {} };
         ents[ent].n++;
-        if (r.tipo === 'ingreso') ents[ent].ing += (Number(r.monto) || 0);
-        else ents[ent].gas += (Number(r.monto) || 0);
+        const m = Number(r.monto) || 0;
+        if (r.tipo === 'ingreso') { ents[ent].ing += m; grandIng += m; }
+        else { ents[ent].gas += m; grandGas += m; }
+
+        // Desglose mensual
+        const mes = r.mes || r.month || r.fecha?.slice(0, 7) || '?';
+        if (!ents[ent].byMonth[mes]) ents[ent].byMonth[mes] = { ing: 0, gas: 0 };
+        if (r.tipo === 'ingreso') ents[ent].byMonth[mes].ing += m;
+        else ents[ent].byMonth[mes].gas += m;
       });
+
+      lines.push('CONSOLIDADO: ingresos $' + grandIng.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ', gastos $' + grandGas.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ', utilidad $' + (grandIng - grandGas).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+
       Object.entries(ents).forEach(([ent, d]) => {
-        lines.push('  ' + ent + ': ' + d.n + ' ops, ingresos $' + d.ing.toLocaleString('es-MX') + ', gastos $' + d.gas.toLocaleString('es-MX'));
+        const utilidad = d.ing - d.gas;
+        const margen = d.ing ? ((utilidad / d.ing) * 100).toFixed(1) : '0';
+        lines.push('  ' + ent + ': ' + d.n + ' ops | ingresos $' + d.ing.toLocaleString('es-MX') + ' | gastos $' + d.gas.toLocaleString('es-MX') + ' | utilidad $' + utilidad.toLocaleString('es-MX') + ' (' + margen + '% margen)');
+
+        // Top meses con más actividad
+        const meses = Object.entries(d.byMonth).sort((a, b) => (b[1].ing + b[1].gas) - (a[1].ing + a[1].gas)).slice(0, 3);
+        if (meses.length > 1) {
+          meses.forEach(([mes, md]) => {
+            lines.push('    ' + mes + ': ing $' + md.ing.toLocaleString('es-MX') + ', gas $' + md.gas.toLocaleString('es-MX') + ', util $' + (md.ing - md.gas).toLocaleString('es-MX'));
+          });
+        }
       });
     }
   } catch (e) {}
 
-  // ── Flujos ──
+  // ── Flujos (con desglose mensual) ──
   try {
     const fi = DB.get('vmcr_fi') || {};
     const fg = DB.get('vmcr_fg') || {};
     const fiEnts = Object.keys(fi).length;
     const fgEnts = Object.keys(fg).length;
     if (fiEnts || fgEnts) {
-      lines.push('\nFLUJOS: ingresos en ' + fiEnts + ' entidades, gastos en ' + fgEnts + ' entidades');
+      lines.push('\n═══ FLUJOS DE EFECTIVO ═══');
+      const meses = ['Ene', 'Feb', 'Mar', 'Abr', 'May', 'Jun', 'Jul', 'Ago', 'Sep', 'Oct', 'Nov', 'Dic'];
+      let grandIng = 0, grandGas = 0;
+
       Object.entries(fi).forEach(([ent, data]) => {
         if (Array.isArray(data)) {
           const total = data.reduce((s, v) => s + (Number(v) || 0), 0);
-          if (total) lines.push('  Ingreso ' + ent + ': $' + total.toLocaleString('es-MX') + ' anual');
+          grandIng += total;
+          if (total) {
+            lines.push('  Ingreso ' + ent + ': $' + total.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' anual');
+            // Mostrar meses con actividad
+            const mesConDato = data.map((v, i) => ({ mes: meses[i], val: Number(v) || 0 })).filter(m => m.val > 0);
+            if (mesConDato.length) {
+              lines.push('    ' + mesConDato.map(m => m.mes + ': $' + m.val.toLocaleString('es-MX')).join(' | '));
+            }
+          }
         }
       });
+
       Object.entries(fg).forEach(([ent, data]) => {
         if (Array.isArray(data)) {
           const total = data.reduce((s, v) => s + (Number(v) || 0), 0);
-          if (total) lines.push('  Gasto ' + ent + ': $' + total.toLocaleString('es-MX') + ' anual');
+          grandGas += total;
+          if (total) {
+            lines.push('  Gasto ' + ent + ': $' + total.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' anual');
+            const mesConDato = data.map((v, i) => ({ mes: meses[i], val: Number(v) || 0 })).filter(m => m.val > 0);
+            if (mesConDato.length) {
+              lines.push('    ' + mesConDato.map(m => m.mes + ': $' + m.val.toLocaleString('es-MX')).join(' | '));
+            }
+          }
         }
       });
+
+      lines.push('  TOTAL FLUJOS: ingresos $' + grandIng.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ', gastos $' + grandGas.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ', neto $' + (grandIng - grandGas).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
     }
   } catch (e) {}
 
-  // ── Créditos ──
+  // ── Créditos (con ganancias calculadas) ──
   try {
     const credEnd = DB.get('vmcr_cred_end') || [];
     const credDyn = DB.get('vmcr_cred_dyn') || [];
     if (credEnd.length || credDyn.length) {
-      lines.push('\nCRÉDITOS:');
+      lines.push('\n═══ CRÉDITOS ═══');
       const _isActivo = c => c.st === 'Activo' || c.status === 'Activo' || c.estado === 'Activo';
-      if (credEnd.length) {
-        const activos = credEnd.filter(_isActivo);
-        const totalMonto = activos.reduce((s, c) => s + (Number(c.monto) || 0), 0);
-        lines.push('  Endless: ' + credEnd.length + ' créditos (' + activos.length + ' activos), cartera $' + totalMonto.toLocaleString('es-MX'));
-        activos.forEach(c => {
-          lines.push('    ' + (c.cl || '?') + ': $' + (Number(c.monto) || 0).toLocaleString('es-MX') + ', tasa ' + (c.tasa || '?') + '%, ' + (c.tipo || '') + ' ' + (c.plazo || '?') + ' meses');
+
+      // Función para analizar un crédito completo
+      const _analizarCredito = (c) => {
+        const monto = Number(c.monto) || 0;
+        const tasa = Number(c.tasa) || 0;
+        const plazo = Number(c.plazo) || 0;
+        const amort = Array.isArray(c.amort) ? c.amort : [];
+        const pagos = Array.isArray(c.pagos) ? c.pagos : [];
+
+        // Totales de la tabla de amortización
+        let intTotal = 0, ivaTotal = 0, capitalTotal = 0, pagoTotalEsperado = 0;
+        amort.forEach(a => {
+          intTotal += Number(a.int) || 0;
+          ivaTotal += Number(a.ivaInt) || 0;
+          capitalTotal += Number(a.capital) || 0;
+          pagoTotalEsperado += Number(a.pago) || 0;
         });
-      }
-      if (credDyn.length) {
-        const activos = credDyn.filter(_isActivo);
-        const totalMonto = activos.reduce((s, c) => s + (Number(c.monto) || 0), 0);
-        lines.push('  Dynamo: ' + credDyn.length + ' créditos (' + activos.length + ' activos), cartera $' + totalMonto.toLocaleString('es-MX'));
-        activos.forEach(c => {
-          lines.push('    ' + (c.cl || '?') + ': $' + (Number(c.monto) || 0).toLocaleString('es-MX') + ', tasa ' + (c.tasa || '?') + '%, ' + (c.tipo || '') + ' ' + (c.plazo || '?') + ' meses');
+
+        // Pagos recibidos
+        const pagosRecibidos = pagos.reduce((s, p) => s + (Number(p.monto) || 0), 0);
+        const periodosTotal = amort.length;
+        const periodosPagados = pagos.length;
+
+        // Interés ganado hasta la fecha (de los periodos pagados)
+        let intGanado = 0, ivaGanado = 0, capitalRecuperado = 0;
+        const periodosPagSet = new Set(pagos.map(p => p.periodo));
+        amort.forEach(a => {
+          if (periodosPagSet.has(a.periodo)) {
+            intGanado += Number(a.int) || 0;
+            ivaGanado += Number(a.ivaInt) || 0;
+            capitalRecuperado += Number(a.capital) || 0;
+          }
         });
-      }
+
+        // Saldo por cobrar
+        const saldoActual = amort.length ? (Number(amort[amort.length - 1].saldo) || 0) : monto;
+        const saldoPorCobrar = pagoTotalEsperado - pagosRecibidos;
+
+        // Próximo pago
+        let proximoPago = null;
+        const hoyStr = new Date().toISOString().slice(0, 10);
+        for (const a of amort) {
+          if (!periodosPagSet.has(a.periodo)) {
+            proximoPago = a;
+            break;
+          }
+        }
+
+        // Comisión
+        const comision = Number(c.com) || 0;
+
+        return {
+          monto, tasa, plazo, intTotal, ivaTotal, capitalTotal, pagoTotalEsperado,
+          pagosRecibidos, periodosTotal, periodosPagados, intGanado, ivaGanado,
+          capitalRecuperado, saldoPorCobrar, comision, proximoPago,
+          pagoFijo: Number(c.pagoFijo) || 0,
+          tipo: c.tipo || '',
+          producto: c.producto || '',
+          disbDate: c.disbDate || '',
+          vencimiento: c.vencimiento || ''
+        };
+      };
+
+      // Analizar cada entidad
+      [['Endless', credEnd], ['Dynamo', credDyn]].forEach(([nombre, arr]) => {
+        if (!arr.length) return;
+        const activos = arr.filter(_isActivo);
+        const liquidados = arr.filter(c => !_isActivo(c));
+        const totalCartera = activos.reduce((s, c) => s + (Number(c.monto) || 0), 0);
+
+        // Totales consolidados de activos
+        let totalIntEsperado = 0, totalIntGanado = 0, totalIvaGanado = 0;
+        let totalPagosRecibidos = 0, totalPagosEsperados = 0;
+        let totalCapRecuperado = 0, totalComisiones = 0;
+
+        lines.push('\n  ' + nombre + ': ' + arr.length + ' créditos (' + activos.length + ' activos, ' + liquidados.length + ' liquidados)');
+        lines.push('  Cartera activa: $' + totalCartera.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+
+        activos.forEach(c => {
+          const a = _analizarCredito(c);
+          totalIntEsperado += a.intTotal;
+          totalIntGanado += a.intGanado;
+          totalIvaGanado += a.ivaGanado;
+          totalPagosRecibidos += a.pagosRecibidos;
+          totalPagosEsperados += a.pagoTotalEsperado;
+          totalCapRecuperado += a.capitalRecuperado;
+          totalComisiones += a.comision;
+
+          lines.push('    • ' + (c.cl || '?') + ': $' + a.monto.toLocaleString('es-MX') + ', tasa ' + a.tasa + '%, ' + a.tipo + ' ' + a.plazo + (a.vencimiento === 'Meses' ? ' meses' : a.vencimiento === 'Trimestres' ? ' trimestres' : ' periodos'));
+          lines.push('      Pago fijo: $' + a.pagoFijo.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' | Desembolso: ' + (a.disbDate || 'N/A'));
+          lines.push('      Amortización: interés total $' + a.intTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ', IVA $' + a.ivaTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+          lines.push('      Pagos: ' + a.periodosPagados + '/' + a.periodosTotal + ' periodos, recibidos $' + a.pagosRecibidos.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' de $' + a.pagoTotalEsperado.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+          lines.push('      Ganancia cobrada: interés $' + a.intGanado.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' + IVA $' + a.ivaGanado.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' = $' + (a.intGanado + a.ivaGanado).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+          lines.push('      Capital recuperado: $' + a.capitalRecuperado.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' | Por cobrar: $' + a.saldoPorCobrar.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+          if (a.comision) lines.push('      Comisión apertura: $' + a.comision.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+          if (a.proximoPago) {
+            lines.push('      Próximo pago: periodo ' + a.proximoPago.periodo + ', $' + (Number(a.proximoPago.pago) || 0).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' (fecha: ' + (a.proximoPago.fecha || 'N/A') + ')');
+          }
+        });
+
+        // Resumen consolidado de la entidad
+        lines.push('  RESUMEN ' + nombre.toUpperCase() + ':');
+        lines.push('    Interés total esperado (vida de créditos): $' + totalIntEsperado.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        lines.push('    Interés ganado (cobrado): $' + totalIntGanado.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        lines.push('    IVA de interés cobrado: $' + totalIvaGanado.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        lines.push('    Total cobrado (pagos): $' + totalPagosRecibidos.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        lines.push('    Capital recuperado: $' + totalCapRecuperado.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        lines.push('    Faltante por cobrar: $' + (totalPagosEsperados - totalPagosRecibidos).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        if (totalComisiones) lines.push('    Comisiones apertura: $' + totalComisiones.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        lines.push('    Ganancia total generada: $' + (totalIntGanado + totalIvaGanado + totalComisiones).toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' (interés + IVA + comisiones)');
+
+        // También analizar liquidados si hay
+        if (liquidados.length) {
+          let liqIntGanado = 0, liqIvaGanado = 0, liqPagosRec = 0, liqComisiones = 0;
+          liquidados.forEach(c => {
+            const a = _analizarCredito(c);
+            liqIntGanado += a.intGanado;
+            liqIvaGanado += a.ivaGanado;
+            liqPagosRec += a.pagosRecibidos;
+            liqComisiones += a.comision;
+          });
+          lines.push('    Liquidados (' + liquidados.length + '): ganancia total $' + (liqIntGanado + liqIvaGanado + liqComisiones).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        }
+      });
     }
   } catch (e) {}
 
-  // ── Tesorería ──
+  // ── Tesorería (detallada) ──
   try {
     const tes = DB.get('vmcr_tesoreria') || [];
     if (tes.length) {
+      lines.push('\n═══ TESORERÍA ═══');
       let totalIng = 0, totalEgr = 0;
+      const byEnt = {};
+      const byCat = {};
       tes.forEach(t => {
         const m = Number(t.monto) || 0;
         if (t.tipo === 'ingreso' || m > 0) totalIng += Math.abs(m);
         else totalEgr += Math.abs(m);
+        // Por entidad
+        const ent = t.ent || t.empresa || t.entidad || 'otro';
+        if (!byEnt[ent]) byEnt[ent] = { ing: 0, egr: 0, n: 0 };
+        byEnt[ent].n++;
+        if (t.tipo === 'ingreso' || m > 0) byEnt[ent].ing += Math.abs(m);
+        else byEnt[ent].egr += Math.abs(m);
+        // Por categoría
+        const cat = t.categoria || t.concepto || t.cat || 'otro';
+        if (!byCat[cat]) byCat[cat] = 0;
+        byCat[cat] += Math.abs(m);
       });
-      lines.push('\nTESORERÍA: ' + tes.length + ' movimientos, ingresos $' + totalIng.toLocaleString('es-MX') + ', egresos $' + totalEgr.toLocaleString('es-MX'));
+      lines.push('Total: ' + tes.length + ' movimientos');
+      lines.push('Ingresos: $' + totalIng.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' | Egresos: $' + totalEgr.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + ' | Neto: $' + (totalIng - totalEgr).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+
+      if (Object.keys(byEnt).length > 1) {
+        lines.push('Por entidad:');
+        Object.entries(byEnt).forEach(([ent, d]) => {
+          lines.push('  ' + ent + ': ' + d.n + ' movs, ing $' + d.ing.toLocaleString('es-MX') + ', egr $' + d.egr.toLocaleString('es-MX'));
+        });
+      }
+
+      // Top categorías de gasto
+      const topCat = Object.entries(byCat).sort((a, b) => b[1] - a[1]).slice(0, 5);
+      if (topCat.length > 1) {
+        lines.push('Top conceptos:');
+        topCat.forEach(([cat, m]) => {
+          lines.push('  ' + cat + ': $' + m.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        });
+      }
     }
   } catch (e) {}
 
-  // ── Bancos ──
+  // ── Bancos (con saldos) ──
   try {
     const bancos = DB.get('vmcr_bancos') || [];
     if (bancos.length) {
-      lines.push('\nBANCOS: ' + bancos.length + ' cuentas (' + bancos.map(b => b.nombre || b.banco || '?').join(', ') + ')');
+      lines.push('\n═══ BANCOS ═══');
+      let totalSaldo = 0;
+      bancos.forEach(b => {
+        const saldo = Number(b.saldo) || Number(b.balance) || 0;
+        totalSaldo += saldo;
+        const nombre = b.nombre || b.banco || '?';
+        const ent = b.ent || b.entidad || b.empresa || '';
+        lines.push('  ' + nombre + (ent ? ' (' + ent + ')' : '') + ': saldo $' + saldo.toLocaleString('es-MX', { minimumFractionDigits: 2 }) + (b.moneda ? ' ' + b.moneda : ' MXN'));
+      });
+      lines.push('  Saldo total bancos: $' + totalSaldo.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
     }
   } catch (e) {}
 
-  // ── Usuarios ──
+  // ── Usuarios (con roles) ──
   try {
     const usuarios = DB.get('vmcr_usuarios') || [];
     if (usuarios.length) {
-      const activos = usuarios.filter(u => u.activo !== false).length;
-      lines.push('\nUSUARIOS: ' + usuarios.length + ' registrados (' + activos + ' activos)');
+      lines.push('\n═══ USUARIOS ═══');
+      const activos = usuarios.filter(u => u.activo !== false);
+      const byRol = {};
+      activos.forEach(u => {
+        const rol = u.rol || 'sin_rol';
+        byRol[rol] = (byRol[rol] || 0) + 1;
+      });
+      lines.push('Total: ' + usuarios.length + ' registrados (' + activos.length + ' activos)');
+      if (Object.keys(byRol).length) {
+        lines.push('Por rol: ' + Object.entries(byRol).map(([r, n]) => n + ' ' + r).join(', '));
+      }
+      activos.forEach(u => {
+        lines.push('  ' + (u.nombre || '?') + ' — ' + (u.rol || '?') + (u.email ? ' (' + u.email + ')' : ''));
+      });
     }
   } catch (e) {}
 

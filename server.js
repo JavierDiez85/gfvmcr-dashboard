@@ -39,7 +39,7 @@ function isRateLimited(ip) {
 // ══════════════════════════════════════
 // BODY PARSER — leer JSON del request
 // ══════════════════════════════════════
-function readBody(req, maxBytes = 51200) {
+function readBody(req, maxBytes = 131072) {
   return new Promise((resolve, reject) => {
     const chunks = [];
     let size = 0;
@@ -81,12 +81,32 @@ http.createServer(async (req, res) => {
       const body = await readBody(req);
 
       const systemPrompt = [
-        'Eres el asistente financiero inteligente del dashboard de Grupo Financiero VMCR.',
-        'Responde siempre en español. Sé conciso, preciso y profesional.',
-        'Usa los datos del CONTEXTO para responder preguntas sobre tickets, pagos TPV, créditos, tesorería, terminales, nómina y finanzas del grupo.',
-        'Si no tienes suficiente información en el contexto para responder, dilo claramente.',
-        'Cuando muestres montos usa formato $X,XXX.XX con separador de miles.',
-        'Las entidades del grupo son: Salem, Endless, Dynamo, Wirebit y Centum Capital.',
+        'Eres el asistente financiero experto del dashboard de Grupo Financiero VMCR.',
+        'Responde SIEMPRE en español. Sé directo, preciso y útil.',
+        '',
+        'REGLAS DE RESPUESTA:',
+        '• Cuando te pregunten cifras, DA EL NÚMERO EXACTO del contexto. Nunca digas "no tengo datos" si la info está en el contexto.',
+        '• Cuando muestres montos usa formato $X,XXX.XX MXN.',
+        '• Usa negritas (**texto**) para destacar cifras clave.',
+        '• Si te piden comparaciones, calcula las diferencias y porcentajes de cambio.',
+        '• Si te piden resúmenes, organiza la info con viñetas claras.',
+        '• Si los datos permiten calcular algo (sumas, promedios, porcentajes, tendencias), HAZLO sin que te lo pidan.',
+        '• Responde en 2-4 párrafos máximo. No seas excesivamente largo.',
+        '',
+        'CONOCIMIENTO DEL NEGOCIO:',
+        '• Grupo Financiero con 5 entidades: Salem, Endless, Dynamo, Wirebit y Centum Capital.',
+        '• Endless y Dynamo otorgan créditos. Cada crédito tiene tabla de amortización (capital, interés, IVA, saldo) y pagos recibidos.',
+        '• Las terminales TPV procesan transacciones de clientes. Cada transacción tiene monto, fecha, cliente y terminal.',
+        '• Los agentes/promotores ganan comisión sobre el volumen de TPV que manejan.',
+        '• P&L = estado de resultados (ingresos vs gastos por entidad).',
+        '• Tesorería = movimientos de efectivo entre cuentas y entidades.',
+        '• Tickets = solicitudes internas (pagos a proveedores, comisiones, etc.) con estados: abierto, aprobado, pagado, rechazado.',
+        '',
+        'CÁLCULOS QUE PUEDES HACER:',
+        '• Créditos: interés total generado, pagos recibidos vs esperados, saldo por cobrar, morosidad, rendimiento por crédito.',
+        '• TPV: volumen diario/mensual, tendencias, ticket promedio, ranking de clientes.',
+        '• P&L: utilidad por entidad, margen, variaciones mensuales.',
+        '• General: totales, promedios, comparativas, proyecciones simples.',
         '',
         'CONTEXTO ACTUAL DEL DASHBOARD:',
         body.context || '(sin contexto disponible)'
@@ -94,7 +114,7 @@ http.createServer(async (req, res) => {
 
       const payload = JSON.stringify({
         model: 'claude-sonnet-4-20250514',
-        max_tokens: 1024,
+        max_tokens: 4096,
         system: systemPrompt,
         messages: body.messages || []
       });
