@@ -247,8 +247,8 @@ async function _chatSend() {
   if (btn) btn.disabled = true;
 
   try {
-    // Build context from current data
-    const context = _chatBuildContext();
+    // Build context from current data (async — includes Supabase queries)
+    const context = await _chatBuildContext();
 
     // Keep last 10 messages for API (alternating user/assistant)
     const apiMessages = _chatMessages
@@ -303,15 +303,133 @@ function _chatClear() {
 }
 
 // ═══════════════════════════════════════
-// CONTEXT BUILDER — resumen de toda la data
+// CONTEXT BUILDER — resumen de toda la data (localStorage + Supabase)
 // ═══════════════════════════════════════
-function _chatBuildContext() {
+async function _chatBuildContext() {
   const lines = [];
   const now = new Date();
   const user = getCurrentUser();
   lines.push('Fecha: ' + now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }));
   lines.push('Usuario: ' + (user ? user.nombre : '?') + ' (' + (user ? user.rol : '?') + ')');
   lines.push('Año fiscal: ' + _year);
+
+  // ══════════════════════════════════════
+  // SUPABASE: Transacciones TPV (datos en vivo)
+  // ══════════════════════════════════════
+  try {
+    if (typeof _sb !== 'undefined') {
+      // Fechas útiles
+      const hoy = now.toISOString().slice(0, 10);
+      const ayer = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
+      const mesActual = hoy.slice(0, 7) + '-01';
+      const mesAnteriorDate = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const mesAnteriorFrom = mesAnteriorDate.toISOString().slice(0, 10);
+      const mesAnteriorTo = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0, 10);
+
+      // Consultas en paralelo para velocidad
+      const [totalCount, ayerData, mesData, mesAntData, topClients, clientCount] = await Promise.all([
+        // Total transacciones
+        _sb.from('tpv_transactions').select('*', { count: 'exact', head: true }),
+        // Transacciones de ayer
+        _sb.from('tpv_transactions').select('monto').eq('fecha', ayer),
+        // Transacciones del mes actual
+        _sb.from('tpv_transactions').select('monto, fecha').gte('fecha', mesActual).lte('fecha', hoy),
+        // Transacciones del mes anterior
+        _sb.from('tpv_transactions').select('monto').gte('fecha', mesAnteriorFrom).lte('fecha', mesAnteriorTo),
+        // Top 10 clientes por volumen (mes actual)
+        _sb.from('tpv_transactions').select('cliente, monto').gte('fecha', mesActual).lte('fecha', hoy),
+        // Total clientes configurados
+        _sb.from('tpv_clients').select('*', { count: 'exact', head: true })
+      ]);
+
+      const totalTxns = totalCount.count || 0;
+      lines.push('\n═══ TRANSACCIONES TPV (Supabase en vivo) ═══');
+      lines.push('Total histórico: ' + totalTxns.toLocaleString() + ' transacciones');
+      lines.push('Clientes configurados: ' + (clientCount.count || 0));
+
+      // Ayer
+      if (ayerData.data && ayerData.data.length) {
+        const ayerTotal = ayerData.data.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+        lines.push('\nAYER (' + ayer + '): ' + ayerData.data.length + ' transacciones, total $' + ayerTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+      } else {
+        lines.push('\nAYER (' + ayer + '): 0 transacciones');
+      }
+
+      // Hoy
+      if (mesData.data) {
+        const hoyTxns = mesData.data.filter(r => r.fecha === hoy);
+        if (hoyTxns.length) {
+          const hoyTotal = hoyTxns.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+          lines.push('HOY (' + hoy + '): ' + hoyTxns.length + ' transacciones, total $' + hoyTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        } else {
+          lines.push('HOY (' + hoy + '): 0 transacciones');
+        }
+      }
+
+      // Mes actual
+      if (mesData.data && mesData.data.length) {
+        const mesTotal = mesData.data.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+        lines.push('MES ACTUAL (' + hoy.slice(0, 7) + '): ' + mesData.data.length + ' transacciones, total $' + mesTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+
+        // Días únicos con actividad
+        const diasUnicos = new Set(mesData.data.map(r => r.fecha));
+        lines.push('  Días con actividad: ' + diasUnicos.size);
+        lines.push('  Promedio diario: $' + (mesTotal / diasUnicos.size).toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+      }
+
+      // Mes anterior
+      if (mesAntData.data && mesAntData.data.length) {
+        const mesAntTotal = mesAntData.data.reduce((s, r) => s + (parseFloat(r.monto) || 0), 0);
+        lines.push('MES ANTERIOR (' + mesAnteriorFrom.slice(0, 7) + '): ' + mesAntData.data.length + ' transacciones, total $' + mesAntTotal.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+      }
+
+      // Top clientes del mes
+      if (topClients.data && topClients.data.length) {
+        const byClient = {};
+        topClients.data.forEach(r => {
+          const c = r.cliente || 'Desconocido';
+          if (!byClient[c]) byClient[c] = { n: 0, total: 0 };
+          byClient[c].n++;
+          byClient[c].total += parseFloat(r.monto) || 0;
+        });
+        const sorted = Object.entries(byClient).sort((a, b) => b[1].total - a[1].total).slice(0, 10);
+        lines.push('\nTOP 10 CLIENTES (mes actual):');
+        sorted.forEach(([name, d], i) => {
+          lines.push('  ' + (i + 1) + '. ' + name + ': ' + d.n + ' txns, $' + d.total.toLocaleString('es-MX', { minimumFractionDigits: 2 }));
+        });
+      }
+
+      // Agentes / Promotores
+      try {
+        const { data: agentes } = await _sb.from('tpv_agentes').select('nombre, siglas, pct_comision, activo');
+        if (agentes && agentes.length) {
+          const activos = agentes.filter(a => a.activo !== false);
+          lines.push('\nAGENTES/PROMOTORES: ' + agentes.length + ' total (' + activos.length + ' activos)');
+          activos.forEach(a => {
+            lines.push('  ' + a.nombre + ' (' + (a.siglas || '?') + '): ' + ((a.pct_comision || 0) * 100).toFixed(1) + '% comisión');
+          });
+        }
+      } catch (e) {}
+
+      // Terminales
+      try {
+        const { data: terminales, count: termCount } = await _sb.from('tpv_transactions')
+          .select('terminal_id', { count: 'exact', head: false })
+          .not('terminal_id', 'is', null)
+          .gte('fecha', mesActual);
+        if (terminales) {
+          const uniqueTerminals = new Set(terminales.map(t => t.terminal_id));
+          lines.push('\nTERMINALES ACTIVAS (mes actual): ' + uniqueTerminals.size);
+        }
+      } catch (e) {}
+    }
+  } catch (e) {
+    lines.push('\nTRANSACCIONES TPV: error al consultar Supabase (' + e.message + ')');
+  }
+
+  // ══════════════════════════════════════
+  // LOCALSTORAGE: Tickets, P&L, Créditos, etc.
+  // ══════════════════════════════════════
 
   // ── Tickets ──
   try {
@@ -324,7 +442,6 @@ function _chatBuildContext() {
       });
       const statusStr = Object.entries(byStatus).map(([k, v]) => v + ' ' + k).join(', ');
       lines.push('\nTICKETS (' + tickets.length + ' total): ' + statusStr);
-      // Last 5
       const recent = tickets.slice(-5);
       lines.push('Últimos 5:');
       recent.forEach(t => {
@@ -341,24 +458,12 @@ function _chatBuildContext() {
         } else if (t.monto) {
           montoStr = '$' + Number(t.monto).toLocaleString('es-MX');
         }
-        lines.push('  #' + (t.id || '?') + ' | ' + (t.asunto || t.cliente || '?') + ' | ' + (t.estado || '?') + ' | ' + montoStr + ' | ' + (t.prioridad || '') + ' | ' + pagosCount + ' pagos');
+        lines.push('  #' + (t.id || '?') + ' | ' + (t.asunto || t.cliente || '?') + ' | ' + (t.estado || '?') + ' | ' + montoStr);
       });
     } else {
       lines.push('\nTICKETS: 0');
     }
-  } catch (e) { lines.push('\nTICKETS: error al leer'); }
-
-  // ── Pagos TPV ──
-  try {
-    const pagos = DB.get('vmcr_tpv_pagos') || [];
-    if (pagos.length) {
-      let total = 0;
-      pagos.forEach(p => total += (Number(p.monto) || 0));
-      lines.push('\nPAGOS TPV: ' + pagos.length + ' registros, total $' + total.toLocaleString('es-MX'));
-    } else {
-      lines.push('\nPAGOS TPV: 0');
-    }
-  } catch (e) { lines.push('\nPAGOS TPV: error al leer'); }
+  } catch (e) {}
 
   // ── P&L Records ──
   try {
@@ -387,7 +492,6 @@ function _chatBuildContext() {
     const fgEnts = Object.keys(fg).length;
     if (fiEnts || fgEnts) {
       lines.push('\nFLUJOS: ingresos en ' + fiEnts + ' entidades, gastos en ' + fgEnts + ' entidades');
-      // Summarize totals per entity
       Object.entries(fi).forEach(([ent, data]) => {
         if (Array.isArray(data)) {
           const total = data.reduce((s, v) => s + (Number(v) || 0), 0);
