@@ -1045,7 +1045,8 @@ let _activeMenu = null;   // current open menu
 const _MENU_DEFAULTS = {
   finanzas:'resumen', terminales:'tpv_general',
   tarjetas:'tar_dashboard', tesoreria:'tes_grupo',
-  creditos:'cred_dash', carga:'flujo_ing', config:'cfg_usuarios'
+  creditos:'cred_dash', carga:'flujo_ing', config:'cfg_usuarios',
+  tickets:'tk_pagos_tpv'
 };
 
 function openMenu(menuId, el, viewOverride){

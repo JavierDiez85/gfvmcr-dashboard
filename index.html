@@ -132,7 +132,15 @@
         </div>
       </div>
 
-      <!-- 5. Créditos -->
+      <!-- 5. Tickets -->
+      <div class="mi-wrap">
+        <div class="mi" id="mi-tickets" onclick="openMenu('tickets',this)"><div class="mic">🎫</div>Tickets<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-tickets">
+          <div class="si" onclick="sv('tk_pagos_tpv',this)" data-view="tk_pagos_tpv"><div class="ic">💳</div>Pagos TPV</div>
+        </div>
+      </div>
+
+      <!-- 6. Créditos -->
       <div class="mi-wrap">
         <div class="mi" id="mi-creditos" onclick="openMenu('creditos',this)"><div class="mic">🏦</div>Créditos<span class="mi-arr">›</span></div>
         <div class="mi-sub" id="sub-creditos">
@@ -3800,6 +3808,134 @@
   </div>
 </div>
 
+<!-- ══════════ TICKETS: PAGOS TPV ══════════ -->
+<div id="view-tk_pagos_tpv" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🎫 Tickets — Pagos TPV</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Gestiona tickets de pagos en terminales punto de venta</div>
+    </div>
+    <button class="btn" style="font-size:.72rem" onclick="openNewTicketModal()">+ Nuevo Ticket</button>
+  </div>
+
+  <!-- Filtros -->
+  <div class="cc" style="padding:12px;margin-bottom:14px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select id="tk-filter-status" onchange="rTkPagosList()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">
+        <option value="">Todos los estados</option>
+        <option value="abierto">Abierto</option>
+        <option value="en_proceso">En proceso</option>
+        <option value="resuelto">Resuelto</option>
+        <option value="cerrado">Cerrado</option>
+      </select>
+      <select id="tk-filter-priority" onchange="rTkPagosList()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">
+        <option value="">Todas las prioridades</option>
+        <option value="alta">Alta</option>
+        <option value="media">Media</option>
+        <option value="baja">Baja</option>
+      </select>
+      <input type="text" id="tk-filter-search" placeholder="Buscar cliente o referencia..." oninput="rTkPagosList()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;flex:1;min-width:180px;background:var(--white);color:var(--text)">
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row c4" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#0073ea">
+      <div class="kpi-top"><div class="kpi-lbl">Total Tickets</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🎫</div></div>
+      <div class="kpi-val" id="tk-kpi-total" style="color:#0073ea">0</div>
+      <div class="kpi-d dnu">Todos los tickets</div>
+      <div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--red)">
+      <div class="kpi-top"><div class="kpi-lbl">Abiertos</div><div class="kpi-ico" style="background:rgba(255,68,68,.1);color:var(--red)">🔴</div></div>
+      <div class="kpi-val" id="tk-kpi-abiertos" style="color:var(--red)">0</div>
+      <div class="kpi-d dnu">Requieren atención</div>
+      <div class="kbar"><div class="kfill" style="background:var(--red);width:0%"></div></div>
+    </div>
+    <div class="kpi-card" style="--ac:#ff9800">
+      <div class="kpi-top"><div class="kpi-lbl">En Proceso</div><div class="kpi-ico" style="background:rgba(255,152,0,.1);color:#ff9800">🟡</div></div>
+      <div class="kpi-val" id="tk-kpi-proceso" style="color:#ff9800">0</div>
+      <div class="kpi-d dnu">En seguimiento</div>
+      <div class="kbar"><div class="kfill" style="background:#ff9800;width:0%"></div></div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--green)">
+      <div class="kpi-top"><div class="kpi-lbl">Resueltos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">✅</div></div>
+      <div class="kpi-val" id="tk-kpi-resueltos" style="color:var(--green)">0</div>
+      <div class="kpi-d dnu">Este mes</div>
+      <div class="kbar"><div class="kfill" style="background:var(--green);width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- Tabla de tickets -->
+  <div class="cc" style="padding:0;overflow-x:auto">
+    <table class="bt">
+      <thead>
+        <tr>
+          <th style="width:60px">#</th>
+          <th>Cliente</th>
+          <th>Asunto</th>
+          <th style="width:80px">Prioridad</th>
+          <th style="width:90px">Estado</th>
+          <th style="width:100px" class="r">Monto</th>
+          <th style="width:90px">Fecha</th>
+          <th style="width:60px"></th>
+        </tr>
+      </thead>
+      <tbody id="tk-pagos-tbody">
+        <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">No hay tickets registrados</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Modal: Nuevo Ticket Pagos TPV ── -->
+<div id="tk-new-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9990;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:var(--rlg);padding:24px 28px;max-width:520px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-weight:700;font-size:.9rem">🎫 Nuevo Ticket — Pagos TPV</div>
+      <span onclick="closeTkModal()" style="cursor:pointer;font-size:1.1rem;color:var(--muted)">✕</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Cliente *</label>
+        <select id="tk-f-cliente" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
+          <option value="">— Selecciona —</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Asunto *</label>
+        <input type="text" id="tk-f-asunto" placeholder="Descripción breve del problema" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Descripción</label>
+        <textarea id="tk-f-desc" rows="3" placeholder="Detalles adicionales del ticket..." style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;resize:vertical;background:var(--white);color:var(--text);box-sizing:border-box"></textarea>
+      </div>
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Prioridad</label>
+          <select id="tk-f-prioridad" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+            <option value="baja">Baja</option>
+          </select>
+        </div>
+        <div style="flex:1">
+          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Monto (MXN)</label>
+          <input type="number" id="tk-f-monto" placeholder="0.00" step="0.01" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+        </div>
+      </div>
+      <div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Referencia de Pago</label>
+        <input type="text" id="tk-f-ref" placeholder="No. de referencia o folio" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+        <button class="btn btn-out" style="font-size:.72rem" onclick="closeTkModal()">Cancelar</button>
+        <button class="btn" style="font-size:.72rem" onclick="saveTkPago()">Guardar Ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
   </div><!-- /ct -->
 </div><!-- /main -->
 
@@ -3840,6 +3976,7 @@
   <script src="js/modules/carga-masiva.js"></script>
   <script src="js/modules/terminales.js"></script>
   <script src="js/modules/tesoreria.js"></script>
+  <script src="js/modules/tickets.js"></script>
   <script src="js/modules/config.js"></script>
 
   <!-- ── Inicialización ── -->

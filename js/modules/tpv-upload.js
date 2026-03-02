@@ -452,7 +452,7 @@ const TPV_UPLOAD = {
       const cambiosSheet = wb.Sheets['Cambios_Comisiones'];
       if (cambiosSheet) {
         this._progress(91, 'Procesando historial de cambios de comisiones...');
-        const cambiosRaw = XLSX.utils.sheet_to_json(cambiosSheet);
+        const cambiosRaw = XLSX.utils.sheet_to_json(cambiosSheet, {range: 2});
         const validFields = [
           'Efevoo_TC','Efevoo_TD','Efevoo_Amex','Efevoo_TI',
           'Salem_TC','Salem_TD','Salem_Amex','Salem_TI',
