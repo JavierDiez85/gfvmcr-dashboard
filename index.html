@@ -3823,6 +3823,7 @@
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
       <select id="tk-filter-status" onchange="rTkPagosList()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">
         <option value="">Todos los estados</option>
+        <option value="pendiente">Pendiente</option>
         <option value="abierto">Abierto</option>
         <option value="en_proceso">En proceso</option>
         <option value="resuelto">Resuelto</option>
@@ -3839,12 +3840,18 @@
   </div>
 
   <!-- KPIs -->
-  <div class="kpi-row c4" style="margin-bottom:14px">
+  <div class="kpi-row c5" style="margin-bottom:14px">
     <div class="kpi-card" style="--ac:#0073ea">
       <div class="kpi-top"><div class="kpi-lbl">Total Tickets</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🎫</div></div>
       <div class="kpi-val" id="tk-kpi-total" style="color:#0073ea">0</div>
       <div class="kpi-d dnu">Todos los tickets</div>
       <div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div>
+    </div>
+    <div class="kpi-card" style="--ac:#9c27b0">
+      <div class="kpi-top"><div class="kpi-lbl">Pendientes</div><div class="kpi-ico" style="background:rgba(156,39,176,.1);color:#9c27b0">📩</div></div>
+      <div class="kpi-val" id="tk-kpi-pendientes" style="color:#9c27b0">0</div>
+      <div class="kpi-d dnu">Sin leer (clientes)</div>
+      <div class="kbar"><div class="kfill" style="background:#9c27b0;width:0%"></div></div>
     </div>
     <div class="kpi-card" style="--ac:var(--red)">
       <div class="kpi-top"><div class="kpi-lbl">Abiertos</div><div class="kpi-ico" style="background:rgba(255,68,68,.1);color:var(--red)">🔴</div></div>
