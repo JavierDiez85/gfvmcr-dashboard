@@ -2750,7 +2750,12 @@
     </div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
       <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px">Fecha</label><input type="date" id="pago-fecha" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)"></div>
-      <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px">Monto</label><input type="number" id="pago-monto" placeholder="$0.00" step="0.01" oninput="pagoValidateMonto()" style="width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)"></div>
+      <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px">Monto</label>
+        <div style="display:flex;gap:4px;align-items:center">
+          <input type="number" id="pago-monto" placeholder="$0.00" step="0.01" oninput="pagoValidateMonto()" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)">
+          <button id="pago-llenar-total" type="button" onclick="pagoLlenarTotal()" title="Pagar monto total" style="display:none;padding:6px 8px;border:1px solid var(--blue);border-radius:8px;background:var(--blue-bg);color:var(--blue);font-size:.65rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'Figtree',sans-serif">Total</button>
+        </div>
+      </div>
     </div>
     <div id="pago-monto-warn" style="display:none;margin-bottom:10px;padding:6px 10px;background:var(--orange-bg);border-radius:8px;font-size:.68rem;color:var(--orange);font-weight:600">⚠️ Monto supera el saldo pendiente</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">

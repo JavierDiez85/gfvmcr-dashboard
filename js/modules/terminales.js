@@ -1498,8 +1498,11 @@ function pagoUpdateSaldo() {
   const cli = _tpvPagosCache.find(p => p.id === selId);
   if (!cli) return;
   const saldo = pagosSaldo(cli);
-  document.getElementById('pago-saldo-val').textContent = fmtTPVFull(saldo);
+  document.getElementById('pago-saldo-val').textContent = fmtTPVFull(saldo, 2);
   info.style.display = '';
+  // Show/hide the "pagar total" button
+  const btnTotal = document.getElementById('pago-llenar-total');
+  if (btnTotal) btnTotal.style.display = saldo > 0 ? '' : 'none';
 }
 
 function pagoValidateMonto() {
@@ -1510,6 +1513,17 @@ function pagoValidateMonto() {
   const cli = _tpvPagosCache.find(p => p.id === selId);
   const saldo = pagosSaldo(cli);
   warn.style.display = (monto > saldo + 0.01) ? '' : 'none';
+}
+
+/** Fill the monto field with the full pending amount */
+function pagoLlenarTotal() {
+  const selId = _pagoClienteId || parseInt(document.getElementById('pago-cliente-sel').value);
+  if (!selId) return;
+  const cli = _tpvPagosCache.find(p => p.id === selId);
+  if (!cli) return;
+  const saldo = pagosSaldo(cli);
+  document.getElementById('pago-monto').value = saldo.toFixed(2);
+  pagoValidateMonto();
 }
 
 function submitPago() {
