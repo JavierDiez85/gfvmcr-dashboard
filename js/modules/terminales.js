@@ -387,7 +387,53 @@ function setDashDates(period) {
 function setPagosDates(period) {
   const now = new Date();
   let from, to = now.toISOString().slice(0,10);
-  if (period === 'this_month') { from = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; }
+  const _ds = d => d.toISOString().slice(0,10); // date to string helper
+  const _ago = n => { const d = new Date(now); d.setDate(d.getDate() - n); return d; }; // N days ago
+
+  if (period === 'today') {
+    // "Hoy" = cobros de hoy corresponden a transacciones de ayer
+    const ayer = _ago(1);
+    from = _ds(ayer);
+    to = _ds(ayer);
+  }
+  else if (period === 'weekend') {
+    // "Fin de Semana" = viernes a domingo
+    // Si hoy es lunes (1): por el corte de las 11 PM, incluir desde jueves
+    // dow: 0=dom, 1=lun, 2=mar, 3=mie, 4=jue, 5=vie, 6=sab
+    const dow = now.getDay();
+    let fridayOffset, sundayOffset;
+    if (dow === 1) {
+      // Lunes: jueves(-4) a domingo(-1) por el corte 11 PM
+      fridayOffset = 4; // jueves
+      sundayOffset = 1; // domingo
+    } else if (dow === 0) {
+      // Domingo: viernes(-2) a sábado(-1) (hoy aún es domingo)
+      fridayOffset = 2;
+      sundayOffset = 1;
+    } else if (dow === 6) {
+      // Sábado: viernes(-1) es ayer
+      fridayOffset = 1;
+      sundayOffset = 0; // hoy no hay domingo aún, solo hasta viernes
+      // Pero mostramos viernes
+      from = _ds(_ago(1));
+      to = _ds(_ago(1));
+      const dfEl = document.getElementById('pagos-from'); if(dfEl) dfEl.value = from || '';
+      const dtEl = document.getElementById('pagos-to'); if(dtEl) dtEl.value = to || '';
+      TPV.invalidateAll();
+      rTPVPagos();
+      return;
+    } else {
+      // Martes(2) a viernes(5): buscar el fin de semana pasado
+      // Viernes pasado: retroceder (dow - 5 + 7) % 7 o simplemente calcular
+      // dow=2(mar): vie=-4, dom=-2  |  dow=3(mie): vie=-5, dom=-3
+      // dow=4(jue): vie=-6, dom=-4  |  dow=5(vie): vie=-7, dom=-5
+      fridayOffset = dow + 2; // viernes pasado
+      sundayOffset = dow;      // domingo pasado
+    }
+    from = _ds(_ago(fridayOffset));
+    to = _ds(_ago(sundayOffset));
+  }
+  else if (period === 'this_month') { from = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; }
   else if (period === 'last_month') { const d = new Date(now.getFullYear(), now.getMonth()-1, 1); from = d.toISOString().slice(0,10); to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0,10); }
   else if (period === 'last_3') { const d = new Date(now.getFullYear(), now.getMonth()-2, 1); from = d.toISOString().slice(0,10); }
   else if (period === 'all') { from = null; to = null; }
