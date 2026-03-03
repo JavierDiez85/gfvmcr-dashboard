@@ -3405,9 +3405,9 @@
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <input type="file" id="upload-txn-file" accept=".xlsx,.xls" style="font-size:.75rem;flex:1;min-width:200px">
         <select id="upload-txn-strategy" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">
-          <option value="replace_all">🔄 Reemplazar Todo</option>
+          <option value="append_new" selected>➕ Agregar Nuevos</option>
           <option value="replace_period">📅 Reemplazar Período</option>
-          <option value="append_new">➕ Agregar Nuevos</option>
+          <option value="replace_all">🔄 Reemplazar Todo</option>
         </select>
         <button class="btn btn-blue" style="font-size:.72rem;white-space:nowrap" onclick="startTxnUpload()">⬆️ Subir Transacciones</button>
       </div>
