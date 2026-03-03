@@ -390,7 +390,7 @@ const TPV_UPLOAD = {
           const msiRatesToInsert = [];
           // MSI column definitions: { header, plazo, entity, card_type }
           const msiCols = [];
-          for (const plazo of [3, 6, 9, 12]) {
+          for (const plazo of [3, 6, 9, 12, 18]) {
             for (const { entity, card_type } of [
               { entity: 'efevoo', card_type: 'TC' }, { entity: 'efevoo', card_type: 'Amex' },
               { entity: 'salem', card_type: 'TC' }, { entity: 'salem', card_type: 'Amex' },

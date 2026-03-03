@@ -2533,7 +2533,7 @@ const _RATE_FIELDS = [
   'rate_comisionista_tc','rate_comisionista_td','rate_comisionista_amex','rate_comisionista_ti'
 ];
 
-const _MSI_PLAZOS = [3, 6, 9, 12];
+const _MSI_PLAZOS = [3, 6, 9, 12, 18];
 const _MSI_ENTITIES = ['efevoo','salem','convenia','comisionista'];
 const _MSI_CARDS = ['TC','Amex'];
 
