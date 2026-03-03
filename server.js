@@ -178,7 +178,14 @@ http.createServer(async (req, res) => {
     fs.readFile(target, (err2, data) => {
       if (err2) { res.writeHead(404); res.end('Not found'); return; }
       const ext = path.extname(target).toLowerCase();
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' });
+      const headers = { 'Content-Type': MIME[ext] || 'application/octet-stream' };
+      // Prevent caching for JS/CSS/HTML so changes always take effect
+      if (['.js', '.css', '.html'].includes(ext)) {
+        headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+        headers['Pragma'] = 'no-cache';
+        headers['Expires'] = '0';
+      }
+      res.writeHead(200, headers);
       res.end(data);
     });
   });

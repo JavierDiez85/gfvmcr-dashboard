@@ -326,7 +326,21 @@ const TPV_UPLOAD = {
       const clientSheet = wb.Sheets['Clientes'] || wb.Sheets['Aux_Data'];
       if (clientSheet) {
         this._progress(25, 'Subiendo configuración de clientes...');
-        const rawRows = XLSX.utils.sheet_to_json(clientSheet);
+
+        // Auto-detect header row: scan rows as arrays to find the one containing 'Cliente_Norm'
+        const allRowsArr = XLSX.utils.sheet_to_json(clientSheet, { header: 1 });
+        let headerRowIdx = 0;
+        for (let i = 0; i < Math.min(allRowsArr.length, 10); i++) {
+          if (Array.isArray(allRowsArr[i]) && allRowsArr[i].includes('Cliente_Norm')) {
+            headerRowIdx = i;
+            console.log(`[Upload] Found 'Cliente_Norm' header at row ${i + 1}`);
+            break;
+          }
+        }
+        let rawRows = headerRowIdx > 0
+          ? XLSX.utils.sheet_to_json(clientSheet, { range: headerRowIdx })
+          : XLSX.utils.sheet_to_json(clientSheet);
+        console.log(`[Upload] Parsed ${rawRows.length} client rows (headerRow=${headerRowIdx + 1})`);
 
         // Filter valid client rows
         const clientRows = rawRows.filter(r =>
@@ -362,11 +376,39 @@ const TPV_UPLOAD = {
           rate_comisionista_ti: parseFloat(r['Comisionista_TI']) || 0,
         }));
 
+        // Delete stale clients not in the new file
+        const newNames = new Set(clients.map(c => c.nombre));
+        const { data: existingClients } = await _sb.from('tpv_clients').select('id, nombre');
+        if (existingClients) {
+          const staleIds = existingClients
+            .filter(c => !newNames.has(c.nombre))
+            .map(c => c.id);
+          if (staleIds.length > 0) {
+            this._progress(30, `Eliminando ${staleIds.length} clientes obsoletos...`);
+            // Delete their MSI rates first (FK)
+            for (let i = 0; i < staleIds.length; i += 100) {
+              const batch = staleIds.slice(i, i + 100);
+              await _sb.from('tpv_client_msi_rates').delete().in('cliente_id', batch);
+            }
+            // Delete stale clients
+            for (let i = 0; i < staleIds.length; i += 100) {
+              const batch = staleIds.slice(i, i + 100);
+              await _sb.from('tpv_clients').delete().in('id', batch);
+            }
+            // Null out cliente_id references in transactions
+            for (let i = 0; i < staleIds.length; i += 100) {
+              const batch = staleIds.slice(i, i + 100);
+              await _sb.from('tpv_transactions').update({ cliente_id: null }).in('cliente_id', batch);
+            }
+            console.log(`[Upload] Removed ${staleIds.length} stale clients:`, existingClients.filter(c => !newNames.has(c.nombre)).map(c => c.nombre));
+          }
+        }
+
         // Batch upsert clients
         const clientBatchSize = 50;
         for (let i = 0; i < clients.length; i += clientBatchSize) {
           const batch = clients.slice(i, i + clientBatchSize);
-          const pct = 25 + Math.round((i / clients.length) * 30);
+          const pct = 33 + Math.round((i / clients.length) * 22);
           this._progress(pct, `Clientes: ${i}/${clients.length}...`);
           const { error } = await _sb.from('tpv_clients')
             .upsert(batch, { onConflict: 'nombre' });
@@ -432,18 +474,23 @@ const TPV_UPLOAD = {
             }
           }
 
-          // Batch upsert MSI rates
+          // Clear ALL existing MSI rates before re-inserting (removes stale data)
+          this._progress(72, 'Limpiando tasas MSI anteriores...');
+          await _sb.from('tpv_client_msi_rates').delete().neq('cliente_id', 0);
+          console.log('[Upload] Cleared all existing MSI rates');
+
+          // Batch insert MSI rates (fresh)
           if (msiRatesToInsert.length > 0) {
             this._progress(75, `Subiendo ${msiRatesToInsert.length} tasas MSI...`);
             for (let i = 0; i < msiRatesToInsert.length; i += 200) {
               const batch = msiRatesToInsert.slice(i, i + 200);
               const { error } = await _sb.from('tpv_client_msi_rates')
-                .upsert(batch, { onConflict: 'cliente_id,plazo,entity,card_type' });
+                .insert(batch);
               if (error) console.warn('[Upload] MSI rate batch error:', error.message);
             }
             this._progress(90, `✅ ${msiRatesToInsert.length} tasas MSI actualizadas`);
           } else {
-            this._progress(90, '✅ Agentes asignados');
+            this._progress(90, '✅ Agentes asignados (sin tasas MSI en archivo)');
           }
         }
       }
