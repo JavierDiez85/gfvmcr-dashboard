@@ -4,6 +4,12 @@
 document.addEventListener('DOMContentLoaded', async () => {
   // Si ya hay sesión activa, iniciar directamente
   if (isLoggedIn()) {
+    // Validar integridad de sesión antes de iniciar
+    if (typeof validateSession === 'function') {
+      const valid = await validateSession();
+      if (!valid) return; // sesión inválida → doLogout() ya fue llamado
+    }
+
     document.getElementById('login-overlay').style.display = 'none';
 
     try {

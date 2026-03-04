@@ -66,7 +66,7 @@ function rPermisos(){
 
   // Populate dropdown
   sel.innerHTML = '<option value="">— Selecciona un usuario —</option>' +
-    USUARIOS.map(u => `<option value="${u.id}" ${u.id===_permUserId?'selected':''}>${u.nombre}${!u.activo?' (inactivo)':''} — ${u.empresa||'Sin empresa'}</option>`).join('');
+    USUARIOS.map(u => `<option value="${u.id}" ${u.id===_permUserId?'selected':''}>${escapeHtml(u.nombre)}${!u.activo?' (inactivo)':''} — ${escapeHtml(u.empresa||'Sin empresa')}</option>`).join('');
 
   if(_permUserId){
     pLoadUser(_permUserId);
@@ -94,7 +94,7 @@ function pLoadUser(uid){
   if(!u){ panel.style.display='none'; return; }
 
   const rolLabel = {admin:'Administrador',editor:'Editor',viewer:'Solo lectura'};
-  info.innerHTML = `<span style="font-weight:600;color:var(--blue)">${u.nombre}</span> · ${rolLabel[u.rol]||u.rol} · ${u.email}`;
+  info.innerHTML = `<span style="font-weight:600;color:var(--blue)">${escapeHtml(u.nombre)}</span> · ${rolLabel[u.rol]||u.rol} · ${escapeHtml(u.email)}`;
   document.getElementById('perm-panel-title').textContent = `🔐 Permisos — ${u.nombre}`;
 
   uRenderPerms(u.perms||{});

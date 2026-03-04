@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>Análisis Comparativo: ERP Grupo vs Dashboard Centum</title>
+<style>
+  @page { margin: 1.5cm; size: A4; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 11px;
+    line-height: 1.5;
+    color: #1a1a2e;
+    max-width: 210mm;
+    margin: 0 auto;
+    padding: 20px 30px;
+    background: #fff;
+  }
+  h1 {
+    font-size: 22px;
+    text-align: center;
+    color: #0a3d91;
+    border-bottom: 3px solid #0a3d91;
+    padding-bottom: 10px;
+    margin-bottom: 5px;
+  }
+  .subtitle {
+    text-align: center;
+    color: #666;
+    font-size: 12px;
+    margin-bottom: 25px;
+  }
+  h2 {
+    font-size: 15px;
+    color: #0a3d91;
+    margin-top: 22px;
+    margin-bottom: 8px;
+    border-bottom: 2px solid #e0e7f1;
+    padding-bottom: 4px;
+    page-break-after: avoid;
+  }
+  h3 {
+    font-size: 12px;
+    color: #333;
+    margin-top: 12px;
+    margin-bottom: 5px;
+    page-break-after: avoid;
+  }
+  p { margin-bottom: 6px; }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0 12px;
+    font-size: 10px;
+    page-break-inside: avoid;
+  }
+  th {
+    background: #0a3d91;
+    color: #fff;
+    padding: 6px 8px;
+    text-align: left;
+    font-weight: 600;
+  }
+  td {
+    padding: 5px 8px;
+    border-bottom: 1px solid #e5e5e5;
+  }
+  tr:nth-child(even) { background: #f7f9fc; }
+  tr:hover { background: #edf2fa; }
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 10px 14px;
+    border-radius: 6px;
+    font-size: 10px;
+    line-height: 1.45;
+    overflow-x: auto;
+    margin: 6px 0 10px;
+    page-break-inside: avoid;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+  }
+  pre .kw { color: #cba6f7; }
+  pre .fn { color: #89b4fa; }
+  pre .str { color: #a6e3a1; }
+  pre .num { color: #fab387; }
+  pre .cmt { color: #6c7086; font-style: italic; }
+  code {
+    background: #edf2fa;
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 10px;
+    font-family: "SF Mono", "Fira Code", "Consolas", monospace;
+    color: #c7254e;
+  }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .badge-critical { background: #fee2e2; color: #991b1b; }
+  .badge-high { background: #ffedd5; color: #9a3412; }
+  .badge-medium { background: #fef9c3; color: #854d0e; }
+  .badge-ok { background: #dcfce7; color: #166534; }
+  .badge-a { background: #dcfce7; color: #166534; }
+  .badge-b { background: #dbeafe; color: #1e40af; }
+  .badge-d { background: #ffedd5; color: #9a3412; }
+  .badge-f { background: #fee2e2; color: #991b1b; }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin: 8px 0;
+  }
+  .card {
+    border: 1px solid #e0e7f1;
+    border-radius: 8px;
+    padding: 10px 14px;
+    page-break-inside: avoid;
+  }
+  .card h4 {
+    font-size: 11px;
+    margin-bottom: 6px;
+    color: #0a3d91;
+  }
+  .card.warn { border-left: 4px solid #f59e0b; }
+  .card.danger { border-left: 4px solid #ef4444; }
+  .card.success { border-left: 4px solid #22c55e; }
+  .card.info { border-left: 4px solid #3b82f6; }
+  .verdict {
+    background: #f0f4ff;
+    border: 1px solid #c7d7f5;
+    border-radius: 8px;
+    padding: 10px 14px;
+    margin: 8px 0;
+    page-break-inside: avoid;
+  }
+  .verdict strong { color: #0a3d91; }
+  ul, ol { margin: 4px 0 8px 20px; }
+  li { margin-bottom: 3px; }
+  .toc {
+    background: #f7f9fc;
+    border: 1px solid #e0e7f1;
+    border-radius: 8px;
+    padding: 14px 20px;
+    margin-bottom: 20px;
+    columns: 2;
+    column-gap: 30px;
+  }
+  .toc h3 { margin: 0 0 8px; column-span: all; }
+  .toc ol { margin: 0; padding-left: 20px; }
+  .toc li { font-size: 10.5px; margin-bottom: 2px; }
+  .page-break { page-break-before: always; }
+  .flow-diagram {
+    background: #f7f9fc;
+    border: 1px solid #e0e7f1;
+    border-radius: 6px;
+    padding: 10px;
+    font-family: monospace;
+    font-size: 10px;
+    white-space: pre;
+    line-height: 1.4;
+    margin: 6px 0 10px;
+  }
+  .priority-list { counter-reset: priority; list-style: none; padding-left: 0; }
+  .priority-list li {
+    counter-increment: priority;
+    padding: 6px 10px 6px 36px;
+    position: relative;
+    margin-bottom: 4px;
+    border-radius: 6px;
+  }
+  .priority-list li::before {
+    content: counter(priority);
+    position: absolute;
+    left: 8px;
+    top: 6px;
+    width: 20px;
+    height: 20px;
+    background: #0a3d91;
+    color: white;
+    border-radius: 50%;
+    text-align: center;
+    line-height: 20px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+  .priority-list li.urgent { background: #fee2e2; }
+  .priority-list li.urgent::before { background: #dc2626; }
+  .priority-list li.high { background: #fff7ed; }
+  .priority-list li.high::before { background: #ea580c; }
+  .priority-list li.tech { background: #eff6ff; }
+  .priority-list li.tech::before { background: #2563eb; }
+  .priority-list li.nice { background: #f0fdf4; }
+  .priority-list li.nice::before { background: #16a34a; }
+  @media print {
+    body { padding: 0; }
+    pre { font-size: 9px; }
+    h2 { margin-top: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Analisis Comparativo: ERP Grupo vs Dashboard Centum</h1>
+<p class="subtitle">Preparado el 3 de marzo de 2026 &mdash; Revision tecnica, analitica y de seguridad</p>
+
+<div class="toc">
+  <h3>Contenido</h3>
+  <ol>
+    <li>Arquitectura y Organizacion de Codigo</li>
+    <li>Estado y Flujo de Datos</li>
+    <li>Seguridad &mdash; Analisis Critico</li>
+    <li>Roles y Permisos</li>
+    <li>Analitica de Datos y Comisiones</li>
+    <li>Validacion de Pagos</li>
+    <li>Calendario de Dias Habiles</li>
+    <li>Split de Pagos</li>
+    <li>Void / Anulacion</li>
+    <li>Exportacion de Datos</li>
+    <li>Patrones de UI</li>
+    <li>Configuracion Centralizada</li>
+    <li>Plan de Accion y Prioridades</li>
+  </ol>
+</div>
+
+<!-- ============================================================ -->
+<h2>1. Arquitectura y Organizacion de Codigo</h2>
+
+<div class="grid-2">
+  <div class="card warn">
+    <h4>Tu ERP Grupo &mdash; Monolitico por Feature</h4>
+    <pre>js/modules/
+  terminales.js    &rarr; 2,840 lineas
+  finanzas.js      &rarr; 1,970 lineas
+  dashboard.js     &rarr; 1,384 lineas
+  creditos.js      &rarr; 1,448 lineas</pre>
+    <p>Archivos enormes que mezclan calculos, renderizado, estado y eventos en un solo lugar.</p>
+  </div>
+  <div class="card success">
+    <h4>Emiliano &mdash; Separacion por Responsabilidad</h4>
+    <pre>js/
+  config.js        &rarr;  51 lineas
+  state.js         &rarr; 275 lineas
+  renders.js       &rarr; 380 lineas
+  validaciones.js  &rarr; 222 lineas
+  fechas.js        &rarr; 236 lineas
+  utils.js         &rarr;  79 lineas
+  exports.js       &rarr; 102 lineas</pre>
+    <p>Cada archivo tiene UNA sola responsabilidad. Ningun archivo supera 870 lineas.</p>
+  </div>
+</div>
+
+<div class="verdict">
+  <strong>Que adoptar:</strong> Partir los archivos grandes. Por ejemplo, <code>terminales.js</code> (2,840 lineas) puede convertirse en:
+  <code>terminales/data.js</code>, <code>terminales/aggregation.js</code>, <code>terminales/dashboard.js</code>, <code>terminales/payment-control.js</code>, <code>terminales/comisiones.js</code>.
+</div>
+
+<!-- ============================================================ -->
+<h2>2. Estado y Flujo de Datos</h2>
+
+<h3>Tu ERP Grupo: Globals dispersos</h3>
+<pre><span class="cmt">// Dispersos en multiples archivos:</span>
+<span class="kw">let</span> S = { recs: [] };           <span class="cmt">// helpers.js</span>
+<span class="kw">let</span> USUARIOS = [];              <span class="cmt">// auth.js</span>
+<span class="kw">const</span> END_CREDITS = [];         <span class="cmt">// dashboard.js</span>
+<span class="kw">let</span> NOM_EDIT = [];              <span class="cmt">// finanzas.js</span>
+<span class="kw">let</span> GC_EDIT = [];               <span class="cmt">// finanzas.js</span>
+<span class="cmt">// ... 100+ variables globales</span></pre>
+
+<h3>Emiliano: Estado centralizado</h3>
+<pre><span class="cmt">// state.js - un solo objeto</span>
+<span class="kw">const</span> state = {
+  view: <span class="str">"dashboard"</span>,
+  day: <span class="kw">null</span>,
+  search: <span class="str">""</span>,
+  filterAcquirer: <span class="str">""</span>,
+  filterTerminal: <span class="str">""</span>,
+  range: <span class="num">30</span>,
+  payDateFrom: <span class="kw">null</span>,
+  payDateTo: <span class="kw">null</span>,
+};</pre>
+
+<div class="verdict">
+  <strong>Ventaja:</strong> Un solo lugar para entender el estado de la app. Cambiar un filtro &rarr; llamar <code>renderAll()</code> &rarr; toda la UI se actualiza consistentemente. Sin race conditions.
+</div>
+
+<!-- ============================================================ -->
+<h2 class="page-break">3. Seguridad &mdash; Analisis Critico</h2>
+
+<h3>Vulnerabilidades en tu ERP Grupo</h3>
+
+<table>
+  <tr><th>Problema</th><th>Severidad</th><th>Detalle</th></tr>
+  <tr>
+    <td>SHA-256 sin salt</td>
+    <td><span class="badge badge-critical">CRITICA</span></td>
+    <td>Misma contrasena = mismo hash siempre. Vulnerable a rainbow tables. Archivo: <code>login.js:7-11</code></td>
+  </tr>
+  <tr>
+    <td>Sin escapeHtml()</td>
+    <td><span class="badge badge-critical">CRITICA</span></td>
+    <td>XSS posible via nombres de usuario. Un nombre como <code>&lt;img onerror="..."&gt;</code> ejecutaria codigo malicioso</td>
+  </tr>
+  <tr>
+    <td>localStorage expuesto</td>
+    <td><span class="badge badge-critical">CRITICA</span></td>
+    <td>Cualquier usuario puede abrir DevTools y ver TODOS los hashes de passwords de todos los usuarios</td>
+  </tr>
+  <tr>
+    <td>Bypass de permisos via consola</td>
+    <td><span class="badge badge-high">ALTA</span></td>
+    <td>Un usuario puede escribir <code>sessionStorage.setItem('vmcr_session', '{"rol":"admin"}')</code> y obtener acceso admin</td>
+  </tr>
+  <tr>
+    <td>Sin auditoria</td>
+    <td><span class="badge badge-high">ALTA</span></td>
+    <td>No hay registro de quien creo, elimino o modifico usuarios</td>
+  </tr>
+  <tr>
+    <td>Sin expiracion de sesion</td>
+    <td><span class="badge badge-medium">MEDIA</span></td>
+    <td>La sesion dura hasta cerrar el navegador, sin timeout de inactividad</td>
+  </tr>
+</table>
+
+<h3>Tu codigo vulnerable (login.js:7-11)</h3>
+<pre><span class="cmt">// SIN SALT - vulnerable a rainbow tables</span>
+<span class="kw">async function</span> <span class="fn">hashPassword</span>(plain){
+  <span class="kw">const</span> data = <span class="kw">new</span> TextEncoder().<span class="fn">encode</span>(plain);
+  <span class="kw">const</span> buf = <span class="kw">await</span> crypto.subtle.<span class="fn">digest</span>(<span class="str">'SHA-256'</span>, data);
+  <span class="kw">return</span> Array.<span class="fn">from</span>(<span class="kw">new</span> Uint8Array(buf))
+    .<span class="fn">map</span>(b =&gt; b.<span class="fn">toString</span>(<span class="num">16</span>).<span class="fn">padStart</span>(<span class="num">2</span>,<span class="str">'0'</span>)).<span class="fn">join</span>(<span class="str">''</span>);
+}</pre>
+
+<h3>Tu codigo vulnerable (auth.js:78-87)</h3>
+<pre><span class="cmt">// SIN ESCAPE - XSS posible</span>
+${u.nombre}   <span class="cmt">// Nombre directo en HTML</span>
+${u.email}    <span class="cmt">// Email directo en HTML</span></pre>
+
+<h3>Implementacion de Emiliano (segura)</h3>
+
+<table>
+  <tr><th>Caracteristica</th><th>Implementacion</th></tr>
+  <tr><td>Passwords</td><td>Delegados a Supabase Auth (bcrypt server-side, con salt automatico)</td></tr>
+  <tr><td>XSS</td><td><code>escapeHtml()</code> en TODA salida de datos de usuario</td></tr>
+  <tr><td>Sesiones</td><td>JWT con expiracion automatica via Supabase Auth</td></tr>
+  <tr><td>Data scoping</td><td>TODOS los queries filtran por <code>.eq("user_id", userId)</code></td></tr>
+  <tr><td>Registro</td><td><code>created_by</code> tracking en perfiles de usuario</td></tr>
+  <tr><td>Multi-tab</td><td>Sync automatico entre pestanas via Supabase events</td></tr>
+</table>
+
+<h3>Su funcion anti-XSS (utils.js:62-69)</h3>
+<pre><span class="kw">function</span> <span class="fn">escapeHtml</span>(s) {
+  <span class="kw">return</span> String(s || <span class="str">""</span>)
+    .<span class="fn">replaceAll</span>(<span class="str">"&amp;"</span>, <span class="str">"&amp;amp;"</span>)
+    .<span class="fn">replaceAll</span>(<span class="str">"&lt;"</span>, <span class="str">"&amp;lt;"</span>)
+    .<span class="fn">replaceAll</span>(<span class="str">"&gt;"</span>, <span class="str">"&amp;gt;"</span>)
+    .<span class="fn">replaceAll</span>(<span class="str">'"'</span>, <span class="str">"&amp;quot;"</span>)
+    .<span class="fn">replaceAll</span>(<span class="str">"'"</span>, <span class="str">"&amp;#039;"</span>);
+}</pre>
+
+<h3>Matriz de Seguridad Comparativa</h3>
+<table>
+  <tr><th>Aspecto</th><th>Tu ERP</th><th>Emiliano</th></tr>
+  <tr><td>Password Hashing</td><td><span class="badge badge-f">F</span></td><td><span class="badge badge-a">A</span></td></tr>
+  <tr><td>Prevencion XSS</td><td><span class="badge badge-f">F</span></td><td><span class="badge badge-a">A</span></td></tr>
+  <tr><td>Sesion (expiracion/sync)</td><td><span class="badge badge-d">D</span></td><td><span class="badge badge-a">A</span></td></tr>
+  <tr><td>Filtrado a nivel de datos</td><td><span class="badge badge-f">F</span></td><td><span class="badge badge-a">A</span></td></tr>
+  <tr><td>Enforcement de permisos</td><td><span class="badge badge-d">D</span></td><td><span class="badge badge-b">B</span></td></tr>
+  <tr><td>Auditoria</td><td><span class="badge badge-f">F</span></td><td><span class="badge badge-b">B</span></td></tr>
+  <tr><td>Sistema de roles</td><td><span class="badge badge-d">D</span></td><td><span class="badge badge-a">A</span></td></tr>
+</table>
+
+<!-- ============================================================ -->
+<h2 class="page-break">4. Roles y Permisos &mdash; Detalle</h2>
+
+<div class="grid-2">
+  <div class="card warn">
+    <h4>Tu ERP: 3 roles simples</h4>
+    <pre><span class="cmt">// auth.js</span>
+<span class="kw">const</span> rolLabel = {
+  admin:  <span class="str">'Admin'</span>,
+  editor: <span class="str">'Editor'</span>,
+  viewer: <span class="str">'Solo lectura'</span>
+};
+<span class="cmt">// Enforcement: solo UI
+// (ocultar elementos del DOM)
+// Bypass: facil via DevTools</span></pre>
+  </div>
+  <div class="card success">
+    <h4>Emiliano: 6 roles con jerarquia</h4>
+    <pre><span class="cmt">// config.js</span>
+<span class="kw">const</span> ROLES = [
+  <span class="str">"director"</span>,
+  <span class="str">"admin"</span>,
+  <span class="str">"supervisor"</span>,
+  <span class="str">"comercial"</span>,
+  <span class="str">"comisionista"</span>,
+  <span class="str">"viewer"</span>
+];</pre>
+  </div>
+</div>
+
+<h3>Paginas permitidas por rol (Emiliano)</h3>
+<pre><span class="kw">const</span> ROLE_DEFAULT_PAGES = {
+  director:     [<span class="str">"dashboard"</span>, <span class="str">"terminals"</span>, <span class="str">"terminal_tx"</span>, <span class="str">"pagos_dia"</span>,
+                 <span class="str">"comisiones"</span>, <span class="str">"client_rates"</span>, <span class="str">"clientes"</span>, <span class="str">"promotores"</span>, <span class="str">"perfiles"</span>],
+  admin:        [<span class="str">"dashboard"</span>, <span class="str">"terminals"</span>, <span class="str">"terminal_tx"</span>, <span class="str">"pagos_dia"</span>,
+                 <span class="str">"comisiones"</span>, <span class="str">"client_rates"</span>, <span class="str">"clientes"</span>, <span class="str">"promotores"</span>],
+  supervisor:   [<span class="str">"dashboard"</span>, <span class="str">"terminals"</span>, <span class="str">"terminal_tx"</span>, <span class="str">"pagos_dia"</span>, <span class="str">"comisiones"</span>, <span class="str">"clientes"</span>],
+  comercial:    [<span class="str">"dashboard"</span>, <span class="str">"terminals"</span>, <span class="str">"terminal_tx"</span>, <span class="str">"clientes"</span>],
+  comisionista: [<span class="str">"mis_comisiones"</span>],
+  viewer:       [<span class="str">"dashboard"</span>],
+};</pre>
+
+<h3>Rol "comisionista" &mdash; Filtrado a nivel de datos</h3>
+<ul>
+  <li>Solo ve transacciones de clientes asignados (tabla <code>comisionista_clients</code>)</li>
+  <li>Filtros globales ocultos (no puede buscar otros clientes)</li>
+  <li>Redirigido automaticamente a "Mis Comisiones"</li>
+  <li>Data filtrada a nivel de query, no solo UI</li>
+</ul>
+
+<h3>Permisos por usuario individual</h3>
+<ul>
+  <li>El director puede dar/quitar paginas especificas a cada usuario</li>
+  <li>Override del default del rol con checkboxes individuales por pagina</li>
+  <li>Guardado en tabla <code>user_profiles</code> con campo <code>permitted_pages</code></li>
+</ul>
+
+<h3>Registro de usuarios con cliente temporal</h3>
+<pre><span class="cmt">// Crea cliente Supabase temporal para NO perder sesion del director</span>
+<span class="kw">const</span> tempSb = supabase.<span class="fn">createClient</span>(SUPABASE_URL, SUPABASE_ANON_KEY, {
+  auth: { storageKey: <span class="str">"centum-temp-signup"</span>, persistSession: <span class="kw">false</span> }
+});
+<span class="kw">const</span> { data } = <span class="kw">await</span> tempSb.auth.<span class="fn">signUp</span>({ email, password });</pre>
+
+<!-- ============================================================ -->
+<h2>5. Analitica de Datos y Comisiones</h2>
+
+<h3>Modelo de comisiones</h3>
+
+<div class="grid-2">
+  <div class="card info">
+    <h4>Tu ERP: Distribucion salarial %</h4>
+    <pre><span class="cmt">// finanzas.js</span>
+<span class="kw">const</span> _nomDist = (e,n) =&gt;
+  n.s * ((e===<span class="str">'Salem'</span> ? n.sal
+        : e===<span class="str">'Endless'</span> ? n.end
+        : e===<span class="str">'Dynamo'</span> ? n.dyn
+        : n.wb) || <span class="num">0</span>) / <span class="num">100</span>;</pre>
+    <p>Enfoque en presupuesto y asignacion de costos entre empresas.</p>
+  </div>
+  <div class="card success">
+    <h4>Emiliano: Comisiones por tipo de tarjeta</h4>
+    <pre><span class="kw">const</span> COMMISSION_RATES = {
+  debito:        <span class="num">0.0145</span>,  <span class="cmt">// 1.45%</span>
+  credito:       <span class="num">0.0235</span>,  <span class="cmt">// 2.35%</span>
+  amex:          <span class="num">0.0360</span>,  <span class="cmt">// 3.60%</span>
+  internacional: <span class="num">0.0425</span>   <span class="cmt">// 4.25%</span>
+};</pre>
+    <p>Enfoque en revenue por transaccion con IVA 16%.</p>
+  </div>
+</div>
+
+<h3>Calculo de comision (Emiliano &mdash; renders.js)</h3>
+<pre><span class="kw">function</span> <span class="fn">feeFromRow</span>(r) {
+  <span class="kw">const</span> net = Number(r.monto || <span class="num">0</span>);
+  <span class="kw">const</span> rate = COMMISSION_RATES[<span class="fn">getTypeKeyFromRow</span>(r)];
+  <span class="kw">const</span> commission = net * rate;              <span class="cmt">// Comision base</span>
+  <span class="kw">const</span> iva = commission * <span class="num">0.16</span>;              <span class="cmt">// 16% IVA</span>
+  <span class="kw">const</span> totalFee = commission + iva;          <span class="cmt">// Fee total</span>
+  <span class="kw">const</span> liquidated = net - totalFee;          <span class="cmt">// Neto a pagar al cliente</span>
+  <span class="kw">return</span> { net, rate, commission, iva, totalFee, liquidated };
+}</pre>
+
+<h3>Clasificacion automatica de tipo de tarjeta</h3>
+<pre><span class="kw">function</span> <span class="fn">getTypeKeyFromRow</span>(r) {
+  <span class="kw">const</span> marca = String(r.marca_tarjeta || <span class="str">""</span>).<span class="fn">toLowerCase</span>();
+  <span class="kw">const</span> metodo = String(r.metodo_pago || <span class="str">""</span>).<span class="fn">toLowerCase</span>();
+  <span class="kw">if</span> (marca.<span class="fn">includes</span>(<span class="str">"amex"</span>)) <span class="kw">return</span> <span class="str">"amex"</span>;
+  <span class="kw">if</span> (metodo.<span class="fn">includes</span>(<span class="str">"debito"</span>)) <span class="kw">return</span> <span class="str">"debito"</span>;
+  <span class="kw">if</span> (metodo.<span class="fn">includes</span>(<span class="str">"credito"</span>)) <span class="kw">return</span> <span class="str">"credito"</span>;
+  <span class="kw">if</span> (metodo.<span class="fn">includes</span>(<span class="str">"internacional"</span>)) <span class="kw">return</span> <span class="str">"internacional"</span>;
+  <span class="kw">return</span> <span class="str">"credito"</span>;
+}</pre>
+
+<h3>KPIs comparados</h3>
+<table>
+  <tr><th>Tu ERP (presupuesto/nomina)</th><th>Emiliano (revenue/comisiones)</th></tr>
+  <tr><td>Total de nomina</td><td>Volumen total (neto)</td></tr>
+  <tr><td>Distribucion por empresa</td><td>Conteo de transacciones</td></tr>
+  <tr><td>% asignacion por empleado</td><td>Terminales / afiliaciones unicas</td></tr>
+  <tr><td>Operativo vs administrativo</td><td>Comision base + IVA</td></tr>
+  <tr><td>&mdash;</td><td>Monto liquidado</td></tr>
+  <tr><td>&mdash;</td><td>Fee % efectivo</td></tr>
+  <tr><td>&mdash;</td><td>Ticket promedio</td></tr>
+  <tr><td>&mdash;</td><td>Override de tasas por cliente</td></tr>
+</table>
+
+<h3>Charts (Emiliano tiene 3 interactivos)</h3>
+<ol>
+  <li><strong>Volumen por dia</strong> &mdash; Linea, ultimos 30 dias con area fill</li>
+  <li><strong>Top 10 clientes</strong> &mdash; Barras por volumen con % tooltip</li>
+  <li><strong>Top 10 terminales por fee</strong> &mdash; Barras por comision generada</li>
+  <li><strong>Click para expandir</strong> cualquier chart en modal fullscreen + descarga PNG</li>
+</ol>
+
+<!-- ============================================================ -->
+<h2 class="page-break">6. Validacion de Pagos &mdash; Feature que no tienes</h2>
+
+<p>Emiliano tiene un <strong>motor de validacion completo</strong> en <code>validaciones.js</code> (222 lineas):</p>
+
+<h3>4 tipos de validacion automatica</h3>
+<pre><span class="cmt">// 1. Monto correcto (con tolerancia +/-$0.50)</span>
+<span class="fn">validatePayment</span>(fiscalPaid, cardPaid, dueAmount)
+  &rarr; <span class="str">"pagado"</span> | <span class="str">"parcial"</span> | <span class="str">"pendiente"</span> | <span class="str">"exceso"</span>
+
+<span class="cmt">// 2. Deteccion de duplicados</span>
+<span class="fn">detectDuplicatePayment</span>(client, dateKey, log)
+  &rarr; { isDuplicate: <span class="kw">true</span>, existingEntries: [...] }
+
+<span class="cmt">// 3. Pago fuera de horario</span>
+<span class="fn">detectOutOfSchedulePayment</span>(dateKey, expectedPayDate)
+  &rarr; { isOutOfSchedule: <span class="kw">true</span>, daysDiff: <span class="num">2</span> }
+
+<span class="cmt">// 4. Pagos vencidos (rolling 7 dias)</span>
+<span class="fn">findOverduePayments</span>()
+  &rarr; [{ client: <span class="str">"X"</span>, message: <span class="str">"Pago atrasado: $15,340.50 pendiente"</span> }]</pre>
+
+<h3>Sistema de alertas con severidad</h3>
+<pre><span class="kw">function</span> <span class="fn">buildAlerts</span>(client, dateKey, dueAmount, fiscalPaid, cardPaid, log) {
+  <span class="kw">const</span> alerts = [];
+  <span class="cmt">// Exceso     &rarr; warning (naranja)</span>
+  <span class="cmt">// Duplicado  &rarr; error (rojo)</span>
+  <span class="cmt">// Fuera de horario &rarr; warning (naranja)</span>
+  <span class="cmt">// Vencido    &rarr; error (rojo)</span>
+  <span class="kw">return</span> alerts;
+}</pre>
+
+<h3>Deteccion automatica de pagos vencidos (ultimos 7 dias)</h3>
+<pre><span class="kw">function</span> <span class="fn">findOverduePayments</span>() {
+  <span class="kw">const</span> today = <span class="fn">getTodayPaymentDate</span>();
+  <span class="kw">const</span> limitDate = <span class="kw">new</span> Date(Date.<span class="fn">now</span>() - <span class="num">7</span> * <span class="num">86400000</span>);
+
+  <span class="cmt">// 1. Agrupar TX por cliente + fecha_pago</span>
+  <span class="cmt">// 2. Comparar contra pagos registrados</span>
+  <span class="cmt">// 3. Si diferencia > tolerancia &rarr; ALERTA</span>
+
+  <span class="kw">if</span> (diff > tolerance) {
+    alerts.<span class="fn">push</span>({
+      type: <span class="str">"overdue"</span>, severity: <span class="str">"error"</span>,
+      client: data.client,
+      message: <span class="str">`Pago atrasado del ${data.payDate}: ${<span class="fn">money</span>(diff)} pendiente`</span>
+    });
+  }
+}</pre>
+
+<!-- ============================================================ -->
+<h2>7. Calendario de Dias Habiles &mdash; Feature que no tienes</h2>
+
+<p><code>fechas.js</code> (236 lineas) &mdash; Modulo completo para Mexico:</p>
+
+<h3>Festivos Banxico 2025-2027</h3>
+<pre><span class="kw">const</span> MEXICAN_HOLIDAYS_2026 = [
+  <span class="str">"2026-01-01"</span>,  <span class="cmt">// Ano Nuevo</span>
+  <span class="str">"2026-02-02"</span>,  <span class="cmt">// Constitucion</span>
+  <span class="str">"2026-03-16"</span>,  <span class="cmt">// Benito Juarez</span>
+  <span class="str">"2026-04-02"</span>,  <span class="cmt">// Jueves Santo</span>
+  <span class="str">"2026-05-01"</span>,  <span class="cmt">// Dia del Trabajo</span>
+  <span class="str">"2026-09-16"</span>,  <span class="cmt">// Independencia</span>
+  <span class="str">"2026-11-16"</span>,  <span class="cmt">// Revolucion</span>
+  <span class="str">"2026-12-25"</span>,  <span class="cmt">// Navidad</span>
+];</pre>
+
+<h3>Cutoff operativo: 22:59</h3>
+<pre><span class="kw">function</span> <span class="fn">getOperationalDate</span>(timestamp) {
+  <span class="kw">if</span> (hours > <span class="num">22</span> || (hours === <span class="num">22</span> && minutes > <span class="num">59</span>)) {
+    d = <span class="fn">addDays</span>(d, <span class="num">1</span>);  <span class="cmt">// Cuenta como dia siguiente</span>
+  }
+  <span class="kw">return</span> <span class="fn">toDateStr</span>(d);
+}</pre>
+
+<h3>Siguiente dia habil</h3>
+<pre><span class="kw">function</span> <span class="fn">getNextBusinessDay</span>(date) {
+  <span class="kw">let</span> d = <span class="fn">addDays</span>(date, <span class="num">1</span>);
+  <span class="kw">while</span> (!<span class="fn">isBusinessDay</span>(d)) d = <span class="fn">addDays</span>(d, <span class="num">1</span>);
+  <span class="kw">return</span> <span class="fn">toDateStr</span>(d);
+}</pre>
+
+<div class="flow-diagram">Transaccion 23:15 del lunes
+  &rarr; Fecha operativa = martes
+    &rarr; Fecha de pago = miercoles (siguiente dia habil)</div>
+
+<!-- ============================================================ -->
+<h2>8. Split de Pagos &mdash; Feature que no tienes</h2>
+
+<pre><span class="cmt">// pagos.js - Dividir pago entre fiscal y tarjeta</span>
+<span class="kw">function</span> <span class="fn">showSplitPopup</span>(client, due) {
+  <span class="kw">const</span> settings = clientSettings.<span class="fn">find</span>(s =&gt; s.client === client);
+  <span class="kw">const</span> savedPct = settings?.fiscal_pct ?? <span class="num">50</span>;  <span class="cmt">// Default 50/50</span>
+
+  <span class="kw">const</span> fiscalAmount = due * (fiscalPct / <span class="num">100</span>);
+  <span class="kw">const</span> cardAmount = due * ((<span class="num">100</span> - fiscalPct) / <span class="num">100</span>);
+
+  <span class="cmt">// Se guarda en client_settings para proximos pagos</span>
+}</pre>
+
+<ul>
+  <li>Configurable por cliente (fiscal % vs tarjeta %)</li>
+  <li>Preferencias guardadas en DB para uso futuro</li>
+  <li>Botones de quick-split para aplicar configuracion guardada</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>9. Void / Anulacion &mdash; Feature que no tienes</h2>
+
+<p>En vez de <strong>borrar</strong> pagos, los marca como <code>void: true</code>:</p>
+<ul>
+  <li>Mantiene auditoria completa (nunca se pierde informacion)</li>
+  <li>Excluido de calculos cuando <code>void: true</code></li>
+  <li>Historial muestra "ANULADO" con chip amarillo</li>
+  <li>Checkbox para mostrar/ocultar registros anulados</li>
+  <li>Trazabilidad total de operaciones</li>
+</ul>
+
+<!-- ============================================================ -->
+<h2>10. Exportacion de Datos</h2>
+
+<div class="grid-2">
+  <div class="card warn">
+    <h4>Tu ERP: Minima</h4>
+    <p>Solo captura HTML via <code>window._htmlSource</code>. Sin exportacion estructurada.</p>
+  </div>
+  <div class="card success">
+    <h4>Emiliano: 5 tipos</h4>
+    <ol>
+      <li>CSV de comisiones</li>
+      <li>CSV de terminales (con filtros)</li>
+      <li>CSV de pagos diarios</li>
+      <li>PDF/Print de historial de pagos</li>
+      <li>Clipboard del resumen del dashboard</li>
+    </ol>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>11. Patrones de UI</h2>
+
+<h3>Estilos inline vs CSS</h3>
+<div class="grid-2">
+  <div class="card danger">
+    <h4>Tu ERP: Inline en JS</h4>
+    <pre><span class="cmt">// Estilos mezclados con logica</span>
+`&lt;div style=<span class="str">"display:flex;
+  align-items:center;gap:12px;
+  padding:12px 18px;
+  border-bottom:1px solid
+  var(--border)"</span>
+  onmouseover=<span class="str">"this.style.
+    background='var(--bg)'"</span>&gt;`</pre>
+  </div>
+  <div class="card success">
+    <h4>Emiliano: Clases CSS</h4>
+    <pre><span class="cmt">/* styles.css */</span>
+.btn {
+  padding: 10px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.mono {
+  font-family: monospace;
+  font-size: 0.875rem;
+}</pre>
+    <pre><span class="cmt">// HTML limpio</span>
+`&lt;td class=<span class="str">"mono"</span>&gt;
+  ${<span class="fn">escapeHtml</span>(terminal)}&lt;/td&gt;`</pre>
+  </div>
+</div>
+
+<h3>Event handlers</h3>
+<div class="grid-2">
+  <div class="card warn">
+    <h4>Tu ERP: Inline handlers</h4>
+    <pre>`&lt;button onclick=<span class="str">"uEditUser(
+  '${u.id}')"</span>&gt;Editar&lt;/button&gt;`</pre>
+  </div>
+  <div class="card success">
+    <h4>Emiliano: Event delegation</h4>
+    <pre>document.<span class="fn">addEventListener</span>(<span class="str">"click"</span>,
+  (e) =&gt; {
+  <span class="kw">const</span> btn = e.target
+    .<span class="fn">closest</span>(<span class="str">"[data-action]"</span>);
+  <span class="kw">if</span> (!btn) <span class="kw">return</span>;
+  <span class="kw">const</span> action = btn.dataset.action;
+});</pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2>12. Configuracion Centralizada</h2>
+
+<div class="grid-2">
+  <div class="card warn">
+    <h4>Tu ERP</h4>
+    <p>Constantes dispersas en <code>auth.js</code>, <code>helpers.js</code>, <code>dashboard.js</code>, <code>finanzas.js</code>, etc. Hay que buscar en multiples archivos para encontrar una configuracion.</p>
+  </div>
+  <div class="card success">
+    <h4>Emiliano: config.js (51 lineas)</h4>
+    <pre>SUPABASE_URL
+IVA_RATE = <span class="num">0.16</span>
+COMMISSION_RATES = { ... }
+ROLES = [...]
+ROLE_DEFAULT_PAGES = { ... }
+PAYMENT_CUTOFF_HOUR = <span class="num">22</span>
+PAYMENT_TOLERANCE = <span class="num">0.50</span></pre>
+    <p>Todo en un solo archivo. Facil de encontrar, modificar y mantener.</p>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 class="page-break">13. Plan de Accion y Prioridades</h2>
+
+<h3>URGENTE &mdash; Seguridad</h3>
+<ol class="priority-list">
+  <li class="urgent"><strong>Migrar autenticacion a Supabase Auth</strong> &mdash; Elimina SHA-256 sin salt, implementa bcrypt server-side con manejo automatico de sesiones JWT</li>
+  <li class="urgent"><strong>Agregar escapeHtml()</strong> &mdash; Implementar funcion de escape HTML y aplicarla en TODA salida de datos de usuario para prevenir XSS</li>
+  <li class="urgent"><strong>Filtrar datos por usuario</strong> &mdash; Agregar <code>.eq("user_id", userId)</code> en todos los queries a Supabase para scoping de datos</li>
+  <li class="urgent"><strong>Expiracion de sesion</strong> &mdash; Implementar timeout de inactividad (30 min sugerido)</li>
+</ol>
+
+<h3>ALTO IMPACTO &mdash; Funcionalidad</h3>
+<ol class="priority-list" style="counter-reset: priority 4;">
+  <li class="high"><strong>6 roles con jerarquia</strong> &mdash; director &gt; admin &gt; supervisor &gt; comercial &gt; comisionista &gt; viewer</li>
+  <li class="high"><strong>Permisos por usuario individual</strong> &mdash; El director puede personalizar acceso por pagina para cada usuario</li>
+  <li class="high"><strong>Motor de validacion de pagos</strong> &mdash; Deteccion de duplicados, pagos vencidos, excesos, con tolerancia configurable</li>
+  <li class="high"><strong>Calendario de dias habiles</strong> &mdash; Festivos Banxico + cutoff 22:59 + calculo automatico de fecha de pago</li>
+  <li class="high"><strong>Override de comisiones por cliente</strong> &mdash; Tasas personalizadas por cliente, con scoping por director</li>
+</ol>
+
+<h3>MEJORA TECNICA &mdash; Mantenibilidad</h3>
+<ol class="priority-list" style="counter-reset: priority 9;">
+  <li class="tech"><strong>Partir archivos grandes</strong> &mdash; terminales.js (2,840 lineas) en 5-6 archivos especializados</li>
+  <li class="tech"><strong>Centralizar configuracion</strong> &mdash; Un solo config.js con todas las constantes del sistema</li>
+  <li class="tech"><strong>Mover estilos inline a CSS</strong> &mdash; Clases reutilizables en vez de style="..." en JavaScript</li>
+  <li class="tech"><strong>Event delegation</strong> &mdash; Un listener centralizado en vez de onclick="..." inline en cada boton</li>
+  <li class="tech"><strong>Funciones puras para calculos</strong> &mdash; Separar logica de negocio del renderizado DOM</li>
+</ol>
+
+<h3>NICE TO HAVE</h3>
+<ol class="priority-list" style="counter-reset: priority 14;">
+  <li class="nice"><strong>Exportacion CSV/PDF/Clipboard</strong> &mdash; Exportar comisiones, terminales, pagos en multiples formatos</li>
+  <li class="nice"><strong>Void/anulacion con auditoria</strong> &mdash; Marcar pagos como anulados en vez de borrarlos</li>
+  <li class="nice"><strong>Split de pagos fiscal/tarjeta</strong> &mdash; Configurable por cliente con preferencias guardadas</li>
+  <li class="nice"><strong>Charts expandibles con descarga PNG</strong> &mdash; Click para fullscreen + boton de descarga</li>
+  <li class="nice"><strong>Auto-refresh toggle</strong> &mdash; Actualizacion automatica de datos con boton on/off</li>
+</ol>
+
+<br>
+<div class="verdict" style="text-align:center; margin-top:20px;">
+  <p style="font-size:11px; color:#666;">
+    Documento generado el 3 de marzo de 2026<br>
+    Comparacion entre ERP Grupo (gfvmcr-dashboard) y Dashboard Centum (Emiliano)<br>
+    Para uso interno del equipo de desarrollo
+  </p>
+</div>
+
+</body>
+</html>
