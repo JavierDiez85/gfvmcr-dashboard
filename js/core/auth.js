@@ -75,15 +75,15 @@ function rUsuarios(){
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
       <!-- Avatar -->
       <div style="width:36px;height:36px;border-radius:50%;background:${u.activo?'var(--blue-bg)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:${u.activo?'var(--blue)':'var(--muted)'};flex-shrink:0">
-        ${u.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase()}
+        ${escapeHtml(u.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase())}
       </div>
       <!-- Info -->
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:6px">
-          ${u.nombre}
+          ${escapeHtml(u.nombre)}
           ${!u.activo ? '<span style="font-size:.6rem;background:var(--red-bg);color:var(--red);border:1px solid var(--red-lt);padding:1px 6px;border-radius:10px;font-weight:700">INACTIVO</span>' : ''}
         </div>
-        <div style="font-size:.7rem;color:var(--muted)">${u.email}${u.empresa?' · '+u.empresa:''}</div>
+        <div style="font-size:.7rem;color:var(--muted)">${escapeHtml(u.email)}${u.empresa?' · '+escapeHtml(u.empresa):''}</div>
       </div>
       <!-- Role -->
       <div style="text-align:center;flex-shrink:0">
@@ -218,11 +218,23 @@ async function uSaveUser(){
   uLoad();
   // Preserve existing perms when editing, start empty for new users
   const existingPerms = _uEditId ? (USUARIOS.find(x=>x.id===_uEditId)?.perms||{}) : {};
-  const existingHash  = _uEditId ? (USUARIOS.find(x=>x.id===_uEditId)?.passwordHash||'') : '';
+  const existingUser  = _uEditId ? USUARIOS.find(x=>x.id===_uEditId) : null;
+  const existingHash  = existingUser?.passwordHash || '';
+  const existingSalt  = existingUser?.salt || '';
+
+  // Si hay password nuevo, hashear con PBKDF2 + salt
+  let newHash = existingHash;
+  let newSalt = existingSalt;
+  if (pwd) {
+    newSalt = generateSalt();
+    newHash = await hashPasswordPBKDF2(pwd, newSalt);
+  }
+
   const data = {
     id: _uEditId || 'u_'+Date.now(),
     nombre, email,
-    passwordHash: pwd ? await hashPassword(pwd) : existingHash,
+    passwordHash: newHash,
+    salt: newSalt,
     tel:     document.getElementById('u-tel').value.trim(),
     empresa: document.getElementById('u-empresa').value,
     rol:     document.getElementById('u-rol').value,

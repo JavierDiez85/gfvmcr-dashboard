@@ -8,6 +8,17 @@ let _currentView = 'inicio';
 const CH = {};
 const dc = id => { if(CH[id]){ CH[id].destroy(); delete CH[id]; } };
 
+// ── Seguridad: Escape HTML para prevenir XSS ──
+function escapeHtml(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 Chart.defaults.font.family="'Figtree',sans-serif";
 Chart.defaults.font.size=11;
 Chart.defaults.color='#8b8fb5';

@@ -120,6 +120,8 @@ const SB = {
           console.log('[SB] Datos actualizados desde otro dispositivo');
           _refreshAppState();
         }
+        // Validar integridad de sesión cada pull
+        if (typeof validateSession === 'function') validateSession();
       }
     } catch (e) {
       console.warn('[SB] backgroundPull falló:', e.message);

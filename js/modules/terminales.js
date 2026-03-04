@@ -181,19 +181,19 @@ async function filterAgentesBySelect() {
 
   // Update subtitle
   const sub = document.getElementById('agentes-subtitle');
-  if (sub) sub.innerHTML = `<b>${ag.agente} (${ag.siglas})</b> · ${clientRows.length} clientes · Com. ${(pct * 100).toFixed(0)}% sobre Salem · <span style="color:var(--green);font-weight:600">Pagado ${fmtTPV(pagado)}</span>`;
+  if (sub) sub.innerHTML = `<b>${escapeHtml(ag.agente)} (${escapeHtml(ag.siglas)})</b> · ${clientRows.length} clientes · Com. ${(pct * 100).toFixed(0)}% sobre Salem · <span style="color:var(--green);font-weight:600">Pagado ${fmtTPV(pagado)}</span>`;
 
   // Update KPIs
   const kEl = document.getElementById('agentes-kpis');
   if (kEl) kEl.innerHTML = `
     <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Monto Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💰</div></div><div class="kpi-val" style="color:#0073ea">${fmtTPV(totCobrado)}</div><div class="kpi-d dnu">${clientRows.length} clientes del agente</div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
     <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Com. Salem</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">🏦</div></div><div class="kpi-val" style="color:var(--green)">${fmtTPV(totComSalem)}</div><div class="kpi-d dnu">Comisión generada para Salem</div><div class="kbar"><div class="kfill" style="background:var(--green);width:100%"></div></div></div>
-    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Com. ${ag.siglas}</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📈</div></div><div class="kpi-val" style="color:var(--orange)">${fmtTPV(totComAgente)}</div><div class="kpi-d dnu">${(pct * 100).toFixed(0)}% de Com. Salem</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:100%"></div></div></div>
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Com. ${escapeHtml(ag.siglas)}</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">📈</div></div><div class="kpi-val" style="color:var(--orange)">${fmtTPV(totComAgente)}</div><div class="kpi-d dnu">${(pct * 100).toFixed(0)}% de Com. Salem</div><div class="kbar"><div class="kfill" style="background:var(--orange);width:100%"></div></div></div>
     <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Pendiente Pago</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">⏳</div></div><div class="kpi-val" style="color:var(--red)">${fmtTPV(pendiente)}</div><div class="kpi-d dnu">Pagado: ${fmtTPV(pagado)}</div><div class="kbar"><div class="kfill" style="background:var(--red);width:${totComAgente > 0 ? Math.min(pendiente / totComAgente * 100, 100).toFixed(0) : 0}%"></div></div></div>`;
 
   // Update table header
   const theadRow = document.getElementById('agentes-thead');
-  if (theadRow) theadRow.innerHTML = '<th>#</th><th>Cliente</th><th class="r">Monto Cobrado</th><th class="r">Com. Salem</th><th class="r" style="color:var(--orange)">Com. ' + ag.siglas + '</th><th class="r">% del Total</th>';
+  if (theadRow) theadRow.innerHTML = '<th>#</th><th>Cliente</th><th class="r">Monto Cobrado</th><th class="r">Com. Salem</th><th class="r" style="color:var(--orange)">Com. ' + escapeHtml(ag.siglas) + '</th><th class="r">% del Total</th>';
 
   // Render client rows
   const tbody = document.getElementById('agentes-tbody');
@@ -205,7 +205,7 @@ async function filterAgentesBySelect() {
         const pctTotal = totCobrado > 0 ? (c._cobrado / totCobrado * 100).toFixed(1) : '0.0';
         return `<tr>
           <td style="color:var(--muted);font-size:.72rem">${i + 1}</td>
-          <td class="bld">${c.cliente}</td>
+          <td class="bld">${escapeHtml(c.cliente)}</td>
           <td class="mo pos bld">${fmtTPVFull(c._cobrado)}</td>
           <td class="mo">${fmtTPVFull(c._comSalem)}</td>
           <td class="mo" style="color:var(--orange);font-weight:600">${fmtTPVFull(c._comAgente)}</td>
@@ -566,8 +566,8 @@ function openSalemEarnings() {
       const pctPromo = c.total_salem > 0 ? ((c.total_comisionista + c.total_agentes) / c.total_salem * 100).toFixed(1) : '0.0';
       return `<tr data-name="${c.cliente.toLowerCase()}">
         <td style="color:var(--muted);font-size:.72rem">${i + 1}</td>
-        <td class="bld">${c.cliente}</td>
-        <td>${c.agente ? '<span style="font-size:.65rem;background:var(--purple-bg);color:var(--purple);padding:2px 5px;border-radius:4px">' + (c.siglas || c.agente) + '</span>' : '<span style="color:var(--muted);font-size:.65rem">—</span>'}</td>
+        <td class="bld">${escapeHtml(c.cliente)}</td>
+        <td>${c.agente ? '<span style="font-size:.65rem;background:var(--purple-bg);color:var(--purple);padding:2px 5px;border-radius:4px">' + escapeHtml(c.siglas || c.agente) + '</span>' : '<span style="color:var(--muted);font-size:.65rem">—</span>'}</td>
         <td class="mo" style="color:#0073ea">${fmtTPVFull(c.total_salem)}</td>
         <td class="mo" style="color:#ff7043">${fmtTPVFull(c.total_comisionista)}</td>
         <td class="mo" style="color:#9b51e0">${fmtTPVFull(c.total_agentes)}</td>
@@ -656,8 +656,8 @@ async function rTPVAgentes(){
     const badge=ag._pendiente<=0?'<span class="tpv-badge-ok">Al día</span>':`<span class="tpv-badge-warn">${fmtTPVFull(ag._pendiente)}</span>`;
     const histBtn = ag._nPagos > 0 ? `<span style="font-size:.6rem;background:var(--blue-bg);color:var(--blue);border-radius:10px;padding:1px 6px;font-weight:700">${ag._nPagos}</span>` : '';
     return`<tr>
-      <td class="bld">${ag.agente}</td>
-      <td><span style="font-size:.67rem;background:var(--blue-bg);color:#0060b8;border:1px solid var(--blue-lt);padding:1px 7px;border-radius:10px;font-weight:700">${ag.siglas}</span></td>
+      <td class="bld">${escapeHtml(ag.agente)}</td>
+      <td><span style="font-size:.67rem;background:var(--blue-bg);color:#0060b8;border:1px solid var(--blue-lt);padding:1px 7px;border-radius:10px;font-weight:700">${escapeHtml(ag.siglas)}</span></td>
       <td class="mo">${(parseFloat(ag.pct||0)*100).toFixed(0)}%</td>
       <td class="mo bld">${fmtTPVFull(ag.vendido)}</td>
       <td class="mo">${fmtTPVFull(ag.com_salem)}</td>
@@ -703,7 +703,7 @@ function openPagoAgenteModal(agenteId) {
   // Populate options + search cache
   _pagoAgenteAllOptions = _agentesCache.map(a => ({ value: String(a.agente_id), label: `${a.agente} (${a.siglas})` }));
   sel.innerHTML = '<option value="">— Seleccionar agente —</option>' +
-    _agentesCache.map(a => `<option value="${a.agente_id}" ${a.agente_id===agenteId?'selected':''}>${a.agente} (${a.siglas})</option>`).join('');
+    _agentesCache.map(a => `<option value="${a.agente_id}" ${a.agente_id===agenteId?'selected':''}>${escapeHtml(a.agente)} (${escapeHtml(a.siglas)})</option>`).join('');
   const pagoAgSearchEl = document.getElementById('pago-agente-search');
   if (pagoAgSearchEl) pagoAgSearchEl.value = '';
   if (agenteId) { document.getElementById('pago-agente-title').textContent = 'Pago a ' + (_agentesCache.find(a=>a.agente_id===agenteId)?.agente||'Agente'); }
@@ -2388,7 +2388,7 @@ function rCatView(){
           +'</label>';
       }).join('');
       return '<tr id="cat-row-'+sec+'-'+i+'">'
-        +'<td style="font-weight:600">'+c.nombre+'</td>'
+        +'<td style="font-weight:600">'+escapeHtml(c.nombre)+'</td>'
         +'<td><span style="font-size:.65rem;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:10px">'+c.tipo+'</span></td>'
         +'<td><div style="display:flex;gap:3px;flex-wrap:wrap">'+boxes+'</div></td>'
         +'<td style="text-align:right">'+pp+'</td>'
@@ -2468,9 +2468,9 @@ function catShowModal(idx, sec){
     +'</div>'
     +'<div style="padding:20px 22px">'
       +'<div style="margin-bottom:12px"><label class="fl">Nombre</label>'
-        +'<input type="text" id="cm-nombre" class="fi" value="'+item.nombre+'" placeholder="Ej: Comisiones Promotoría"></div>'
+        +'<input type="text" id="cm-nombre" class="fi" value="'+escapeHtml(item.nombre)+'" placeholder="Ej: Comisiones Promotoría"></div>'
       +'<div style="margin-bottom:12px"><label class="fl">Tipo / Agrupación</label>'
-        +'<input type="text" id="cm-tipo" class="fi" value="'+item.tipo+'" placeholder="Ej: Nómina, Operaciones..."></div>'
+        +'<input type="text" id="cm-tipo" class="fi" value="'+escapeHtml(item.tipo)+'" placeholder="Ej: Nómina, Operaciones..."></div>'
       +'<div style="margin-bottom:12px"><label class="fl">Presupuesto Mensual ($)</label>'
         +'<input type="number" id="cm-ppto" class="fi n" value="'+(item.ppto||0)+'" min="0"></div>'
       + wbRow
@@ -2586,7 +2586,7 @@ async function rTPVComisiones() {
     if (sel) {
       sel.innerHTML = '<option value="">Todos los agentes</option>';
       _comAgentesCache.forEach(a => {
-        sel.innerHTML += `<option value="${a.id}">${a.nombre} (${a.siglas || ''})</option>`;
+        sel.innerHTML += `<option value="${a.id}">${escapeHtml(a.nombre)} (${escapeHtml(a.siglas || '')})</option>`;
       });
     }
 
@@ -2618,8 +2618,8 @@ function _renderComTable(clients) {
     const agSig = c.tpv_agentes ? c.tpv_agentes.siglas || c.tpv_agentes.nombre : '';
     const origIdx = _comClientesCache.indexOf(c);
     return `<tr data-com-idx="${i}" data-com-nombre="${(c.nombre||'').toLowerCase()}" data-com-agente="${c.agente_id||''}">
-      <td style="font-weight:600;font-size:.72rem;white-space:nowrap">${c.nombre_display || c.nombre || '—'}</td>
-      <td style="font-size:.72rem">${agSig ? `<span class="pill" style="font-size:.62rem">${agSig}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
+      <td style="font-weight:600;font-size:.72rem;white-space:nowrap">${escapeHtml(c.nombre_display || c.nombre || '—')}</td>
+      <td style="font-size:.72rem">${agSig ? `<span class="pill" style="font-size:.62rem">${escapeHtml(agSig)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_efevoo_tc)}</td>
       <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_efevoo_td)}</td>
       <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_salem_tc)}</td>
@@ -2670,7 +2670,7 @@ async function openComEdit(client) {
   if (agSel) {
     agSel.innerHTML = '<option value="">Sin agente</option>';
     _comAgentesCache.forEach(a => {
-      agSel.innerHTML += `<option value="${a.id}">${a.nombre} (${a.siglas || ''})</option>`;
+      agSel.innerHTML += `<option value="${a.id}">${escapeHtml(a.nombre)} (${escapeHtml(a.siglas || '')})</option>`;
     });
     agSel.value = client?.agente_id || '';
   }
