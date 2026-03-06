@@ -113,15 +113,18 @@ function credProximoPago(credit){
 // ══════════════════════════════════════
 // DASHBOARD CONSOLIDADO DE CRÉDITOS
 // ══════════════════════════════════════
-function rCredDash(){
+function rCredDash(entFilter, elPrefix){
+  // entFilter: 'end'=solo Endless, 'dyn'=solo Dynamo, null=todos
+  // elPrefix: prefijo de IDs HTML (default 'cred-dash')
+  if(!elPrefix) elPrefix = 'cred-dash';
+
   // Load latest data from DB
   try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
   try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
 
-  const all = [
-    ...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})),
-    ...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'}))
-  ];
+  let all = [];
+  if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})));
+  if(!entFilter || entFilter==='dyn') all.push(...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'})));
 
   // ── KPIs consolidados ──
   const activos    = all.filter(c=>c.st==='Activo');
@@ -164,15 +167,19 @@ function rCredDash(){
     {lbl:'Tasa Ponderada Prom.', val: montoTotal>0 ? (all.reduce((s,c)=>s+(c.tasa||0)*(c.monto||0),0)/montoTotal).toFixed(1)+'%' : '—', sub:'Ponderada por monto', ico:'📊', color:'var(--orange)', bg:'var(--orange-bg)'},
   ];
 
-  const el1 = document.getElementById('cred-dash-kpis');
-  const el2 = document.getElementById('cred-dash-kpis2');
+  const el1 = document.getElementById(elPrefix+'-kpis');
+  const el2 = document.getElementById(elPrefix+'-kpis2');
   if(el1) el1.innerHTML = kpis1.map(_kpiCard).join('');
   if(el2) el2.innerHTML = kpis2.map(_kpiCard).join('');
 
   // ── Charts ──
   // Chart 1: Status breakdown (horizontal bar)
-  dc('ccredst');
-  CH['ccredst'] = new Chart(document.getElementById('c-cred-status'),{
+  const _chKey1 = elPrefix+'-st';
+  const _chKey2 = elPrefix+'-ent';
+  dc(_chKey1);
+  const _canvasSt = document.getElementById('c-'+elPrefix+'-status');
+  if(!_canvasSt) { _credDashEntitySummary('end', END_CREDITS, '#00b875'); _credDashEntitySummary('dyn', DYN_CREDITS, '#ff7043'); _credDashRenderAllList(all, elPrefix); return; }
+  CH[_chKey1] = new Chart(_canvasSt,{
     type:'bar',
     data:{
       labels:['Activos','Vencidos','Prospectos','Pagados'],
@@ -188,11 +195,13 @@ function rCredDash(){
   });
 
   // Chart 2: Entity distribution (doughnut)
-  dc('ccredent');
+  dc(_chKey2);
   const endCartera = END_CREDITS.filter(c=>c.st==='Activo'||c.st==='Vencido').reduce((s,c)=>s+credSaldoActual(c),0);
   const dynCartera = DYN_CREDITS.filter(c=>c.st==='Activo'||c.st==='Vencido').reduce((s,c)=>s+credSaldoActual(c),0);
   const totalCar = endCartera + dynCartera;
-  CH['ccredent'] = new Chart(document.getElementById('c-cred-entity'),{
+  const _canvasEnt = document.getElementById('c-'+elPrefix+'-entity');
+  if(!_canvasEnt) { _credDashEntitySummary('end', END_CREDITS, '#00b875'); _credDashEntitySummary('dyn', DYN_CREDITS, '#ff7043'); _credDashRenderAllList(all, elPrefix); return; }
+  CH[_chKey2] = new Chart(_canvasEnt,{
     type:'doughnut',
     data:{
       labels:[`Endless ${fmtK(endCartera)}`,`Dynamo ${fmtK(dynCartera)}`],
@@ -208,12 +217,14 @@ function rCredDash(){
       scales:{x:{display:false},y:{display:false}}}
   });
 
-  // ── Entity summary cards ──
-  _credDashEntitySummary('end', END_CREDITS, '#00b875');
-  _credDashEntitySummary('dyn', DYN_CREDITS, '#ff7043');
+  // ── Entity summary cards (solo si hay ambas) ──
+  if(!entFilter) {
+    _credDashEntitySummary('end', END_CREDITS, '#00b875');
+    _credDashEntitySummary('dyn', DYN_CREDITS, '#ff7043');
+  }
 
   // ── Lista combinada ──
-  _credDashRenderAllList(all);
+  _credDashRenderAllList(all, elPrefix);
 }
 
 function _credDashEntitySummary(entKey, credits, col){
@@ -256,9 +267,10 @@ function _credDashEntitySummary(entKey, credits, col){
     </div>`;
 }
 
-function _credDashRenderAllList(all){
-  const listEl = document.getElementById('cred-dash-all-list');
-  const countEl = document.getElementById('cred-dash-total-count');
+function _credDashRenderAllList(all, elPrefix){
+  if(!elPrefix) elPrefix = 'cred-dash';
+  const listEl = document.getElementById(elPrefix+'-all-list');
+  const countEl = document.getElementById(elPrefix+'-total-count');
   if(!listEl) return;
 
   if(countEl) countEl.textContent = all.length;
@@ -319,7 +331,13 @@ function _credDashRenderAllList(all){
 
 function credDashFilter(query){
   const q = query.toLowerCase();
-  document.querySelectorAll('.cred-dash-row').forEach(row=>{
+  document.querySelectorAll('#cred-dash-all-list .cred-dash-row').forEach(row=>{
+    row.style.display = row.dataset.name.includes(q) ? '' : 'none';
+  });
+}
+function dynDashFilter(query){
+  const q = query.toLowerCase();
+  document.querySelectorAll('#dyn-dash-all-list .cred-dash-row').forEach(row=>{
     row.style.display = row.dataset.name.includes(q) ? '' : 'none';
   });
 }
@@ -742,15 +760,17 @@ function rDynCred(){
 // ══════════════════════════════════════
 // COBRANZA — SEGUIMIENTO DE PAGOS
 // ══════════════════════════════════════
-function rCredCobr(){
+function rCredCobr(entFilter, elPrefix){
+  if(!elPrefix) elPrefix = 'cobr';
+
   // Reload data
   try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
   try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
 
-  const all = [
-    ...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})),
-    ...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'}))
-  ].filter(c=>c.st==='Activo'||c.st==='Vencido');
+  let all = [];
+  if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})));
+  if(!entFilter || entFilter==='dyn') all.push(...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'})));
+  all = all.filter(c=>c.st==='Activo'||c.st==='Vencido');
 
   // Aggregate
   let totalPorCobrar=0, cobranzaAlDia=0, cobranzaVencida=0;
@@ -779,13 +799,14 @@ function rCredCobr(){
 
   const cumplimiento = totalPeriodos>0 ? ((periodosPagados/totalPeriodos)*100).toFixed(1) : '0';
 
-  _cobrKPIs(totalPorCobrar, cobranzaAlDia, cobranzaVencida, cumplimiento);
-  _cobrCharts(clientData);
-  _cobrRenderList(clientData);
+  _cobrKPIs(totalPorCobrar, cobranzaAlDia, cobranzaVencida, cumplimiento, elPrefix);
+  _cobrCharts(clientData, elPrefix);
+  _cobrRenderList(clientData, elPrefix);
 }
 
-function _cobrKPIs(totalPorCobrar, alDia, vencida, cumplimiento){
-  const el = document.getElementById('cobr-kpis');
+function _cobrKPIs(totalPorCobrar, alDia, vencida, cumplimiento, elPrefix){
+  if(!elPrefix) elPrefix = 'cobr';
+  const el = document.getElementById(elPrefix+'-kpis');
   if(!el) return;
   const _c = k => `
     <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px;border-top:3px solid ${k.color}">
@@ -805,14 +826,19 @@ function _cobrKPIs(totalPorCobrar, alDia, vencida, cumplimiento){
   ].map(_c).join('');
 }
 
-function _cobrCharts(clientData){
+function _cobrCharts(clientData, elPrefix){
+  if(!elPrefix) elPrefix = 'cobr';
   const totalPagado = clientData.reduce((s,c)=>s+(c._resumen?.pagado||0),0);
   const totalParcial = clientData.reduce((s,c)=>s+(c._resumen?.parcial||0),0);
   const totalVencido = clientData.reduce((s,c)=>s+(c._resumen?.vencido||0),0);
   const totalPendiente = clientData.reduce((s,c)=>s+(c._resumen?.pendiente||0),0);
 
-  dc('ccobrst');
-  CH['ccobrst'] = new Chart(document.getElementById('c-cobr-status'),{
+  const _ck1 = elPrefix+'-st';
+  const _ck2 = elPrefix+'-venc';
+  dc(_ck1);
+  const _cs = document.getElementById('c-'+elPrefix+'-status');
+  if(!_cs) return;
+  CH[_ck1] = new Chart(_cs,{
     type:'bar',
     data:{
       labels:['Pagados','Parciales','Vencidos','Pendientes'],
@@ -837,8 +863,10 @@ function _cobrCharts(clientData){
     .sort((a,b)=>b._resumen.montoVencido-a._resumen.montoVencido)
     .slice(0,5);
 
-  dc('ccobrvenc');
-  CH['ccobrvenc'] = new Chart(document.getElementById('c-cobr-vencida'),{
+  dc(_ck2);
+  const _cv = document.getElementById('c-'+elPrefix+'-vencida');
+  if(!_cv) return;
+  CH[_ck2] = new Chart(_cv,{
     type:'bar',
     data:{
       labels:vencidos.length>0 ? vencidos.map(c=>c.cl) : ['Sin vencidos'],
@@ -859,9 +887,10 @@ function _cobrCharts(clientData){
   });
 }
 
-function _cobrRenderList(clientData){
-  const listEl = document.getElementById('cobr-list');
-  const countEl = document.getElementById('cobr-count');
+function _cobrRenderList(clientData, elPrefix){
+  if(!elPrefix) elPrefix = 'cobr';
+  const listEl = document.getElementById(elPrefix+'-list');
+  const countEl = document.getElementById(elPrefix+'-count');
   if(!listEl) return;
   if(countEl) countEl.textContent = clientData.length;
 
@@ -925,7 +954,13 @@ function _cobrRenderList(clientData){
 
 function cobrFilter(q){
   const query = q.toLowerCase();
-  document.querySelectorAll('.cobr-row').forEach(r=>{
+  document.querySelectorAll('#cobr-list .cobr-row').forEach(r=>{
+    r.style.display = r.dataset.name.includes(query) ? '' : 'none';
+  });
+}
+function dynCobrFilter(q){
+  const query = q.toLowerCase();
+  document.querySelectorAll('#dyn-cobr-list .cobr-row').forEach(r=>{
     r.style.display = r.dataset.name.includes(query) ? '' : 'none';
   });
 }
@@ -1044,7 +1079,7 @@ let _activeMenu = null;   // current open menu
 // Mapa de vistas default por sección
 const _MENU_DEFAULTS = {
   grupo_menu:'resumen', salem:'tpv_general',
-  endless:'cred_dash', dynamo:'dyn_cred',
+  endless:'cred_dash', dynamo:'dyn_dash',
   wirebit:'wb_cripto', config:'cfg_usuarios'
 };
 

@@ -145,6 +145,7 @@
         <div class="mi" id="mi-dynamo" onclick="openMenu('dynamo',this)"><div class="mic">🔶</div>Dynamo<span class="mi-arr">›</span></div>
         <div class="mi-sub" id="sub-dynamo">
           <div class="sb-sec">Créditos</div>
+          <div class="si" onclick="sv('dyn_dash',this)" data-view="dyn_dash"><div class="ic">📊</div>Dashboard Créditos</div>
           <div class="si" onclick="sv('dyn_cred',this)" data-view="dyn_cred"><div class="ic">📋</div>Cartera Dynamo</div>
           <div class="si" onclick="sv('dyn_cobr',this)" data-view="dyn_cobr"><div class="ic">⚠️</div>Cobranza Dynamo</div>
         </div>
@@ -1395,8 +1396,8 @@
   <!-- Header -->
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
     <div>
-      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🏦 Dashboard de Créditos — Consolidado</div>
-      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Endless Money + Dynamo Finance · Haz clic en las tarjetas para ver detalle</div>
+      <div id="cred-dash-title" style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🏦 Dashboard de Créditos — Endless Money</div>
+      <div id="cred-dash-sub" style="font-size:.68rem;color:var(--muted);margin-top:2px">Cartera de créditos Endless Money · Haz clic en las tarjetas para ver detalle</div>
     </div>
     <div style="display:flex;gap:8px">
       <button class="btn btn-out edit-action" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
@@ -1500,8 +1501,8 @@
 <div id="view-cred_cobr" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
     <div>
-      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">⚠️ Cobranza — Seguimiento de Pagos</div>
-      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Endless Money + Dynamo Finance · Control de pagos y cartera vencida</div>
+      <div id="cobr-title" style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">⚠️ Cobranza Endless — Seguimiento de Pagos</div>
+      <div id="cobr-sub" style="font-size:.68rem;color:var(--muted);margin-top:2px">Endless Money · Control de pagos y cartera vencida</div>
     </div>
   </div>
 
@@ -1531,12 +1532,63 @@
 </div>
 
 
-<!-- ══════════ COBRANZA DYNAMO (Próximamente) ══════════ -->
+<!-- ══════════ DYNAMO DASHBOARD CRÉDITOS ══════════ -->
+<div id="view-dyn_dash" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🔶 Dashboard de Créditos — Dynamo Finance</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Cartera de créditos Dynamo Finance · Haz clic en las tarjetas para ver detalle</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-out edit-action" style="font-size:.72rem" onclick="navTo('carga_creditos')">📄 Cargar PDF</button>
+    </div>
+  </div>
+  <div id="dyn-dash-kpis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px"></div>
+  <div id="dyn-dash-kpis2" style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px"></div>
+  <div class="g31" style="margin-bottom:14px">
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Composición de Cartera</div><div class="cc-s">Por estatus de crédito</div></div></div>
+      <div class="cc-b"><canvas id="c-dyn-dash-status" height="130"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Distribución por Monto</div><div class="cc-s">Top créditos por capital</div></div></div>
+      <div class="cc-b"><canvas id="c-dyn-dash-entity" height="130"></canvas></div>
+    </div>
+  </div>
+  <div class="tw">
+    <div class="tw-h">
+      <div class="tw-ht">Créditos Dynamo <span id="dyn-dash-total-count" style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,112,67,.12);color:#ff7043;margin-left:6px">0</span></div>
+      <input id="dyn-dash-search" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="dynDashFilter(this.value)">
+    </div>
+    <div id="dyn-dash-all-list"></div>
+  </div>
+</div>
+
+<!-- ══════════ COBRANZA DYNAMO ══════════ -->
 <div id="view-dyn_cobr" class="view">
-  <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:400px;text-align:center">
-    <div style="font-size:3rem;margin-bottom:16px">🔶</div>
-    <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:8px">Cobranza Dynamo</div>
-    <div style="font-size:.8rem;color:var(--muted);max-width:400px">Este módulo está en desarrollo. Próximamente podrás dar seguimiento a la cobranza de créditos de Dynamo Finance.</div>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">⚠️ Cobranza Dynamo — Seguimiento de Pagos</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Dynamo Finance · Control de pagos y cartera vencida</div>
+    </div>
+  </div>
+  <div id="dyn-cobr-kpis" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px"></div>
+  <div class="g31" style="margin-bottom:14px">
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Composición de Cobranza</div><div class="cc-s">Periodos por estatus de pago</div></div></div>
+      <div class="cc-b"><canvas id="c-dyn-cobr-status" height="130"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Cartera Vencida por Cliente</div><div class="cc-s">Top deudores por monto</div></div></div>
+      <div class="cc-b"><canvas id="c-dyn-cobr-vencida" height="130"></canvas></div>
+    </div>
+  </div>
+  <div class="tw">
+    <div class="tw-h" style="display:flex;align-items:center;justify-content:space-between">
+      <div class="tw-ht">Créditos Dynamo <span id="dyn-cobr-count" style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,112,67,.12);color:#ff7043;margin-left:6px">0</span></div>
+      <input id="dyn-cobr-search" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="dynCobrFilter(this.value)">
+    </div>
+    <div id="dyn-cobr-list"></div>
   </div>
 </div>
 
