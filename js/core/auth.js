@@ -3,38 +3,34 @@
 // USUARIOS & PERMISOS
 // ═══════════════════════════════════════
 const MENU_PERMS = {
-  finanzas:   { label:'💹 Finanzas', subs:[
-    {id:'resumen',label:'Dashboard Grupo'},{id:'centum',label:'Centum Capital'},{id:'grupo',label:'Grupo Financiero'},
+  grupo_menu: { label:'🏢 Grupo', subs:[
+    {id:'resumen',label:'Dashboard Grupo'},{id:'centum',label:'Centum Capital'},
     {id:'sal_res',label:'Salem — P&L'},{id:'sal_ing',label:'Salem — Ingresos'},{id:'sal_gas',label:'Salem — Costes y Gastos'},{id:'sal_nom',label:'Salem — Nómina'},
     {id:'end_res',label:'Endless — P&L'},{id:'end_ing',label:'Endless — Ingresos'},{id:'end_gas',label:'Endless — Costes y Gastos'},{id:'end_nom',label:'Endless — Nómina'},
     {id:'dyn_res',label:'Dynamo — P&L'},{id:'dyn_ing',label:'Dynamo — Ingresos'},{id:'dyn_gas',label:'Dynamo — Costes y Gastos'},{id:'dyn_nom',label:'Dynamo — Nómina'},
-    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit — Ingresos'},{id:'wb_gas',label:'Wirebit — Costes y Gastos'},{id:'wb_cripto',label:'Wirebit — Cripto'},{id:'wb_tarjetas',label:'Wirebit — Tarjetas'},{id:'wb_nom',label:'Wirebit — Nómina'},
+    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit — Ingresos'},{id:'wb_gas',label:'Wirebit — Costes y Gastos'},{id:'wb_nom',label:'Wirebit — Nómina'},
+    {id:'tes_flujo',label:'Flujo de Caja'},{id:'tes_individual',label:'Tesorería por Empresa'},{id:'tes_grupo',label:'Consolidado Grupo'},
+    {id:'carga_masiva',label:'Carga Masiva'},{id:'flujo_ing',label:'Flujo Ingresos'},{id:'flujo_gas',label:'Flujo Gastos'},
     {id:'nomina',label:'Nómina Compartida'},{id:'gastos_comp',label:'Gastos Compartidos'},
+    {id:'carga_creditos',label:'Carga Créditos'},{id:'tpv_upload',label:'Datos TPV'},{id:'tpv_comisiones',label:'Config. Comisiones'},
+    {id:'tar_upload',label:'Carga Tarjetas'},{id:'wb_upload',label:'Wirebit Cripto'},{id:'wb_tar_upload',label:'Wirebit Tarjetas'},
   ]},
-  terminales: { label:'🖥️ Terminales', subs:[
+  salem:      { label:'💙 Salem', subs:[
     {id:'tpv_general',label:'Dashboard General'},{id:'tpv_dashboard',label:'Dashboard Periodo'},
     {id:'tpv_pagos',label:'Control de Pagos'},{id:'tpv_resumen',label:'Resumen por Cliente'},
     {id:'tpv_agentes',label:'Comisiones Agentes'},{id:'tpv_terminales',label:'Gestión de Terminales'},{id:'tpv_promotores',label:'Promotores'},
-  ]},
-  tickets:    { label:'🎫 Tickets', subs:[
-    {id:'tk_pagos_tpv',label:'Pagos TPV'},
-  ]},
-  tarjetas:   { label:'💳 Tarjetas', subs:[
-    {id:'tar_dashboard',label:'Dashboard CENTUM'},{id:'tar_conceptos',label:'Conceptos'},
+    {id:'tar_dashboard',label:'Dashboard Tarjetas'},{id:'tar_conceptos',label:'Conceptos'},
     {id:'tar_subclientes',label:'Subclientes'},{id:'tar_rechazos',label:'Rechazos'},{id:'tar_tarjetahabientes',label:'Tarjetahabientes'},
+    {id:'tk_pagos_tpv',label:'Tickets Pagos TPV'},
   ]},
-  tesoreria:  { label:'🏦 Tesorería', subs:[
-    {id:'tes_flujo',label:'Flujo de Caja'},{id:'tes_individual',label:'Por Empresa'},{id:'tes_grupo',label:'Consolidado Grupo'},
+  endless:    { label:'💚 Endless', subs:[
+    {id:'cred_dash',label:'Dashboard Créditos'},{id:'end_cred',label:'Cartera Endless'},{id:'cred_cobr',label:'Cobranza'},
   ]},
-  creditos:   { label:'🏦 Créditos', subs:[
-    {id:'cred_dash',label:'Dashboard Consolidado'},{id:'cred_cobr',label:'Cobranza'},
-    {id:'end_cred',label:'Cartera Endless'},{id:'dyn_cred',label:'Cartera Dynamo'},
+  dynamo:     { label:'🔶 Dynamo', subs:[
+    {id:'dyn_cred',label:'Cartera Dynamo'},
   ]},
-  carga:      { label:'📦 Carga de Datos', subs:[
-    {id:'carga_masiva',label:'Carga Masiva'},{id:'flujo_ing',label:'Flujo Ingresos'},{id:'flujo_gas',label:'Flujo Gastos'},
-    {id:'tpv_upload',label:'Datos TPV'},{id:'tpv_comisiones',label:'Config. Comisiones'},
-    {id:'tar_upload',label:'Carga Tarjetas'},{id:'wb_upload',label:'Wirebit Cripto'},{id:'wb_tar_upload',label:'Wirebit Tarjetas'},
-    {id:'carga_creditos',label:'Carga Créditos'},
+  wirebit:    { label:'💜 Wirebit', subs:[
+    {id:'wb_cripto',label:'Transacciones Cripto'},{id:'wb_tarjetas',label:'Transacciones Tarjetas'},
   ]},
   config:     { label:'⚙️ Configuración', subs:[
     {id:'cfg_usuarios',label:'Usuarios'},{id:'cfg_permisos',label:'Permisos'},
