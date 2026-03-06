@@ -2602,6 +2602,8 @@
         <input type="date" id="dash-to" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--text)" onchange="TPV.invalidateAll();initTPVDashboard()">
       </div>
       <div style="display:flex;gap:3px">
+        <button class="btn btn-blue" style="font-size:.62rem;padding:3px 7px" onclick="setDashDates('yesterday')">Ayer</button>
+        <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px;border-color:var(--purple);color:var(--purple)" onclick="setDashDates('weekend')">Fin de Semana</button>
         <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setDashDates('this_month')">Este mes</button>
         <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setDashDates('last_month')">Mes anterior</button>
         <button class="btn btn-out" style="font-size:.62rem;padding:3px 7px" onclick="setDashDates('last_3')">Últimos 3m</button>
