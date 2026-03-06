@@ -8,11 +8,12 @@ const VT = {
   flujo_ing:'Carga — Flujo de Ingresos',flujo_gas:'Carga — Flujo de Gastos',
   nomina:'Carga — Nómina Compartida',gastos_comp:'Carga — Gastos Compartidos',
   sal_res:'Salem — P&L',sal_ing:'Salem — Ingresos',sal_gas:'Salem — Costes y Gastos',sal_nom:'Salem — Nómina',
-  cred_dash:'Créditos — Dashboard Consolidado',
+  cred_dash:'Endless — Dashboard Créditos',
   cred_cobr:'Endless — Cobranza',
   dyn_cobr:'Dynamo — Cobranza',
   end_res:'Endless — P&L',end_ing:'Endless — Ingresos',end_gas:'Endless — Costes y Gastos',end_nom:'Endless — Nómina',end_cred:'Endless — Cartera',
   dyn_res:'Dynamo — P&L',dyn_ing:'Dynamo — Ingresos',dyn_gas:'Dynamo — Costes y Gastos',dyn_nom:'Dynamo — Nómina',dyn_cred:'Dynamo — Cartera',
+  dyn_dash:'Dynamo — Dashboard Créditos',
   tpv_general:'Terminales — Dashboard General', tpv_dashboard:'Terminales — Dashboard Periodo',
   tpv_pagos:'Terminales — Control de Pagos', tpv_resumen:'Terminales — Resumen por Cliente',
   tpv_agentes:'Terminales — Comisiones Agentes', tpv_terminales:'Terminales — Gestión de Terminales',
@@ -115,14 +116,16 @@ function render(id){
     case 'end_ing': _syncAll().then(()=>rIngView('end')); break;
     case 'end_gas': _syncAll().then(()=>rGasView('end')); break;
     case 'end_nom': rNomView('end'); break;
-    case 'cred_dash': rCredDash(); break;
-    case 'cred_cobr': rCredCobr(); break;
+    case 'cred_dash': rCredDash('end','cred-dash'); break;
+    case 'cred_cobr': rCredCobr('end','cobr'); break;
     case 'end_cred': rEndCred(); break;
     case 'dyn_res': _syncAll().then(()=>{rPL('dyn'); rPLCharts('dyn'); rEvoChart('c-dyn-evo','dyn');}); break;
     case 'dyn_ing': _syncAll().then(()=>rIngView('dyn')); break;
     case 'dyn_gas': _syncAll().then(()=>rGasView('dyn')); break;
     case 'dyn_nom': rNomView('dyn'); break;
     case 'dyn_cred': rDynCred(); break;
+    case 'dyn_dash': rCredDash('dyn','dyn-dash'); break;
+    case 'dyn_cobr': rCredCobr('dyn','dyn-cobr'); break;
     case 'wb_res': _syncAll().then(()=>{rPL('wb'); rPLCharts('wb'); rEvoChart('c-wb-evo','wb');}); break;
     case 'wb_ing': wbLoadFees(); rWBIng(); break;
     case 'wb_gas': _syncAll().then(()=>rGasView('wb')); break;
