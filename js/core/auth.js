@@ -24,10 +24,10 @@ const MENU_PERMS = {
     {id:'tk_pagos_tpv',label:'Tickets Pagos TPV'},
   ]},
   endless:    { label:'💚 Endless', subs:[
-    {id:'cred_dash',label:'Dashboard Créditos'},{id:'end_cred',label:'Cartera Endless'},{id:'cred_cobr',label:'Cobranza'},
+    {id:'cred_dash',label:'Dashboard Créditos'},{id:'end_cred',label:'Cartera Endless'},{id:'cred_cobr',label:'Cobranza Endless'},
   ]},
   dynamo:     { label:'🔶 Dynamo', subs:[
-    {id:'dyn_cred',label:'Cartera Dynamo'},
+    {id:'dyn_cred',label:'Cartera Dynamo'},{id:'dyn_cobr',label:'Cobranza Dynamo'},
   ]},
   wirebit:    { label:'💜 Wirebit', subs:[
     {id:'wb_cripto',label:'Transacciones Cripto'},{id:'wb_tarjetas',label:'Transacciones Tarjetas'},
