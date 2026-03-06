@@ -375,7 +375,25 @@ async function initTPVDashboard(fromDate, toDate) {
 function setDashDates(period) {
   const now = new Date();
   let from, to = now.toISOString().slice(0,10);
-  if (period === 'this_month') { from = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; }
+  const _ds = d => d.toISOString().slice(0,10);
+  const _ago = n => { const d = new Date(now); d.setDate(d.getDate() - n); return d; };
+
+  if (period === 'yesterday') {
+    from = _ds(_ago(1)); to = _ds(_ago(1));
+  }
+  else if (period === 'weekend') {
+    const dow = now.getDay();
+    let fOff, sOff;
+    if (dow === 1) { fOff = 4; sOff = 1; }
+    else if (dow === 0) { fOff = 2; sOff = 1; }
+    else if (dow === 6) { from = _ds(_ago(1)); to = _ds(_ago(1));
+      document.getElementById('dash-from').value = from;
+      document.getElementById('dash-to').value = to;
+      TPV.invalidateAll(); initTPVDashboard(from, to); return;
+    } else { fOff = dow + 2; sOff = dow; }
+    from = _ds(_ago(fOff)); to = _ds(_ago(sOff));
+  }
+  else if (period === 'this_month') { from = now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0')+'-01'; }
   else if (period === 'last_month') { const d = new Date(now.getFullYear(), now.getMonth()-1, 1); from = d.toISOString().slice(0,10); to = new Date(now.getFullYear(), now.getMonth(), 0).toISOString().slice(0,10); }
   else if (period === 'last_3') { const d = new Date(now.getFullYear(), now.getMonth()-2, 1); from = d.toISOString().slice(0,10); }
   else if (period === 'all') { from = null; to = null; }
