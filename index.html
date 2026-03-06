@@ -60,11 +60,11 @@
 
     <div style="padding:8px 6px 4px">
 
-      <!-- 1. Finanzas -->
+      <!-- 1. Grupo -->
       <div class="mi-wrap">
-        <div class="mi" id="mi-finanzas" onclick="openMenu('finanzas',this)"><div class="mic">💹</div>Finanzas<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-finanzas">
-          <div class="sb-sec">General</div>
+        <div class="mi" id="mi-grupo_menu" onclick="openMenu('grupo_menu',this)"><div class="mic">🏢</div>Grupo<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-grupo_menu">
+          <div class="sb-sec">Finanzas</div>
           <div class="si" onclick="sv('resumen',this)" data-view="resumen"><div class="ic">🏠</div>Dashboard Grupo</div>
           <div class="si" onclick="sv('centum',this)" data-view="centum"><div class="ic">🏢</div>Centum Capital</div>
           <div class="sb-sec">Salem Internacional</div>
@@ -77,27 +77,40 @@
           <div class="si" onclick="sv('end_ing',this)" data-view="end_ing"><div class="ic">💰</div>Ingresos</div>
           <div class="si" onclick="sv('end_gas',this)" data-view="end_gas"><div class="ic">💸</div>Costes y Gastos</div>
           <div class="si" onclick="sv('end_nom',this)" data-view="end_nom"><div class="ic">👥</div>Nómina</div>
-          <div class="si" onclick="sv('end_cred',this)" data-view="end_cred"><div class="ic">📋</div>Cartera</div>
           <div class="sb-sec">Dynamo Finance</div>
           <div class="si" onclick="sv('dyn_res',this)" data-view="dyn_res"><div class="ic">📊</div>Resumen P&L</div>
           <div class="si" onclick="sv('dyn_ing',this)" data-view="dyn_ing"><div class="ic">💰</div>Ingresos</div>
           <div class="si" onclick="sv('dyn_gas',this)" data-view="dyn_gas"><div class="ic">💸</div>Costes y Gastos</div>
           <div class="si" onclick="sv('dyn_nom',this)" data-view="dyn_nom"><div class="ic">👥</div>Nómina</div>
-          <div class="si" onclick="sv('dyn_cred',this)" data-view="dyn_cred"><div class="ic">📋</div>Cartera</div>
           <div class="sb-sec">Wirebit</div>
           <div class="si" onclick="sv('wb_res',this)" data-view="wb_res"><div class="ic">📊</div>Resumen P&L</div>
           <div class="si" onclick="sv('wb_ing',this)" data-view="wb_ing"><div class="ic">⛓</div>Ingresos 2026</div>
           <div class="si" onclick="sv('wb_gas',this)" data-view="wb_gas"><div class="ic">💸</div>Costes y Gastos</div>
-          <div class="si" onclick="sv('wb_cripto',this)" data-view="wb_cripto"><div class="ic">🔍</div>Transacciones Cripto</div>
-          <div class="si" onclick="sv('wb_tarjetas',this)" data-view="wb_tarjetas"><div class="ic">💳</div>Transacciones Tarjetas</div>
           <div class="si" onclick="sv('wb_nom',this)" data-view="wb_nom"><div class="ic">👥</div>Nómina Wirebit</div>
+          <div class="sb-sec">Tesorería</div>
+          <div class="si" onclick="sv('tes_flujo',this)" data-view="tes_flujo"><div class="ic">📥</div>Flujo de Caja</div>
+          <div class="si" onclick="sv('tes_individual',this)" data-view="tes_individual"><div class="ic">🏢</div>Por Empresa</div>
+          <div class="si" onclick="sv('tes_grupo',this)" data-view="tes_grupo"><div class="ic">🌐</div>Consolidado Grupo</div>
+          <div class="sb-sec">Carga de Datos</div>
+          <div class="si edit-action" onclick="sv('carga_masiva',this)" data-view="carga_masiva"><div class="ic">📋</div>Carga Masiva</div>
+          <div class="si edit-action" onclick="sv('flujo_ing',this)" data-view="flujo_ing"><div class="ic">📥</div>Flujo de Ingresos</div>
+          <div class="si edit-action" onclick="sv('flujo_gas',this)" data-view="flujo_gas"><div class="ic">📤</div>Flujo de Gastos</div>
+          <div class="si edit-action" onclick="sv('nomina',this)" data-view="nomina"><div class="ic">👥</div>Nómina Compartida</div>
+          <div class="si edit-action" onclick="sv('gastos_comp',this)" data-view="gastos_comp"><div class="ic">⚙️</div>Gastos Compartidos</div>
+          <div class="si edit-action" onclick="sv('carga_creditos',this)" data-view="carga_creditos"><div class="ic">📄</div>Carga de Créditos</div>
+          <div class="si edit-action" onclick="sv('tpv_upload',this)" data-view="tpv_upload"><div class="ic">⬆️</div>Datos TPV</div>
+          <div class="si edit-action" onclick="sv('tpv_comisiones',this)" data-view="tpv_comisiones"><div class="ic">⚙️</div>Config. Comisiones</div>
+          <div class="si edit-action" onclick="sv('tar_upload',this)" data-view="tar_upload"><div class="ic">💳</div>Carga Tarjetas</div>
+          <div class="si edit-action" onclick="sv('wb_upload',this)" data-view="wb_upload"><div class="ic">⛓</div>Carga Wirebit Cripto</div>
+          <div class="si edit-action" onclick="sv('wb_tar_upload',this)" data-view="wb_tar_upload"><div class="ic">💳</div>Carga Wirebit Tarjetas</div>
         </div>
       </div>
 
-      <!-- 2. Terminales -->
+      <!-- 2. Salem -->
       <div class="mi-wrap">
-        <div class="mi" id="mi-terminales" onclick="openMenu('terminales',this)"><div class="mic">🖥️</div>Terminales<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-terminales">
+        <div class="mi" id="mi-salem" onclick="openMenu('salem',this)"><div class="mic">💙</div>Salem<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-salem">
+          <div class="sb-sec">Terminales</div>
           <div class="si" onclick="sv('tpv_general',this)" data-view="tpv_general"><div class="ic">🌐</div>Dashboard General</div>
           <div class="si" onclick="sv('tpv_dashboard',this)" data-view="tpv_dashboard"><div class="ic">📊</div>Dashboard Periodo</div>
           <div class="si" onclick="sv('tpv_pagos',this)" data-view="tpv_pagos"><div class="ic">💳</div>Control de Pagos</div>
@@ -105,78 +118,44 @@
           <div class="si" onclick="sv('tpv_agentes',this)" data-view="tpv_agentes"><div class="ic">🤝</div>Comisiones Agentes</div>
           <div class="si" onclick="sv('tpv_terminales',this)" data-view="tpv_terminales"><div class="ic">🖥️</div>Gestión de Terminales</div>
           <div class="si" onclick="sv('tpv_promotores',this)" data-view="tpv_promotores"><div class="ic">👥</div>Promotores</div>
-        </div>
-      </div>
-
-      <!-- 3. Tarjetas -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-tarjetas" onclick="openMenu('tarjetas',this)"><div class="mic">💳</div>Tarjetas<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-tarjetas">
+          <div class="sb-sec">Tarjetas</div>
           <div class="si" onclick="sv('tar_dashboard',this)" data-view="tar_dashboard"><div class="ic">📊</div>Dashboard General</div>
           <div class="si" onclick="sv('tar_conceptos',this)" data-view="tar_conceptos"><div class="ic">🏷️</div>Desglose por Concepto</div>
           <div class="si" onclick="sv('tar_subclientes',this)" data-view="tar_subclientes"><div class="ic">🏢</div>Top Subclientes</div>
           <div class="si" onclick="sv('tar_rechazos',this)" data-view="tar_rechazos"><div class="ic">⚠️</div>Análisis de Rechazos</div>
           <div class="si" onclick="sv('tar_tarjetahabientes',this)" data-view="tar_tarjetahabientes"><div class="ic">👥</div>Tarjetahabientes</div>
+          <div class="sb-sec">Tickets</div>
+          <div class="si" onclick="sv('tk_pagos_tpv',this)" data-view="tk_pagos_tpv"><div class="ic">🎫</div>Pagos TPV</div>
         </div>
       </div>
 
-      <!-- 4. Tesorería -->
+      <!-- 3. Endless -->
       <div class="mi-wrap">
-        <div class="mi" id="mi-tesoreria" onclick="openMenu('tesoreria',this)"><div class="mic">🏛️</div>Tesorería<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-tesoreria">
-          <div class="sb-sec">Captura</div>
-          <div class="si" onclick="sv('tes_flujo',this)" data-view="tes_flujo"><div class="ic">📥</div>Flujo de Caja</div>
-          <div class="sb-sec">Análisis</div>
-          <div class="si" onclick="sv('tes_individual',this)" data-view="tes_individual"><div class="ic">🏢</div>Por Empresa</div>
-          <div class="si" onclick="sv('tes_grupo',this)" data-view="tes_grupo"><div class="ic">🌐</div>Consolidado Grupo</div>
-        </div>
-      </div>
-
-      <!-- 5. Tickets -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-tickets" onclick="openMenu('tickets',this)"><div class="mic">🎫</div>Tickets<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-tickets">
-          <div class="si" onclick="sv('tk_pagos_tpv',this)" data-view="tk_pagos_tpv"><div class="ic">💳</div>Pagos TPV</div>
-        </div>
-      </div>
-
-      <!-- 6. Créditos -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-creditos" onclick="openMenu('creditos',this)"><div class="mic">🏦</div>Créditos<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-creditos">
-          <div class="sb-sec">General</div>
+        <div class="mi" id="mi-endless" onclick="openMenu('endless',this)"><div class="mic">💚</div>Endless<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-endless">
+          <div class="sb-sec">Créditos</div>
           <div class="si" onclick="sv('cred_dash',this)" data-view="cred_dash"><div class="ic">📊</div>Dashboard Créditos</div>
-          <div class="sb-sec">Carteras</div>
           <div class="si" onclick="sv('end_cred',this)" data-view="end_cred"><div class="ic">📋</div>Cartera Endless</div>
-          <div class="si" onclick="sv('dyn_cred',this)" data-view="dyn_cred"><div class="ic">📋</div>Cartera Dynamo</div>
-          <div class="sb-sec">Análisis</div>
           <div class="si" onclick="sv('cred_cobr',this)" data-view="cred_cobr"><div class="ic">⚠️</div>Cobranza</div>
         </div>
       </div>
 
-      <!-- 6. Carga de Datos -->
-      <div class="mi-wrap edit-action">
-        <div class="mi" id="mi-carga" onclick="openMenu('carga',this)"><div class="mic">📥</div>Carga de Datos<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-carga">
-          <div class="sb-sec">Masiva</div>
-          <div class="si" onclick="sv('carga_masiva',this)" data-view="carga_masiva"><div class="ic">📋</div>Carga Masiva</div>
-          <div class="sb-sec">Finanzas P&L</div>
-          <div class="si" onclick="sv('flujo_ing',this)" data-view="flujo_ing"><div class="ic">📥</div>Flujo de Ingresos</div>
-          <div class="si" onclick="sv('flujo_gas',this)" data-view="flujo_gas"><div class="ic">📤</div>Flujo de Gastos</div>
-          <div class="si" onclick="sv('nomina',this)" data-view="nomina"><div class="ic">👥</div>Nómina Compartida</div>
-          <div class="si" onclick="sv('gastos_comp',this)" data-view="gastos_comp"><div class="ic">⚙️</div>Gastos Compartidos</div>
+      <!-- 4. Dynamo -->
+      <div class="mi-wrap">
+        <div class="mi" id="mi-dynamo" onclick="openMenu('dynamo',this)"><div class="mic">🔶</div>Dynamo<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-dynamo">
           <div class="sb-sec">Créditos</div>
-          <div class="si" onclick="sv('carga_creditos',this)" data-view="carga_creditos"><div class="ic">📄</div>Carga de Créditos</div>
-          <div class="sb-sec">Terminales</div>
-          <div class="si" onclick="sv('tpv_upload',this)" data-view="tpv_upload"><div class="ic">⬆️</div>Datos TPV</div>
-          <div class="si" onclick="sv('tpv_comisiones',this)" data-view="tpv_comisiones"><div class="ic">⚙️</div>Config. Comisiones</div>
-          <div class="sb-sec">Tarjetas</div>
-          <div class="si" onclick="sv('tar_upload',this)" data-view="tar_upload"><div class="ic">💳</div>Carga Tarjetas</div>
-          <div class="sb-sec">Wirebit</div>
-          <div class="si" onclick="sv('wb_upload',this)" data-view="wb_upload"><div class="ic">⛓</div>Transacciones Cripto</div>
-          <div class="si" onclick="sv('wb_tar_upload',this)" data-view="wb_tar_upload"><div class="ic">💳</div>Transacciones Tarjetas</div>
-          <div class="sb-sec">Tesorería</div>
-          <div class="si" onclick="sv('tes_flujo',this)" data-view="tes_flujo"><div class="ic">📥</div>Flujo de Caja</div>
+          <div class="si" onclick="sv('dyn_cred',this)" data-view="dyn_cred"><div class="ic">📋</div>Cartera Dynamo</div>
+        </div>
+      </div>
+
+      <!-- 5. Wirebit -->
+      <div class="mi-wrap">
+        <div class="mi" id="mi-wirebit" onclick="openMenu('wirebit',this)"><div class="mic">💜</div>Wirebit<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-wirebit">
+          <div class="sb-sec">Operaciones</div>
+          <div class="si" onclick="sv('wb_cripto',this)" data-view="wb_cripto"><div class="ic">🔍</div>Transacciones Cripto</div>
+          <div class="si" onclick="sv('wb_tarjetas',this)" data-view="wb_tarjetas"><div class="ic">💳</div>Transacciones Tarjetas</div>
         </div>
       </div>
 

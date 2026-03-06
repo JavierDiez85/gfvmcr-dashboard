@@ -1043,10 +1043,9 @@ let _activeMenu = null;   // current open menu
 
 // Mapa de vistas default por sección
 const _MENU_DEFAULTS = {
-  finanzas:'resumen', terminales:'tpv_general',
-  tarjetas:'tar_dashboard', tesoreria:'tes_grupo',
-  creditos:'cred_dash', carga:'flujo_ing', config:'cfg_usuarios',
-  tickets:'tk_pagos_tpv'
+  grupo_menu:'resumen', salem:'tpv_general',
+  endless:'cred_dash', dynamo:'dyn_cred',
+  wirebit:'wb_cripto', config:'cfg_usuarios'
 };
 
 function openMenu(menuId, el, viewOverride){
