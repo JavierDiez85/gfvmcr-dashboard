@@ -30,7 +30,8 @@ const APP_KEYS = [
   'gf4','gf_fi','gf_fg','gf_cred_end','gf_cred_dyn',
   'gf_cc_hist','gf_usuarios','gf_theme','gf_tesoreria',
   'gf_bancos','gf_tpv_pagos','gf_cat_cd','gf_cat_ga',
-  'gf_tickets_pagos_tpv'
+  'gf_tickets_pagos_tpv','gf_tpv_agente_pagos',
+  'gf_tpv_promotor_pagos','gf_tpv_rate_changes'
 ];
 
 // Estado de sync
@@ -183,6 +184,23 @@ function _refreshAppState() {
 // ══════════════════════════════════════
 // MIGRACIÓN — Renombrar claves antiguas vmcr_* → gf_*
 // ══════════════════════════════════════
+// Migrar keys que se omitieron en la migración original (corre siempre)
+function _migrateExtraKeys() {
+  const extras = {
+    'vmcr_tpv_agente_pagos':'gf_tpv_agente_pagos',
+    'vmcr_tpv_promotor_pagos':'gf_tpv_promotor_pagos',
+    'vmcr_tpv_rate_changes':'gf_tpv_rate_changes'
+  };
+  for (const [oldK, newK] of Object.entries(extras)) {
+    const v = localStorage.getItem(oldK);
+    if (v && !localStorage.getItem(newK)) {
+      console.log('[SB] Migrando key extra:', oldK, '→', newK);
+      localStorage.setItem(newK, v);
+      localStorage.removeItem(oldK);
+    }
+  }
+}
+
 async function _migrateOldKeys() {
   if (localStorage.getItem('_gf_keys_migrated')) return;
   console.log('[SB] Migrando claves vmcr_* → gf_*...');
@@ -191,7 +209,10 @@ async function _migrateOldKeys() {
     'vmcr_cred_dyn':'gf_cred_dyn','vmcr_cc_hist':'gf_cc_hist','vmcr_usuarios':'gf_usuarios',
     'vmcr_theme':'gf_theme','vmcr_tesoreria':'gf_tesoreria','vmcr_bancos':'gf_bancos',
     'vmcr_tpv_pagos':'gf_tpv_pagos','vmcr_cat_cd':'gf_cat_cd','vmcr_cat_ga':'gf_cat_ga',
-    'vmcr_tickets_pagos_tpv':'gf_tickets_pagos_tpv'
+    'vmcr_tickets_pagos_tpv':'gf_tickets_pagos_tpv',
+    'vmcr_tpv_agente_pagos':'gf_tpv_agente_pagos',
+    'vmcr_tpv_promotor_pagos':'gf_tpv_promotor_pagos',
+    'vmcr_tpv_rate_changes':'gf_tpv_rate_changes'
   };
   // localStorage
   for (const [oldK, newK] of Object.entries(OLD_MAP)) {
@@ -275,7 +296,10 @@ async function initApp() {
     // 0. Cargar config de Supabase desde el servidor
     await _loadConfig();
 
-    // 0b. Renombrar claves antiguas vmcr_* → gf_*
+    // 0b. Migrar keys extra que se omitieron (corre siempre)
+    _migrateExtraKeys();
+
+    // 0c. Renombrar claves antiguas vmcr_* → gf_*
     await _migrateOldKeys();
 
     // 1. Migrar datos locales existentes (solo la primera vez)
