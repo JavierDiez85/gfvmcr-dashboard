@@ -1721,11 +1721,41 @@ function filterHistorial() {
   const fromVal = document.getElementById('hist-pg-from')?.value || '';
   const toVal = document.getElementById('hist-pg-to')?.value || '';
   const clienteVal = document.getElementById('hist-pg-cliente')?.value || '';
+  const destinoVal = document.getElementById('hist-pg-destino')?.value || '';
 
   let filtered = _historialCache;
   if (fromVal) filtered = filtered.filter(p => p.fecha >= fromVal);
   if (toVal) filtered = filtered.filter(p => p.fecha <= toVal);
   if (clienteVal) filtered = filtered.filter(p => String(p.clienteId) === clienteVal);
+  if (destinoVal) filtered = filtered.filter(p => p.destino === destinoVal);
+
+  _historialFiltered = filtered;
+  _renderHistorial(filtered);
+}
+
+// Filtro rápido: pagos registrados hoy (lo que tesorería debe pagar)
+function filterPagosHoy() {
+  const hoy = new Date();
+  const d = hoy.getDate(), m = hoy.getMonth() + 1, y = hoy.getFullYear();
+  // registrado está en formato es-MX: "d/m/yyyy, hh:mm:ss"
+  const prefix = d + '/' + m + '/' + y;
+  const destinoVal = document.getElementById('hist-pg-destino')?.value || '';
+
+  let filtered = _historialCache.filter(p => {
+    if (p.anulado) return false;
+    return p.registrado && p.registrado.startsWith(prefix);
+  });
+  if (destinoVal) filtered = filtered.filter(p => p.destino === destinoVal);
+
+  // Limpiar otros filtros visualmente
+  const fromEl = document.getElementById('hist-pg-from');
+  const toEl = document.getElementById('hist-pg-to');
+  const selEl = document.getElementById('hist-pg-cliente');
+  const searchEl = document.getElementById('hist-pg-search');
+  if (fromEl) fromEl.value = '';
+  if (toEl) toEl.value = '';
+  if (selEl) selEl.value = '';
+  if (searchEl) searchEl.value = '';
 
   _historialFiltered = filtered;
   _renderHistorial(filtered);
@@ -1747,10 +1777,12 @@ function resetHistorialFilters() {
   const toEl = document.getElementById('hist-pg-to');
   const selEl = document.getElementById('hist-pg-cliente');
   const searchEl = document.getElementById('hist-pg-search');
+  const destEl = document.getElementById('hist-pg-destino');
   if (fromEl) fromEl.value = '';
   if (toEl) toEl.value = '';
   if (selEl) selEl.value = '';
   if (searchEl) searchEl.value = '';
+  if (destEl) destEl.value = '';
   _historialFiltered = _historialCache;
   _renderHistorial(_historialCache);
 }
@@ -1763,22 +1795,26 @@ function _renderHistorial(rows) {
   const activos = rows.filter(p => !p.anulado);
   const anulados = rows.filter(p => p.anulado);
   const totalMonto = activos.reduce((s, p) => s + (p.monto || 0), 0);
+  const tarjeta = activos.filter(p => p.destino === 'tarjeta');
+  const banco = activos.filter(p => p.destino === 'banco');
+  const montoTarjeta = tarjeta.reduce((s, p) => s + (p.monto || 0), 0);
+  const montoBanco = banco.reduce((s, p) => s + (p.monto || 0), 0);
   const kEl = document.getElementById('hist-pg-kpis');
   if (kEl) kEl.innerHTML = `
     <div class="kpi-card" style="--ac:#0073ea">
       <div class="kpi-top"><div class="kpi-lbl">Total Pagos</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">📋</div></div>
-      <div class="kpi-val" style="color:#0073ea">${activos.length}</div>
-      <div class="kpi-d dnu">${rows.length} registros en total</div>
+      <div class="kpi-val" style="color:#0073ea">${fmtTPV(totalMonto)}</div>
+      <div class="kpi-d dnu">${activos.length} pagos activos${anulados.length ? ' · ' + anulados.length + ' anulados' : ''}</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--purple)">
+      <div class="kpi-top"><div class="kpi-lbl">💳 Tarjeta</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">💳</div></div>
+      <div class="kpi-val" style="color:var(--purple)">${fmtTPV(montoTarjeta)}</div>
+      <div class="kpi-d dnu">${tarjeta.length} pago${tarjeta.length !== 1 ? 's' : ''}</div>
     </div>
     <div class="kpi-card" style="--ac:var(--green)">
-      <div class="kpi-top"><div class="kpi-lbl">Monto Total</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div>
-      <div class="kpi-val" style="color:var(--green)">${fmtTPV(totalMonto)}</div>
-      <div class="kpi-d dnu">Suma de pagos activos</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--red)">
-      <div class="kpi-top"><div class="kpi-lbl">Anulados</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">🚫</div></div>
-      <div class="kpi-val" style="color:var(--red)">${anulados.length}</div>
-      <div class="kpi-d dnu">${anulados.length > 0 ? fmtTPV(anulados.reduce((s,p)=>s+p.monto,0)) + ' excluidos' : 'Sin anulaciones'}</div>
+      <div class="kpi-top"><div class="kpi-lbl">🏦 Banco</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">🏦</div></div>
+      <div class="kpi-val" style="color:var(--green)">${fmtTPV(montoBanco)}</div>
+      <div class="kpi-d dnu">${banco.length} pago${banco.length !== 1 ? 's' : ''}</div>
     </div>
   `;
 

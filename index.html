@@ -2752,8 +2752,18 @@
           <option value="">Todos</option>
         </select>
       </div>
+      <div style="display:flex;align-items:center;gap:4px">
+        <label style="font-size:.7rem;color:var(--muted);font-weight:600">Destino</label>
+        <select id="hist-pg-destino" style="padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">
+          <option value="">Todos</option>
+          <option value="tarjeta">💳 Tarjeta</option>
+          <option value="banco">🏦 Banco</option>
+        </select>
+      </div>
       <button class="btn btn-blue" onclick="filterHistorial()" style="font-size:.7rem;padding:5px 14px">Filtrar</button>
       <button class="btn btn-out" onclick="resetHistorialFilters()" style="font-size:.68rem;padding:5px 10px;color:var(--muted)">Limpiar</button>
+      <div style="border-left:1px solid var(--border);height:22px;margin:0 4px"></div>
+      <button class="btn btn-blue" onclick="filterPagosHoy()" style="font-size:.7rem;padding:5px 14px;background:var(--green);border-color:var(--green)">📋 Pagos de Hoy</button>
     </div>
     <!-- KPIs -->
     <div class="kpi-row c3" id="hist-pg-kpis" style="margin-bottom:14px"></div>

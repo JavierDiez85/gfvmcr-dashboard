@@ -85,9 +85,7 @@
 
       <div class="field">
         <label>Empresa <span class="req">*</span></label>
-        <select id="pub-cliente">
-          <option value="">Cargando empresas...</option>
-        </select>
+        <input type="text" id="pub-cliente" placeholder="Nombre de tu empresa o negocio">
       </div>
 
       <div class="field">
@@ -149,25 +147,6 @@
         const cfg = await r.json();
         _sb = supabase.createClient(cfg.supabaseUrl, cfg.supabaseKey);
       } catch(e) { console.error('Error cargando config:', e); }
-    }
-
-    // ── Load clients for dropdown ──
-    async function loadClients(){
-      const sel = document.getElementById('pub-cliente');
-      try {
-        const { data, error } = await _sb.from('tpv_clients')
-          .select('id, nombre, nombre_display')
-          .order('nombre');
-        if(error) throw error;
-        sel.innerHTML = '<option value="">— Selecciona tu empresa —</option>' +
-          (data||[]).map(function(c){
-            var display = c.nombre_display || c.nombre;
-            return '<option value="' + display + '">' + display + '</option>';
-          }).join('');
-      } catch(e){
-        console.error('[ticket] loadClients:', e);
-        sel.innerHTML = '<option value="">— Error cargando empresas —</option>';
-      }
     }
 
     // ── Dynamic payment lines ──
@@ -332,7 +311,7 @@
       showErr('');
       var cliente = document.getElementById('pub-cliente').value;
       var asunto = document.getElementById('pub-asunto').value.trim();
-      if(!cliente){ showErr('Selecciona tu empresa'); return; }
+      if(!cliente){ showErr('Ingresa el nombre de tu empresa'); return; }
       if(!asunto){ showErr('Escribe un asunto para el ticket'); return; }
 
       var pagos = collectPagos();
@@ -412,7 +391,7 @@
     }
 
     // ── Init ──
-    _initSB().then(() => { loadClients(); });
+    _initSB();
     addPago(); // start with one payment line
   </script>
 </body>
