@@ -3225,21 +3225,48 @@
   <div class="tw"><div class="tw-h">
     <div class="tw-ht" id="com-cfg-table-title">Clientes y Comisiones</div>
   </div>
-  <div style="overflow-x:auto"><table class="bt" style="min-width:1000px">
+  <div style="overflow-x:auto"><table class="bt" style="min-width:900px">
     <thead><tr>
       <th style="width:200px">Cliente</th>
       <th>Agente</th>
-      <th class="r">Efevoo TC</th>
-      <th class="r">Efevoo TD</th>
-      <th class="r">Salem TC</th>
-      <th class="r">Salem TD</th>
-      <th class="r">Convenia TC</th>
-      <th class="r">Convenia TD</th>
+      <th>Entidad</th>
+      <th class="r">TC</th>
+      <th class="r">TD</th>
+      <th class="r">Amex</th>
+      <th class="r">TI</th>
       <th class="r">IVA</th>
       <th style="width:50px"></th>
     </tr></thead>
     <tbody id="com-cfg-tbody"></tbody>
   </table></div></div>
+</div>
+
+<!-- Modal: Detalle Cliente Comisiones -->
+<div id="com-detail-overlay" onclick="if(event.target===this)this.style.display='none'" style="display:none;position:fixed;top:0;left:0;width:100vw;height:100vh;background:rgba(0,0,0,.45);z-index:9998;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:14px;padding:24px;width:600px;max-width:95vw;max-height:90vh;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,.2)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:1rem;font-weight:700" id="com-detail-name">—</div>
+        <div style="font-size:.68rem;color:var(--muted)" id="com-detail-sub">—</div>
+      </div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <button class="btn btn-blue edit-action" style="font-size:.68rem;padding:4px 10px" id="com-detail-edit-btn">✏️ Editar</button>
+        <button onclick="document.getElementById('com-detail-overlay').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted)">&times;</button>
+      </div>
+    </div>
+    <!-- Info general -->
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:16px" id="com-detail-info"></div>
+    <!-- Comisiones Contado -->
+    <div style="margin-bottom:16px">
+      <div style="font-size:.75rem;font-weight:600;margin-bottom:8px">💳 Comisiones de Contado</div>
+      <div id="com-detail-rates"></div>
+    </div>
+    <!-- Comisiones MSI -->
+    <div>
+      <div style="font-size:.75rem;font-weight:600;margin-bottom:8px">📅 Comisiones MSI (Meses Sin Intereses)</div>
+      <div id="com-detail-msi"></div>
+    </div>
+  </div>
 </div>
 
 <!-- Modal: Editar/Crear Cliente Comisiones -->
