@@ -611,7 +611,7 @@ function filterSalemClients(q) {
 
 
 // ── AGENT PAYMENT TRACKING (localStorage) ──
-const AGENTE_PAGOS_KEY = 'vmcr_tpv_agente_pagos';
+const AGENTE_PAGOS_KEY = 'gf_tpv_agente_pagos';
 let _agentesCache = [];
 
 function agentePagosLoad() { try { return DB.get(AGENTE_PAGOS_KEY) || {}; } catch(e) { return {}; } }
@@ -919,7 +919,7 @@ async function submitEditAgente() {
 // ═══════════════════════════════════════
 // PROMOTORES VIEW
 // ═══════════════════════════════════════
-const PROM_PAGOS_KEY = 'vmcr_tpv_promotor_pagos';
+const PROM_PAGOS_KEY = 'gf_tpv_promotor_pagos';
 let _promSelectedName = null;
 let _promAllOptions = [];
 let _promClientRows = [];
@@ -1305,7 +1305,7 @@ const TPV_CHARTS = {};
 // TPV PAGOS — CAPTURA & LOCALSTORAGE
 // ==============================
 
-const PAGOS_KEY = 'vmcr_tpv_pagos';
+const PAGOS_KEY = 'gf_tpv_pagos';
 
 // Load payments from localStorage
 function pagosLoad() {
@@ -2361,13 +2361,13 @@ const CAT_GA_DEFAULT = [
 ];
 
 function catGetData(sec){
-  const key = sec==='cd' ? 'vmcr_cat_cd' : 'vmcr_cat_ga';
+  const key = sec==='cd' ? 'gf_cat_cd' : 'gf_cat_ga';
   const def = sec==='cd' ? CAT_CD_DEFAULT : CAT_GA_DEFAULT;
   try { const s=DB.get(key); return (s&&s.length)?s:JSON.parse(JSON.stringify(def)); }
   catch(e){ return JSON.parse(JSON.stringify(def)); }
 }
 function catSetData(sec,data){
-  DB.set(sec==='cd'?'vmcr_cat_cd':'vmcr_cat_ga', data);
+  DB.set(sec==='cd'?'gf_cat_cd':'gf_cat_ga', data);
 }
 
 let _catTab = 'cd';

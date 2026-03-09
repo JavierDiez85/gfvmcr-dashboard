@@ -1262,12 +1262,12 @@ const ENT_COLOR = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#
 
 // ── Cargar desde localStorage ──
 function fiLoad(){
-  try{ FI_ROWS = DB.get('vmcr_fi') || []; }catch(e){FI_ROWS=[];}
+  try{ FI_ROWS = DB.get('gf_fi') || []; }catch(e){FI_ROWS=[];}
   // Reinject créditos automáticos
   fiInjectCredits();
 }
 function fgLoad(){
-  try{ FG_ROWS = DB.get('vmcr_fg') || []; }catch(e){FG_ROWS=[];}
+  try{ FG_ROWS = DB.get('gf_fg') || []; }catch(e){FG_ROWS=[];}
 }
 
 // ── Inyectar créditos activos como filas automáticas de ingresos ──
@@ -1541,7 +1541,7 @@ function fiDelRow(id){
 function fiSave(){
   // Persist only non-auto rows (exclude credit auto AND TPV auto)
   const toSave = FI_ROWS.filter(r=>!r.auto && !r.autoTPV);
-  DB.set('vmcr_fi', toSave);
+  DB.set('gf_fi', toSave);
   // Sync to S.recs for P&L compatibility
   syncFlujoToRecs();
   refreshActivePL();
@@ -1687,7 +1687,7 @@ function fgUpdateKPIs(){ flUpdateKPIs('fg'); }
 function fgSave(){
   // Persist only non-auto rows (exclude TPV auto-injected)
   const toSave = FG_ROWS.filter(r => !r.autoTPV);
-  DB.set('vmcr_fg', toSave);
+  DB.set('gf_fg', toSave);
   syncFlujoToRecs();
   refreshActivePL();
   const btn = document.getElementById('fg-save-btn');
@@ -1818,7 +1818,7 @@ function syncFlujoToRecs(){
     }
   }
 
-  DB.set('vmcr4', S.recs.filter(r=>!r.fromFlujo));
+  DB.set('gf4', S.recs.filter(r=>!r.fromFlujo));
 }
 
 // ═══════════════════════════════════════
@@ -1832,16 +1832,16 @@ function clearData(){
   customConfirm('¿Borrar todos los registros?', 'Borrar', (ok)=>{
     if(!ok) return;
     S.recs=[]; FI_ROWS=[]; FG_ROWS=[];
-    DB.remove('vmcr4');
-    DB.remove('vmcr_fi');
-    DB.remove('vmcr_fg');
+    DB.remove('gf4');
+    DB.remove('gf_fi');
+    DB.remove('gf_fg');
     refreshActivePL();
     toast('🗑 Datos borrados');
   });
 }
 function delRec(id){
   S.recs=S.recs.filter(r=>String(r.id)!==String(id));
-  DB.set('vmcr4', S.recs);
+  DB.set('gf4', S.recs);
   refreshActivePL();
 }
 function expData(){

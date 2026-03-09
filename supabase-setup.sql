@@ -1,5 +1,5 @@
 -- ══════════════════════════════════════════════════════════
--- GFVMCR Dashboard — Setup de Supabase
+-- GF Dashboard — Setup de Supabase
 -- Ejecutar este SQL en: Supabase Dashboard → SQL Editor
 -- ══════════════════════════════════════════════════════════
 
@@ -16,19 +16,19 @@ CREATE INDEX IF NOT EXISTS idx_app_data_updated ON app_data (updated_at);
 
 -- Seed: insertar todas las keys conocidas con valores vacíos
 INSERT INTO app_data (key, value) VALUES
-  ('vmcr4',         '[]'::jsonb),
-  ('vmcr_fi',       '[]'::jsonb),
-  ('vmcr_fg',       '[]'::jsonb),
-  ('vmcr_cred_end', '[]'::jsonb),
-  ('vmcr_cred_dyn', '[]'::jsonb),
-  ('vmcr_cc_hist',  '[]'::jsonb),
-  ('vmcr_usuarios', '[]'::jsonb),
-  ('vmcr_theme',    '"light"'::jsonb),
-  ('vmcr_tesoreria','[]'::jsonb),
-  ('vmcr_bancos',   '[]'::jsonb),
-  ('vmcr_tpv_pagos','{}'::jsonb),
-  ('vmcr_cat_cd',   '[]'::jsonb),
-  ('vmcr_cat_ga',   '[]'::jsonb)
+  ('gf4',         '[]'::jsonb),
+  ('gf_fi',       '[]'::jsonb),
+  ('gf_fg',       '[]'::jsonb),
+  ('gf_cred_end', '[]'::jsonb),
+  ('gf_cred_dyn', '[]'::jsonb),
+  ('gf_cc_hist',  '[]'::jsonb),
+  ('gf_usuarios', '[]'::jsonb),
+  ('gf_theme',    '"light"'::jsonb),
+  ('gf_tesoreria','[]'::jsonb),
+  ('gf_bancos',   '[]'::jsonb),
+  ('gf_tpv_pagos','{}'::jsonb),
+  ('gf_cat_cd',   '[]'::jsonb),
+  ('gf_cat_ga',   '[]'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- TABLA 2: Metadata de sincronización

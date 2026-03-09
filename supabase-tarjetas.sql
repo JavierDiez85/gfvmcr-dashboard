@@ -1,5 +1,5 @@
 -- ══════════════════════════════════════════════════════════
--- GFVMCR Dashboard — Supabase Schema: Tarjetas CENTUM
+-- GF Dashboard — Supabase Schema: Tarjetas CENTUM
 -- Tablas + Funciones RPC para módulo de Tarjetas
 -- Ejecutar en: Supabase Dashboard → SQL Editor
 -- ══════════════════════════════════════════════════════════

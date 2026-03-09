@@ -3,7 +3,7 @@
 // Genera plantilla Excel y procesa uploads masivos
 // ══════════════════════════════════════
 
-const CM_STORAGE_KEY = 'vmcr_cm_last_upload';
+const CM_STORAGE_KEY = 'gf_cm_last_upload';
 const CM_MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
 // ── Descargar plantilla Excel ──────────────────────────
@@ -238,8 +238,8 @@ async function startCargaMasiva(){
     progress(80, 'Sincronizando con P&L...');
 
     // Save
-    DB.set('vmcr_fi', FI_ROWS.filter(r => !r.auto && !r.autoTPV));
-    DB.set('vmcr_fg', FG_ROWS.filter(r => !r.autoTPV));
+    DB.set('gf_fi', FI_ROWS.filter(r => !r.auto && !r.autoTPV));
+    DB.set('gf_fg', FG_ROWS.filter(r => !r.autoTPV));
     fiInjectCredits();
     syncFlujoToRecs();
 

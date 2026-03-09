@@ -19,7 +19,7 @@ const WB_UPLOAD = (() => {
   // ── 1. Fetch exchange rates USD→MXN ──
   async function fetchExchangeRates(startDate, endDate) {
     // Check localStorage cache first
-    const cacheKey = 'vmcr_wb_fx_rates';
+    const cacheKey = 'gf_wb_fx_rates';
     const cached = DB.get(cacheKey) || {};
     const ratesMap = cached.rates || {};
     const cachedStart = cached.startDate || '';
@@ -212,7 +212,7 @@ const WB_UPLOAD = (() => {
         .map(([client, d]) => ({ client, ...d }))
         .sort((a, b) => b.total_mxn - a.total_mxn);
 
-      DB.set(`vmcr_wb_fees_${year}`, {
+      DB.set(`gf_wb_fees_${year}`, {
         year,
         monthly,
         byClient: clientList,
@@ -235,7 +235,7 @@ const WB_UPLOAD = (() => {
         txnCount: d.count
       }));
 
-    DB.set('vmcr_wb_upload_summary', {
+    DB.set('gf_wb_upload_summary', {
       monthlySummary,
       totalUSD,
       totalMXN,
@@ -264,7 +264,7 @@ const WB_UPLOAD = (() => {
   // ── 3. Render upload view ──
   function rWBUpload() {
     // Load existing summary from localStorage
-    const summary = DB.get('vmcr_wb_upload_summary');
+    const summary = DB.get('gf_wb_upload_summary');
 
     // Update KPIs
     const kTxns = document.getElementById('wb-upload-kpi-txns');

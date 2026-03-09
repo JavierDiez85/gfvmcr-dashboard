@@ -42,10 +42,10 @@ let USUARIOS = [];
 let _uEditId = null;
 
 function uLoad(){
-  try{ USUARIOS = DB.get('vmcr_usuarios') || []; }catch(e){ USUARIOS=[]; }
+  try{ USUARIOS = DB.get('gf_usuarios') || []; }catch(e){ USUARIOS=[]; }
 }
 function uSave(){
-  DB.set('vmcr_usuarios', USUARIOS);
+  DB.set('gf_usuarios', USUARIOS);
 }
 
 function rUsuarios(){

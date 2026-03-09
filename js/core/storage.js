@@ -11,7 +11,7 @@ const DB = {
   },
   set(key, val) {
     // Bloquear escrituras para viewers (excepto tema)
-    if (key !== 'vmcr_theme' && typeof isViewer === 'function' && isViewer()) {
+    if (key !== 'gf_theme' && typeof isViewer === 'function' && isViewer()) {
       console.warn('[DB.set] bloqueado — modo solo lectura');
       return;
     }

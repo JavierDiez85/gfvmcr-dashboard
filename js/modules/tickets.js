@@ -1,6 +1,6 @@
-// GFVMCR — Tickets: sistema de tickets para pagos TPV (con pagos múltiples)
+// GF — Tickets: sistema de tickets para pagos TPV (con pagos múltiples)
 
-const TK_STORAGE_KEY = 'vmcr_tickets_pagos_tpv';
+const TK_STORAGE_KEY = 'gf_tickets_pagos_tpv';
 let _tkModalPagoIdx = 0;
 
 function _tkLoad(){
@@ -149,7 +149,7 @@ function _tkUpdateBadge(){
 function _tkPopulateClientes(){
   const sel = document.getElementById('tk-f-cliente');
   if(!sel) return;
-  const clients = DB.get('vmcr_tpv_clients') || [];
+  const clients = DB.get('gf_tpv_clients') || [];
   const names = [...new Set(clients.map(c => c.nombre_display || c.nombre || c.client_name).filter(Boolean))].sort();
   sel.innerHTML = '<option value="">— Selecciona —</option>' +
     names.map(n => `<option value="${n}">${n}</option>`).join('');

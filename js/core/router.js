@@ -75,8 +75,8 @@ function sv(id, navEl){
 async function _syncAll(){
   wbLoadFees();
   // Load credits from DB before injection
-  try{const s=DB.get('vmcr_cred_end');if(s){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
-  try{const s=DB.get('vmcr_cred_dyn');if(s){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_end');if(s){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_dyn');if(s){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
   fiLoad(); fgLoad();
   // Pre-fetch TPV commission data from Supabase into cache
   if(typeof TPV !== 'undefined' && TPV.calcMonthlyPL){

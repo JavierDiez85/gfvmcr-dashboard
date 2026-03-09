@@ -298,7 +298,7 @@ async function _chatSend() {
 // ═══════════════════════════════════════
 function _chatClear() {
   _chatMessages = [];
-  sessionStorage.removeItem('vmcr_chat_history');
+  sessionStorage.removeItem('gf_chat_history');
   _chatRenderMessages();
 }
 
@@ -433,7 +433,7 @@ async function _chatBuildContext() {
 
   // ── Tickets (detallado) ──
   try {
-    const tickets = DB.get('vmcr_tickets_pagos_tpv') || [];
+    const tickets = DB.get('gf_tickets_pagos_tpv') || [];
     if (tickets.length) {
       lines.push('\n═══ TICKETS ═══');
       const byStatus = {};
@@ -499,7 +499,7 @@ async function _chatBuildContext() {
 
   // ── P&L Records (con desglose mensual) ──
   try {
-    const recs = DB.get('vmcr4') || [];
+    const recs = DB.get('gf4') || [];
     if (recs.length) {
       lines.push('\n═══ ESTADO DE RESULTADOS (P&L) ═══');
       lines.push('Total: ' + recs.length + ' transacciones registradas');
@@ -542,8 +542,8 @@ async function _chatBuildContext() {
 
   // ── Flujos (con desglose mensual) ──
   try {
-    const fi = DB.get('vmcr_fi') || {};
-    const fg = DB.get('vmcr_fg') || {};
+    const fi = DB.get('gf_fi') || {};
+    const fg = DB.get('gf_fg') || {};
     const fiEnts = Object.keys(fi).length;
     const fgEnts = Object.keys(fg).length;
     if (fiEnts || fgEnts) {
@@ -586,8 +586,8 @@ async function _chatBuildContext() {
 
   // ── Créditos (con ganancias calculadas) ──
   try {
-    const credEnd = DB.get('vmcr_cred_end') || [];
-    const credDyn = DB.get('vmcr_cred_dyn') || [];
+    const credEnd = DB.get('gf_cred_end') || [];
+    const credDyn = DB.get('gf_cred_dyn') || [];
     if (credEnd.length || credDyn.length) {
       lines.push('\n═══ CRÉDITOS ═══');
       const _isActivo = c => c.st === 'Activo' || c.status === 'Activo' || c.estado === 'Activo';
@@ -720,7 +720,7 @@ async function _chatBuildContext() {
 
   // ── Tesorería (detallada) ──
   try {
-    const tes = DB.get('vmcr_tesoreria') || [];
+    const tes = DB.get('gf_tesoreria') || [];
     if (tes.length) {
       lines.push('\n═══ TESORERÍA ═══');
       let totalIng = 0, totalEgr = 0;
@@ -764,7 +764,7 @@ async function _chatBuildContext() {
 
   // ── Bancos (con saldos) ──
   try {
-    const bancos = DB.get('vmcr_bancos') || [];
+    const bancos = DB.get('gf_bancos') || [];
     if (bancos.length) {
       lines.push('\n═══ BANCOS ═══');
       let totalSaldo = 0;
@@ -781,7 +781,7 @@ async function _chatBuildContext() {
 
   // ── Usuarios (con roles) ──
   try {
-    const usuarios = DB.get('vmcr_usuarios') || [];
+    const usuarios = DB.get('gf_usuarios') || [];
     if (usuarios.length) {
       lines.push('\n═══ USUARIOS ═══');
       const activos = usuarios.filter(u => u.activo !== false);
@@ -826,13 +826,13 @@ function _chatMd(text) {
 // ═══════════════════════════════════════
 function _chatSaveSession() {
   try {
-    sessionStorage.setItem('vmcr_chat_history', JSON.stringify(_chatMessages.slice(-30)));
+    sessionStorage.setItem('gf_chat_history', JSON.stringify(_chatMessages.slice(-30)));
   } catch (e) {}
 }
 
 function _chatLoadSession() {
   try {
-    const raw = sessionStorage.getItem('vmcr_chat_history');
+    const raw = sessionStorage.getItem('gf_chat_history');
     _chatMessages = raw ? JSON.parse(raw) : [];
   } catch (e) {
     _chatMessages = [];
