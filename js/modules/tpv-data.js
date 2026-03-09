@@ -24,7 +24,10 @@ const TPV = {
     const lsKey = 'tpv_cache_' + cacheKey;
 
     try {
-      if (typeof _sb === 'undefined') throw new Error('Supabase not available');
+      if (!_sb) {
+        if (typeof _loadConfig === 'function') await _loadConfig();
+        if (!_sb) throw new Error('Supabase not available');
+      }
       const { data, error } = await _sb.rpc(fnName, params || {});
       if (error) throw error;
       this._setCache(cacheKey, data, lsKey);
@@ -144,7 +147,7 @@ const TPV = {
       });
 
       if (!relevant.length) return comData;
-      if (typeof _sb === 'undefined') return comData;
+      if (!_sb) return comData;
 
       // ── Step 1: Resolve rate change client names to client_ids ──
       // Rate changes store nombre.toUpperCase(), RPC returns nombre_display.

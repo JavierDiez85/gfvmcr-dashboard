@@ -317,7 +317,7 @@ async function _chatBuildContext() {
   // SUPABASE: Transacciones TPV (datos en vivo)
   // ══════════════════════════════════════
   try {
-    if (typeof _sb !== 'undefined') {
+    if (_sb) {
       // Fechas útiles
       const hoy = now.toISOString().slice(0, 10);
       const ayer = new Date(now.getTime() - 86400000).toISOString().slice(0, 10);
