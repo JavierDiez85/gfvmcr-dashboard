@@ -19,7 +19,10 @@ const TAR = {
     const lsKey = 'tar_cache_' + cacheKey;
 
     try {
-      if (typeof _sb === 'undefined') throw new Error('Supabase not available');
+      if (!_sb) {
+        if (typeof _loadConfig === 'function') await _loadConfig();
+        if (!_sb) throw new Error('Supabase not available');
+      }
       const { data, error } = await _sb.rpc(fnName, params || {});
       if (error) throw error;
       this._setCache(cacheKey, data, lsKey);
