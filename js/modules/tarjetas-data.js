@@ -110,6 +110,10 @@ const TAR = {
   /** Get upload history */
   async getUploadHistory() {
     try {
+      if (!_sb) {
+        if (typeof _loadConfig === 'function') await _loadConfig();
+        if (!_sb) throw new Error('Supabase not available');
+      }
       const { data, error } = await _sb.from('tar_upload_batches')
         .select('*')
         .order('created_at', { ascending: false })

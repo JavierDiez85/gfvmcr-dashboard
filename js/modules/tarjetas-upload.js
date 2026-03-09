@@ -2,6 +2,14 @@
 // Sube Excel de transacciones + tarjetahabientes a Supabase
 // Usa: XLSX (SheetJS CDN), _sb (Supabase client), TAR (tarjetas-data.js)
 
+/** Ensure _sb is initialized before any Supabase call (re-declared for load order safety) */
+async function _ensureSupabase() {
+  if (!_sb) {
+    if (typeof _loadConfig === 'function') await _loadConfig();
+    if (!_sb) throw new Error('Supabase not available');
+  }
+}
+
 const TAR_UPLOAD = {
   BATCH_SIZE: 500,
   _progress: null,
@@ -53,6 +61,7 @@ const TAR_UPLOAD = {
     const errors = [];
 
     try {
+      await _ensureSupabase();
       // ── Step 1: Read file ──
       this._progress(5, 'Leyendo archivo Excel...');
       const ab = await file.arrayBuffer();
@@ -255,6 +264,7 @@ const TAR_UPLOAD = {
 
   async rollbackBatch(batchId) {
     try {
+      await _ensureSupabase();
       const { error: e1 } = await _sb.from('tar_transactions')
         .delete().eq('upload_batch', batchId);
       if (e1) throw e1;
@@ -281,6 +291,7 @@ const TAR_UPLOAD = {
 
 /** Render the tarjetas upload view: KPIs + history */
 async function rTarUpload() {
+  await _ensureSupabase();
   // KPI: Total transacciones
   try {
     const { count: txnCount } = await _sb.from('tar_transactions').select('*', { count: 'exact', head: true });
