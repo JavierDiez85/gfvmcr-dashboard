@@ -3,6 +3,15 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 
+// Cargar .env (sin dependencias externas)
+const _envPath = path.join(__dirname, '.env');
+if (fs.existsSync(_envPath)) {
+  fs.readFileSync(_envPath, 'utf8').split('\n').forEach(line => {
+    const match = line.match(/^\s*([\w.-]+)\s*=\s*(.*)?\s*$/);
+    if (match && !process.env[match[1]]) process.env[match[1]] = (match[2] || '').trim();
+  });
+}
+
 const PORT = process.env.PORT || 8080;
 const ROOT = __dirname;
 
@@ -60,6 +69,16 @@ function readBody(req, maxBytes = 131072) {
 // SERVER
 // ══════════════════════════════════════
 http.createServer(async (req, res) => {
+
+  // ── API: Config pública (Supabase) ──
+  if (req.method === 'GET' && req.url === '/api/config') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+    res.end(JSON.stringify({
+      supabaseUrl: process.env.SUPABASE_URL || '',
+      supabaseKey: process.env.SUPABASE_KEY || ''
+    }));
+    return;
+  }
 
   // ── API: AI Chat proxy ──
   if (req.method === 'POST' && req.url === '/api/chat') {
