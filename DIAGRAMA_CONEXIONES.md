@@ -1,4 +1,4 @@
-# GFVMCR — Diagrama de Conexiones de Datos
+# GF — Diagrama de Conexiones de Datos
 > Generado: 2026-02-27 | Referencia para debugging de flujos
 
 ---
@@ -7,17 +7,17 @@
 
 | # | Fuente | Tipo | Archivo/Handler | Almacena en |
 |---|--------|------|-----------------|-------------|
-| F1 | Upload TPV Transacciones | Excel | `startTxnUpload()` | `vmcr_tpv_*` |
-| F2 | Upload TPV Config | Excel | `startCfgUpload()` | `vmcr_tpv_*` |
+| F1 | Upload TPV Transacciones | Excel | `startTxnUpload()` | `gf_tpv_*` |
+| F2 | Upload TPV Config | Excel | `startCfgUpload()` | `gf_tpv_*` |
 | F3 | Upload Tarjetas CENTUM | Excel | `startTarUpload()` | localStorage tarjetas |
-| F4 | Upload Wirebit | Excel | `startWBUpload()` | `vmcr_wb_fees_2026` |
-| F5 | Upload Tesoreria | Excel | `tesSubirExcel()` | `vmcr_tesoreria` |
-| F6 | Upload Creditos PDF | PDF | `rCargaCreditos()` | `vmcr_cred_end`, `vmcr_cred_dyn` |
-| F7 | Carga Masiva | Excel | `startCargaMasiva()` | `vmcr_fi`, `vmcr_fg` |
-| F8 | Flujo Ingresos (manual) | Formulario | `fiSave()` | `vmcr_fi` |
-| F9 | Flujo Gastos (manual) | Formulario | `fgSave()` | `vmcr_fg` |
-| F10 | Nomina (manual) | Formulario | `nomSave()` | `vmcr_nom` |
-| F11 | Gastos Compartidos (manual) | Formulario | `gcSave()` | `vmcr_gc` |
+| F4 | Upload Wirebit | Excel | `startWBUpload()` | `gf_wb_fees_2026` |
+| F5 | Upload Tesoreria | Excel | `tesSubirExcel()` | `gf_tesoreria` |
+| F6 | Upload Creditos PDF | PDF | `rCargaCreditos()` | `gf_cred_end`, `gf_cred_dyn` |
+| F7 | Carga Masiva | Excel | `startCargaMasiva()` | `gf_fi`, `gf_fg` |
+| F8 | Flujo Ingresos (manual) | Formulario | `fiSave()` | `gf_fi` |
+| F9 | Flujo Gastos (manual) | Formulario | `fgSave()` | `gf_fg` |
+| F10 | Nomina (manual) | Formulario | `nomSave()` | `gf_nom` |
+| F11 | Gastos Compartidos (manual) | Formulario | `gcSave()` | `gf_gc` |
 | F12 | Supabase Pull | API | `SB.pullAll()` | Todos los keys |
 
 ---
@@ -26,21 +26,21 @@
 
 | # | Variable | Contenido | Persistencia (localStorage) |
 |---|----------|-----------|---------------------------|
-| D1 | `S.recs` | Master P&L (todos los registros) | `vmcr4` |
-| D2 | `FI_ROWS` | Filas de ingresos (manual+auto) | `vmcr_fi` |
-| D3 | `FG_ROWS` | Filas de gastos (manual+auto) | `vmcr_fg` |
-| D4 | `END_CREDITS` | Creditos Endless | `vmcr_cred_end` |
-| D5 | `DYN_CREDITS` | Creditos Dynamo | `vmcr_cred_dyn` |
-| D6 | `WB_ING` | Ingresos Wirebit por concepto | `vmcr_wb_fees_2026` |
+| D1 | `S.recs` | Master P&L (todos los registros) | `gf4` |
+| D2 | `FI_ROWS` | Filas de ingresos (manual+auto) | `gf_fi` |
+| D3 | `FG_ROWS` | Filas de gastos (manual+auto) | `gf_fg` |
+| D4 | `END_CREDITS` | Creditos Endless | `gf_cred_end` |
+| D5 | `DYN_CREDITS` | Creditos Dynamo | `gf_cred_dyn` |
+| D6 | `WB_ING` | Ingresos Wirebit por concepto | `gf_wb_fees_2026` |
 | D7 | `WB_COSTOS` | Costos Wirebit por concepto | (calculado de D6) |
 | D8 | `WB_ING_TOTAL` | Total ingresos WB mensual | (calculado de D6) |
 | D9 | `WB_COSTO_TOTAL` | Total costos WB mensual | (calculado de D7) |
-| D10 | `NOM_EDIT` | Nomina empleados + distribucion | `vmcr_nom` |
-| D11 | `GC_EDIT` | Gastos compartidos + distribucion | `vmcr_gc` |
-| D12 | TPV data (Supabase cache) | Comisiones terminales | `vmcr_tpv_monthly_pl_*` |
+| D10 | `NOM_EDIT` | Nomina empleados + distribucion | `gf_nom` |
+| D11 | `GC_EDIT` | Gastos compartidos + distribucion | `gf_gc` |
+| D12 | TPV data (Supabase cache) | Comisiones terminales | `gf_tpv_monthly_pl_*` |
 | D13 | `WB_NOM_TOTAL` | Nomina Wirebit mensual | (calculado de D10) |
-| D14 | Tesoreria movimientos | Flujo caja por banco | `vmcr_tesoreria` |
-| D15 | Bancos y cuentas | Lista bancos | `vmcr_bancos` |
+| D14 | Tesoreria movimientos | Flujo caja por banco | `gf_tesoreria` |
+| D15 | Bancos y cuentas | Lista bancos | `gf_bancos` |
 
 ---
 
@@ -50,8 +50,8 @@
 _syncAll() [router.js]
   |
   |-- wbLoadFees()           F4 --> D6,D7,D8,D9
-  |-- DB.get('vmcr_cred_end') F6 --> D4
-  |-- DB.get('vmcr_cred_dyn') F6 --> D5
+  |-- DB.get('gf_cred_end') F6 --> D4
+  |-- DB.get('gf_cred_dyn') F6 --> D5
   |-- fiLoad()                F8 --> D2
   |-- fgLoad()                F9 --> D3
   |-- TPV.calcMonthlyPL()     F1 --> D12 (async Supabase)
@@ -76,7 +76,7 @@ _syncAll() [router.js]
 | V1.C3 | Gastos por Empresa | Chart doughnut | D1 | OK |
 | V1.C4 | Nomina por Empresa | Chart bar | D10 | OK |
 | V1.C5 | Margen por Empresa | Chart bar | D1 | OK |
-| V1.T1 | Tareas pendientes | Lista | `vmcr_tareas` | OK |
+| V1.T1 | Tareas pendientes | Lista | `gf_tareas` | OK |
 
 ### V2 — Dashboard Grupo (`resumen`)
 | # | Componente | Tipo | Fuente Datos | Estado |
@@ -340,9 +340,9 @@ _syncAll() [router.js]
 ### Escenario: "Subo un PDF de credito Dynamo"
 ```
 F6 (PDF upload) --> rCargaCreditos() --> CC_PREVIEW
-  --> ccImport('dyn') --> DYN_CREDITS (D5) --> DB.set('vmcr_cred_dyn')
+  --> ccImport('dyn') --> DYN_CREDITS (D5) --> DB.set('gf_cred_dyn')
   --> Al navegar a dyn_res:
-      _syncAll() --> DB.get('vmcr_cred_dyn') --> D5
+      _syncAll() --> DB.get('gf_cred_dyn') --> D5
                  --> fiInjectCredits() --> D5 --> D2 (intereses auto)
                  --> syncFlujoToRecs() --> D2 --> D1
       rPL('dyn') --> D1 --> V10.T1 (tabla P&L)
@@ -356,7 +356,7 @@ F6 (PDF upload) --> rCargaCreditos() --> CC_PREVIEW
 ### Escenario: "Subo un Excel de Wirebit"
 ```
 F4 (Excel upload) --> startWBUpload() --> parse fees
-  --> DB.set('vmcr_wb_fees_2026') --> D6,D7,D8,D9
+  --> DB.set('gf_wb_fees_2026') --> D6,D7,D8,D9
   --> Al navegar a wb_res:
       _syncAll() --> wbLoadFees() --> D6 --> syncFlujoToRecs() --> D1
       rPL('wb') --> D1 --> V12.T1, V12.K1, V12.K2
@@ -371,7 +371,7 @@ F4 (Excel upload) --> startWBUpload() --> parse fees
 F7 (Excel upload) --> startCargaMasiva() --> parse Ingresos+Gastos sheets
   --> validacion empresa/categoria
   --> FI_ROWS (D2) + FG_ROWS (D3)
-  --> DB.set('vmcr_fi') + DB.set('vmcr_fg')
+  --> DB.set('gf_fi') + DB.set('gf_fg')
   --> syncFlujoToRecs() --> D1
   --> Al navegar a cualquier P&L:
       _syncAll() --> fiLoad() + fgLoad() --> D2+D3

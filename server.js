@@ -81,7 +81,7 @@ http.createServer(async (req, res) => {
       const body = await readBody(req);
 
       const systemPrompt = [
-        'Eres el asistente financiero experto del dashboard de Grupo Financiero VMCR.',
+        'Eres el asistente financiero experto del dashboard de Grupo Financiero.',
         'Responde SIEMPRE en español. Sé directo, preciso y útil.',
         '',
         'REGLAS DE RESPUESTA:',

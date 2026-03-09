@@ -108,7 +108,7 @@ const TPV = {
     const rawData = await this._rpc('tpv_client_commissions', { p_from: from, p_to: to }, rawKey);
 
     // Check for rate changes that need correction
-    const changes = (typeof DB !== 'undefined' && DB.get) ? (DB.get('vmcr_tpv_rate_changes') || []) : [];
+    const changes = (typeof DB !== 'undefined' && DB.get) ? (DB.get('gf_tpv_rate_changes') || []) : [];
     if (!changes.length) return rawData;
 
     // Clone data to avoid mutating the RPC cache, then apply corrections
@@ -263,7 +263,7 @@ const TPV = {
    * Get stored rate changes (for UI display)
    */
   getRateChanges() {
-    return (typeof DB !== 'undefined' && DB.get) ? (DB.get('vmcr_tpv_rate_changes') || []) : [];
+    return (typeof DB !== 'undefined' && DB.get) ? (DB.get('gf_tpv_rate_changes') || []) : [];
   },
 
   /**
@@ -444,7 +444,7 @@ const TPV = {
    * @returns {object|null} {monthly:[12], byClient:[...], updated}
    */
   monthlyPLData(year) {
-    return (typeof DB !== 'undefined' && DB.get) ? DB.get('vmcr_tpv_monthly_pl_' + year) || null : null;
+    return (typeof DB !== 'undefined' && DB.get) ? DB.get('gf_tpv_monthly_pl_' + year) || null : null;
   },
 
   /**
@@ -558,7 +558,7 @@ const TPV = {
 
       // 7. Persist to localStorage
       if (typeof DB !== 'undefined' && DB.set) {
-        DB.set('vmcr_tpv_monthly_pl_' + year, result);
+        DB.set('gf_tpv_monthly_pl_' + year, result);
       }
 
       console.log(`[TPV] Monthly P&L calculated: ${byClient.length} clients, ${monthly.filter(m => m.com_salem > 0).length} active months`);

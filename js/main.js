@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch(e) {
       console.error('[main] initApp falló, fallback a localStorage:', e);
       try {
-        S.recs = DB.get('vmcr4') || [];
+        S.recs = DB.get('gf4') || [];
         uLoad(); ccLoad(); fiLoad(); fgLoad(); syncFlujoToRecs();
         applyTheme(_theme); renderReg(); sv('inicio', null);
         if (typeof updateToggleBtn === 'function') updateToggleBtn();

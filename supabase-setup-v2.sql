@@ -1,5 +1,5 @@
 -- ══════════════════════════════════════════════════════════
--- GFVMCR Dashboard — Supabase Schema V2
+-- GF Dashboard — Supabase Schema V2
 -- Módulo Terminales TPV: Tablas + Funciones RPC
 -- Ejecutar en: Supabase Dashboard → SQL Editor
 -- ══════════════════════════════════════════════════════════

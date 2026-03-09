@@ -5,8 +5,8 @@
 
 // ── 1. Crypto Transaction Analysis (wb_cripto) ──
 function rWBCripto(){
-  const feesData = DB.get('vmcr_wb_fees_2026');
-  const summary  = DB.get('vmcr_wb_upload_summary');
+  const feesData = DB.get('gf_wb_fees_2026');
+  const summary  = DB.get('gf_wb_upload_summary');
 
   const kTxns = document.getElementById('wbc-kpi-txns');
   const kUSD  = document.getElementById('wbc-kpi-usd');
@@ -137,7 +137,7 @@ function rWBCripto(){
 
 // ── 2. Wirebit Tarjetas Dashboard (wb_tarjetas) ──
 function rWBTarjetas(){
-  const data = DB.get('vmcr_wb_tarjetas_2026');
+  const data = DB.get('gf_wb_tarjetas_2026');
   const emptyDiv   = document.getElementById('wbt-empty');
   const contentDiv = document.getElementById('wbt-content');
 
@@ -250,7 +250,7 @@ function rWBTarjetas(){
 
 // ── 3. Wirebit Tarjetas Upload (wb_tar_upload) ──
 function rWBTarUpload(){
-  const data = DB.get('vmcr_wb_tarjetas_2026');
+  const data = DB.get('gf_wb_tarjetas_2026');
   const kTxns  = document.getElementById('wbtu-kpi-txns');
   const kMonto = document.getElementById('wbtu-kpi-monto');
   const kLast  = document.getElementById('wbtu-kpi-last');
@@ -389,7 +389,7 @@ async function startWBTarUpload(){
       .sort(([a],[b])=>a.localeCompare(b))
       .map(([period,d])=>({period,...d}));
 
-    DB.set('vmcr_wb_tarjetas_2026', {
+    DB.set('gf_wb_tarjetas_2026', {
       year:'2026',
       transactions: txns,
       monthlySummary,

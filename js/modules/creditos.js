@@ -119,8 +119,8 @@ function rCredDash(entFilter, elPrefix){
   if(!elPrefix) elPrefix = 'cred-dash';
 
   // Load latest data from DB
-  try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
-  try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
 
   let all = [];
   if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})));
@@ -699,7 +699,7 @@ function credGuardarPago(entKey, creditIdx, periodo){
   if(idx>=0) c.pagos[idx] = { periodo, fecha:fechaDDMMYYYY, monto };
   else c.pagos.push({ periodo, fecha:fechaDDMMYYYY, monto });
 
-  DB.set('vmcr_cred_'+entKey, credits);
+  DB.set('gf_cred_'+entKey, credits);
   credOpenDetail(entKey, c.cl, creditIdx);
   toast('✅ Pago registrado — Periodo '+periodo);
 }
@@ -710,8 +710,8 @@ function credClearAll(entKey){
     if(!ok) return;
     const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
     credits.length = 0;
-    DB.remove('vmcr_cred_'+entKey);
-    DB.remove('vmcr_cc_hist');
+    DB.remove('gf_cred_'+entKey);
+    DB.remove('gf_cc_hist');
     entKey==='end' ? rEndCred() : rDynCred();
     fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
     toast('🗑 Cartera de '+label+' limpiada');
@@ -724,7 +724,7 @@ function credDelete(entKey, idx){
   customConfirm('¿Eliminar "' + name + '"?', 'Eliminar', (ok)=>{
     if(!ok) return;
     credits.splice(idx, 1);
-    DB.set('vmcr_cred_' + entKey, credits);
+    DB.set('gf_cred_' + entKey, credits);
     closeModal();
     if(entKey==='end') rEndCred(); else rDynCred();
     toast('🗑 ' + name + ' eliminado');
@@ -746,12 +746,12 @@ function credDelRow(entKey, ci){
 }
 
 function rEndCred(){
-  try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
   credRenderDashKPIs(END_CREDITS,'end');
   credRenderList(END_CREDITS,'end');
 }
 function rDynCred(){
-  try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
   credRenderDashKPIs(DYN_CREDITS,'dyn');
   credRenderList(DYN_CREDITS,'dyn');
   syncDynResKPIs();
@@ -764,8 +764,8 @@ function rCredCobr(entFilter, elPrefix){
   if(!elPrefix) elPrefix = 'cobr';
 
   // Reload data
-  try{const s=DB.get('vmcr_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
-  try{const s=DB.get('vmcr_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
+  try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
 
   let all = [];
   if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})));
@@ -1148,7 +1148,7 @@ let CC_PREVIEW = [];   // créditos extraídos pendientes de importar
 let CC_HISTORY = [];   // historial de cargas
 
 function ccLoad(){
-  try{ CC_HISTORY = DB.get('vmcr_cc_hist') || []; }catch(e){ CC_HISTORY=[]; }
+  try{ CC_HISTORY = DB.get('gf_cc_hist') || []; }catch(e){ CC_HISTORY=[]; }
 }
 
 function rCargaCreditos(){
@@ -1328,7 +1328,7 @@ function ccImport(){
     });
     END_CREDITS.length = 0;
     updated.forEach(c => END_CREDITS.push(c));
-    DB.set('vmcr_cred_end', END_CREDITS);
+    DB.set('gf_cred_end', END_CREDITS);
   } else {
     const updated = CC_PREVIEW.map(c => {
       const idx = DYN_CREDITS.findIndex(x=>x.cl.toLowerCase()===c.cl.toLowerCase());
@@ -1339,7 +1339,7 @@ function ccImport(){
     });
     DYN_CREDITS.length = 0;
     updated.forEach(c => DYN_CREDITS.push(c));
-    DB.set('vmcr_cred_dyn', DYN_CREDITS);
+    DB.set('gf_cred_dyn', DYN_CREDITS);
   }
 
   // Log to history
@@ -1350,7 +1350,7 @@ function ccImport(){
     count: CC_PREVIEW.length,
     names: CC_PREVIEW.map(c=>c.cl).join(', ')
   });
-  DB.set('vmcr_cc_hist', CC_HISTORY.slice(0,20));
+  DB.set('gf_cc_hist', CC_HISTORY.slice(0,20));
 
   // Sync flows
   fiInjectTPV();
@@ -1438,7 +1438,7 @@ function customConfirm(msg, okLabel, callback){
 function ccDeleteHistory(idx){
   ccLoad();
   CC_HISTORY.splice(idx, 1);
-  DB.set('vmcr_cc_hist', CC_HISTORY);
+  DB.set('gf_cc_hist', CC_HISTORY);
   ccRenderHistory();
 }
 

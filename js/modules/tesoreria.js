@@ -2,7 +2,7 @@
 
 // TESORERÍA — MÓDULO COMPLETO
 // ══════════════════════════════════════
-const TES_KEY = 'vmcr_tesoreria';
+const TES_KEY = 'gf_tesoreria';
 const TES_EMPS = ['Salem','Endless','Dynamo','Wirebit'];
 const TES_EMP_COLORS = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
 
@@ -709,7 +709,7 @@ function rDashTesoreria(){
 
 // BANCOS Y CUENTAS — CONFIGURACIÓN
 // ══════════════════════════════════════
-const BANCOS_KEY = 'vmcr_bancos';
+const BANCOS_KEY = 'gf_bancos';
 const BANCOS_DEFAULT = [
   {id:'b1',  nombre:'BBVA',     empresa:'Salem',   empresas:['Salem'],   tipo:'Cuenta Corriente'},
   {id:'b2',  nombre:'BBVA',     empresa:'Endless', empresas:['Endless'], tipo:'Cuenta Corriente'},

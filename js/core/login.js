@@ -45,11 +45,11 @@ function _touchSession(){
   if (now - _lastTouchTs < 30000) return; // throttle: máximo 1 vez cada 30s
   _lastTouchTs = now;
   try {
-    const raw = sessionStorage.getItem('vmcr_session');
+    const raw = sessionStorage.getItem('gf_session');
     if (!raw) return;
     const s = JSON.parse(raw);
     s.lastActivity = now;
-    sessionStorage.setItem('vmcr_session', JSON.stringify(s));
+    sessionStorage.setItem('gf_session', JSON.stringify(s));
   } catch(e){}
 }
 
@@ -61,7 +61,7 @@ function _touchSession(){
 // Watchdog: verificar expiración cada 60s
 setInterval(() => {
   try {
-    const raw = sessionStorage.getItem('vmcr_session');
+    const raw = sessionStorage.getItem('gf_session');
     if (!raw) return;
     const s = JSON.parse(raw);
     if (s.lastActivity && (Date.now() - s.lastActivity > SESSION_TIMEOUT_MS)) {
@@ -76,14 +76,14 @@ setInterval(() => {
 function getCurrentUser(){
   if(CURRENT_USER) return CURRENT_USER;
   try{
-    const s=sessionStorage.getItem('vmcr_session');
+    const s=sessionStorage.getItem('gf_session');
     if(s){
       const parsed = JSON.parse(s);
       // Verificar expiración
       if (parsed.lastActivity && (Date.now() - parsed.lastActivity > SESSION_TIMEOUT_MS)) {
         console.log('[session] Sesión expirada en getCurrentUser');
         CURRENT_USER = null;
-        sessionStorage.removeItem('vmcr_session');
+        sessionStorage.removeItem('gf_session');
         return null;
       }
       CURRENT_USER = parsed;
@@ -105,12 +105,12 @@ async function validateSession(){
   let usuarios = [];
   try {
     if (typeof _sb !== 'undefined') {
-      const { data } = await _sb.from('app_data').select('value').eq('key','vmcr_usuarios').single();
+      const { data } = await _sb.from('app_data').select('value').eq('key','gf_usuarios').single();
       if (data && data.value) usuarios = data.value;
     }
   } catch(e){}
   if (!usuarios.length) {
-    try { usuarios = JSON.parse(localStorage.getItem('vmcr_usuarios')) || []; } catch(e){}
+    try { usuarios = JSON.parse(localStorage.getItem('gf_usuarios')) || []; } catch(e){}
   }
   if (!usuarios.length) return true; // Sin datos no podemos validar
 
@@ -135,7 +135,7 @@ async function validateSession(){
   if (changed) {
     console.log('[session] Sesión actualizada con datos reales del usuario');
     CURRENT_USER = session;
-    sessionStorage.setItem('vmcr_session', JSON.stringify(session));
+    sessionStorage.setItem('gf_session', JSON.stringify(session));
     applyRoleRestrictions();
     applyMenuPermissions();
   }
@@ -182,12 +182,12 @@ async function doLogin(){
   let usuarios=[];
   try{
     if(typeof _sb!=='undefined'){
-      const {data}=await _sb.from('app_data').select('value').eq('key','vmcr_usuarios').single();
+      const {data}=await _sb.from('app_data').select('value').eq('key','gf_usuarios').single();
       if(data&&data.value) usuarios=data.value;
     }
   }catch(e){ console.warn('[login] Supabase fetch falló, usando localStorage'); }
   if(!usuarios.length){
-    try{ usuarios=JSON.parse(localStorage.getItem('vmcr_usuarios'))||[]; }catch(e2){}
+    try{ usuarios=JSON.parse(localStorage.getItem('gf_usuarios'))||[]; }catch(e2){}
   }
 
   // Buscar usuario por email activo
@@ -218,9 +218,9 @@ async function doLogin(){
       // Persistir la migración
       try {
         if (typeof DB !== 'undefined' && DB.set) {
-          await DB.set('vmcr_usuarios', usuarios);
+          await DB.set('gf_usuarios', usuarios);
         } else {
-          localStorage.setItem('vmcr_usuarios', JSON.stringify(usuarios));
+          localStorage.setItem('gf_usuarios', JSON.stringify(usuarios));
         }
       } catch (e) { console.warn('[login] No se pudo persistir migración PBKDF2:', e); }
     }
@@ -235,7 +235,7 @@ async function doLogin(){
 
   // Guardar sesión (sin passwordHash) + timestamp de actividad
   CURRENT_USER={id:user.id,nombre:user.nombre,email:user.email,rol:user.rol||'viewer',perms:user.perms||{},lastActivity:Date.now()};
-  sessionStorage.setItem('vmcr_session',JSON.stringify(CURRENT_USER));
+  sessionStorage.setItem('gf_session',JSON.stringify(CURRENT_USER));
 
   // Ocultar login, iniciar app
   document.getElementById('login-overlay').style.display='none';
@@ -248,7 +248,7 @@ async function doLogin(){
 // ── Logout ──
 function doLogout(){
   CURRENT_USER=null;
-  sessionStorage.removeItem('vmcr_session');
+  sessionStorage.removeItem('gf_session');
   location.reload();
 }
 

@@ -1,12 +1,12 @@
-# Grupo Financiero VMCR — Dashboard 2026
+# Grupo Financiero — Dashboard 2026
 
-Dashboard financiero para Grupo Financiero VMCR.  
+Dashboard financiero para Grupo Financiero.  
 Incluye P&L por empresa, Tesorería, Terminales TPV, Tarjetas y Créditos.
 
 ## Estructura del proyecto
 
 ```
-gfvmcr/
+gf/
 ├── index.html              — Aplicación principal
 ├── assets/
 │   └── css/

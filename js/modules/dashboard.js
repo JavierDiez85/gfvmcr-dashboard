@@ -31,7 +31,7 @@ const WB_MARGEN = WB_ING_TOTAL.map((v,i)=>v-WB_COSTO_TOTAL[i]);
 
 // Inject Wirebit fees from localStorage into WB_ING arrays
 function wbLoadFees() {
-  const data = DB.get('vmcr_wb_fees_2026');
+  const data = DB.get('gf_wb_fees_2026');
   if (!data || !data.monthly) return;
   for (const [concepto, vals] of Object.entries(data.monthly)) {
     if (WB_ING[concepto]) {
@@ -122,7 +122,7 @@ const WB_NOM_DETAIL = [];
 // RENDER: INICIO (Pantalla de Bienvenida)
 // ═══════════════════════════════════════
 
-const TAREAS_KEY = 'vmcr_tareas';
+const TAREAS_KEY = 'gf_tareas';
 
 async function rInicio() {
   // 1. Fecha actual
@@ -282,7 +282,7 @@ async function _inicioAlertas() {
 
     // 7. Tickets pendientes de lectura
     try {
-      const tkData = DB.get('vmcr_tickets_pagos_tpv') || [];
+      const tkData = DB.get('gf_tickets_pagos_tpv') || [];
       const tkPend = tkData.filter(t => t.leido === false).length;
       if(tkPend > 0) alertas.push({ icon:'🎫', text:`${tkPend} ticket${tkPend>1?'s':''} pendiente${tkPend>1?'s':''} de lectura`, color:'#9c27b0', action:"openMenu('tickets',document.getElementById('mi-tickets'),'tk_pagos_tpv')" });
     } catch(e){ console.warn('[Inicio] Tickets alertas error:',e); }

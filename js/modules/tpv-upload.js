@@ -566,7 +566,7 @@ const TPV_UPLOAD = {
 
         if (rateChanges.length > 0) {
           // Load existing history and merge
-          const existing = DB.get('vmcr_tpv_rate_changes') || [];
+          const existing = DB.get('gf_tpv_rate_changes') || [];
           // Remove old entries for same client+campo+fecha to avoid duplicates
           const key = rc => `${rc.cliente}|${rc.campo}|${rc.fecha_cambio}`;
           const existingKeys = new Set(rateChanges.map(key));
@@ -575,7 +575,7 @@ const TPV_UPLOAD = {
             ...rateChanges
           ].sort((a, b) => a.fecha_cambio < b.fecha_cambio ? -1 : 1);
 
-          DB.set('vmcr_tpv_rate_changes', merged);
+          DB.set('gf_tpv_rate_changes', merged);
           this._progress(92, `✅ ${rateChanges.length} cambios de comisión registrados`);
           console.log(`[Upload] ${rateChanges.length} rate changes stored:`, rateChanges);
         }
