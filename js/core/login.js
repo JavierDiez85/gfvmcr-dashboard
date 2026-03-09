@@ -104,7 +104,7 @@ async function validateSession(){
   // Cargar usuarios reales
   let usuarios = [];
   try {
-    if (typeof _sb !== 'undefined') {
+    if (_sb) {
       const { data } = await _sb.from('app_data').select('value').eq('key','gf_usuarios').single();
       if (data && data.value) usuarios = data.value;
     }
@@ -181,7 +181,8 @@ async function doLogin(){
   // Obtener usuarios: primero de Supabase, fallback a localStorage
   let usuarios=[];
   try{
-    if(typeof _sb!=='undefined'){
+    if(!_sb && typeof _loadConfig==='function') await _loadConfig();
+    if(_sb){
       const {data}=await _sb.from('app_data').select('value').eq('key','gf_usuarios').single();
       if(data&&data.value) usuarios=data.value;
     }

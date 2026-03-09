@@ -4,10 +4,22 @@
 // Supabase = persistencia remota (escrituras async)
 // ══════════════════════════════════════
 
-const SUPABASE_URL = 'https://ofuzwfiqjvlronulhwbw.supabase.co';
-const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mdXp3ZmlxanZscm9udWxod2J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTQ4NDcsImV4cCI6MjA4NzYzMDg0N30.Ftw2fNM9pLxm09odMa_-zUM7YStK93lMkffZKLnxUMU';
+let SUPABASE_URL = '';
+let SUPABASE_KEY = '';
+let _sb = null;
 
-const _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Cargar config desde el servidor (las claves viven en .env, no en el código)
+async function _loadConfig() {
+  try {
+    const r = await fetch('/api/config');
+    const cfg = await r.json();
+    SUPABASE_URL = cfg.supabaseUrl;
+    SUPABASE_KEY = cfg.supabaseKey;
+    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  } catch (e) {
+    console.error('[SB] No se pudo cargar la configuración del servidor:', e.message);
+  }
+}
 
 // Client identity (para tracking de sync)
 const CLIENT_ID = localStorage.getItem('_gf_client_id') ||
@@ -260,7 +272,10 @@ async function initApp() {
   if (loader) loader.style.display = 'flex';
 
   try {
-    // 0. Renombrar claves antiguas vmcr_* → gf_*
+    // 0. Cargar config de Supabase desde el servidor
+    await _loadConfig();
+
+    // 0b. Renombrar claves antiguas vmcr_* → gf_*
     await _migrateOldKeys();
 
     // 1. Migrar datos locales existentes (solo la primera vez)
