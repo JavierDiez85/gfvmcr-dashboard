@@ -2621,12 +2621,35 @@ async function rTPVComisiones() {
   }
 }
 
+// Get the best rate for a card type across all entities
+function _getCardRate(c, cardType) {
+  const entities = ['efevoo','salem','convenia','comisionista'];
+  for (const ent of entities) {
+    const v = parseFloat(c['rate_' + ent + '_' + cardType]);
+    if (v > 0) return v;
+  }
+  return 0;
+}
+
+// Detect which entity has rates for a client
+function _getClientEntity(c) {
+  const entities = ['efevoo','salem','convenia','comisionista'];
+  const labels = { efevoo:'Efevoo', salem:'Salem', convenia:'Convenia', comisionista:'Comisionista' };
+  const colors = { efevoo:'#0073ea', salem:'var(--green)', convenia:'var(--purple)', comisionista:'var(--orange)' };
+  for (const ent of entities) {
+    if (['tc','td','amex','ti'].some(ct => parseFloat(c['rate_' + ent + '_' + ct]) > 0)) {
+      return { name: labels[ent], color: colors[ent] };
+    }
+  }
+  return c.entidad ? { name: c.entidad, color: 'var(--muted)' } : null;
+}
+
 function _renderComTable(clients) {
   const tbody = document.getElementById('com-cfg-tbody');
   if (!tbody) return;
 
   if (!clients.length) {
-    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px">No hay clientes registrados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px">No hay clientes registrados</td></tr>';
     const ct = document.getElementById('com-cfg-count');
     if (ct) ct.textContent = '0 clientes';
     return;
@@ -2635,15 +2658,16 @@ function _renderComTable(clients) {
   tbody.innerHTML = clients.map((c, i) => {
     const agSig = c.tpv_agentes ? c.tpv_agentes.siglas || c.tpv_agentes.nombre : '';
     const origIdx = _comClientesCache.indexOf(c);
+    const ent = _getClientEntity(c);
+    const entPill = ent ? `<span class="pill" style="font-size:.58rem;background:${ent.color}20;color:${ent.color};border:1px solid ${ent.color}40">${escapeHtml(ent.name)}</span>` : '<span style="color:var(--muted)">—</span>';
     return `<tr data-com-idx="${i}" data-com-nombre="${(c.nombre||'').toLowerCase()}" data-com-agente="${c.agente_id||''}">
-      <td style="font-weight:600;font-size:.72rem;white-space:nowrap">${escapeHtml(c.nombre_display || c.nombre || '—')}</td>
+      <td style="font-weight:600;font-size:.72rem;white-space:nowrap;cursor:pointer;color:var(--blue)" onclick="openComDetail(_comClientesCache[${origIdx}])">${escapeHtml(c.nombre_display || c.nombre || '—')}</td>
       <td style="font-size:.72rem">${agSig ? `<span class="pill" style="font-size:.62rem">${escapeHtml(agSig)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
-      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_efevoo_tc)}</td>
-      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_efevoo_td)}</td>
-      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_salem_tc)}</td>
-      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_salem_td)}</td>
-      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_convenia_tc)}</td>
-      <td class="r" style="font-size:.72rem">${_fmtRate(c.rate_convenia_td)}</td>
+      <td style="font-size:.72rem">${entPill}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'tc'))}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'td'))}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'amex'))}</td>
+      <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'ti'))}</td>
       <td class="r" style="font-size:.72rem">${c.factor_iva || 1.16}</td>
       <td style="text-align:center">${!isViewer() ? `<button onclick="openComEdit(_comClientesCache[${origIdx}])" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Editar">✏️</button>` : ''}</td>
     </tr>`;
@@ -2672,6 +2696,109 @@ function filterComClientes() {
 
   const ct = document.getElementById('com-cfg-count');
   if (ct) ct.textContent = `${visible} de ${_comClientesCache.length} clientes`;
+}
+
+async function openComDetail(client) {
+  if (!client) return;
+  const ov = document.getElementById('com-detail-overlay');
+  if (!ov) return;
+  ov.style.display = 'flex';
+
+  // Header
+  const nm = document.getElementById('com-detail-name');
+  if (nm) nm.textContent = client.nombre_display || client.nombre || '—';
+  const sub = document.getElementById('com-detail-sub');
+  const ent = _getClientEntity(client);
+  if (sub) sub.textContent = ent ? ent.name + ' · ' + (client.promotor || 'Sin Promotor') : client.promotor || 'Sin Promotor';
+
+  // Edit button
+  const editBtn = document.getElementById('com-detail-edit-btn');
+  if (editBtn) editBtn.onclick = () => { ov.style.display = 'none'; openComEdit(client); };
+
+  // Info cards
+  const info = document.getElementById('com-detail-info');
+  if (info) {
+    const agSig = client.tpv_agentes ? client.tpv_agentes.nombre + ' (' + (client.tpv_agentes.siglas||'') + ')' : 'Sin agente';
+    info.innerHTML = `
+      <div style="background:var(--bg);border-radius:8px;padding:10px">
+        <div style="font-size:.6rem;color:var(--muted);margin-bottom:2px">Agente</div>
+        <div style="font-size:.78rem;font-weight:600">${escapeHtml(agSig)}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px">
+        <div style="font-size:.6rem;color:var(--muted);margin-bottom:2px">Promotor</div>
+        <div style="font-size:.78rem;font-weight:600">${escapeHtml(client.promotor || 'Sin Promotor')}</div>
+      </div>
+      <div style="background:var(--bg);border-radius:8px;padding:10px">
+        <div style="font-size:.6rem;color:var(--muted);margin-bottom:2px">Factor IVA</div>
+        <div style="font-size:.78rem;font-weight:600">${client.factor_iva || 1.16}</div>
+      </div>`;
+  }
+
+  // Rates table
+  const ratesEl = document.getElementById('com-detail-rates');
+  if (ratesEl) {
+    const entities = ['efevoo','salem','convenia','comisionista'];
+    const labels = { efevoo:'Efevoo', salem:'Salem', convenia:'Convenia', comisionista:'Comisionista' };
+    const cards = ['tc','td','amex','ti'];
+    const cardLabels = { tc:'Crédito (TC)', td:'Débito (TD)', amex:'Amex', ti:'Internacional (TI)' };
+    // Find which entities have data
+    const activeEnts = entities.filter(ent => cards.some(ct => parseFloat(client['rate_' + ent + '_' + ct]) > 0));
+    if (activeEnts.length === 0) {
+      ratesEl.innerHTML = '<div style="color:var(--muted);font-size:.72rem;padding:10px">Sin comisiones configuradas</div>';
+    } else {
+      let html = '<table class="bt" style="font-size:.72rem;width:100%"><thead><tr><th>Tarjeta</th>';
+      activeEnts.forEach(e => html += `<th class="r">${labels[e]}</th>`);
+      html += '</tr></thead><tbody>';
+      cards.forEach(ct => {
+        const hasAny = activeEnts.some(e => parseFloat(client['rate_' + e + '_' + ct]) > 0);
+        if (hasAny) {
+          html += `<tr><td style="font-weight:600">${cardLabels[ct]}</td>`;
+          activeEnts.forEach(e => html += `<td class="r">${_fmtRate(client['rate_' + e + '_' + ct])}</td>`);
+          html += '</tr>';
+        }
+      });
+      html += '</tbody></table>';
+      ratesEl.innerHTML = html;
+    }
+  }
+
+  // MSI rates
+  const msiEl = document.getElementById('com-detail-msi');
+  if (msiEl && client.id) {
+    try {
+      const msiData = await TPV.getClientMsiRates(client.id);
+      if (!msiData || msiData.length === 0) {
+        msiEl.innerHTML = '<div style="color:var(--muted);font-size:.72rem;padding:10px">Sin configuración MSI</div>';
+      } else {
+        const entitiesInMsi = [...new Set(msiData.map(r => r.entity))];
+        const entLabels = { efevoo:'Efevoo', salem:'Salem', convenia:'Convenia', comisionista:'Comisionista' };
+        let html = '<table class="bt" style="font-size:.72rem;width:100%"><thead><tr><th>Plazo</th><th>Tarjeta</th>';
+        entitiesInMsi.forEach(e => html += `<th class="r">${entLabels[e] || e}</th>`);
+        html += '</tr></thead><tbody>';
+        _MSI_PLAZOS.forEach(plazo => {
+          _MSI_CARDS.forEach((card, ci) => {
+            const hasAny = entitiesInMsi.some(e => msiData.find(r => r.plazo === plazo && r.entity === e && r.card_type === card && r.rate > 0));
+            if (hasAny) {
+              html += `<tr>`;
+              if (ci === 0) html += `<td rowspan="${_MSI_CARDS.filter((_,j) => entitiesInMsi.some(e => msiData.find(r => r.plazo === plazo && r.entity === e && r.card_type === _MSI_CARDS[j] && r.rate > 0))).length}" style="font-weight:600">${plazo} meses</td>`;
+              html += `<td>${card}</td>`;
+              entitiesInMsi.forEach(e => {
+                const found = msiData.find(r => r.plazo === plazo && r.entity === e && r.card_type === card);
+                html += `<td class="r">${found && found.rate > 0 ? (found.rate * 100).toFixed(4) + '%' : '<span style="color:var(--muted)">—</span>'}</td>`;
+              });
+              html += '</tr>';
+            }
+          });
+        });
+        html += '</tbody></table>';
+        msiEl.innerHTML = html;
+      }
+    } catch (e) {
+      msiEl.innerHTML = '<div style="color:var(--muted);font-size:.72rem;padding:10px">Error cargando MSI</div>';
+    }
+  } else if (msiEl) {
+    msiEl.innerHTML = '<div style="color:var(--muted);font-size:.72rem;padding:10px">Sin configuración MSI</div>';
+  }
 }
 
 async function openComEdit(client) {

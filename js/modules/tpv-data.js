@@ -372,6 +372,7 @@ const TPV = {
   async saveClient(client) {
     try {
       client.updated_at = new Date().toISOString();
+      if (client.nombre) client.nombre = client.nombre.toUpperCase().trim();
       const { data, error } = await _sb.from('tpv_clients')
         .upsert(client, { onConflict: 'nombre' })
         .select();

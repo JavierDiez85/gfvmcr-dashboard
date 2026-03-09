@@ -350,7 +350,7 @@ const TPV_UPLOAD = {
         );
 
         const clients = clientRows.map(r => ({
-          nombre: r['Cliente_Norm'] || '',
+          nombre: (r['Cliente_Norm'] || '').toUpperCase().trim(),
           nombre_display: r['Cliente_Display'] || r['Trans_Name'] || null,
           promotor: r['Promotor'] || 'Sin Promotor',
           entidad: r['Entidad'] || null,
