@@ -10,14 +10,27 @@ let _sb = null;
 
 // Cargar config desde el servidor (las claves viven en .env, no en el código)
 async function _loadConfig() {
-  try {
+  async function _tryLoad() {
     const r = await fetch('/api/config');
+    if (!r.ok) throw new Error('Config HTTP ' + r.status);
     const cfg = await r.json();
+    if (!cfg.supabaseUrl || !cfg.supabaseKey) throw new Error('Config vacío — revisa .env');
     SUPABASE_URL = cfg.supabaseUrl;
     SUPABASE_KEY = cfg.supabaseKey;
     _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  }
+  try {
+    await _tryLoad();
+    console.log('[SB] _loadConfig OK ✓');
   } catch (e) {
-    console.error('[SB] No se pudo cargar la configuración del servidor:', e.message);
+    console.warn('[SB] _loadConfig falló:', e.message, '— reintentando en 1s...');
+    try {
+      await new Promise(r => setTimeout(r, 1000));
+      await _tryLoad();
+      console.log('[SB] _loadConfig OK (retry) ✓');
+    } catch (e2) {
+      console.error('[SB] _loadConfig falló definitivamente:', e2.message);
+    }
   }
 }
 
@@ -31,7 +44,9 @@ const APP_KEYS = [
   'gf_cc_hist','gf_usuarios','gf_theme','gf_tesoreria',
   'gf_bancos','gf_tpv_pagos','gf_cat_cd','gf_cat_ga',
   'gf_tickets_pagos_tpv','gf_tpv_agente_pagos',
-  'gf_tpv_promotor_pagos','gf_tpv_rate_changes'
+  'gf_tpv_promotor_pagos','gf_tpv_rate_changes',
+  // Wirebit data (year-dependent)
+  'gf_wb_fees_2026','gf_wb_upload_summary','gf_wb_tarjetas_2026'
 ];
 
 // Estado de sync
