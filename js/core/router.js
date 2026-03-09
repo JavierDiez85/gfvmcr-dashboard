@@ -86,56 +86,74 @@ async function _syncAll(){
   syncFlujoToRecs();
 }
 
+// Error banner visible para el usuario cuando una vista async falla
+function _viewError(viewId, error) {
+  console.error(`[View ${viewId}] Error:`, error);
+  const el = document.getElementById('view-' + viewId);
+  if (el) {
+    const existing = el.querySelector('.view-error-banner');
+    if (existing) existing.remove();
+    const banner = document.createElement('div');
+    banner.className = 'view-error-banner';
+    banner.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:12px 16px;margin:12px;border-radius:8px;font-size:.82rem';
+    banner.innerHTML = '⚠️ Error cargando datos: <b>' + String(error.message || error).replace(/</g,'&lt;') + '</b><br><small>Revisa la consola del navegador (F12) para más detalles.</small>';
+    el.insertBefore(banner, el.firstChild && el.firstChild.nextSibling ? el.firstChild.nextSibling : el.firstChild);
+  }
+}
+
 function render(id){
+  // Helper: catch async errors and show visible banner
+  const _c = e => _viewError(id, e);
+
   switch(id){
-    case 'inicio': rInicio(); break;
-    case 'resumen': _syncAll().then(()=>rResumen()); break;
+    case 'inicio': rInicio().catch(_c); break;
+    case 'resumen': _syncAll().then(()=>rResumen()).catch(_c); break;
     case 'nomina': rNomina(); break;
     case 'gastos_comp': rGastosComp(); break;
-    case 'tpv_general': initTPVGeneral(); break;
-    case 'tpv_dashboard': initTPVDashboard(); break;
-    case 'tpv_pagos': rTPVPagosView(); break;
-    case 'tpv_resumen': rTPVResumen(); break;
-    case 'tpv_agentes': rTPVAgentes(); break;
+    case 'tpv_general': initTPVGeneral().catch(_c); break;
+    case 'tpv_dashboard': initTPVDashboard().catch(_c); break;
+    case 'tpv_pagos': rTPVPagosView().catch(_c); break;
+    case 'tpv_resumen': rTPVResumen().catch(_c); break;
+    case 'tpv_agentes': rTPVAgentes().catch(_c); break;
     case 'tar_dashboard': setTimeout(()=>initTarCharts('tar_dashboard'),50); break;
     case 'tar_conceptos': setTimeout(()=>initTarCharts('tar_conceptos'),50); break;
     case 'tar_subclientes': setTimeout(()=>initTarCharts('tar_subclientes'),50); break;
     case 'tar_rechazos': setTimeout(()=>initTarCharts('tar_rechazos'),50); break;
     case 'tar_tarjetahabientes': setTimeout(()=>initTarCharts('tar_tarjetahabientes'),50); break;
-    case 'tpv_terminales': rTPVTerminalesView(); break;
-    case 'tpv_promotores': rTPVPromotores(); break;
-    case 'tpv_comisiones': rTPVComisiones(); break;
-    case 'tpv_upload': rTPVUpload(); break;
-    case 'tk_pagos_tpv': rTkPagosTpv(); break;
-    case 'tar_upload': rTarUpload(); break;
-    case 'sal_res': _syncAll().then(()=>{rPL('sal'); rPLCharts('sal'); rEvoChart('c-sal-evo','sal');}); break;
-    case 'sal_ing': _syncAll().then(()=>rIngView('sal')); break;
-    case 'sal_gas': _syncAll().then(()=>rGasView('sal')); break;
+    case 'tpv_terminales': rTPVTerminalesView().catch(_c); break;
+    case 'tpv_promotores': rTPVPromotores().catch(_c); break;
+    case 'tpv_comisiones': rTPVComisiones().catch(_c); break;
+    case 'tpv_upload': rTPVUpload().catch(_c); break;
+    case 'tk_pagos_tpv': rTkPagosTpv().catch(_c); break;
+    case 'tar_upload': rTarUpload().catch(_c); break;
+    case 'sal_res': _syncAll().then(()=>{rPL('sal'); rPLCharts('sal'); rEvoChart('c-sal-evo','sal');}).catch(_c); break;
+    case 'sal_ing': _syncAll().then(()=>rIngView('sal')).catch(_c); break;
+    case 'sal_gas': _syncAll().then(()=>rGasView('sal')).catch(_c); break;
     case 'sal_nom': rNomView('sal'); break;
-    case 'end_res': _syncAll().then(()=>{rPL('end'); rPLCharts('end'); rEvoChart('c-end-evo','end');}); break;
-    case 'end_ing': _syncAll().then(()=>rIngView('end')); break;
-    case 'end_gas': _syncAll().then(()=>rGasView('end')); break;
+    case 'end_res': _syncAll().then(()=>{rPL('end'); rPLCharts('end'); rEvoChart('c-end-evo','end');}).catch(_c); break;
+    case 'end_ing': _syncAll().then(()=>rIngView('end')).catch(_c); break;
+    case 'end_gas': _syncAll().then(()=>rGasView('end')).catch(_c); break;
     case 'end_nom': rNomView('end'); break;
     case 'cred_dash': rCredDash('end','cred-dash'); break;
     case 'cred_cobr': rCredCobr('end','cobr'); break;
     case 'end_cred': rEndCred(); break;
-    case 'dyn_res': _syncAll().then(()=>{rPL('dyn'); rPLCharts('dyn'); rEvoChart('c-dyn-evo','dyn');}); break;
-    case 'dyn_ing': _syncAll().then(()=>rIngView('dyn')); break;
-    case 'dyn_gas': _syncAll().then(()=>rGasView('dyn')); break;
+    case 'dyn_res': _syncAll().then(()=>{rPL('dyn'); rPLCharts('dyn'); rEvoChart('c-dyn-evo','dyn');}).catch(_c); break;
+    case 'dyn_ing': _syncAll().then(()=>rIngView('dyn')).catch(_c); break;
+    case 'dyn_gas': _syncAll().then(()=>rGasView('dyn')).catch(_c); break;
     case 'dyn_nom': rNomView('dyn'); break;
     case 'dyn_cred': rDynCred(); break;
     case 'dyn_dash': rCredDash('dyn','dyn-dash'); break;
     case 'dyn_cobr': rCredCobr('dyn','dyn-cobr'); break;
-    case 'wb_res': _syncAll().then(()=>{rPL('wb'); rPLCharts('wb'); rEvoChart('c-wb-evo','wb');}); break;
+    case 'wb_res': _syncAll().then(()=>{rPL('wb'); rPLCharts('wb'); rEvoChart('c-wb-evo','wb');}).catch(_c); break;
     case 'wb_ing': wbLoadFees(); rWBIng(); break;
-    case 'wb_gas': _syncAll().then(()=>rGasView('wb')); break;
+    case 'wb_gas': _syncAll().then(()=>rGasView('wb')).catch(_c); break;
     case 'wb_nom': rWBNom(); break;
     case 'wb_upload': rWBUpload(); break;
     case 'wb_cripto': rWBCripto(); break;
     case 'wb_tarjetas': rWBTarjetas(); break;
     case 'wb_tar_upload': rWBTarUpload(); break;
-    case 'centum': _syncAll().then(()=>{rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']);}); break;
-    case 'grupo': _syncAll().then(()=>{rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb']);}); break;
+    case 'centum': _syncAll().then(()=>{rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']);}).catch(_c); break;
+    case 'grupo': _syncAll().then(()=>{rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb']);}).catch(_c); break;
     case 'tes_flujo': rTesFlujo(); break;
     case 'tes_individual': rTesIndividual(); break;
     case 'tes_grupo': rTesGrupo(); break;
@@ -146,8 +164,8 @@ function render(id){
     case 'cfg_bancos': rBancosView(); break;
     case 'carga_creditos': rCargaCreditos(); break;
     case 'carga_masiva': rCargaMasiva(); break;
-    case 'flujo_ing': _syncAll().then(()=>rFlujoIng()); break;
-    case 'flujo_gas': _syncAll().then(()=>rFlujoGas()); break;
+    case 'flujo_ing': _syncAll().then(()=>rFlujoIng()).catch(_c); break;
+    case 'flujo_gas': _syncAll().then(()=>rFlujoGas()).catch(_c); break;
     case 'ingresar': rFlujoIng(); break;
   }
 }

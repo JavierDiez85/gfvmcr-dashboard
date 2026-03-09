@@ -325,18 +325,22 @@ function _renderCharts(topKey, pieKey, clients, mix, barColor) {
 }
 
 async function initTPVGeneral() {
+  console.log('[TPV] initTPVGeneral loading...');
   const [clients, kpis, mix] = await Promise.all([
     TPV.clientsByVolume(), TPV.kpis(), TPV.commissionMix()
   ]);
+  console.log('[TPV] initTPVGeneral data:', { clients: (clients||[]).length, kpis: kpis ? 'OK' : 'null', mix: (mix||[]).length });
   const k = kpis || {};
   const sub = document.getElementById('tpv-general-subtitle');
   if (sub) sub.innerHTML = `Análisis acumulado · Sin filtro de fechas · <span style="color:#0073ea;font-weight:600">${k.num_clientes || 0} clientes</span> · <span style="color:var(--green);font-weight:600">${(k.num_transacciones||0).toLocaleString()} txns</span>`;
   _renderClientTable('dg-tbody', clients || []);
   _renderKpis('tpv-general-kpis', k, mix, true);
   setTimeout(() => _renderCharts('top10', 'com_pie', clients, mix, '#0073ea'), 50);
+  console.log('[TPV] initTPVGeneral OK ✓');
 }
 
 async function initTPVDashboard(fromDate, toDate) {
+  console.log('[TPV] initTPVDashboard loading...');
   // Use provided dates or get from date pickers, default to current month
   const from = fromDate || document.getElementById('dash-from')?.value || (()=>{const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-01'})();
   const to = toDate || document.getElementById('dash-to')?.value || new Date().toISOString().slice(0,10);
@@ -346,6 +350,7 @@ async function initTPVDashboard(fromDate, toDate) {
   const [clients, kpis, mix] = await Promise.all([
     TPV.clientsByVolume(from, to), TPV.kpis(from, to), TPV.commissionMix(from, to)
   ]);
+  console.log('[TPV] initTPVDashboard data:', { from, to, clients: (clients||[]).length, kpis: kpis ? 'OK' : 'null', mix: (mix||[]).length });
   const k = kpis || {};
   const periodLabel = from && to ? `${from} → ${to}` : 'Histórico completo';
   const sub = document.getElementById('tpv-dashboard-subtitle');
