@@ -28,7 +28,11 @@ INSERT INTO app_data (key, value) VALUES
   ('gf_bancos',   '[]'::jsonb),
   ('gf_tpv_pagos','{}'::jsonb),
   ('gf_cat_cd',   '[]'::jsonb),
-  ('gf_cat_ga',   '[]'::jsonb)
+  ('gf_cat_ga',   '[]'::jsonb),
+  ('gf_tpv_agente_pagos',   '{}'::jsonb),
+  ('gf_tpv_promotor_pagos', '{}'::jsonb),
+  ('gf_tpv_rate_changes',   '[]'::jsonb),
+  ('gf_tickets_pagos_tpv',  '[]'::jsonb)
 ON CONFLICT (key) DO NOTHING;
 
 -- TABLA 2: Metadata de sincronización
