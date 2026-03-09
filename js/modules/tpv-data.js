@@ -10,6 +10,14 @@ const TPV = {
   // Mapping: db_field suffix → tpv_transactions.card_type_key
   _CARD_TYPE_MAP: { tc: 'TC', td: 'TD', amex: 'Amex', ti: 'TI' },
 
+  // Asegurar que _sb está inicializado antes de cualquier query
+  async _ensureSb() {
+    if (!_sb) {
+      if (typeof _loadConfig === 'function') await _loadConfig();
+      if (!_sb) throw new Error('Supabase not available');
+    }
+  },
+
   // ═══════════════════════════════════════
   // CORE: RPC call with caching
   // ═══════════════════════════════════════
@@ -24,10 +32,7 @@ const TPV = {
     const lsKey = 'tpv_cache_' + cacheKey;
 
     try {
-      if (!_sb) {
-        if (typeof _loadConfig === 'function') await _loadConfig();
-        if (!_sb) throw new Error('Supabase not available');
-      }
+      await this._ensureSb();
       const { data, error } = await _sb.rpc(fnName, params || {});
       if (error) throw error;
       this._setCache(cacheKey, data, lsKey);
@@ -147,7 +152,7 @@ const TPV = {
       });
 
       if (!relevant.length) return comData;
-      if (!_sb) return comData;
+      await this._ensureSb();
 
       // ── Step 1: Resolve rate change client names to client_ids ──
       // Rate changes store nombre.toUpperCase(), RPC returns nombre_display.
@@ -313,6 +318,7 @@ const TPV = {
     const key = 'agentes_list';
     if (this._isCacheValid(key)) return this._cache[key];
     try {
+      await this._ensureSb();
       const { data, error } = await _sb.from('tpv_agentes').select('*').order('nombre');
       if (error) throw error;
       this._setCache(key, data);
@@ -328,6 +334,7 @@ const TPV = {
    */
   async saveAgente(agente) {
     try {
+      await this._ensureSb();
       let data, error;
       if (agente.id) {
         // Update existing agent by ID
@@ -357,6 +364,7 @@ const TPV = {
     const key = 'clients_list';
     if (this._isCacheValid(key)) return this._cache[key];
     try {
+      await this._ensureSb();
       const { data, error } = await _sb.from('tpv_clients')
         .select('*, tpv_agentes(nombre, siglas)')
         .order('nombre');
@@ -374,6 +382,7 @@ const TPV = {
    */
   async saveClient(client) {
     try {
+      await this._ensureSb();
       client.updated_at = new Date().toISOString();
       if (client.nombre) client.nombre = client.nombre.toUpperCase().trim();
       const { data, error } = await _sb.from('tpv_clients')
@@ -393,6 +402,7 @@ const TPV = {
    */
   async getClientMsiRates(clientId) {
     try {
+      await this._ensureSb();
       const { data, error } = await _sb.from('tpv_client_msi_rates')
         .select('*')
         .eq('cliente_id', clientId);
@@ -409,6 +419,7 @@ const TPV = {
    */
   async saveClientMsiRates(clientId, rates) {
     try {
+      await this._ensureSb();
       // rates = [{plazo, entity, card_type, rate}, ...]
       const rows = rates.map(r => ({ ...r, cliente_id: clientId }));
       const { error } = await _sb.from('tpv_client_msi_rates')
@@ -426,6 +437,7 @@ const TPV = {
    */
   async getUploadHistory() {
     try {
+      await this._ensureSb();
       const { data, error } = await _sb.from('tpv_upload_batches')
         .select('*')
         .order('created_at', { ascending: false })

@@ -2,6 +2,14 @@
 // Sube Excel de transacciones + config de comisiones a Supabase
 // Usa: XLSX (SheetJS CDN), _sb (Supabase client), TPV (tpv-data.js)
 
+/** Ensure _sb is initialized before any Supabase call */
+async function _ensureSupabase() {
+  if (!_sb) {
+    if (typeof _loadConfig === 'function') await _loadConfig();
+    if (!_sb) throw new Error('Supabase not available');
+  }
+}
+
 const TPV_UPLOAD = {
   BATCH_SIZE: 500,
   _progress: null,  // callback(pct, msg)
@@ -110,6 +118,7 @@ const TPV_UPLOAD = {
     const errors = [];
 
     try {
+      await _ensureSupabase();
       // Step 1: Read file
       this._progress(5, 'Leyendo archivo Excel...');
       const ab = await file.arrayBuffer();
@@ -284,6 +293,7 @@ const TPV_UPLOAD = {
     this._progress = progressCb || (() => {});
 
     try {
+      await _ensureSupabase();
       this._progress(5, 'Leyendo archivo de configuración...');
       const ab = await file.arrayBuffer();
       const wb = XLSX.read(ab, { type: 'array' });
@@ -620,6 +630,7 @@ const TPV_UPLOAD = {
    */
   async rollbackBatch(batchId) {
     try {
+      await _ensureSupabase();
       const { error } = await _sb.from('tpv_transactions')
         .delete()
         .eq('upload_batch', batchId);
@@ -644,6 +655,7 @@ const TPV_UPLOAD = {
 
 /** Render the upload view: load KPIs + history */
 async function rTPVUpload() {
+  await _ensureSupabase();
   // Load KPIs
   try {
     const { count: txnCount } = await _sb.from('tpv_transactions').select('*', { count: 'exact', head: true });
@@ -845,6 +857,7 @@ function setResumenDates(period) {
 
 /** Load client list into filter dropdown */
 async function rTPVResumen() {
+  await _ensureSupabase();
   const filterType = document.getElementById('resumen-filter-type');
   const filterValue = document.getElementById('resumen-filter-value');
   const searchEl = document.getElementById('resumen-search');
@@ -896,6 +909,7 @@ function filterResumenOptions(query) {
 
 /** Show detail for selected client/promotor */
 async function rTPVResumenDetail() {
+  await _ensureSupabase();
   const filterType = document.getElementById('resumen-filter-type')?.value;
   const filterValue = document.getElementById('resumen-filter-value')?.value;
   const kpiEl = document.getElementById('resumen-kpis');

@@ -51,6 +51,7 @@ const SB = {
   // Jalar TODOS los datos de Supabase → localStorage
   async pullAll() {
     try {
+      if (!_sb) await _loadConfig();
       const { data, error } = await _sb
         .from('app_data')
         .select('key, value, updated_at');
@@ -77,6 +78,7 @@ const SB = {
   async pushKey(key) {
     if (!_online) { _pendingPush.add(key); return; }
     try {
+      if (!_sb) await _loadConfig();
       const raw = localStorage.getItem(key);
       const value = raw ? JSON.parse(raw) : null;
       const { error } = await _sb
@@ -108,6 +110,7 @@ const SB = {
     if (_syncInProgress || !_online) return;
     _syncInProgress = true;
     try {
+      if (!_sb) await _loadConfig();
       let query = _sb.from('app_data').select('key, value, updated_at, updated_by');
       if (_lastSync) {
         query = query.gt('updated_at', _lastSync);
@@ -224,6 +227,7 @@ async function _migrateOldKeys() {
   if (sess) { sessionStorage.setItem('gf_session', sess); sessionStorage.removeItem('vmcr_session'); }
   // Supabase app_data
   try {
+    if (!_sb) await _loadConfig();
     for (const [oldK, newK] of Object.entries(OLD_MAP)) {
       const { data } = await _sb.from('app_data').select('value').eq('key', oldK).single();
       if (data && data.value) {
@@ -249,6 +253,7 @@ async function _migrateLocalToSupabase() {
   console.log('[SB] Migrando localStorage → Supabase...');
   let count = 0;
 
+  if (!_sb) await _loadConfig();
   for (const key of APP_KEYS) {
     const raw = localStorage.getItem(key);
     if (!raw || raw === 'null') continue;
