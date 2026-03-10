@@ -3,6 +3,11 @@ const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const { URL } = require('url');
+const {
+  SECURITY_HEADERS, ALLOWED_DIRS,
+  isBlockedPath, getClientIP, isRateLimited, startCleanup,
+  checkCors, readBody, sendError, extractDateParams, validateSbConfig
+} = require('./security');
 
 // Cargar .env (sin dependencias externas)
 const _envPath = path.join(__dirname, '.env');
@@ -33,81 +38,8 @@ const MIME = {
   '.eot': 'application/vnd.ms-fontobject',
 };
 
-// ══════════════════════════════════════
-// RATE LIMITER — por IP con limpieza automática
-// ══════════════════════════════════════
-const _rl = {};
-function isRateLimited(ip, max = 20) {
-  const now = Date.now(), win = 60000;
-  if (!_rl[ip]) _rl[ip] = [];
-  _rl[ip] = _rl[ip].filter(t => now - t < win);
-  if (_rl[ip].length >= max) return true;
-  _rl[ip].push(now);
-  return false;
-}
-// Limpiar IPs inactivas cada 5 minutos (previene memory leak)
-setInterval(() => {
-  const now = Date.now();
-  for (const ip of Object.keys(_rl)) {
-    _rl[ip] = _rl[ip].filter(t => now - t < 60000);
-    if (_rl[ip].length === 0) delete _rl[ip];
-  }
-}, 300000);
-
-// ══════════════════════════════════════
-// SECURITY — Headers y protección de archivos
-// ══════════════════════════════════════
-const SECURITY_HEADERS = {
-  'X-Content-Type-Options': 'nosniff',
-  'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
-  'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
-};
-
-// Archivos/rutas bloqueadas (nunca servir)
-const BLOCKED_PATTERNS = [
-  /^\/\.env/i,           // .env, .env.local, etc.
-  /^\/server\.js/i,      // código del servidor
-  /^\/package\.json/i,   // dependencias
-  /^\/package-lock\.json/i,
-  /^\/node_modules/i,    // dependencias
-  /^\/\.git/i,           // repositorio git
-  /^\/\.claude/i,        // config de claude
-  /^\/\.vscode/i,        // config de editor
-  /^\/.+\.md$/i,         // READMEs, docs
-  /^\/\.npmrc/i,
-  /^\/\.DS_Store/i
-];
-
-function isBlockedPath(urlPath) {
-  return BLOCKED_PATTERNS.some(re => re.test(urlPath));
-}
-
-/** Obtener IP real del cliente (sin confiar en x-forwarded-for spoofeable) */
-function getClientIP(req) {
-  return req.socket.remoteAddress || '0.0.0.0';
-}
-
-// ══════════════════════════════════════
-// BODY PARSER — leer JSON del request
-// ══════════════════════════════════════
-function readBody(req, maxBytes = 131072) {
-  return new Promise((resolve, reject) => {
-    const chunks = [];
-    let size = 0;
-    req.on('data', c => {
-      size += c.length;
-      if (size > maxBytes) { req.destroy(); reject(new Error('Body too large')); return; }
-      chunks.push(c);
-    });
-    req.on('end', () => {
-      try { resolve(JSON.parse(Buffer.concat(chunks).toString())); }
-      catch (e) { reject(e); }
-    });
-    req.on('error', reject);
-  });
-}
+// Iniciar limpieza periódica del rate limiter
+startCleanup();
 
 // ══════════════════════════════════════
 // SUPABASE REST — Zero-dependency helpers
@@ -136,7 +68,7 @@ function httpsRequest(options, body) {
 
 /** Call a Supabase RPC function */
 async function supabaseRpc(fnName, params = {}) {
-  if (!SB_URL || !SB_KEY) throw new Error('Supabase not configured');
+  validateSbConfig(SB_URL, SB_KEY);
   const parsed = new URL(SB_URL);
   const body = JSON.stringify(params);
   const result = await httpsRequest({
@@ -155,7 +87,7 @@ async function supabaseRpc(fnName, params = {}) {
 
 /** Read a key from app_data table (key-value store) */
 async function getAppData(key) {
-  if (!SB_URL || !SB_KEY) throw new Error('Supabase not configured');
+  validateSbConfig(SB_URL, SB_KEY);
   const parsed = new URL(SB_URL);
   const result = await httpsRequest({
     hostname: parsed.hostname,
@@ -173,7 +105,7 @@ async function getAppData(key) {
 
 /** Query a Supabase table with filters */
 async function supabaseQuery(table, select = '*', filters = '') {
-  if (!SB_URL || !SB_KEY) throw new Error('Supabase not configured');
+  validateSbConfig(SB_URL, SB_KEY);
   const parsed = new URL(SB_URL);
   const qs = `select=${encodeURIComponent(select)}${filters ? '&' + filters : ''}`;
   const result = await httpsRequest({
@@ -315,36 +247,17 @@ async function executeTool(name, input) {
   try {
     switch (name) {
       case 'get_tpv_kpis': {
-        const params = {};
-        if (input.p_from) params.p_from = input.p_from;
-        if (input.p_to) params.p_to = input.p_to;
-        const data = await supabaseRpc('tpv_kpis', params);
+        const data = await supabaseRpc('tpv_kpis', extractDateParams(input));
         return Array.isArray(data) && data.length > 0 ? data[0] : data;
       }
-      case 'get_tpv_clients_volume': {
-        const params = {};
-        if (input.p_from) params.p_from = input.p_from;
-        if (input.p_to) params.p_to = input.p_to;
-        return truncateResult(await supabaseRpc('tpv_clients_by_volume', params));
-      }
-      case 'get_tpv_commissions': {
-        const params = {};
-        if (input.p_from) params.p_from = input.p_from;
-        if (input.p_to) params.p_to = input.p_to;
-        return truncateResult(await supabaseRpc('tpv_client_commissions', params));
-      }
-      case 'get_tpv_agent_summary': {
-        const params = {};
-        if (input.p_from) params.p_from = input.p_from;
-        if (input.p_to) params.p_to = input.p_to;
-        return await supabaseRpc('tpv_agent_summary', params);
-      }
-      case 'get_tpv_terminal_status': {
-        const params = {};
-        if (input.p_from) params.p_from = input.p_from;
-        if (input.p_to) params.p_to = input.p_to;
-        return truncateResult(await supabaseRpc('tpv_terminal_status', params), 50);
-      }
+      case 'get_tpv_clients_volume':
+        return truncateResult(await supabaseRpc('tpv_clients_by_volume', extractDateParams(input)));
+      case 'get_tpv_commissions':
+        return truncateResult(await supabaseRpc('tpv_client_commissions', extractDateParams(input)));
+      case 'get_tpv_agent_summary':
+        return await supabaseRpc('tpv_agent_summary', extractDateParams(input));
+      case 'get_tpv_terminal_status':
+        return truncateResult(await supabaseRpc('tpv_terminal_status', extractDateParams(input)), 50);
       case 'get_tarjetas_kpis': {
         const data = await supabaseRpc('tar_dashboard_kpis');
         return Array.isArray(data) && data.length > 0 ? data[0] : data;
@@ -535,36 +448,14 @@ http.createServer(async (req, res) => {
   // ── Security headers en TODAS las respuestas ──
   Object.entries(SECURITY_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
 
-  // ── CORS: same-origin dinámico (funciona en localhost y Railway) ──
-  const origin = req.headers.origin;
-  if (origin) {
-    const host = req.headers.host || '';
-    // Permitir si el origin coincide con el host que sirve la app
-    const allowedOrigins = [
-      `http://localhost:${PORT}`,
-      `http://127.0.0.1:${PORT}`,
-      `https://${host}`,  // Railway: https://xxx.up.railway.app
-      `http://${host}`
-    ];
-    if (!allowedOrigins.includes(origin)) {
-      res.writeHead(403, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Origin not allowed' }));
-      return;
-    }
-    res.setHeader('Access-Control-Allow-Origin', origin);
-    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  }
+  // ── CORS: same-origin dinámico (localhost + Railway) ──
+  if (checkCors(req, res, PORT)) return;
   // Preflight CORS
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
   // ── API: Config (Supabase) — solo same-origin con rate limit ──
   if (req.method === 'GET' && req.url === '/api/config') {
-    if (isRateLimited(ip, 30)) {
-      res.writeHead(429, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Rate limit exceeded' }));
-      return;
-    }
+    if (isRateLimited(ip, 30)) { sendError(res, 429, 'Rate limit exceeded'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
       supabaseUrl: process.env.SUPABASE_URL || '',
@@ -576,17 +467,8 @@ http.createServer(async (req, res) => {
   // ── API: AI Chat with Tool Use ──
   if (req.method === 'POST' && req.url === '/api/chat') {
     const API_KEY = process.env.ANTHROPIC_API_KEY;
-    if (!API_KEY) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'ANTHROPIC_API_KEY no configurada en el servidor' }));
-      return;
-    }
-
-    if (isRateLimited(ip, 20)) {
-      res.writeHead(429, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: 'Demasiadas solicitudes. Espera un momento.' }));
-      return;
-    }
+    if (!API_KEY) { sendError(res, 500, 'ANTHROPIC_API_KEY no configurada en el servidor'); return; }
+    if (isRateLimited(ip, 20)) { sendError(res, 429, 'Demasiadas solicitudes. Espera un momento.'); return; }
 
     try {
       const body = await readBody(req);
@@ -602,8 +484,7 @@ http.createServer(async (req, res) => {
       console.error('[Chat] Error:', e.message);
       // No exponer detalles internos al cliente
       const isApiError = e.message.includes('API error');
-      res.writeHead(isApiError ? 502 : 400, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: isApiError ? 'Error del servicio AI' : 'Solicitud inválida' }));
+      sendError(res, isApiError ? 502 : 400, isApiError ? 'Error del servicio AI' : 'Solicitud inválida');
     }
     return;
   }
@@ -629,7 +510,6 @@ http.createServer(async (req, res) => {
   }
 
   // Solo servir archivos dentro de directorios permitidos
-  const ALLOWED_DIRS = ['/index.html', '/js/', '/css/', '/assets/', '/img/', '/favicon'];
   const isAllowed = ALLOWED_DIRS.some(d => url === d || url.startsWith(d));
   if (!isAllowed) {
     res.writeHead(404);
