@@ -8,30 +8,35 @@ let SUPABASE_URL = '';
 let SUPABASE_KEY = '';
 let _sb = null;
 
-// Cargar config desde el servidor (las claves viven en .env, no en el código)
+// Supabase anon key (público por diseño — seguridad vía RLS policies)
+// El servidor Node.js (/api/config) es preferido pero este fallback
+// permite que la app funcione en hosting estático (GitHub Pages, etc.)
+const _SB_FALLBACK_URL = 'https://ofuzwfiqjvlronulhwbw.supabase.co';
+const _SB_FALLBACK_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9mdXp3ZmlxanZscm9udWxod2J3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzIwNTQ4NDcsImV4cCI6MjA4NzYzMDg0N30.Ftw2fNM9pLxm09odMa_-zUM7YStK93lMkffZKLnxUMU';
+
+// Cargar config: intenta /api/config (Node.js server), fallback a valores embebidos
 async function _loadConfig() {
-  async function _tryLoad() {
-    const r = await fetch('/api/config');
-    if (!r.ok) throw new Error('Config HTTP ' + r.status);
-    const cfg = await r.json();
-    if (!cfg.supabaseUrl || !cfg.supabaseKey) throw new Error('Config vacío — revisa .env');
-    SUPABASE_URL = cfg.supabaseUrl;
-    SUPABASE_KEY = cfg.supabaseKey;
-    _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-  }
+  // Si ya está inicializado, no recargar
+  if (_sb) return;
+
+  // Intentar cargar desde el servidor Node.js
   try {
-    await _tryLoad();
-    console.log('[SB] _loadConfig OK ✓');
-  } catch (e) {
-    console.warn('[SB] _loadConfig falló:', e.message, '— reintentando en 1s...');
-    try {
-      await new Promise(r => setTimeout(r, 1000));
-      await _tryLoad();
-      console.log('[SB] _loadConfig OK (retry) ✓');
-    } catch (e2) {
-      console.error('[SB] _loadConfig falló definitivamente:', e2.message);
+    const r = await fetch('/api/config');
+    if (r.ok) {
+      const cfg = await r.json();
+      if (cfg.supabaseUrl && cfg.supabaseKey) {
+        SUPABASE_URL = cfg.supabaseUrl;
+        SUPABASE_KEY = cfg.supabaseKey;
+        _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        return;
+      }
     }
-  }
+  } catch (e) { /* servidor no disponible — usar fallback */ }
+
+  // Fallback: usar credenciales embebidas (hosting estático)
+  SUPABASE_URL = _SB_FALLBACK_URL;
+  SUPABASE_KEY = _SB_FALLBACK_KEY;
+  _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 }
 
 // Client identity (para tracking de sync)
