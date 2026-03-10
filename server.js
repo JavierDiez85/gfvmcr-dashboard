@@ -34,16 +34,59 @@ const MIME = {
 };
 
 // ══════════════════════════════════════
-// RATE LIMITER — 20 requests / minuto por IP
+// RATE LIMITER — por IP con limpieza automática
 // ══════════════════════════════════════
 const _rl = {};
-function isRateLimited(ip) {
-  const now = Date.now(), win = 60000, max = 20;
+function isRateLimited(ip, max = 20) {
+  const now = Date.now(), win = 60000;
   if (!_rl[ip]) _rl[ip] = [];
   _rl[ip] = _rl[ip].filter(t => now - t < win);
   if (_rl[ip].length >= max) return true;
   _rl[ip].push(now);
   return false;
+}
+// Limpiar IPs inactivas cada 5 minutos (previene memory leak)
+setInterval(() => {
+  const now = Date.now();
+  for (const ip of Object.keys(_rl)) {
+    _rl[ip] = _rl[ip].filter(t => now - t < 60000);
+    if (_rl[ip].length === 0) delete _rl[ip];
+  }
+}, 300000);
+
+// ══════════════════════════════════════
+// SECURITY — Headers y protección de archivos
+// ══════════════════════════════════════
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'X-XSS-Protection': '1; mode=block',
+  'Referrer-Policy': 'strict-origin-when-cross-origin',
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+};
+
+// Archivos/rutas bloqueadas (nunca servir)
+const BLOCKED_PATTERNS = [
+  /^\/\.env/i,           // .env, .env.local, etc.
+  /^\/server\.js/i,      // código del servidor
+  /^\/package\.json/i,   // dependencias
+  /^\/package-lock\.json/i,
+  /^\/node_modules/i,    // dependencias
+  /^\/\.git/i,           // repositorio git
+  /^\/\.claude/i,        // config de claude
+  /^\/\.vscode/i,        // config de editor
+  /^\/.+\.md$/i,         // READMEs, docs
+  /^\/\.npmrc/i,
+  /^\/\.DS_Store/i
+];
+
+function isBlockedPath(urlPath) {
+  return BLOCKED_PATTERNS.some(re => re.test(urlPath));
+}
+
+/** Obtener IP real del cliente (sin confiar en x-forwarded-for spoofeable) */
+function getClientIP(req) {
+  return req.socket.remoteAddress || '0.0.0.0';
 }
 
 // ══════════════════════════════════════
@@ -349,8 +392,8 @@ async function executeTool(name, input) {
         return { error: 'Tool no reconocida: ' + name };
     }
   } catch (e) {
-    console.error(`[Tool ${name}] Error:`, e.message);
-    return { error: 'Error ejecutando ' + name + ': ' + e.message };
+    console.error(`[Tool] Error en ${name}`);
+    return { error: 'Error ejecutando herramienta' };
   }
 }
 
@@ -441,25 +484,24 @@ async function handleChat(apiKey, messages, context) {
       messages: currentMessages
     };
 
-    console.log(`[Chat] Round ${round + 1}: sending ${currentMessages.length} messages`);
     const response = await callAnthropic(apiKey, payload);
 
     // If Claude is done (end_turn), return final response
     if (response.stop_reason === 'end_turn' || response.stop_reason === 'max_tokens') {
-      console.log(`[Chat] Done after ${round + 1} round(s)`);
+      // Chat completado
       return response;
     }
 
     // If Claude wants to use tools
     if (response.stop_reason === 'tool_use') {
       const toolUseBlocks = (response.content || []).filter(b => b.type === 'tool_use');
-      console.log(`[Chat] Tool calls: ${toolUseBlocks.map(t => t.name).join(', ')}`);
+      // Tool calls en progreso
 
       // Execute all tool calls in parallel
       const toolResults = await Promise.all(toolUseBlocks.map(async block => {
         const start = Date.now();
         const result = await executeTool(block.name, block.input || {});
-        console.log(`[Chat] ${block.name} → ${Date.now() - start}ms`);
+        // Tool ejecutada
         return {
           type: 'tool_result',
           tool_use_id: block.id,
@@ -477,7 +519,7 @@ async function handleChat(apiKey, messages, context) {
     }
 
     // Unknown stop_reason — return as-is
-    console.log(`[Chat] Unknown stop_reason: ${response.stop_reason}`);
+    // stop_reason inesperado
     return response;
   }
 
@@ -488,10 +530,36 @@ async function handleChat(apiKey, messages, context) {
 // SERVER
 // ══════════════════════════════════════
 http.createServer(async (req, res) => {
+  const ip = getClientIP(req);
 
-  // ── API: Config pública (Supabase) ──
+  // ── Security headers en TODAS las respuestas ──
+  Object.entries(SECURITY_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
+
+  // ── CORS: solo same-origin (bloquear requests cross-origin a APIs) ──
+  const origin = req.headers.origin;
+  if (origin) {
+    // Solo permitir same-origin requests
+    const allowed = origin === `http://localhost:${PORT}` || origin === `http://127.0.0.1:${PORT}`;
+    if (!allowed) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Origin not allowed' }));
+      return;
+    }
+    res.setHeader('Access-Control-Allow-Origin', origin);
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  }
+  // Preflight CORS
+  if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
+
+  // ── API: Config (Supabase) — solo same-origin con rate limit ──
   if (req.method === 'GET' && req.url === '/api/config') {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-cache' });
+    if (isRateLimited(ip, 30)) {
+      res.writeHead(429, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Rate limit exceeded' }));
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
       supabaseUrl: process.env.SUPABASE_URL || '',
       supabaseKey: process.env.SUPABASE_KEY || ''
@@ -508,8 +576,7 @@ http.createServer(async (req, res) => {
       return;
     }
 
-    const ip = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
-    if (isRateLimited(ip)) {
+    if (isRateLimited(ip, 20)) {
       res.writeHead(429, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Demasiadas solicitudes. Espera un momento.' }));
       return;
@@ -527,9 +594,10 @@ http.createServer(async (req, res) => {
 
     } catch (e) {
       console.error('[Chat] Error:', e.message);
-      const status = e.message.includes('API error') ? 502 : 400;
-      res.writeHead(status, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ error: e.message }));
+      // No exponer detalles internos al cliente
+      const isApiError = e.message.includes('API error');
+      res.writeHead(isApiError ? 502 : 400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: isApiError ? 'Error del servicio AI' : 'Solicitud inválida' }));
     }
     return;
   }
@@ -538,12 +606,28 @@ http.createServer(async (req, res) => {
   let url = decodeURIComponent(req.url.split('?')[0]);
   if (url === '/') url = '/index.html';
 
+  // Bloquear archivos sensibles (.env, server.js, .git, etc.)
+  if (isBlockedPath(url)) {
+    res.writeHead(404);
+    res.end('Not found');
+    return;
+  }
+
   const filePath = path.join(ROOT, url);
 
   // Prevenir directory traversal
   if (!filePath.startsWith(ROOT)) {
     res.writeHead(403);
     res.end('Forbidden');
+    return;
+  }
+
+  // Solo servir archivos dentro de directorios permitidos
+  const ALLOWED_DIRS = ['/index.html', '/js/', '/css/', '/assets/', '/img/', '/favicon'];
+  const isAllowed = ALLOWED_DIRS.some(d => url === d || url.startsWith(d));
+  if (!isAllowed) {
+    res.writeHead(404);
+    res.end('Not found');
     return;
   }
 
