@@ -731,10 +731,297 @@ function credDelete(entKey, idx){
   });
 }
 
+// ══════════════════════════════════════
+// CRÉDITO MANUAL — Formulario + Generador de Amortización
+// ══════════════════════════════════════
+let _credFormEnt = '';     // entKey del formulario abierto
+let _credFormIdx = -1;     // -1 = nuevo, >=0 = edición
+let _amortDraft  = [];     // tabla de amortización en borrador
+
 function credAddRow(entKey){
+  credOpenForm(entKey);
+}
+
+/** Abrir modal con formulario de captura de crédito */
+function credOpenForm(entKey, editIdx){
+  _credFormEnt = entKey;
+  _credFormIdx = typeof editIdx === 'number' ? editIdx : -1;
+  _amortDraft  = [];
+
+  const isEdit = _credFormIdx >= 0;
   const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
-  credits.push({cl:'Nuevo Crédito',monto:0,plazo:12,tasa:0,com:0,tipo:'Simple',garantia:'',destino:'',st:'Prospecto',disbDate:'',amort:[]});
+  const c = isEdit ? credits[_credFormIdx] : null;
+  const col = entKey==='end' ? '#00b875' : '#ff7043';
+  const label = entKey==='end' ? 'Endless Money' : 'Dynamo Finance';
+  const title = (isEdit ? '✏️ Editar' : '➕ Nuevo') + ' Crédito — ' + label;
+
+  // Defaults
+  const today = new Date();
+  const todayStr = today.getFullYear()+'-'+String(today.getMonth()+1).padStart(2,'0')+'-'+String(today.getDate()).padStart(2,'0');
+  const dDate = c && c.disbDate ? _credDisbToISO(c.disbDate) : todayStr;
+
+  const html = `
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px 16px;margin-bottom:16px">
+      <div style="grid-column:1/-1">
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Cliente / Acreditado</label>
+        <input id="cf-cl" type="text" value="${c?c.cl:''}" placeholder="Nombre del cliente" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Monto del Crédito</label>
+        <input id="cf-monto" type="number" step="0.01" min="0" value="${c?c.monto:''}" placeholder="100000" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Plazo (meses)</label>
+        <input id="cf-plazo" type="number" min="1" max="360" value="${c?c.plazo:12}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Tasa Anual %</label>
+        <input id="cf-tasa" type="number" step="0.01" min="0" value="${c?c.tasa:''}" placeholder="24" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Comisión Apertura %</label>
+        <input id="cf-com" type="number" step="0.01" min="0" value="${c?c.com:0}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">IVA Intereses %</label>
+        <input id="cf-iva" type="number" step="0.01" min="0" value="${c&&c.iva!=null?c.iva:16}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Fecha Desembolso</label>
+        <input id="cf-fecha" type="date" value="${dDate}" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Tipo</label>
+        <select id="cf-tipo" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+          <option value="Simple" ${c&&c.tipo==='Simple'?'selected':''}>Simple</option>
+          <option value="Revolvente" ${c&&c.tipo==='Revolvente'?'selected':''}>Revolvente</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Estatus</label>
+        <select id="cf-st" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+          <option value="Prospecto" ${c&&c.st==='Prospecto'?'selected':''}>Prospecto</option>
+          <option value="Activo" ${(!c||c.st==='Activo')?'selected':''}>Activo</option>
+          <option value="Vencido" ${c&&c.st==='Vencido'?'selected':''}>Vencido</option>
+          <option value="Pagado" ${c&&c.st==='Pagado'?'selected':''}>Pagado</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Garantía</label>
+        <input id="cf-garantia" type="text" value="${c?c.garantia||'':''}" placeholder="Opcional" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Destino</label>
+        <input id="cf-destino" type="text" value="${c?c.destino||'':''}" placeholder="Opcional" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+      <div>
+        <label style="font-size:.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;display:block;margin-bottom:3px">Producto</label>
+        <input id="cf-producto" type="text" value="${c?c.producto||'':''}" placeholder="Opcional" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;font-size:.82rem;background:var(--bg)">
+      </div>
+    </div>
+
+    <!-- Botones de acción -->
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
+      <button onclick="credGenerarAmort()" style="padding:8px 18px;border-radius:8px;background:${col};color:#fff;border:none;font-size:.78rem;font-weight:600;cursor:pointer">📊 Generar Tabla</button>
+      <button onclick="credSaveForm()" style="padding:8px 18px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:600;cursor:pointer">💾 Guardar Crédito</button>
+      <button onclick="closeModal()" style="padding:8px 18px;border-radius:8px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:.78rem;cursor:pointer">Cancelar</button>
+    </div>
+
+    <!-- Contenedor de la tabla de amortización -->
+    <div id="cf-amort-container"></div>
+  `;
+
+  openModal(null, title, html);
+
+  // Si es edición y ya tiene tabla, cargarla
+  if(isEdit && c && c.amort && c.amort.length > 1){
+    _amortDraft = JSON.parse(JSON.stringify(c.amort));
+    setTimeout(()=> _credRenderAmortDraft(), 50);
+  }
+}
+
+/** Convertir disbDate DD/MM/YYYY a YYYY-MM-DD para input date */
+function _credDisbToISO(str){
+  if(!str) return '';
+  if(str.includes('-') && str.length===10) return str; // ya es ISO
+  const p = str.split('/');
+  if(p.length!==3) return '';
+  return p[2]+'-'+p[1].padStart(2,'0')+'-'+p[0].padStart(2,'0');
+}
+
+/** Generar tabla de amortización (sistema francés — pagos fijos) */
+function credGenerarAmort(){
+  const monto = parseFloat(document.getElementById('cf-monto').value) || 0;
+  const plazo = parseInt(document.getElementById('cf-plazo').value) || 12;
+  const tasaAnual = parseFloat(document.getElementById('cf-tasa').value) || 0;
+  const ivaP = parseFloat(document.getElementById('cf-iva').value) || 16;
+  const fechaStr = document.getElementById('cf-fecha').value;
+
+  if(monto <= 0){ toast('⚠️ Ingresa un monto válido'); return; }
+  if(tasaAnual <= 0){ toast('⚠️ Ingresa una tasa válida'); return; }
+
+  const r = tasaAnual / 100 / 12; // tasa mensual
+  // Pago fijo (sistema francés)
+  const pagoFijo = r > 0 ? monto * (r * Math.pow(1+r, plazo)) / (Math.pow(1+r, plazo) - 1) : monto / plazo;
+
+  // Fecha de inicio
+  let startDate = fechaStr ? new Date(fechaStr + 'T12:00:00') : new Date();
+
+  _amortDraft = [];
+  // Fila 0: saldo inicial
+  _amortDraft.push({
+    periodo: 0,
+    fecha: credFormatDate(startDate),
+    pago: 0, capital: 0, int: 0, ivaInt: 0,
+    saldo: Math.round(monto*100)/100
+  });
+
+  let saldo = monto;
+  for(let i = 1; i <= plazo; i++){
+    const fechaPeriodo = new Date(startDate);
+    fechaPeriodo.setMonth(fechaPeriodo.getMonth() + i);
+
+    const interes = Math.round(saldo * r * 100) / 100;
+    const ivaInt = Math.round(interes * (ivaP/100) * 100) / 100;
+    const capital = Math.round((pagoFijo - interes) * 100) / 100;
+    saldo = Math.round((saldo - capital) * 100) / 100;
+    if(i === plazo) saldo = 0; // ajustar redondeo último periodo
+
+    _amortDraft.push({
+      periodo: i,
+      fecha: credFormatDate(fechaPeriodo),
+      pago: Math.round(pagoFijo * 100) / 100,
+      capital: capital,
+      int: interes,
+      ivaInt: ivaInt,
+      saldo: Math.max(saldo, 0)
+    });
+  }
+
+  _credRenderAmortDraft();
+  toast('📊 Tabla generada: ' + plazo + ' periodos');
+}
+
+/** Renderizar tabla de amortización editable */
+function _credRenderAmortDraft(){
+  const el = document.getElementById('cf-amort-container');
+  if(!el || !_amortDraft.length) return;
+
+  const col = _credFormEnt==='end' ? '#00b875' : '#ff7043';
+  let totPago=0, totCap=0, totInt=0, totIva=0;
+  _amortDraft.slice(1).forEach(r=>{ totPago+=r.pago; totCap+=r.capital; totInt+=r.int; totIva+=r.ivaInt; });
+
+  const rows = _amortDraft.map((r,i)=>{
+    if(i===0) return `<tr style="background:var(--bg)">
+      <td class="r" style="font-weight:600">0</td>
+      <td><input type="text" value="${r.fecha}" onchange="_amortDraft[0].fecha=this.value" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem;background:var(--bg)"></td>
+      <td class="mo">—</td><td class="mo">—</td><td class="mo">—</td><td class="mo">—</td>
+      <td class="mo bld" style="color:${col}">${fmtFull(r.saldo)}</td>
+    </tr>`;
+    return `<tr>
+      <td class="r">${r.periodo}</td>
+      <td><input type="text" value="${r.fecha}" onchange="_amortDraft[${i}].fecha=this.value" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+      <td><input type="number" step="0.01" value="${r.pago.toFixed(2)}" onchange="_amortDraft[${i}].pago=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+      <td><input type="number" step="0.01" value="${r.capital.toFixed(2)}" onchange="_amortDraft[${i}].capital=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+      <td><input type="number" step="0.01" value="${r.int.toFixed(2)}" onchange="_amortDraft[${i}].int=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+      <td><input type="number" step="0.01" value="${r.ivaInt.toFixed(2)}" onchange="_amortDraft[${i}].ivaInt=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+      <td class="mo bld" style="color:${r.saldo<=0.01?'var(--green)':col};font-size:.75rem">${r.saldo<=0.01?'✅ $0':fmtFull(r.saldo)}</td>
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div style="font-size:.78rem;font-weight:700;color:var(--text2);margin-bottom:8px">📅 Tabla de Amortización <span style="font-size:.65rem;font-weight:400;color:var(--muted)">(editable — modifica cualquier celda)</span></div>
+    <div style="overflow-x:auto;max-height:400px;overflow-y:auto;border:1px solid var(--border);border-radius:10px">
+      <table class="bt" style="margin:0">
+        <thead style="position:sticky;top:0;z-index:1"><tr>
+          <th class="r" style="width:50px">Per.</th><th style="width:100px">Fecha</th>
+          <th class="r" style="width:95px">Pago Fijo</th><th class="r" style="width:95px">Capital</th>
+          <th class="r" style="width:95px">Intereses</th><th class="r" style="width:95px">IVA Int.</th>
+          <th class="r" style="width:95px">Saldo</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot id="cf-amort-foot"><tr style="background:var(--bg);font-weight:700">
+          <td colspan="2" class="bld">TOTALES</td>
+          <td class="mo bld">${fmtFull(totPago)}</td>
+          <td class="mo bld" style="color:var(--green)">${fmtFull(totCap)}</td>
+          <td class="mo bld" style="color:var(--orange)">${fmtFull(totInt)}</td>
+          <td class="mo" style="color:var(--muted)">${fmtFull(totIva)}</td>
+          <td class="mo bld" style="color:var(--green)">$0.00</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <div style="font-size:.62rem;color:var(--muted);margin-top:6px">${_amortDraft.length-1} periodos · Sistema francés (pagos fijos)</div>
+  `;
+}
+
+/** Recalcular totales del footer cuando se edita una celda */
+function _credRecalcTotals(){
+  const foot = document.getElementById('cf-amort-foot');
+  if(!foot) return;
+  let totPago=0, totCap=0, totInt=0, totIva=0;
+  _amortDraft.slice(1).forEach(r=>{ totPago+=r.pago; totCap+=r.capital; totInt+=r.int; totIva+=r.ivaInt; });
+  const cells = foot.querySelectorAll('td');
+  if(cells.length>=6){
+    cells[1].innerHTML = fmtFull(totPago);
+    cells[2].innerHTML = fmtFull(totCap);
+    cells[3].innerHTML = fmtFull(totInt);
+    cells[4].innerHTML = fmtFull(totIva);
+  }
+}
+
+/** Guardar crédito desde el formulario */
+function credSaveForm(){
+  const cl = (document.getElementById('cf-cl').value||'').trim();
+  const monto = parseFloat(document.getElementById('cf-monto').value) || 0;
+  const plazo = parseInt(document.getElementById('cf-plazo').value) || 12;
+  const tasa = parseFloat(document.getElementById('cf-tasa').value) || 0;
+  const com = parseFloat(document.getElementById('cf-com').value) || 0;
+  const iva = parseFloat(document.getElementById('cf-iva').value) || 16;
+  const tipo = document.getElementById('cf-tipo').value;
+  const st = document.getElementById('cf-st').value;
+  const garantia = (document.getElementById('cf-garantia').value||'').trim();
+  const destino = (document.getElementById('cf-destino').value||'').trim();
+  const producto = (document.getElementById('cf-producto').value||'').trim();
+  const fechaISO = document.getElementById('cf-fecha').value;
+
+  // Validar
+  if(!cl){ toast('⚠️ Ingresa el nombre del cliente'); return; }
+  if(monto <= 0){ toast('⚠️ Ingresa un monto válido'); return; }
+
+  // Convertir fecha ISO a DD/MM/YYYY
+  let disbDate = '';
+  if(fechaISO){
+    const p = fechaISO.split('-');
+    disbDate = p[2]+'/'+p[1]+'/'+p[0];
+  }
+
+  const credit = {
+    cl, monto, plazo, tasa, com, iva, tipo, st,
+    garantia, destino, producto, disbDate,
+    amort: _amortDraft.length > 1 ? _amortDraft : [],
+    pagos: []
+  };
+
+  const entKey = _credFormEnt;
+  const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
+
+  if(_credFormIdx >= 0){
+    // Edición: preservar pagos existentes
+    credit.pagos = credits[_credFormIdx].pagos || [];
+    credits[_credFormIdx] = credit;
+  } else {
+    credits.push(credit);
+  }
+
+  DB.set('gf_cred_' + entKey, credits);
+  closeModal();
   entKey==='end' ? rEndCred() : rDynCred();
+  toast('✅ Crédito ' + (_credFormIdx >= 0 ? 'actualizado' : 'guardado') + ': ' + cl);
+
+  // Limpiar estado
+  _credFormEnt = '';
+  _credFormIdx = -1;
+  _amortDraft = [];
 }
 
 function credDelRow(entKey, ci){
