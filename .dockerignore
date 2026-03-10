@@ -1,0 +1,10 @@
+.git
+.claude
+.vscode
+.env.example
+*.md
+node_modules
+.DS_Store
+.railwayignore
+.dockerignore
+.gitignore
