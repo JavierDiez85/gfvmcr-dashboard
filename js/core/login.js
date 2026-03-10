@@ -211,7 +211,7 @@ async function doLogin(){
 
     // Migración lazy: re-hashear con PBKDF2 + salt
     if (passwordOk) {
-      console.log('[login] Migrando password a PBKDF2 para:', candidate.email);
+      // Migración lazy a PBKDF2
       const newSalt = generateSalt();
       const newHash = await hashPasswordPBKDF2(password, newSalt);
       candidate.salt = newSalt;
