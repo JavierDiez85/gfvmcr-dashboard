@@ -535,12 +535,18 @@ http.createServer(async (req, res) => {
   // ── Security headers en TODAS las respuestas ──
   Object.entries(SECURITY_HEADERS).forEach(([k, v]) => res.setHeader(k, v));
 
-  // ── CORS: solo same-origin (bloquear requests cross-origin a APIs) ──
+  // ── CORS: same-origin dinámico (funciona en localhost y Railway) ──
   const origin = req.headers.origin;
   if (origin) {
-    // Solo permitir same-origin requests
-    const allowed = origin === `http://localhost:${PORT}` || origin === `http://127.0.0.1:${PORT}`;
-    if (!allowed) {
+    const host = req.headers.host || '';
+    // Permitir si el origin coincide con el host que sirve la app
+    const allowedOrigins = [
+      `http://localhost:${PORT}`,
+      `http://127.0.0.1:${PORT}`,
+      `https://${host}`,  // Railway: https://xxx.up.railway.app
+      `http://${host}`
+    ];
+    if (!allowedOrigins.includes(origin)) {
       res.writeHead(403, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'Origin not allowed' }));
       return;
