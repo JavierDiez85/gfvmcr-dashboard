@@ -17,3 +17,4 @@ Thumbs.db
 # Claude dev
 .claude/launch.json
 .claude/serve.mjs
+slide-zoom-4.jpg
