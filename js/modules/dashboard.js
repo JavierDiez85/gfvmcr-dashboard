@@ -230,7 +230,7 @@ async function _inicioAlertas() {
       'rate_convenia_tc','rate_convenia_td','rate_comisionista_tc','rate_comisionista_td'
     ];
     const sinConfig = (clients || []).filter(c => !RATE_FIELDS.some(f => parseFloat(c[f]) > 0)).length;
-    if (sinConfig > 0) alertas.push({ icon: '⚙️', text: `${sinConfig} clientes TPV sin comisiones configuradas`, color: 'var(--orange)', action: "openMenu('terminales',document.getElementById('mi-terminales'),'tpv_comisiones')" });
+    if (sinConfig > 0) alertas.push({ icon: '⚙️', text: `${sinConfig} clientes TPV sin comisiones configuradas`, color: 'var(--orange)', action: "navTo('tpv_comisiones')" });
 
     // 2. Flujo neto negativo
     const data = typeof tesLoad === 'function' ? tesLoad() : [];
@@ -238,7 +238,7 @@ async function _inicioAlertas() {
     const thisMon = data.filter(m => m.fecha?.substring(0, 7) === mes);
     const mesIng = thisMon.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
     const mesGas = thisMon.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
-    if (mesIng - mesGas < 0) alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : ''), color: 'var(--red)', action: "openMenu('tesoreria',document.getElementById('mi-tesoreria'));sv('tes_flujo',null)" });
+    if (mesIng - mesGas < 0) alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : ''), color: 'var(--red)', action: "navTo('tes_flujo')" });
 
     // 3. Créditos vencidos (fix: c.st not c.status)
     let vencidos = 0;
@@ -246,11 +246,11 @@ async function _inicioAlertas() {
       vencidos += END_CREDITS.filter(c => c.st === 'Vencido').length;
     if (typeof DYN_CREDITS !== 'undefined' && Array.isArray(DYN_CREDITS))
       vencidos += DYN_CREDITS.filter(c => c.st === 'Vencido').length;
-    if (vencidos > 0) alertas.push({ icon: '⚠️', text: `${vencidos} créditos vencidos en cartera`, color: 'var(--red)', action: "openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
+    if (vencidos > 0) alertas.push({ icon: '⚠️', text: `${vencidos} créditos vencidos en cartera`, color: 'var(--red)', action: "navTo('cred_cobr')" });
 
     // 4. Sin movimientos de tesorería este mes
     if (thisMon.length === 0 && data.length > 0)
-      alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', action: "openMenu('tesoreria',document.getElementById('mi-tesoreria'));sv('tes_flujo',null)" });
+      alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', action: "navTo('tes_flujo')" });
 
     // 5. Cobranza: pagos vencidos y próximos
     try {
@@ -276,15 +276,15 @@ async function _inicioAlertas() {
         });
       });
 
-      if(pagosProximos>0) alertas.push({ icon:'🔔', text:`${pagosProximos} pagos vencen en los próximos 7 días`, color:'var(--orange)', action:"openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
-      if(pagosVencidos>0) alertas.push({ icon:'🚨', text:`${pagosVencidos} pagos vencidos por ${typeof fmtK==='function'?fmtK(montoVencido):'$'+montoVencido} total`, color:'var(--red)', action:"openMenu('creditos',document.getElementById('mi-creditos'),'cred_cobr')" });
+      if(pagosProximos>0) alertas.push({ icon:'🔔', text:`${pagosProximos} pagos vencen en los próximos 7 días`, color:'var(--orange)', action:"navTo('cred_cobr')" });
+      if(pagosVencidos>0) alertas.push({ icon:'🚨', text:`${pagosVencidos} pagos vencidos por ${typeof fmtK==='function'?fmtK(montoVencido):'$'+montoVencido} total`, color:'var(--red)', action:"navTo('cred_cobr')" });
     } catch(e){ console.warn('[Inicio] Cobranza alertas error:',e); }
 
     // 7. Tickets pendientes de lectura
     try {
       const tkData = DB.get('gf_tickets_pagos_tpv') || [];
       const tkPend = tkData.filter(t => t.leido === false).length;
-      if(tkPend > 0) alertas.push({ icon:'🎫', text:`${tkPend} ticket${tkPend>1?'s':''} pendiente${tkPend>1?'s':''} de lectura`, color:'#9c27b0', action:"openMenu('tickets',document.getElementById('mi-tickets'),'tk_pagos_tpv')" });
+      if(tkPend > 0) alertas.push({ icon:'🎫', text:`${tkPend} ticket${tkPend>1?'s':''} pendiente${tkPend>1?'s':''} de lectura`, color:'#9c27b0', action:"navTo('tk_pagos_tpv')" });
     } catch(e){ console.warn('[Inicio] Tickets alertas error:',e); }
 
   } catch (e) { console.warn('[Inicio] Alertas error:', e); }

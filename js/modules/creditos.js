@@ -1360,51 +1360,7 @@ function loadFile(ev){
 }
 
 
-// ── Sidebar & Menu system (accordion single-column) ──
-let _activeMenu = null;   // current open menu
-
-// Mapa de vistas default por sección
-const _MENU_DEFAULTS = {
-  grupo_menu:'resumen', salem:'tpv_general',
-  endless:'cred_dash', dynamo:'dyn_dash',
-  wirebit:'wb_cripto', expedientes:'expedientes', config:'cfg_usuarios'
-};
-
-function openMenu(menuId, el, viewOverride){
-  const sub = document.getElementById('sub-' + menuId);
-
-  // Mismo menú → toggle accordion
-  if(_activeMenu === menuId){
-    if(sub) sub.classList.remove('open');
-    el.classList.remove('active');
-    _activeMenu = null;
-    return;
-  }
-
-  // Cerrar menú anterior
-  if(_activeMenu){
-    const prevSub = document.getElementById('sub-' + _activeMenu);
-    if(prevSub) prevSub.classList.remove('open');
-    document.querySelectorAll('.mi').forEach(m => m.classList.remove('active'));
-  }
-
-  // Abrir el nuevo
-  el.classList.add('active');
-  if(sub) sub.classList.add('open');
-  _activeMenu = menuId;
-
-  // Navegar a la vista (override o default)
-  sv(viewOverride || _MENU_DEFAULTS[menuId], null);
-}
-
-function closeSubMenu(){
-  if(_activeMenu){
-    const sub = document.getElementById('sub-' + _activeMenu);
-    if(sub) sub.classList.remove('open');
-    document.querySelectorAll('.mi').forEach(m => m.classList.remove('active'));
-    _activeMenu = null;
-  }
-}
+// ── Sidebar toggle ──
 
 function toggleSidebar(){
   const shell = document.getElementById('sb-shell');
@@ -1418,7 +1374,7 @@ function toggleSidebar(){
 function updateToggleBtn(){
   const btn = document.getElementById('sb-toggle');
   const collapsed = document.getElementById('sb-shell').classList.contains('collapsed');
-  btn.style.left = collapsed ? '8px' : '248px';
+  btn.style.left = collapsed ? '8px' : '80px';
   btn.textContent = collapsed ? '›' : '‹';
   btn.title = collapsed ? 'Mostrar menú' : 'Ocultar menú';
 }

@@ -47,160 +47,45 @@
   <div style="font-size:.82rem;color:var(--muted,#8b8fb5)">Cargando datos...</div>
 </div>
 
-<!-- SIDEBAR SHELL -->
+<!-- SIDEBAR SHELL (narrow company selector) -->
 <div id="sb-shell">
-
-  <!-- ── PANEL 1: Menú principal ── -->
-  <div id="sb-menu">
-    <div class="sb-top" style="cursor:pointer" onclick="closeSubMenu();document.querySelectorAll('.mi').forEach(m=>m.classList.remove('active'));_activeMenu=null;sv('inicio',null)">
-      <img src="data:image/png;base64,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" style="width:60px;height:60px;object-fit:contain;margin-bottom:6px;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))">
-      <div class="sb-name">Grupo Financiero</div>
-      <div class="sb-sub-title">Modelo Financiero 2026</div>
+  <div id="sb-companies">
+    <!-- Brand/Logo -->
+    <div class="sb-brand" onclick="navHome()">
+      <div style="font-size:1.5rem">📊</div>
+      <div class="sb-brand-label">GF 2026</div>
     </div>
 
-    <div style="padding:8px 6px 4px">
+    <div class="sb-divider"></div>
 
-      <!-- 1. Grupo -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-grupo_menu" onclick="openMenu('grupo_menu',this)"><div class="mic">🏢</div>Grupo<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-grupo_menu">
-          <div class="sb-sec">Finanzas</div>
-          <div class="si" onclick="sv('resumen',this)" data-view="resumen"><div class="ic">🏠</div>Dashboard Grupo</div>
-          <div class="si" onclick="sv('centum',this)" data-view="centum"><div class="ic">🏢</div>Centum Capital</div>
-          <div class="sb-sec">Salem Internacional</div>
-          <div class="si" onclick="sv('sal_res',this)" data-view="sal_res"><div class="ic">📊</div>Resumen P&L</div>
-          <div class="si" onclick="sv('sal_ing',this)" data-view="sal_ing"><div class="ic">💰</div>Ingresos</div>
-          <div class="si" onclick="sv('sal_gas',this)" data-view="sal_gas"><div class="ic">💸</div>Costes y Gastos</div>
-          <div class="si" onclick="sv('sal_nom',this)" data-view="sal_nom"><div class="ic">👥</div>Nómina</div>
-          <div class="sb-sec">Endless Money</div>
-          <div class="si" onclick="sv('end_res',this)" data-view="end_res"><div class="ic">📊</div>Resumen P&L</div>
-          <div class="si" onclick="sv('end_ing',this)" data-view="end_ing"><div class="ic">💰</div>Ingresos</div>
-          <div class="si" onclick="sv('end_gas',this)" data-view="end_gas"><div class="ic">💸</div>Costes y Gastos</div>
-          <div class="si" onclick="sv('end_nom',this)" data-view="end_nom"><div class="ic">👥</div>Nómina</div>
-          <div class="sb-sec">Dynamo Finance</div>
-          <div class="si" onclick="sv('dyn_res',this)" data-view="dyn_res"><div class="ic">📊</div>Resumen P&L</div>
-          <div class="si" onclick="sv('dyn_ing',this)" data-view="dyn_ing"><div class="ic">💰</div>Ingresos</div>
-          <div class="si" onclick="sv('dyn_gas',this)" data-view="dyn_gas"><div class="ic">💸</div>Costes y Gastos</div>
-          <div class="si" onclick="sv('dyn_nom',this)" data-view="dyn_nom"><div class="ic">👥</div>Nómina</div>
-          <div class="sb-sec">Wirebit</div>
-          <div class="si" onclick="sv('wb_res',this)" data-view="wb_res"><div class="ic">📊</div>Resumen P&L</div>
-          <div class="si" onclick="sv('wb_ing',this)" data-view="wb_ing"><div class="ic">⛓</div>Ingresos 2026</div>
-          <div class="si" onclick="sv('wb_gas',this)" data-view="wb_gas"><div class="ic">💸</div>Costes y Gastos</div>
-          <div class="si" onclick="sv('wb_nom',this)" data-view="wb_nom"><div class="ic">👥</div>Nómina Wirebit</div>
-          <div class="sb-sec">Tesorería</div>
-          <div class="si" onclick="sv('tes_flujo',this)" data-view="tes_flujo"><div class="ic">📥</div>Flujo de Caja</div>
-          <div class="si" onclick="sv('tes_individual',this)" data-view="tes_individual"><div class="ic">🏢</div>Por Empresa</div>
-          <div class="si" onclick="sv('tes_grupo',this)" data-view="tes_grupo"><div class="ic">🌐</div>Consolidado Grupo</div>
-          <div class="sb-sec">Carga de Datos</div>
-          <div class="si edit-action" onclick="sv('carga_masiva',this)" data-view="carga_masiva"><div class="ic">📋</div>Carga Masiva</div>
-          <div class="si edit-action" onclick="sv('flujo_ing',this)" data-view="flujo_ing"><div class="ic">📥</div>Flujo de Ingresos</div>
-          <div class="si edit-action" onclick="sv('flujo_gas',this)" data-view="flujo_gas"><div class="ic">📤</div>Flujo de Gastos</div>
-          <div class="si edit-action" onclick="sv('nomina',this)" data-view="nomina"><div class="ic">👥</div>Nómina Compartida</div>
-          <div class="si edit-action" onclick="sv('gastos_comp',this)" data-view="gastos_comp"><div class="ic">⚙️</div>Gastos Compartidos</div>
-          <div class="si edit-action" onclick="sv('carga_creditos',this)" data-view="carga_creditos"><div class="ic">📄</div>Carga de Créditos</div>
-          <div class="si edit-action" onclick="sv('tpv_upload',this)" data-view="tpv_upload"><div class="ic">⬆️</div>Datos TPV</div>
-          <div class="si edit-action" onclick="sv('tpv_comisiones',this)" data-view="tpv_comisiones"><div class="ic">⚙️</div>Config. Comisiones</div>
-          <div class="si edit-action" onclick="sv('tar_upload',this)" data-view="tar_upload"><div class="ic">💳</div>Carga Tarjetas</div>
-          <div class="si edit-action" onclick="sv('wb_upload',this)" data-view="wb_upload"><div class="ic">⛓</div>Carga Wirebit Cripto</div>
-          <div class="si edit-action" onclick="sv('wb_tar_upload',this)" data-view="wb_tar_upload"><div class="ic">💳</div>Carga Wirebit Tarjetas</div>
-        </div>
-      </div>
-
-      <!-- 2. Salem -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-salem" onclick="openMenu('salem',this)"><div class="mic">💙</div>Salem<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-salem">
-          <div class="sb-sec">Terminales</div>
-          <div class="si" onclick="sv('tpv_general',this)" data-view="tpv_general"><div class="ic">🌐</div>Dashboard General</div>
-          <div class="si" onclick="sv('tpv_dashboard',this)" data-view="tpv_dashboard"><div class="ic">📊</div>Dashboard Periodo</div>
-          <div class="si" onclick="sv('tpv_pagos',this)" data-view="tpv_pagos"><div class="ic">💳</div>Control de Pagos</div>
-          <div class="si" onclick="sv('tpv_resumen',this)" data-view="tpv_resumen"><div class="ic">👤</div>Resumen por Cliente</div>
-          <div class="si" onclick="sv('tpv_agentes',this)" data-view="tpv_agentes"><div class="ic">🤝</div>Comisiones Agentes</div>
-          <div class="si" onclick="sv('tpv_terminales',this)" data-view="tpv_terminales"><div class="ic">🖥️</div>Gestión de Terminales</div>
-          <div class="si" onclick="sv('tpv_promotores',this)" data-view="tpv_promotores"><div class="ic">👥</div>Promotores</div>
-          <div class="sb-sec">Tarjetas</div>
-          <div class="si" onclick="sv('tar_dashboard',this)" data-view="tar_dashboard"><div class="ic">📊</div>Dashboard General</div>
-          <div class="si" onclick="sv('tar_conceptos',this)" data-view="tar_conceptos"><div class="ic">🏷️</div>Desglose por Concepto</div>
-          <div class="si" onclick="sv('tar_subclientes',this)" data-view="tar_subclientes"><div class="ic">🏢</div>Top Subclientes</div>
-          <div class="si" onclick="sv('tar_rechazos',this)" data-view="tar_rechazos"><div class="ic">⚠️</div>Análisis de Rechazos</div>
-          <div class="si" onclick="sv('tar_tarjetahabientes',this)" data-view="tar_tarjetahabientes"><div class="ic">👥</div>Tarjetahabientes</div>
-          <div class="sb-sec">Tickets</div>
-          <div class="si" onclick="sv('tk_pagos_tpv',this)" data-view="tk_pagos_tpv"><div class="ic">🎫</div>Pagos TPV</div>
-        </div>
-      </div>
-
-      <!-- 3. Endless -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-endless" onclick="openMenu('endless',this)"><div class="mic">💚</div>Endless<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-endless">
-          <div class="sb-sec">Créditos</div>
-          <div class="si" onclick="sv('cred_dash',this)" data-view="cred_dash"><div class="ic">📊</div>Dashboard Créditos</div>
-          <div class="si" onclick="sv('end_cred',this)" data-view="end_cred"><div class="ic">📋</div>Cartera Endless</div>
-          <div class="si" onclick="sv('cred_cobr',this)" data-view="cred_cobr"><div class="ic">⚠️</div>Cobranza Endless</div>
-        </div>
-      </div>
-
-      <!-- 4. Dynamo -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-dynamo" onclick="openMenu('dynamo',this)"><div class="mic">🔶</div>Dynamo<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-dynamo">
-          <div class="sb-sec">Créditos</div>
-          <div class="si" onclick="sv('dyn_dash',this)" data-view="dyn_dash"><div class="ic">📊</div>Dashboard Créditos</div>
-          <div class="si" onclick="sv('dyn_cred',this)" data-view="dyn_cred"><div class="ic">📋</div>Cartera Dynamo</div>
-          <div class="si" onclick="sv('dyn_cobr',this)" data-view="dyn_cobr"><div class="ic">⚠️</div>Cobranza Dynamo</div>
-        </div>
-      </div>
-
-      <!-- 5. Wirebit -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-wirebit" onclick="openMenu('wirebit',this)"><div class="mic">💜</div>Wirebit<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-wirebit">
-          <div class="sb-sec">Operaciones</div>
-          <div class="si" onclick="sv('wb_cripto',this)" data-view="wb_cripto"><div class="ic">🔍</div>Transacciones Cripto</div>
-          <div class="si" onclick="sv('wb_tarjetas',this)" data-view="wb_tarjetas"><div class="ic">💳</div>Transacciones Tarjetas</div>
-        </div>
-      </div>
-
+    <!-- Companies -->
+    <div class="sb-co" id="co-grupo" onclick="selectCompany('grupo')" title="Grupo Financiero">
+      <div class="sb-co-icon">🏢</div><div class="sb-co-label">Grupo</div>
+    </div>
+    <div class="sb-co" id="co-salem" onclick="selectCompany('salem')" title="Salem Internacional">
+      <div class="sb-co-icon">💙</div><div class="sb-co-label">Salem</div>
+    </div>
+    <div class="sb-co" id="co-endless" onclick="selectCompany('endless')" title="Endless Money">
+      <div class="sb-co-icon">💚</div><div class="sb-co-label">Endless</div>
+    </div>
+    <div class="sb-co" id="co-dynamo" onclick="selectCompany('dynamo')" title="Dynamo Finance">
+      <div class="sb-co-icon">🔶</div><div class="sb-co-label">Dynamo</div>
+    </div>
+    <div class="sb-co" id="co-wirebit" onclick="selectCompany('wirebit')" title="Wirebit">
+      <div class="sb-co-icon">💜</div><div class="sb-co-label">Wirebit</div>
     </div>
 
-      <!-- 6. Facturación -->
-      <div class="mi-wrap">
-        <div class="mi" id="mi-facturacion" onclick="openMenu('facturacion',this)"><div class="mic">🧾</div>Facturación<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-facturacion">
-          <div class="si" onclick="sv('fact_terminales',this)" data-view="fact_terminales"><div class="ic">🖥️</div>Terminales</div>
-          <div class="si mi-wip" onclick="sv('fact_tarjetas',this)" data-view="fact_tarjetas"><div class="ic">💳</div>Tarjetas<span class="mi-badge">PROX</span></div>
-          <div class="si mi-wip" onclick="sv('fact_endless',this)" data-view="fact_endless"><div class="ic">💚</div>Endless<span class="mi-badge">PROX</span></div>
-          <div class="si mi-wip" onclick="sv('fact_dynamo',this)" data-view="fact_dynamo"><div class="ic">🔶</div>Dynamo<span class="mi-badge">PROX</span></div>
-          <div class="si mi-wip" onclick="sv('fact_wirebit',this)" data-view="fact_wirebit"><div class="ic">💜</div>Wirebit<span class="mi-badge">PROX</span></div>
-          <div class="si" onclick="sv('carga_facturas',this)" data-view="carga_facturas"><div class="ic">📤</div>Carga de Facturas</div>
-        </div>
-      </div>
-
-    <!-- 7. Expedientes -->
-    <div class="mi-wrap">
-      <div class="mi" id="mi-expedientes" onclick="openMenu('expedientes',this)"><div class="mic">📁</div>Expedientes<span class="mi-arr">›</span></div>
-      <div class="mi-sub" id="sub-expedientes">
-        <div class="si" onclick="sv('expedientes',this)" data-view="expedientes"><div class="ic">👤</div>Clientes</div>
-      </div>
-    </div>
-
-    <!-- Configuración — pinned bottom -->
-    <div style="margin-top:auto;padding:8px 6px;border-top:1px solid rgba(255,255,255,.06)">
-      <div class="mi-wrap">
-        <div class="mi" id="mi-config" onclick="openMenu('config',this)"><div class="mic">⚙️</div>Configuración<span class="mi-arr">›</span></div>
-        <div class="mi-sub" id="sub-config">
-          <div class="si admin-only" onclick="sv('cfg_usuarios',this)" data-view="cfg_usuarios"><div class="ic">👤</div>Usuarios</div>
-          <div class="si admin-only" onclick="sv('cfg_permisos',this)" data-view="cfg_permisos"><div class="ic">🔐</div>Permisos</div>
-          <div class="si" onclick="sv('cfg_apariencia',this)" data-view="cfg_apariencia"><div class="ic">🎨</div>Apariencia</div>
-          <div class="si" onclick="sv('cfg_categorias',this)" data-view="cfg_categorias"><div class="ic">📂</div>Categorías P&L</div>
-          <div class="si" onclick="sv('cfg_bancos',this)" data-view="cfg_bancos"><div class="ic">🏦</div>Bancos y Cuentas</div>
-        </div>
+    <!-- Config pinned bottom -->
+    <div style="margin-top:auto">
+      <div class="sb-divider"></div>
+      <div class="sb-co" id="co-config" onclick="selectCross('config')" title="Configuración">
+        <div class="sb-co-icon">⚙️</div><div class="sb-co-label">Config</div>
       </div>
     </div>
   </div>
-
 </div><!-- /sb-shell -->
 <button id="sb-toggle" onclick="toggleSidebar()" title="Ocultar menú">‹</button>
+
 
 <!-- MAIN -->
 <div id="main">
@@ -226,6 +111,12 @@
     </div>
   </div>
 
+  <!-- HORIZONTAL NAV (sections + view chips per company) -->
+  <div id="hnav" style="display:none">
+    <div id="hnav-sections"></div>
+    <div id="hnav-views"></div>
+  </div>
+
   <div id="ct">
 
 <!-- ══════════ INICIO ══════════ -->
@@ -240,47 +131,47 @@
   <div style="margin-bottom:16px">
     <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Accesos Rápidos</div>
     <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px" id="inicio-accesos">
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('finanzas',document.getElementById('mi-finanzas'))">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('resumen')">
         <div style="font-size:1.1rem;margin-bottom:4px">💹</div>
         <div style="font-size:.75rem;font-weight:600">Dashboard Grupo</div>
         <div style="font-size:.62rem;color:var(--muted)">Consolidado financiero</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('finanzas',document.getElementById('mi-finanzas'),'sal_res')">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('sal_res')">
         <div style="font-size:1.1rem;margin-bottom:4px">🏦</div>
         <div style="font-size:.75rem;font-weight:600">P&L Salem</div>
         <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('finanzas',document.getElementById('mi-finanzas'),'end_res')">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('end_res')">
         <div style="font-size:1.1rem;margin-bottom:4px">📊</div>
         <div style="font-size:.75rem;font-weight:600">P&L Endless</div>
         <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('finanzas',document.getElementById('mi-finanzas'),'dyn_res')">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('dyn_res')">
         <div style="font-size:1.1rem;margin-bottom:4px">📈</div>
         <div style="font-size:.75rem;font-weight:600">P&L Dynamo</div>
         <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('finanzas',document.getElementById('mi-finanzas'),'wb_res')">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('wb_res')">
         <div style="font-size:1.1rem;margin-bottom:4px">🌐</div>
         <div style="font-size:.75rem;font-weight:600">P&L Wirebit</div>
         <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('terminales',document.getElementById('mi-terminales'))">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('tpv_general')">
         <div style="font-size:1.1rem;margin-bottom:4px">🖥️</div>
         <div style="font-size:.75rem;font-weight:600">TPV Dashboard</div>
         <div style="font-size:.62rem;color:var(--muted)">Terminales punto de venta</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('tarjetas',document.getElementById('mi-tarjetas'))">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('tar_dashboard')">
         <div style="font-size:1.1rem;margin-bottom:4px">💳</div>
         <div style="font-size:.75rem;font-weight:600">Tarjetas</div>
         <div style="font-size:.62rem;color:var(--muted)">CENTUM Capital</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('tesoreria',document.getElementById('mi-tesoreria'))">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('tes_flujo')">
         <div style="font-size:1.1rem;margin-bottom:4px">🏛️</div>
         <div style="font-size:.75rem;font-weight:600">Tesorería</div>
         <div style="font-size:.62rem;color:var(--muted)">Flujo de caja grupo</div>
       </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="openMenu('creditos',document.getElementById('mi-creditos'))">
+      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('cred_dash')">
         <div style="font-size:1.1rem;margin-bottom:4px">🏦</div>
         <div style="font-size:.75rem;font-weight:600">Créditos</div>
         <div style="font-size:.62rem;color:var(--muted)">Cartera de créditos</div>
@@ -4593,6 +4484,7 @@
   <script src="js/core/supabase.js?v=3"></script>
   <script src="js/core/login.js?v=3"></script>
   <script src="js/core/helpers.js?v=3"></script>
+  <script src="js/core/nav-structure.js?v=1"></script>
   <script src="js/core/router.js?v=3"></script>
   <script src="js/core/auth.js?v=3"></script>
 

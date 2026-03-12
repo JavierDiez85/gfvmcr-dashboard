@@ -124,16 +124,16 @@ function rTkPagosList(){
 function _tkUpdateBadge(){
   const tickets = _tkLoad();
   const unread = tickets.filter(t => t.leido === false).length;
+  // Badge on Salem sidebar icon (new narrow sidebar)
   let badge = document.getElementById('tk-unread-badge');
   if(!badge){
-    const mi = document.getElementById('mi-tickets');
-    if(!mi) return;
+    const co = document.getElementById('co-salem');
+    if(!co) return;
     badge = document.createElement('span');
     badge.id = 'tk-unread-badge';
-    badge.style.cssText = 'background:#9c27b0;color:#fff;font-size:.55rem;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:auto;margin-right:4px;min-width:16px;text-align:center;';
-    const arrow = mi.querySelector('.mi-arr');
-    if(arrow) mi.insertBefore(badge, arrow);
-    else mi.appendChild(badge);
+    badge.style.cssText = 'position:absolute;top:2px;right:2px;background:#9c27b0;color:#fff;font-size:.5rem;font-weight:700;padding:1px 4px;border-radius:8px;min-width:14px;text-align:center;line-height:1.3;';
+    co.style.position = 'relative';
+    co.appendChild(badge);
   }
   if(unread > 0){
     badge.textContent = unread;

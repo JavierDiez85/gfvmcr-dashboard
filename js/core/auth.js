@@ -2,49 +2,8 @@
 
 // USUARIOS & PERMISOS
 // ═══════════════════════════════════════
-const MENU_PERMS = {
-  grupo_menu: { label:'🏢 Grupo', subs:[
-    {id:'resumen',label:'Dashboard Grupo'},{id:'centum',label:'Centum Capital'},
-    {id:'sal_res',label:'Salem — P&L'},{id:'sal_ing',label:'Salem — Ingresos'},{id:'sal_gas',label:'Salem — Costes y Gastos'},{id:'sal_nom',label:'Salem — Nómina'},
-    {id:'end_res',label:'Endless — P&L'},{id:'end_ing',label:'Endless — Ingresos'},{id:'end_gas',label:'Endless — Costes y Gastos'},{id:'end_nom',label:'Endless — Nómina'},
-    {id:'dyn_res',label:'Dynamo — P&L'},{id:'dyn_ing',label:'Dynamo — Ingresos'},{id:'dyn_gas',label:'Dynamo — Costes y Gastos'},{id:'dyn_nom',label:'Dynamo — Nómina'},
-    {id:'wb_res',label:'Wirebit — P&L'},{id:'wb_ing',label:'Wirebit — Ingresos'},{id:'wb_gas',label:'Wirebit — Costes y Gastos'},{id:'wb_nom',label:'Wirebit — Nómina'},
-    {id:'tes_flujo',label:'Flujo de Caja'},{id:'tes_individual',label:'Tesorería por Empresa'},{id:'tes_grupo',label:'Consolidado Grupo'},
-    {id:'carga_masiva',label:'Carga Masiva'},{id:'flujo_ing',label:'Flujo Ingresos'},{id:'flujo_gas',label:'Flujo Gastos'},
-    {id:'nomina',label:'Nómina Compartida'},{id:'gastos_comp',label:'Gastos Compartidos'},
-    {id:'carga_creditos',label:'Carga Créditos'},{id:'tpv_upload',label:'Datos TPV'},{id:'tpv_comisiones',label:'Config. Comisiones'},
-    {id:'tar_upload',label:'Carga Tarjetas'},{id:'wb_upload',label:'Wirebit Cripto'},{id:'wb_tar_upload',label:'Wirebit Tarjetas'},
-  ]},
-  salem:      { label:'💙 Salem', subs:[
-    {id:'tpv_general',label:'Dashboard General'},{id:'tpv_dashboard',label:'Dashboard Periodo'},
-    {id:'tpv_pagos',label:'Control de Pagos'},{id:'tpv_resumen',label:'Resumen por Cliente'},
-    {id:'tpv_agentes',label:'Comisiones Agentes'},{id:'tpv_terminales',label:'Gestión de Terminales'},{id:'tpv_promotores',label:'Promotores'},
-    {id:'tar_dashboard',label:'Dashboard Tarjetas'},{id:'tar_conceptos',label:'Conceptos'},
-    {id:'tar_subclientes',label:'Subclientes'},{id:'tar_rechazos',label:'Rechazos'},{id:'tar_tarjetahabientes',label:'Tarjetahabientes'},
-    {id:'tk_pagos_tpv',label:'Tickets Pagos TPV'},
-  ]},
-  endless:    { label:'💚 Endless', subs:[
-    {id:'cred_dash',label:'Dashboard Créditos'},{id:'end_cred',label:'Cartera Endless'},{id:'cred_cobr',label:'Cobranza Endless'},
-  ]},
-  dynamo:     { label:'🔶 Dynamo', subs:[
-    {id:'dyn_dash',label:'Dashboard Créditos'},{id:'dyn_cred',label:'Cartera Dynamo'},{id:'dyn_cobr',label:'Cobranza Dynamo'},
-  ]},
-  wirebit:    { label:'💜 Wirebit', subs:[
-    {id:'wb_cripto',label:'Transacciones Cripto'},{id:'wb_tarjetas',label:'Transacciones Tarjetas'},
-  ]},
-  facturacion: { label:'🧾 Facturación', subs:[
-    {id:'fact_terminales',label:'Terminales'},{id:'fact_tarjetas',label:'Tarjetas'},
-    {id:'fact_endless',label:'Endless'},{id:'fact_dynamo',label:'Dynamo'},{id:'fact_wirebit',label:'Wirebit'},
-    {id:'carga_facturas',label:'Carga de Facturas'},
-  ]},
-  expedientes: { label:'📁 Expedientes', subs:[
-    {id:'expedientes',label:'Clientes'},
-  ]},
-  config:     { label:'⚙️ Configuración', subs:[
-    {id:'cfg_usuarios',label:'Usuarios'},{id:'cfg_permisos',label:'Permisos'},
-    {id:'cfg_apariencia',label:'Apariencia'},{id:'cfg_categorias',label:'Categorías P&L'},{id:'cfg_bancos',label:'Bancos y Cuentas'},
-  ]},
-};
+// Auto-generated from NAV_STRUCTURE (nav-structure.js)
+const MENU_PERMS = navGenerateMenuPerms();
 
 let USUARIOS = [];
 let _uEditId = null;
