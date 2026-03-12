@@ -424,7 +424,21 @@ const TPV_UPLOAD = {
             .upsert(batch, { onConflict: 'nombre' });
           if (error) console.warn('[Upload] Client batch error:', error.message);
         }
-        this._progress(55, `✅ ${clients.length} clientes actualizados`);
+        // Validate: warn about clients with all rates = 0
+        const zeroRateClients = clients.filter(c =>
+          !c.rate_efevoo_tc && !c.rate_efevoo_td && !c.rate_efevoo_amex && !c.rate_efevoo_ti &&
+          !c.rate_salem_tc && !c.rate_salem_td && !c.rate_salem_amex && !c.rate_salem_ti &&
+          !c.rate_convenia_tc && !c.rate_convenia_td && !c.rate_convenia_amex && !c.rate_convenia_ti &&
+          !c.rate_comisionista_tc && !c.rate_comisionista_td && !c.rate_comisionista_amex && !c.rate_comisionista_ti
+        );
+        if (zeroRateClients.length > 0) {
+          console.warn(`[Upload] ⚠️ ${zeroRateClients.length} clientes con TODAS las tasas en 0:`, zeroRateClients.map(c => c.nombre));
+          this._progress(55, `⚠️ ${clients.length} clientes actualizados — ${zeroRateClients.length} sin tasas configuradas`);
+          this._zeroRateClients = zeroRateClients.map(c => c.nombre);
+        } else {
+          this._progress(55, `✅ ${clients.length} clientes actualizados`);
+          this._zeroRateClients = [];
+        }
 
         // ── STEP 3: Agent assignment + MSI rates (from same sheet) ──
         // Requires "Agente" column (siglas) and MSI columns by name
@@ -609,9 +623,16 @@ const TPV_UPLOAD = {
 
       // Invalidate cache
       TPV.invalidateAll();
-      this._progress(100, '✅ Configuración actualizada correctamente');
 
-      return { success: true };
+      // Final summary with zero-rate warning
+      const zrc = this._zeroRateClients || [];
+      if (zrc.length > 0) {
+        this._progress(100, `⚠️ Configuración actualizada — ${zrc.length} clientes sin tasas`);
+      } else {
+        this._progress(100, '✅ Configuración actualizada correctamente');
+      }
+
+      return { success: true, zeroRateClients: zrc };
 
     } catch (e) {
       console.error('[Upload Config] Fatal error:', e);
@@ -680,11 +701,35 @@ async function rTPVUpload() {
   } catch (e) { console.warn('[Upload UI] KPI txns error:', e.message); }
 
   try {
-    const { count: clientCount } = await _sb.from('tpv_clients').select('*', { count: 'exact', head: true });
+    const { data: allClients } = await _sb.from('tpv_clients')
+      .select('nombre, rate_efevoo_tc, rate_efevoo_td, rate_salem_tc, rate_salem_td, rate_convenia_tc, rate_convenia_td, rate_comisionista_tc, rate_comisionista_td');
+    const clientCount = allClients ? allClients.length : 0;
     const el = document.getElementById('upload-kpi-clients');
-    if (el) el.textContent = (clientCount || 0).toLocaleString();
+    if (el) el.textContent = clientCount.toLocaleString();
     const sub = document.getElementById('upload-kpi-clients-sub');
     if (sub) sub.textContent = clientCount ? 'Con tasas configuradas' : 'Sin configurar';
+
+    // Count clients with ALL rates = 0
+    const noRates = allClients ? allClients.filter(c =>
+      !c.rate_efevoo_tc && !c.rate_efevoo_td &&
+      !c.rate_salem_tc && !c.rate_salem_td &&
+      !c.rate_convenia_tc && !c.rate_convenia_td &&
+      !c.rate_comisionista_tc && !c.rate_comisionista_td
+    ) : [];
+    const nrCard = document.getElementById('upload-kpi-noratescard');
+    const nrVal = document.getElementById('upload-kpi-norates');
+    const nrSub = document.getElementById('upload-kpi-norates-sub');
+    if (nrCard) {
+      if (noRates.length > 0) {
+        nrCard.style.display = '';
+        if (nrVal) nrVal.textContent = noRates.length;
+        if (nrSub) nrSub.innerHTML = noRates.map(c =>
+          `<span style="background:#fff3cd;padding:1px 7px;border-radius:4px;margin:2px;display:inline-block;font-size:.7rem">${c.nombre}</span>`
+        ).join('');
+      } else {
+        nrCard.style.display = 'none';
+      }
+    }
   } catch (e) { console.warn('[Upload UI] KPI clients error:', e.message); }
 
   // Load upload history
@@ -799,9 +844,19 @@ async function startCfgUpload() {
   if (resultDiv) {
     resultDiv.style.display = 'block';
     if (result.success) {
-      resultDiv.style.background = 'var(--green-bg)';
-      resultDiv.style.color = 'var(--green)';
-      resultDiv.innerHTML = '✅ Configuración actualizada correctamente (agentes, clientes y tasas MSI)';
+      const zrc = result.zeroRateClients || [];
+      if (zrc.length > 0) {
+        resultDiv.style.background = '#fef3cd';
+        resultDiv.style.color = '#856404';
+        resultDiv.innerHTML = `⚠️ Configuración actualizada, pero <strong>${zrc.length} clientes tienen TODAS las tasas en 0</strong>:<br>` +
+          `<div style="margin-top:6px;font-size:.72rem;max-height:120px;overflow-y:auto;line-height:1.6">` +
+          zrc.map(n => `<span style="background:#fff3cd;padding:1px 6px;border-radius:4px;margin:2px;display:inline-block">${n}</span>`).join('') +
+          `</div><div style="margin-top:8px;font-size:.72rem">Revisa tu Excel — estas filas no tienen columnas Efevoo_TC, Salem_TC, etc. con valores.</div>`;
+      } else {
+        resultDiv.style.background = 'var(--green-bg)';
+        resultDiv.style.color = 'var(--green)';
+        resultDiv.innerHTML = '✅ Configuración actualizada correctamente (agentes, clientes y tasas MSI)';
+      }
     } else {
       resultDiv.style.background = 'var(--red-bg)';
       resultDiv.style.color = 'var(--red)';
