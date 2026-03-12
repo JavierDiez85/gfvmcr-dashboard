@@ -163,6 +163,18 @@
 
     </div>
 
+      <!-- 6. Facturación -->
+      <div class="mi-wrap">
+        <div class="mi" id="mi-facturacion" onclick="openMenu('facturacion',this)"><div class="mic">🧾</div>Facturación<span class="mi-arr">›</span></div>
+        <div class="mi-sub" id="sub-facturacion">
+          <div class="si" onclick="sv('fact_terminales',this)" data-view="fact_terminales"><div class="ic">🖥️</div>Terminales</div>
+          <div class="si mi-wip" onclick="sv('fact_tarjetas',this)" data-view="fact_tarjetas"><div class="ic">💳</div>Tarjetas<span class="mi-badge">PROX</span></div>
+          <div class="si mi-wip" onclick="sv('fact_endless',this)" data-view="fact_endless"><div class="ic">💚</div>Endless<span class="mi-badge">PROX</span></div>
+          <div class="si mi-wip" onclick="sv('fact_dynamo',this)" data-view="fact_dynamo"><div class="ic">🔶</div>Dynamo<span class="mi-badge">PROX</span></div>
+          <div class="si mi-wip" onclick="sv('fact_wirebit',this)" data-view="fact_wirebit"><div class="ic">💜</div>Wirebit<span class="mi-badge">PROX</span></div>
+        </div>
+      </div>
+
     <!-- Configuración — pinned bottom -->
     <div style="margin-top:auto;padding:8px 6px;border-top:1px solid rgba(255,255,255,.06)">
       <div class="mi-wrap">
@@ -4031,6 +4043,235 @@
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
         <button class="btn btn-out" style="font-size:.72rem" onclick="closeTkModal()">Cancelar</button>
         <button class="btn" style="font-size:.72rem" onclick="saveTkPago()">Guardar Ticket</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ FACTURACIÓN: TERMINALES ══════════ -->
+<div id="view-fact_terminales" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🧾 Facturación — Terminales</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Control de facturas emitidas a clientes por comisiones TPV</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-out" style="font-size:.72rem" onclick="exportFacturasCSV()">📥 Exportar CSV</button>
+      <button class="btn" style="font-size:.72rem" onclick="openFacturaModal(null)">+ Registrar Factura</button>
+    </div>
+  </div>
+
+  <!-- Selector de Periodo -->
+  <div class="cc" style="padding:12px;margin-bottom:14px">
+    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+      <select id="fact-mes-sel" onchange="rFactTerminales()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)"></select>
+      <button class="btn btn-out" style="font-size:.68rem;height:28px" onclick="setFactMes('this_month')">Este Mes</button>
+      <button class="btn btn-out" style="font-size:.68rem;height:28px" onclick="setFactMes('last_month')">Mes Anterior</button>
+      <div style="flex:1"></div>
+      <input type="text" placeholder="Buscar cliente..." oninput="filterTPVTable('fact-tbody',this.value)" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:200px;background:var(--white);color:var(--text)">
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div class="kpi-row c4" id="tpv-fact-kpis" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:var(--red)">
+      <div class="kpi-top"><div class="kpi-lbl">Pendiente de Facturar</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">📋</div></div>
+      <div class="kpi-val" id="fact-kpi-pendiente" style="color:var(--red)">$0</div>
+      <div class="kpi-d dnu">Sin factura emitida</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--green)">
+      <div class="kpi-top"><div class="kpi-lbl">Facturado</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">✅</div></div>
+      <div class="kpi-val" id="fact-kpi-facturado" style="color:var(--green)">$0</div>
+      <div class="kpi-d dup">Facturas emitidas</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--blue)">
+      <div class="kpi-top"><div class="kpi-lbl">Total Comisiones</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">💰</div></div>
+      <div class="kpi-val" id="fact-kpi-total" style="color:var(--blue)">$0</div>
+      <div class="kpi-d dnu">Subtotal sin IVA</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--purple)">
+      <div class="kpi-top"><div class="kpi-lbl">Retenciones Convenia</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">📑</div></div>
+      <div class="kpi-val" id="fact-kpi-retenciones" style="color:var(--purple)">$0</div>
+      <div class="kpi-d dnu">IVA retenido pendiente</div>
+    </div>
+  </div>
+
+  <!-- Tabla Clientes Regulares -->
+  <div class="tw" style="margin-bottom:14px">
+    <div class="tw-h"><div class="tw-ht">📄 Clientes — Facturas del Periodo</div></div>
+    <div style="overflow-x:auto">
+      <table class="bt">
+        <thead>
+          <tr>
+            <th>Cliente</th>
+            <th class="r">Subtotal (sin IVA)</th>
+            <th class="r">IVA 16%</th>
+            <th class="r">Total</th>
+            <th style="width:90px">Estado</th>
+            <th>No. Factura</th>
+            <th>Fecha</th>
+            <th style="width:70px"></th>
+          </tr>
+        </thead>
+        <tbody id="fact-tbody">
+          <tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">Cargando datos...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Sección Convenia -->
+  <div id="fact-convenia-section" style="display:none">
+    <div style="display:flex;align-items:center;gap:10px;margin:20px 0 14px">
+      <div style="flex:1;height:1px;background:var(--border2)"></div>
+      <div style="font-size:.72rem;font-weight:700;color:var(--purple);letter-spacing:.05em">CONVENIA — FACTURA CONSOLIDADA</div>
+      <div style="flex:1;height:1px;background:var(--border2)"></div>
+    </div>
+
+    <div class="kpi-row c3" id="fact-convenia-kpis" style="margin-bottom:14px">
+      <div class="kpi-card" style="--ac:var(--purple)">
+        <div class="kpi-top"><div class="kpi-lbl">Subtotal Consolidado</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">💰</div></div>
+        <div class="kpi-val" id="fact-conv-subtotal" style="color:var(--purple)">$0</div>
+        <div class="kpi-d dnu">Comisiones sin IVA</div>
+      </div>
+      <div class="kpi-card" style="--ac:var(--blue)">
+        <div class="kpi-top"><div class="kpi-lbl">Neto a Pagar</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🔄</div></div>
+        <div class="kpi-val" id="fact-conv-neto" style="color:var(--blue)">$0</div>
+        <div class="kpi-d dnu">+IVA −Retención = Subtotal</div>
+      </div>
+      <div class="kpi-card" style="--ac:var(--green)">
+        <div class="kpi-top"><div class="kpi-lbl">Estado Factura</div><div class="kpi-ico" id="fact-conv-ico" style="background:var(--red-bg);color:var(--red)">📋</div></div>
+        <div class="kpi-val" id="fact-conv-estado" style="font-size:1rem;color:var(--red)">Pendiente</div>
+        <div id="fact-conv-action"></div>
+      </div>
+    </div>
+
+    <!-- Tabla sub-clientes Convenia -->
+    <div class="tw" style="margin-bottom:14px">
+      <div class="tw-h"><div class="tw-ht">📊 Desglose Sub-clientes Convenia</div></div>
+      <div style="overflow-x:auto">
+        <table class="bt">
+          <thead>
+            <tr>
+              <th>Sub-cliente</th>
+              <th class="r">Com. Efevoo</th>
+              <th class="r">Com. Salem</th>
+              <th class="r">Com. Comisionista</th>
+              <th class="r">Subtotal</th>
+            </tr>
+          </thead>
+          <tbody id="fact-conv-tbody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Retenciones Convenia -->
+  <div id="fact-retenciones-section" style="display:none">
+    <div class="tw">
+      <div class="tw-h"><div class="tw-ht">📑 Constancias de Retención — Convenia</div></div>
+      <div style="overflow-x:auto">
+        <table class="bt">
+          <thead>
+            <tr>
+              <th>Periodo</th>
+              <th class="r">Monto Base</th>
+              <th class="r">Retención IVA 16%</th>
+              <th style="width:90px">Enviada</th>
+              <th>Fecha Envío</th>
+              <th style="width:80px"></th>
+            </tr>
+          </thead>
+          <tbody id="fact-ret-tbody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════ FACTURACIÓN: TARJETAS (WIP) ══════════ -->
+<div id="view-fact_tarjetas" class="view">
+  <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:8px">🧾 Facturación — Tarjetas</div>
+  <div class="wip-notice">🚧 Módulo en construcción — Próximamente</div>
+</div>
+
+<!-- ══════════ FACTURACIÓN: ENDLESS (WIP) ══════════ -->
+<div id="view-fact_endless" class="view">
+  <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:8px">🧾 Facturación — Endless</div>
+  <div class="wip-notice">🚧 Módulo en construcción — Próximamente</div>
+</div>
+
+<!-- ══════════ FACTURACIÓN: DYNAMO (WIP) ══════════ -->
+<div id="view-fact_dynamo" class="view">
+  <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:8px">🧾 Facturación — Dynamo</div>
+  <div class="wip-notice">🚧 Módulo en construcción — Próximamente</div>
+</div>
+
+<!-- ══════════ FACTURACIÓN: WIREBIT (WIP) ══════════ -->
+<div id="view-fact_wirebit" class="view">
+  <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:8px">🧾 Facturación — Wirebit</div>
+  <div class="wip-notice">🚧 Módulo en construcción — Próximamente</div>
+</div>
+
+<!-- ── Modal: Registrar Factura ── -->
+<div id="factura-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9990;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:var(--rlg);padding:24px 28px;max-width:520px;width:94%;box-shadow:0 8px 32px rgba(0,0,0,.25);max-height:85vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div style="font-weight:700;font-size:.9rem" id="fact-modal-title">🧾 Registrar Factura</div>
+      <span onclick="closeFacturaModal()" style="cursor:pointer;font-size:1.1rem;color:var(--muted)">✕</span>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <!-- Cliente selector -->
+      <div id="fact-modal-cliente-wrap">
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Cliente</label>
+        <select id="fact-modal-cliente" onchange="facturaUpdatePreview()" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
+          <option value="">— Seleccionar —</option>
+        </select>
+      </div>
+      <!-- Periodo -->
+      <div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Periodo</label>
+        <input type="month" id="fact-modal-periodo" onchange="facturaUpdatePreview()" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+      </div>
+      <!-- Preview calculado -->
+      <div id="fact-modal-preview" style="display:none;background:var(--bg);border-radius:var(--r);padding:14px;border:1px solid var(--border)">
+        <div style="font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">Vista Previa</div>
+        <div style="display:flex;flex-direction:column;gap:6px;font-size:.78rem">
+          <div style="display:flex;justify-content:space-between"><span>Subtotal (sin IVA)</span><span id="fact-prev-subtotal" style="font-weight:700">$0.00</span></div>
+          <div style="display:flex;justify-content:space-between"><span>IVA 16%</span><span id="fact-prev-iva" style="font-weight:700">$0.00</span></div>
+          <div id="fact-prev-ret-row" style="display:none;justify-content:space-between;color:var(--red)"><span>Retención IVA 16%</span><span id="fact-prev-retencion" style="font-weight:700">−$0.00</span></div>
+          <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;font-weight:700"><span>Total</span><span id="fact-prev-total" style="color:var(--blue)">$0.00</span></div>
+        </div>
+      </div>
+      <!-- Fecha y número -->
+      <div style="display:flex;gap:10px">
+        <div style="flex:1">
+          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Fecha Factura</label>
+          <input type="date" id="fact-modal-fecha" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+        </div>
+        <div style="flex:1">
+          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">No. Factura</label>
+          <input type="text" id="fact-modal-numero" placeholder="FAC-001" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box">
+        </div>
+      </div>
+      <!-- Notas -->
+      <div>
+        <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Notas (opcional)</label>
+        <textarea id="fact-modal-notas" rows="2" placeholder="Notas adicionales..." style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;resize:vertical;background:var(--white);color:var(--text);box-sizing:border-box"></textarea>
+      </div>
+      <!-- Retención checkbox (solo Convenia) -->
+      <div id="fact-modal-ret-wrap" style="display:none">
+        <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;cursor:pointer">
+          <input type="checkbox" id="fact-modal-retencion" checked onchange="facturaUpdatePreview()">
+          <span>Aplicar retención IVA 16% (Convenia)</span>
+        </label>
+      </div>
+      <!-- Botones -->
+      <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
+        <button class="btn btn-out" style="font-size:.72rem" onclick="closeFacturaModal()">Cancelar</button>
+        <button class="btn" style="font-size:.72rem" onclick="submitFactura()">Registrar Factura</button>
       </div>
     </div>
   </div>

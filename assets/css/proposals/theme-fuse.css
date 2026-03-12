@@ -1,0 +1,491 @@
+/* ═══════════════════════════════════════════════════
+   THEME FUSE — Override visual completo
+   Inspirado en: Fuse React NextJS Dashboard
+   https://fuse-react-nextjs-demo.fusetheme.com/dashboards/project
+   ─────────────────────────────────────────────────
+   Este archivo NO modifica styles.css.
+   Solo sobreescribe variables y selectores.
+   Para activar: agregar <link> en index.html
+   Para desactivar: quitar el <link> o borrar este archivo
+   ═══════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ── VARIABLES OVERRIDE ── */
+:root {
+  /* Sidebar → Claro */
+  --sb: #ffffff;
+  --sb-h: #eff6ff;
+  --sb-a: #dbeafe;
+  --sb-t: #475569;
+  --sb-m: #94a3b8;
+
+  /* Fondo general */
+  --bg: #f8fafc;
+  --white: #ffffff;
+  --border: #e2e8f0;
+  --border2: #cbd5e1;
+
+  /* Azul más suave (Tailwind blue-500) */
+  --blue: #3b82f6;
+  --blue-lt: #dbeafe;
+  --blue-bg: #eff6ff;
+
+  /* Greens (Tailwind) */
+  --green: #22c55e;
+  --green-lt: #dcfce7;
+  --green-bg: #f0fdf4;
+
+  /* Purple */
+  --purple: #8b5cf6;
+  --purple-lt: #ede9fe;
+  --purple-bg: #f5f3ff;
+
+  /* Orange */
+  --orange: #f97316;
+  --orange-lt: #ffedd5;
+  --orange-bg: #fff7ed;
+
+  /* Red */
+  --red: #ef4444;
+  --red-lt: #fee2e2;
+  --red-bg: #fef2f2;
+
+  /* Yellow */
+  --yellow: #f59e0b;
+  --yellow-lt: #fef3c7;
+  --yellow-bg: #fffbeb;
+
+  /* Text */
+  --text: #0f172a;
+  --text2: #475569;
+  --muted: #94a3b8;
+
+  /* Radii más grandes */
+  --r: 10px;
+  --rlg: 16px;
+
+  /* Sombras suaves estilo Tailwind */
+  --sh: 0 1px 3px rgba(0,0,0,.06), 0 1px 2px rgba(0,0,0,.04);
+  --shm: 0 10px 15px -3px rgba(0,0,0,.08), 0 4px 6px -4px rgba(0,0,0,.04);
+}
+
+/* ── DARK MODE (override suave) ── */
+body.dark {
+  --sb: #0f172a;
+  --sb-h: #1e293b;
+  --sb-a: #1e3a5f;
+  --sb-t: #cbd5e1;
+  --sb-m: #64748b;
+  --bg: #0f172a;
+  --white: #1e293b;
+  --border: #334155;
+  --border2: #475569;
+  --text: #f1f5f9;
+  --text2: #cbd5e1;
+  --muted: #64748b;
+  --sh: 0 1px 3px rgba(0,0,0,.3);
+  --shm: 0 10px 15px rgba(0,0,0,.4);
+}
+
+/* ── TIPOGRAFÍA GLOBAL → Inter ── */
+body {
+  font-family: 'Inter', 'Figtree', system-ui, -apple-system, sans-serif !important;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ── SIDEBAR CLARO ── */
+#sb-menu {
+  background: var(--sb) !important;
+  border-right: 1px solid var(--border) !important;
+  box-shadow: 1px 0 3px rgba(0,0,0,.04);
+}
+
+.sb-top {
+  background: #ffffff !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 20px 16px 18px !important;
+}
+
+.sb-mark {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  font-size: .78rem;
+  margin-bottom: 10px;
+}
+
+.sb-name {
+  font-family: 'Inter', sans-serif !important;
+  color: #0f172a !important;
+  font-size: .78rem !important;
+  font-weight: 800 !important;
+}
+
+.sb-sub-title {
+  color: var(--muted) !important;
+  font-size: .64rem !important;
+}
+
+.sb-sec {
+  color: var(--blue) !important;
+  font-size: .6rem !important;
+  font-weight: 700 !important;
+  padding: 18px 16px 6px !important;
+}
+
+/* Menu items — light theme */
+.mi {
+  color: var(--sb-t) !important;
+  font-size: .84rem !important;
+  font-weight: 500 !important;
+  padding: 10px 14px !important;
+  margin: 2px 8px !important;
+  border-radius: var(--r) !important;
+  transition: all .15s ease !important;
+}
+.mi:hover {
+  background: var(--sb-h) !important;
+  color: var(--blue) !important;
+}
+.mi.active {
+  background: var(--sb-a) !important;
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+}
+.mi .mic {
+  background: #f1f5f9 !important;
+  border-radius: 10px !important;
+}
+.mi:hover .mic {
+  background: var(--blue-bg) !important;
+}
+.mi.active .mic {
+  background: var(--blue) !important;
+  filter: none;
+}
+/* Emoji icons in active mic → make them pop on blue bg */
+.mi.active .mic {
+  color: #fff;
+  filter: brightness(10) saturate(0);
+}
+.mi .mi-arr {
+  color: var(--muted) !important;
+}
+.mi.active .mi-arr {
+  color: var(--blue) !important;
+}
+
+/* Sub items */
+.mi-sub.open {
+  background: #f8fafc !important;
+}
+.si {
+  color: var(--sb-t) !important;
+  font-size: .8rem !important;
+}
+.si:hover {
+  background: var(--sb-h) !important;
+  color: var(--blue) !important;
+}
+.si.active {
+  background: var(--sb-a) !important;
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+}
+.si .ic {
+  background: #f1f5f9 !important;
+}
+.si.active .ic {
+  background: var(--blue) !important;
+  filter: brightness(10) saturate(0);
+}
+.sb-back {
+  color: var(--muted) !important;
+  border-bottom-color: var(--border) !important;
+}
+.sb-back:hover {
+  color: var(--blue) !important;
+}
+
+/* Sidebar sub-header */
+.sb-sub-header {
+  border-bottom-color: var(--border) !important;
+}
+.sb-sub-header-title {
+  color: #0f172a !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.sb-sub-header-sub {
+  color: var(--muted) !important;
+}
+
+/* WIP badge */
+.mi-badge {
+  background: rgba(59,130,246,.1) !important;
+  color: var(--blue) !important;
+  border-color: rgba(59,130,246,.2) !important;
+}
+
+/* Scrollbar sidebar */
+#sb-menu::-webkit-scrollbar-thumb {
+  background: var(--border2) !important;
+}
+
+/* Toggle button */
+#sb-toggle {
+  border-radius: 8px;
+}
+
+/* ── TOPBAR ── */
+#tb {
+  height: 56px !important;
+  padding: 0 32px !important;
+  box-shadow: 0 1px 2px rgba(0,0,0,.04) !important;
+}
+.tb-bc {
+  font-size: .82rem !important;
+  font-weight: 500 !important;
+}
+
+/* ── CONTENT AREA ── */
+#ct {
+  padding: 28px 32px !important;
+}
+
+/* ── KPI CARDS ── */
+.kpi-row {
+  gap: 18px !important;
+  margin-bottom: 24px !important;
+}
+.kpi-card {
+  border-top: none !important;
+  border-radius: var(--rlg) !important;
+  padding: 20px 22px !important;
+  border: 1px solid var(--border) !important;
+  transition: all .2s ease !important;
+}
+.kpi-card:hover {
+  box-shadow: var(--shm) !important;
+  transform: translateY(-2px) !important;
+}
+.kpi-lbl {
+  font-size: .72rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .06em !important;
+}
+.kpi-val {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1.8rem !important;
+  font-weight: 800 !important;
+  letter-spacing: -.02em !important;
+}
+.kpi-ico {
+  width: 36px !important;
+  height: 36px !important;
+  border-radius: 10px !important;
+  font-size: 1rem !important;
+}
+.kpi-d {
+  font-size: .72rem !important;
+  padding: 3px 10px !important;
+  border-radius: 8px !important;
+}
+.kbar {
+  height: 5px !important;
+  border-radius: 3px !important;
+}
+
+/* ── CHART CARDS ── */
+.cc {
+  border-radius: var(--rlg) !important;
+}
+.cc-h {
+  padding: 16px 20px 12px !important;
+}
+.cc-t {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .9rem !important;
+  font-weight: 700 !important;
+}
+.cc-s {
+  font-size: .72rem !important;
+}
+.cc-b {
+  padding: 18px 20px !important;
+}
+.g2, .g31 {
+  gap: 18px !important;
+}
+
+/* ── TABS ── */
+.vtabs {
+  margin-bottom: 24px !important;
+}
+.vtab {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .82rem !important;
+  padding: 9px 18px !important;
+  font-weight: 500 !important;
+}
+.vtab.active {
+  font-weight: 600 !important;
+}
+
+/* ── TABLES ── */
+.tw {
+  border-radius: var(--rlg) !important;
+  margin-bottom: 24px !important;
+}
+.tw-h {
+  padding: 12px 18px !important;
+}
+.tw-ht {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .86rem !important;
+}
+.bt th {
+  padding: 10px 15px !important;
+  font-size: .65rem !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.bt td {
+  padding: 10px 15px !important;
+  font-size: .8rem !important;
+}
+.bt tr:hover td {
+  background: #f8fafc !important;
+}
+.pill {
+  border-radius: 8px !important;
+  font-size: .66rem !important;
+  padding: 3px 10px !important;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 8px !important;
+  height: 34px !important;
+  font-size: .8rem !important;
+  font-weight: 600 !important;
+  transition: all .15s ease !important;
+}
+.btn-blue {
+  background: var(--blue) !important;
+  box-shadow: 0 1px 2px rgba(59,130,246,.3) !important;
+}
+.btn-blue:hover {
+  background: #2563eb !important;
+  box-shadow: 0 4px 6px rgba(59,130,246,.25) !important;
+}
+.btn-out {
+  border-radius: 8px !important;
+}
+.pbar {
+  border-radius: 10px !important;
+  padding: 3px !important;
+}
+.pbtn {
+  border-radius: 7px !important;
+  font-size: .74rem !important;
+  font-family: 'Inter', sans-serif !important;
+  padding: 5px 14px !important;
+}
+
+/* ── FORMS ── */
+.fi, .fs {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 8px !important;
+  padding: 8px 12px !important;
+  font-size: .82rem !important;
+}
+.fi:focus, .fs:focus {
+  box-shadow: 0 0 0 3px rgba(59,130,246,.15) !important;
+}
+.fl {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .65rem !important;
+}
+.ef {
+  border-radius: var(--rlg) !important;
+}
+.ef-h {
+  padding: 14px 18px !important;
+  font-family: 'Inter', sans-serif !important;
+}
+.ef-b {
+  padding: 18px !important;
+}
+
+/* ── ENTITY CARDS ── */
+.ent-grid {
+  gap: 18px !important;
+  margin-bottom: 24px !important;
+}
+.ent-card {
+  border-top: none !important;
+  border-radius: var(--rlg) !important;
+  border: 1px solid var(--border) !important;
+  padding: 16px 18px !important;
+}
+.ent-card-compact {
+  border-radius: var(--rlg) !important;
+  padding: 14px 16px !important;
+}
+
+/* ── NOMINA CARDS ── */
+.nom-grid {
+  gap: 18px !important;
+  margin-bottom: 24px !important;
+}
+.nom-card {
+  border-radius: var(--rlg) !important;
+  padding: 18px !important;
+}
+.nom-name {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .88rem !important;
+}
+.nom-sueldo {
+  font-family: 'Inter', sans-serif !important;
+  color: var(--blue) !important;
+}
+
+/* ── M-KPI (modal KPIs) ── */
+.m-kpi {
+  border-left: 3px solid var(--ac, var(--blue)) !important;
+  border-radius: var(--r) !important;
+}
+.m-kpi-val {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ── TOAST ── */
+#toast {
+  border-radius: 12px !important;
+  font-family: 'Inter', sans-serif !important;
+  box-shadow: var(--shm) !important;
+}
+
+/* ── SCROLLBAR (sutil) ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* ── SEM GRID ── */
+.sem-grid {
+  gap: 18px !important;
+}
+.sem-item {
+  border-radius: var(--r) !important;
+}
+
+/* ── RESPONSIVE ── */
+@media (max-width: 1100px) {
+  #ct { padding: 20px 16px !important; }
+  #tb { padding: 0 16px !important; }
+  .kpi-card { padding: 16px 18px !important; }
+}
