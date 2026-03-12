@@ -266,45 +266,33 @@ function applyRoleRestrictions(){
 // ── Filtrar menú según permisos ──
 function applyMenuPermissions(){
   const user=getCurrentUser();
-  if(!user) return;
+  if(!user||typeof NAV_STRUCTURE==='undefined') return;
 
   const perms=user.perms||{};
-
-  // Admins: si no tienen perms específicos, ven todo
+  const isAdmin=user.rol==='admin';
   const hasCustomPerms=Object.keys(perms).length>0;
-  if(user.rol==='admin'&&!hasCustomPerms) return;
 
-  // Buscar todos los items del sidebar con data-view
-  document.querySelectorAll('.si[data-view]').forEach(si=>{
-    const viewId=si.getAttribute('data-view')||si.dataset.view;
-    // Detectar menú padre real desde el DOM
-    const panel=si.closest('.mi-sub');
-    const menuId=panel?panel.id.replace('sub-',''):null;
+  // Admins sin perms custom ven todo
+  if(isAdmin&&!hasCustomPerms) return;
 
-    if(user.rol==='admin'){
-      // Admin: solo ocultar si menú padre explícitamente deshabilitado
-      if(menuId&&perms[menuId]===false){ si.style.display='none'; return; }
-      // Sub explícitamente deshabilitado
-      if(perms[viewId]===false){ si.style.display='none'; return; }
-      return; // Admin — lo demás se muestra
-    }
-    // No-admin: necesita permiso explícito
-    if(perms[viewId]===true) return;
-    if(menuId&&(perms[menuId]==='menu'||perms[menuId]===true)) return;
-    si.style.display='none';
+  // Ocultar empresas del sidebar si NINGUNA vista es accesible
+  NAV_STRUCTURE.companies.forEach(co=>{
+    const anyVisible=co.sections.some(sec=>
+      sec.groups.some(grp=>
+        grp.views.some(v=>_navViewAllowed(v.id,co.id,perms,isAdmin))
+      )
+    );
+    const coEl=document.getElementById('co-'+co.id);
+    if(coEl) coEl.style.display=anyVisible?'':'none';
   });
 
-  // Ocultar menú padre si todos sus subs están ocultos
-  if(typeof MENU_PERMS!=='undefined'){
-    for(const menuId of Object.keys(MENU_PERMS)){
-      const panel=document.getElementById('sub-'+menuId);
-      if(!panel) continue;
-      const visibleSubs=panel.querySelectorAll('.si:not([style*="display: none"])');
-      if(visibleSubs.length===0){
-        const mi=document.getElementById('mi-'+menuId);
-        if(mi) mi.style.display='none';
-        panel.style.display='none';
-      }
-    }
-  }
+  // Ocultar cross-cutting si no tiene permisos
+  NAV_STRUCTURE.crossCutting.forEach(cc=>{
+    const anyVisible=cc.views.some(v=>{
+      if(isAdmin){ return perms[cc.id]!==false && perms[v.id]!==false; }
+      return perms[v.id]===true||perms[cc.id]==='menu'||perms[cc.id]===true;
+    });
+    const coEl=document.getElementById('co-'+cc.id);
+    if(coEl) coEl.style.display=anyVisible?'':'none';
+  });
 }

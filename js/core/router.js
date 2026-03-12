@@ -32,44 +32,49 @@ const VT = {
 };
 
 function navTo(id){
-  // Find which sub-panel owns this view
-  const siEl = document.querySelector(`.si[data-view="${id}"]`);
-  if(siEl){
-    const panel = siEl.closest('.mi-sub');
-    if(panel){
-      const menuId = panel.id.replace('sub-','');
-      const miEl = document.getElementById('mi-' + menuId);
-      if(miEl){
-        if(_activeMenu === menuId){
-          // Same menu — just navigate
-          sv(id, siEl);
-          return;
-        }
-        // Different menu — switch and navigate
-        openMenu(menuId, miEl, id);
-        return;
-      }
+  if(id === 'inicio'){ navHome(); return; }
+
+  // Look up which company+section owns this view
+  const loc = navLookupView(id);
+  if(loc){
+    if(loc.cross){
+      selectCross(loc.cross.id, id);
+    } else {
+      selectCompany(loc.company.id, loc.section.id, id);
     }
+    return;
   }
-  sv(id, siEl);
+  // Fallback: just show the view
+  sv(id, null);
 }
 
 function sv(id, navEl){
   _currentView = id;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  document.querySelectorAll('.si').forEach(n=>n.classList.remove('active'));
   const v = document.getElementById('view-'+id);
   if(v) v.classList.add('active');
-  if(navEl) navEl.classList.add('active');
+
+  // Highlight active chip in horizontal nav
+  document.querySelectorAll('.hnav-view').forEach(c=>c.classList.remove('active'));
+  const chip = document.querySelector(`.hnav-view[data-view="${id}"]`);
+  if(chip) chip.classList.add('active');
+
+  // Build breadcrumb
   const _label = VT[id]||id;
   const _parts = _label.split(' — ');
-  const _sec = _parts.length>1 ? _parts[0] : null;
   const _pg  = _parts.length>1 ? _parts.slice(1).join(' — ') : _label;
+
+  // Use company/section names in breadcrumb
+  const co = _activeCompany ? navGetCompany(_activeCompany) : null;
+  const coLabel = co ? co.label : 'Grupo Financiero';
+  const secObj = co && _activeSection ? co.sections.find(s=>s.id===_activeSection) : null;
+  const secLabel = secObj ? secObj.label : (_parts.length>1 ? _parts[0] : null);
+
   document.getElementById('vt').textContent = _pg;
   const _vbc = document.getElementById('vbc');
-  _vbc.innerHTML = _sec
-    ? `<span>Grupo Financiero</span><span>›</span><span>${_sec}</span><span>›</span><span style="color:var(--blue)">${_pg}</span>`
-    : `<span>Grupo Financiero</span><span>›</span><span style="color:var(--blue)">${_pg}</span>`;
+  _vbc.innerHTML = secLabel
+    ? `<span>${coLabel}</span><span>›</span><span>${secLabel}</span><span>›</span><span style="color:var(--blue)">${_pg}</span>`
+    : `<span>${coLabel}</span><span>›</span><span style="color:var(--blue)">${_pg}</span>`;
   render(id);
 }
 
