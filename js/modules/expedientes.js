@@ -4,6 +4,7 @@
 let _expClients = [];
 let _expCurrentId = null;
 let _expOtroCount = 0;
+let _expPendingDocs = []; // Files queued before client is saved
 
 // ── Doc categories by tipo_persona ──
 const EXP_DOCS_FISICA = [
@@ -161,15 +162,16 @@ function expNewClient(){
     cb.closest('.exp-chip').classList.remove('active');
   });
 
-  // Show empty docs message
-  document.getElementById('exp-docs-grid').innerHTML = '';
-  document.getElementById('exp-docs-empty').style.display = '';
-  _expClearContractCards();
+  // Clear pending docs and render empty doc cards
+  _expPendingDocs = [];
   _expOtroCount = 0;
+  _expRenderDocCardsEmpty('fisica');
+  _expClearContractCards();
 }
 
 function expCancelEdit(){
   _expCurrentId = null;
+  _expPendingDocs = [];
   document.getElementById('exp-detail').style.display = 'none';
   document.getElementById('exp-placeholder').style.display = '';
   document.querySelectorAll('.exp-list-item').forEach(el => el.classList.remove('active'));
@@ -187,9 +189,13 @@ function expToggleTipo(tipo, btnEl, silent){
     b.classList.toggle('active', b.dataset.tipo === tipo);
   });
 
-  // Re-render doc categories if we have a client loaded
-  if(!silent && _expCurrentId){
-    expRenderDocs(_expCurrentId, tipo);
+  // Re-render doc categories
+  if(!silent){
+    if(_expCurrentId){
+      expRenderDocs(_expCurrentId, tipo);
+    } else {
+      _expRenderDocCardsEmpty(tipo);
+    }
   }
 }
 
@@ -249,14 +255,23 @@ async function expSaveClient(){
     return;
   }
 
-  toast('✅ Cliente guardado');
   const savedId = result.data.id;
   document.getElementById('exp-id').value = savedId;
   _expCurrentId = savedId;
   document.getElementById('exp-btn-delete').style.display = '';
 
+  // Upload any pending docs
+  if(_expPendingDocs.length){
+    toast(`📤 Subiendo ${_expPendingDocs.length} documento(s)...`);
+    for(const pd of _expPendingDocs){
+      await _expUploadFileToStorage(savedId, pd.categoria, pd.file);
+    }
+    _expPendingDocs = [];
+  }
+
+  toast('✅ Cliente guardado');
   await expLoadList();
-  expRenderDocs(savedId, tipo);
+  await expRenderDocs(savedId, tipo);
 
   // Highlight saved client
   setTimeout(() => {
@@ -356,8 +371,10 @@ function EXP_DOCS_FISCAL_MORAL(){
   ];
 }
 
-function _expDocCardHTML(cat, docs){
-  const hasDoc = docs.length > 0;
+function _expDocCardHTML(cat, docs, pendingFiles){
+  const pending = pendingFiles || [];
+  const hasDoc = docs.length > 0 || pending.length > 0;
+
   const filesHTML = docs.map(d => {
     const size = d.tamano ? _expFmtSize(d.tamano) : '';
     const date = d.created_at ? new Date(d.created_at).toLocaleDateString('es-MX') : '';
@@ -374,13 +391,29 @@ function _expDocCardHTML(cat, docs){
     </div>`;
   }).join('');
 
-  return `<div class="exp-doc-card${hasDoc?' has-file':''}">
+  const pendingHTML = pending.map(p => {
+    const size = _expFmtSize(p.file.size);
+    return `<div class="exp-doc-file" style="background:#fffbeb">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+        <span style="font-size:.7rem">📎</span>
+        <span style="font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${p.file.name}</span>
+        <span style="font-size:.58rem;color:var(--muted);white-space:nowrap">${size}</span>
+      </div>
+      <span style="font-size:.55rem;font-weight:700;color:#b45309;background:#fef3c7;padding:1px 6px;border-radius:3px">PENDIENTE</span>
+    </div>`;
+  }).join('');
+
+  const borderStyle = pending.length > 0 && docs.length === 0 ? ' style="border-color:#f59e0b"' : '';
+  const badge = docs.length > 0 ? '<span style="color:var(--green);font-size:.65rem;font-weight:700">✓</span>'
+    : pending.length > 0 ? '<span style="color:#b45309;font-size:.55rem;font-weight:700">📎</span>' : '';
+
+  return `<div class="exp-doc-card${hasDoc?' has-file':''}"${borderStyle}>
     <div class="exp-doc-header">
       <span class="exp-doc-icon">${cat.icon}</span>
       <span class="exp-doc-title">${cat.label}</span>
-      ${hasDoc ? '<span style="color:var(--green);font-size:.65rem;font-weight:700">✓</span>' : ''}
+      ${badge}
     </div>
-    <div class="exp-doc-files">${filesHTML}</div>
+    <div class="exp-doc-files">${filesHTML}${pendingHTML}</div>
     <div class="exp-doc-drop" onclick="this.querySelector('input').click()"
       ondragover="event.preventDefault();this.classList.add('dragover')"
       ondragleave="this.classList.remove('dragover')"
@@ -449,11 +482,6 @@ function expFileSelected(input, categoria){
 }
 
 async function expUploadDoc(categoria, file){
-  if(!_expCurrentId){
-    toast('⚠️ Guarda el cliente primero');
-    return;
-  }
-
   const maxSize = 50 * 1024 * 1024; // 50MB
   if(file.size > maxSize){
     toast('⚠️ Archivo muy grande (máx 50MB)');
@@ -466,14 +494,33 @@ async function expUploadDoc(categoria, file){
     return;
   }
 
-  toast('📤 Subiendo ' + file.name + '...');
+  // If client not saved yet, queue the file
+  if(!_expCurrentId){
+    const multiCats = ['contratos','anexos'];
+    if(!multiCats.includes(categoria)){
+      _expPendingDocs = _expPendingDocs.filter(p => p.categoria !== categoria);
+    }
+    _expPendingDocs.push({ categoria, file });
+    toast('📎 ' + file.name + ' listo (se subirá al guardar)');
+    _expRenderPendingInUI();
+    return;
+  }
 
-  // For single-doc categories (not contratos/anexos), delete existing first
+  // Client exists — upload directly
+  toast('📤 Subiendo ' + file.name + '...');
+  await _expUploadFileToStorage(_expCurrentId, categoria, file);
+  toast('✅ Documento subido');
+  await expRenderDocs(_expCurrentId, _expGetTipo());
+}
+
+// Actual upload to Supabase Storage + DB record
+async function _expUploadFileToStorage(clienteId, categoria, file){
+  // For single-doc categories, delete existing first
   const multiCats = ['contratos','anexos'];
   if(!multiCats.includes(categoria)){
     const { data: existing } = await _sb.from('exp_documentos')
       .select('id, storage_path')
-      .eq('cliente_id', _expCurrentId)
+      .eq('cliente_id', clienteId)
       .eq('categoria', categoria);
     if(existing && existing.length){
       const paths = existing.map(d => d.storage_path);
@@ -484,10 +531,9 @@ async function expUploadDoc(categoria, file){
     }
   }
 
-  // Upload to storage
   const ext = file.name.split('.').pop();
   const ts = Date.now();
-  const storagePath = `${_expCurrentId}/${categoria}/${ts}.${ext}`;
+  const storagePath = `${clienteId}/${categoria}/${ts}.${ext}`;
 
   const { error: uploadErr } = await _sb.storage.from('expedientes').upload(storagePath, file, {
     contentType: file.type,
@@ -495,13 +541,12 @@ async function expUploadDoc(categoria, file){
   });
 
   if(uploadErr){
-    toast('❌ Error subiendo: ' + uploadErr.message);
+    console.warn('[Exp] Upload error:', uploadErr.message);
     return;
   }
 
-  // Insert record
   const { error: dbErr } = await _sb.from('exp_documentos').insert({
-    cliente_id: _expCurrentId,
+    cliente_id: clienteId,
     categoria: categoria,
     nombre_archivo: file.name,
     storage_path: storagePath,
@@ -551,10 +596,6 @@ async function expDeleteDoc(docId){
 // OTRO: Agregar categoría personalizada
 // ══════════════════════════════════════
 function expAddOtroDoc(){
-  if(!_expCurrentId){
-    toast('⚠️ Guarda el cliente primero');
-    return;
-  }
   _expOtroCount++;
   const key = 'otro_' + _expOtroCount;
   const grid = document.getElementById('exp-docs-grid');
@@ -599,4 +640,59 @@ function _expFmtSize(bytes){
   if(bytes < 1024) return bytes + ' B';
   if(bytes < 1048576) return (bytes/1024).toFixed(1) + ' KB';
   return (bytes/1048576).toFixed(1) + ' MB';
+}
+
+// Render empty doc cards for new client (before save)
+function _expRenderDocCardsEmpty(tipo){
+  const grid = document.getElementById('exp-docs-grid');
+  const emptyMsg = document.getElementById('exp-docs-empty');
+  emptyMsg.style.display = 'none';
+
+  let cats = [...EXP_DOCS_FISICA];
+  if(tipo === 'moral'){
+    cats = [...EXP_DOCS_FISCAL_MORAL(), ...EXP_DOCS_MORAL_EXTRA];
+  }
+
+  grid.innerHTML = cats.map(cat => {
+    const pending = _expPendingDocs.filter(p => p.categoria === cat.key);
+    return _expDocCardHTML(cat, [], pending);
+  }).join('');
+
+  // Also update contract/annex cards with pending
+  _expRenderPendingFixed('contratos');
+  _expRenderPendingFixed('anexos');
+}
+
+// Show pending files in the UI (yellow badges instead of green)
+function _expRenderPendingInUI(){
+  const tipo = _expGetTipo();
+  if(_expCurrentId){
+    // Client already saved, re-render from DB
+    expRenderDocs(_expCurrentId, tipo);
+    return;
+  }
+  // New client — re-render empty cards with pending overlays
+  _expRenderDocCardsEmpty(tipo);
+}
+
+function _expRenderPendingFixed(categoria){
+  const card = document.getElementById('exp-doc-' + categoria);
+  if(!card) return;
+  const filesEl = card.querySelector('.exp-doc-files');
+  if(!filesEl) return;
+  const pending = _expPendingDocs.filter(p => p.categoria === categoria);
+  filesEl.innerHTML = pending.map(p => {
+    const size = _expFmtSize(p.file.size);
+    return `<div class="exp-doc-file" style="background:#fffbeb">
+      <div style="display:flex;align-items:center;gap:6px;flex:1;min-width:0">
+        <span style="font-size:.7rem">📎</span>
+        <span style="font-size:.7rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1">${p.file.name}</span>
+        <span style="font-size:.58rem;color:var(--muted);white-space:nowrap">${size}</span>
+      </div>
+      <span style="font-size:.55rem;font-weight:700;color:#b45309;background:#fef3c7;padding:1px 6px;border-radius:3px">PENDIENTE</span>
+    </div>`;
+  }).join('');
+  card.classList.toggle('has-file', pending.length > 0);
+  if(pending.length) card.style.borderColor = '#f59e0b';
+  else card.style.borderColor = '';
 }
