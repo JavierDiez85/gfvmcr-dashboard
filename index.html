@@ -172,6 +172,7 @@
           <div class="si mi-wip" onclick="sv('fact_endless',this)" data-view="fact_endless"><div class="ic">💚</div>Endless<span class="mi-badge">PROX</span></div>
           <div class="si mi-wip" onclick="sv('fact_dynamo',this)" data-view="fact_dynamo"><div class="ic">🔶</div>Dynamo<span class="mi-badge">PROX</span></div>
           <div class="si mi-wip" onclick="sv('fact_wirebit',this)" data-view="fact_wirebit"><div class="ic">💜</div>Wirebit<span class="mi-badge">PROX</span></div>
+          <div class="si" onclick="sv('carga_facturas',this)" data-view="carga_facturas"><div class="ic">📤</div>Carga de Facturas</div>
         </div>
       </div>
 
@@ -3495,6 +3496,12 @@
       <div class="kpi-d dnu" id="upload-kpi-last-sub">Sin uploads registrados</div>
     </div>
   </div>
+  <!-- Alerta: clientes sin tasas -->
+  <div id="upload-kpi-noratescard" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:.78rem;color:#856404">
+    <strong>⚠️ <span id="upload-kpi-norates">0</span> clientes con TODAS las tasas en 0</strong>
+    <div id="upload-kpi-norates-sub" style="margin-top:4px;line-height:1.5;font-size:.72rem"></div>
+    <div style="margin-top:6px;font-size:.7rem;opacity:.8">Sube el Excel de configuración (punto 2) con las tasas correctas para estos clientes.</div>
+  </div>
 
   <!-- Upload Transacciones -->
   <div class="tw" style="margin-bottom:14px">
@@ -4089,11 +4096,6 @@
       <div class="kpi-val" id="fact-kpi-total" style="color:var(--blue)">$0</div>
       <div class="kpi-d dnu">Subtotal sin IVA</div>
     </div>
-    <div class="kpi-card" style="--ac:var(--purple)">
-      <div class="kpi-top"><div class="kpi-lbl">Retenciones Convenia</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">📑</div></div>
-      <div class="kpi-val" id="fact-kpi-retenciones" style="color:var(--purple)">$0</div>
-      <div class="kpi-d dnu">IVA retenido pendiente</div>
-    </div>
   </div>
 
   <!-- Tabla Clientes Regulares -->
@@ -4137,7 +4139,7 @@
       <div class="kpi-card" style="--ac:var(--blue)">
         <div class="kpi-top"><div class="kpi-lbl">Neto a Pagar</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🔄</div></div>
         <div class="kpi-val" id="fact-conv-neto" style="color:var(--blue)">$0</div>
-        <div class="kpi-d dnu">+IVA −Retención = Subtotal</div>
+        <div class="kpi-d dnu">Subtotal + IVA 16%</div>
       </div>
       <div class="kpi-card" style="--ac:var(--green)">
         <div class="kpi-top"><div class="kpi-lbl">Estado Factura</div><div class="kpi-ico" id="fact-conv-ico" style="background:var(--red-bg);color:var(--red)">📋</div></div>
@@ -4167,28 +4169,6 @@
     </div>
   </div>
 
-  <!-- Retenciones Convenia -->
-  <div id="fact-retenciones-section" style="display:none">
-    <div class="tw">
-      <div class="tw-h"><div class="tw-ht">📑 Constancias de Retención — Convenia</div></div>
-      <div style="overflow-x:auto">
-        <table class="bt">
-          <thead>
-            <tr>
-              <th>Periodo</th>
-              <th class="r">Monto Base</th>
-              <th class="r">Retención IVA 16%</th>
-              <th style="width:90px">Enviada</th>
-              <th>Fecha Envío</th>
-              <th style="width:80px"></th>
-            </tr>
-          </thead>
-          <tbody id="fact-ret-tbody">
-          </tbody>
-        </table>
-      </div>
-    </div>
-  </div>
 </div>
 
 <!-- ══════════ FACTURACIÓN: TARJETAS (WIP) ══════════ -->
@@ -4213,6 +4193,127 @@
 <div id="view-fact_wirebit" class="view">
   <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:8px">🧾 Facturación — Wirebit</div>
   <div class="wip-notice">🚧 Módulo en construcción — Próximamente</div>
+</div>
+
+<!-- ══════════ CARGA DE FACTURAS CFDI ══════════ -->
+<div id="view-carga_facturas" class="view">
+  <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">📤 Carga de Facturas CFDI</div>
+  <div style="font-size:.72rem;color:var(--muted);margin-bottom:18px">Sube facturas PDF (CFDI) para extraer datos automáticamente y vincular con el sistema</div>
+
+  <!-- Selectors + Dropzone -->
+  <div class="tw" style="margin-bottom:14px">
+    <div class="tw-h"><div class="tw-ht">📄 Subir Factura PDF</div></div>
+    <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+      <div style="display:flex;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:180px">
+          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Empresa emisora</label>
+          <select id="cf-empresa" onchange="cfOnEmpresaChange()" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
+            <option value="">— Seleccionar —</option>
+            <option value="salem_terminales">Salem Terminales</option>
+            <option value="salem_tarjetas">Salem Tarjetas</option>
+            <option value="endless">Endless Money</option>
+            <option value="dynamo">Dynamo Finance</option>
+            <option value="wirebit">Wirebit</option>
+          </select>
+        </div>
+        <div style="flex:1;min-width:180px">
+          <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Cliente (opcional — se detectará del PDF)</label>
+          <select id="cf-cliente" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">
+            <option value="">— Se detectará automáticamente —</option>
+          </select>
+        </div>
+      </div>
+      <div id="cf-dropzone" ondrop="cfHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor='var(--blue)'" ondragleave="this.style.borderColor='var(--border2)'" onclick="document.getElementById('cf-file-input').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:36px 20px;text-align:center;cursor:pointer;transition:border-color .2s">
+        <div style="font-size:1.6rem;margin-bottom:6px">📎</div>
+        <div style="font-size:.78rem;font-weight:600;color:var(--text)">Arrastra tu factura PDF aquí</div>
+        <div style="font-size:.68rem;color:var(--muted);margin-top:4px">o haz clic para seleccionar archivo</div>
+        <input type="file" id="cf-file-input" accept=".pdf" style="display:none" onchange="cfLoadFile(this.files[0])">
+      </div>
+      <div id="cf-status" style="display:none;font-size:.78rem;padding:10px 14px;border-radius:var(--r)"></div>
+    </div>
+  </div>
+
+  <!-- Preview de datos extraídos -->
+  <div id="cf-preview" style="display:none;margin-bottom:14px">
+    <div class="tw">
+      <div class="tw-h"><div class="tw-ht">🔍 Datos Extraídos del CFDI</div></div>
+      <div style="padding:16px">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;font-size:.78rem;margin-bottom:16px">
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">RFC Emisor</span><span id="cf-p-rfc-emisor" style="font-weight:600">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">Nombre Emisor</span><span id="cf-p-nombre-emisor" style="font-weight:600">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">RFC Receptor</span><span id="cf-p-rfc-receptor" style="font-weight:600">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">Nombre Receptor</span><span id="cf-p-nombre-receptor" style="font-weight:600">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">Folio Fiscal</span><span id="cf-p-folio" style="font-weight:600;font-size:.7rem;word-break:break-all">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">Fecha Emisión</span><span id="cf-p-fecha" style="font-weight:600">—</span></div>
+          <div style="grid-column:1/-1"><span style="color:var(--muted);font-size:.68rem;display:block">Descripción / Concepto</span><span id="cf-p-descripcion" style="font-weight:600">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">Periodo Detectado</span><span id="cf-p-periodo" style="font-weight:600;color:var(--blue)">—</span></div>
+          <div><span style="color:var(--muted);font-size:.68rem;display:block">Moneda</span><span id="cf-p-moneda" style="font-weight:600">—</span></div>
+        </div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:16px">
+          <div style="flex:1;min-width:120px;background:var(--bg);border-radius:var(--r);padding:12px;text-align:center">
+            <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">Subtotal</div>
+            <div id="cf-p-subtotal" style="font-size:1rem;font-weight:700;color:var(--text)">—</div>
+          </div>
+          <div style="flex:1;min-width:120px;background:var(--bg);border-radius:var(--r);padding:12px;text-align:center">
+            <div style="font-size:.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:.04em">IVA</div>
+            <div id="cf-p-iva" style="font-size:1rem;font-weight:700;color:var(--text)">—</div>
+          </div>
+          <div style="flex:1;min-width:120px;background:var(--blue-bg);border-radius:var(--r);padding:12px;text-align:center">
+            <div style="font-size:.65rem;color:var(--blue);text-transform:uppercase;letter-spacing:.04em">Total</div>
+            <div id="cf-p-total" style="font-size:1rem;font-weight:700;color:var(--blue)">—</div>
+          </div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;gap:10px">
+          <button class="btn btn-out" style="font-size:.72rem" onclick="cfClearPreview()">Cancelar</button>
+          <button class="btn" style="font-size:.72rem" onclick="cfImport()">Guardar Factura</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Historial de facturas cargadas -->
+  <div class="tw">
+    <div class="tw-h">
+      <div class="tw-ht">📋 Historial de Facturas Cargadas</div>
+      <div style="display:flex;gap:8px;align-items:center">
+        <input type="text" id="cf-search" placeholder="Buscar..." oninput="cfFilterHistory(this.value)" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">
+      </div>
+    </div>
+    <div style="overflow-x:auto">
+      <table class="bt">
+        <thead>
+          <tr>
+            <th style="text-align:center">Fecha Carga</th>
+            <th>Empresa</th>
+            <th>Receptor</th>
+            <th style="text-align:center">Periodo</th>
+            <th class="r">Subtotal</th>
+            <th class="r">Total</th>
+            <th style="text-align:center;font-size:.7rem">Folio Fiscal</th>
+            <th style="text-align:center">Vinculada</th>
+            <th style="width:90px"></th>
+          </tr>
+        </thead>
+        <tbody id="cf-tbody">
+          <tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">No hay facturas cargadas</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ── Modal: PDF Viewer ── -->
+<div id="cf-pdf-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9995;align-items:center;justify-content:center">
+  <div style="background:var(--white);border-radius:var(--rlg);width:90%;max-width:900px;height:85vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:14px 20px;border-bottom:1px solid var(--border)">
+      <div style="font-weight:700;font-size:.85rem" id="cf-pdf-title">Factura PDF</div>
+      <div style="display:flex;gap:10px;align-items:center">
+        <button class="btn btn-out" style="font-size:.68rem;height:28px;padding:0 12px" onclick="cfDownloadPDF()">Descargar</button>
+        <span onclick="cfClosePDFModal()" style="cursor:pointer;font-size:1.1rem;color:var(--muted)">✕</span>
+      </div>
+    </div>
+    <iframe id="cf-pdf-iframe" style="flex:1;border:none;border-radius:0 0 var(--rlg) var(--rlg)"></iframe>
+  </div>
 </div>
 
 <!-- ── Modal: Registrar Factura ── -->
@@ -4241,7 +4342,6 @@
         <div style="display:flex;flex-direction:column;gap:6px;font-size:.78rem">
           <div style="display:flex;justify-content:space-between"><span>Subtotal (sin IVA)</span><span id="fact-prev-subtotal" style="font-weight:700">$0.00</span></div>
           <div style="display:flex;justify-content:space-between"><span>IVA 16%</span><span id="fact-prev-iva" style="font-weight:700">$0.00</span></div>
-          <div id="fact-prev-ret-row" style="display:none;justify-content:space-between;color:var(--red)"><span>Retención IVA 16%</span><span id="fact-prev-retencion" style="font-weight:700">−$0.00</span></div>
           <div style="display:flex;justify-content:space-between;border-top:1px solid var(--border);padding-top:6px;font-weight:700"><span>Total</span><span id="fact-prev-total" style="color:var(--blue)">$0.00</span></div>
         </div>
       </div>
@@ -4260,13 +4360,6 @@
       <div>
         <label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Notas (opcional)</label>
         <textarea id="fact-modal-notas" rows="2" placeholder="Notas adicionales..." style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;resize:vertical;background:var(--white);color:var(--text);box-sizing:border-box"></textarea>
-      </div>
-      <!-- Retención checkbox (solo Convenia) -->
-      <div id="fact-modal-ret-wrap" style="display:none">
-        <label style="display:flex;align-items:center;gap:8px;font-size:.78rem;cursor:pointer">
-          <input type="checkbox" id="fact-modal-retencion" checked onchange="facturaUpdatePreview()">
-          <span>Aplicar retención IVA 16% (Convenia)</span>
-        </label>
       </div>
       <!-- Botones -->
       <div style="display:flex;justify-content:flex-end;gap:10px;margin-top:6px">
