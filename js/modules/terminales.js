@@ -3149,7 +3149,7 @@ async function rFactTerminales(){
   data.retenciones_convenia.filter(r => !r.enviada).forEach(r => { retPendiente += r.retencion||0; });
 
   // Render KPIs
-  const _f = n => fmtTPV(n);
+  const _f = n => fmtTPVFull(n,2);
   document.getElementById('fact-kpi-pendiente').textContent = _f(totalPendiente);
   document.getElementById('fact-kpi-facturado').textContent = _f(totalFacturado);
   document.getElementById('fact-kpi-total').textContent = _f(totalComisiones);
@@ -3168,23 +3168,23 @@ async function rFactTerminales(){
       if(fact){
         return `<tr data-name="${(r.cliente||'').toLowerCase()}">
           <td style="font-weight:600">${r.cliente}</td>
-          <td class="r">${fmtTPV(sub)}</td>
-          <td class="r">${fmtTPV(iva)}</td>
-          <td class="r" style="font-weight:700">${fmtTPV(total)}</td>
-          <td><span class="pill" style="background:var(--green-bg);color:var(--green)">Facturada</span></td>
-          <td style="font-size:.75rem">${fact.numero_factura||'—'}</td>
-          <td style="font-size:.75rem">${fact.fecha||'—'}</td>
-          <td><button onclick="deleteFactura('${fact.id}')" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Eliminar factura">🗑</button></td>
+          <td class="r">${fmtTPVFull(sub,2)}</td>
+          <td class="r">${fmtTPVFull(iva,2)}</td>
+          <td class="r" style="font-weight:700">${fmtTPVFull(total,2)}</td>
+          <td style="text-align:center"><span class="pill" style="background:var(--green-bg);color:var(--green)">Facturada</span></td>
+          <td style="text-align:center;font-size:.75rem">${fact.numero_factura||'—'}</td>
+          <td style="text-align:center;font-size:.75rem">${fact.fecha||'—'}</td>
+          <td style="text-align:center"><button onclick="deleteFactura('${fact.id}')" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Eliminar factura">🗑</button></td>
         </tr>`;
       } else {
         return `<tr data-name="${(r.cliente||'').toLowerCase()}">
           <td style="font-weight:600">${r.cliente}</td>
-          <td class="r">${fmtTPV(sub)}</td>
-          <td class="r">${fmtTPV(iva)}</td>
-          <td class="r" style="font-weight:700">${fmtTPV(total)}</td>
-          <td><span class="pill" style="background:var(--red-bg);color:var(--red)">Pendiente</span></td>
-          <td>—</td><td>—</td>
-          <td><button onclick="openFacturaModal(${r.client_id},'${periodo}')" class="btn" style="font-size:.62rem;height:24px;padding:0 10px">+ Factura</button></td>
+          <td class="r">${fmtTPVFull(sub,2)}</td>
+          <td class="r">${fmtTPVFull(iva,2)}</td>
+          <td class="r" style="font-weight:700">${fmtTPVFull(total,2)}</td>
+          <td style="text-align:center"><span class="pill" style="background:var(--red-bg);color:var(--red)">Pendiente</span></td>
+          <td style="text-align:center">—</td><td style="text-align:center">—</td>
+          <td style="text-align:center"><button onclick="openFacturaModal(${r.client_id},'${periodo}')" class="btn" style="font-size:.62rem;height:24px;padding:0 10px">+ Factura</button></td>
         </tr>`;
       }
     }).join('');
@@ -3207,8 +3207,8 @@ function _renderFactConvenia(rows, data, periodo){
   rows.forEach(r => { subtotal += facturaSubtotal(r); });
 
   // Neto = subtotal (because +IVA -retIVA cancels out)
-  document.getElementById('fact-conv-subtotal').textContent = fmtTPV(subtotal);
-  document.getElementById('fact-conv-neto').textContent = fmtTPV(subtotal);
+  document.getElementById('fact-conv-subtotal').textContent = fmtTPVFull(subtotal,2);
+  document.getElementById('fact-conv-neto').textContent = fmtTPVFull(subtotal,2);
 
   const fact = data.facturas.find(f => f.client_id==='CONVENIA' && f.periodo===periodo);
   const icoEl = document.getElementById('fact-conv-ico');
@@ -3236,19 +3236,19 @@ function _renderFactConvenia(rows, data, periodo){
     totalEf+=ef; totalSa+=sa; totalCo+=co; totalSub+=sub;
     return `<tr>
       <td style="font-weight:600">${r.cliente}</td>
-      <td class="r">${fmtTPV(ef)}</td>
-      <td class="r">${fmtTPV(sa)}</td>
-      <td class="r">${fmtTPV(co)}</td>
-      <td class="r" style="font-weight:700">${fmtTPV(sub)}</td>
+      <td class="r">${fmtTPVFull(ef,2)}</td>
+      <td class="r">${fmtTPVFull(sa,2)}</td>
+      <td class="r">${fmtTPVFull(co,2)}</td>
+      <td class="r" style="font-weight:700">${fmtTPVFull(sub,2)}</td>
     </tr>`;
   }).join('');
   // Total row
   tbody.innerHTML += `<tr style="background:var(--bg);font-weight:700">
     <td>TOTAL</td>
-    <td class="r">${fmtTPV(totalEf)}</td>
-    <td class="r">${fmtTPV(totalSa)}</td>
-    <td class="r">${fmtTPV(totalCo)}</td>
-    <td class="r" style="color:var(--purple)">${fmtTPV(totalSub)}</td>
+    <td class="r">${fmtTPVFull(totalEf,2)}</td>
+    <td class="r">${fmtTPVFull(totalSa,2)}</td>
+    <td class="r">${fmtTPVFull(totalCo,2)}</td>
+    <td class="r" style="color:var(--purple)">${fmtTPVFull(totalSub,2)}</td>
   </tr>`;
 }
 
@@ -3265,8 +3265,8 @@ function _renderFactRetenciones(data){
     const mesNom = (typeof MO!=='undefined'?MO[m-1]:'') + ' ' + y;
     return `<tr>
       <td style="font-weight:600">${mesNom}</td>
-      <td class="r">${fmtTPV(r.monto_base)}</td>
-      <td class="r" style="font-weight:700;color:var(--purple)">${fmtTPV(r.retencion)}</td>
+      <td class="r">${fmtTPVFull(r.monto_base,2)}</td>
+      <td class="r" style="font-weight:700;color:var(--purple)">${fmtTPVFull(r.retencion,2)}</td>
       <td>${r.enviada ? '<span class="pill" style="background:var(--green-bg);color:var(--green)">Sí</span>' : '<span class="pill" style="background:var(--red-bg);color:var(--red)">No</span>'}</td>
       <td style="font-size:.75rem">${r.fecha_envio||'—'}</td>
       <td>${r.enviada
@@ -3368,16 +3368,16 @@ function facturaUpdatePreview(){
   const retIva = isConvenia && retCheck && retCheck.checked ? iva : 0;
   const total = sub + iva - retIva;
 
-  document.getElementById('fact-prev-subtotal').textContent = fmtTPV(sub);
-  document.getElementById('fact-prev-iva').textContent = fmtTPV(iva);
+  document.getElementById('fact-prev-subtotal').textContent = fmtTPVFull(sub,2);
+  document.getElementById('fact-prev-iva').textContent = fmtTPVFull(iva,2);
   const retRow = document.getElementById('fact-prev-ret-row');
   if(isConvenia){
     retRow.style.display = 'flex';
-    document.getElementById('fact-prev-retencion').textContent = '−' + fmtTPV(retIva);
+    document.getElementById('fact-prev-retencion').textContent = '−' + fmtTPVFull(retIva,2);
   } else {
     retRow.style.display = 'none';
   }
-  document.getElementById('fact-prev-total').textContent = fmtTPV(total);
+  document.getElementById('fact-prev-total').textContent = fmtTPVFull(total,2);
 }
 
 // ── Modal: Submit ──
