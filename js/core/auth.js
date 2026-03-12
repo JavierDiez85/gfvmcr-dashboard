@@ -32,6 +32,14 @@ const MENU_PERMS = {
   wirebit:    { label:'💜 Wirebit', subs:[
     {id:'wb_cripto',label:'Transacciones Cripto'},{id:'wb_tarjetas',label:'Transacciones Tarjetas'},
   ]},
+  facturacion: { label:'🧾 Facturación', subs:[
+    {id:'fact_terminales',label:'Terminales'},{id:'fact_tarjetas',label:'Tarjetas'},
+    {id:'fact_endless',label:'Endless'},{id:'fact_dynamo',label:'Dynamo'},{id:'fact_wirebit',label:'Wirebit'},
+    {id:'carga_facturas',label:'Carga de Facturas'},
+  ]},
+  expedientes: { label:'📁 Expedientes', subs:[
+    {id:'expedientes',label:'Clientes'},
+  ]},
   config:     { label:'⚙️ Configuración', subs:[
     {id:'cfg_usuarios',label:'Usuarios'},{id:'cfg_permisos',label:'Permisos'},
     {id:'cfg_apariencia',label:'Apariencia'},{id:'cfg_categorias',label:'Categorías P&L'},{id:'cfg_bancos',label:'Bancos y Cuentas'},
