@@ -3024,3 +3024,501 @@ async function saveComEdit() {
 }
 
 // ══════════════════════════════════════
+// ══════════ FACTURACIÓN TERMINALES ══════════
+// ════════════════════════════════════════════
+
+const FACTURAS_KEY = 'gf_tpv_facturas';
+
+function facturasLoad(){
+  try { return DB.get(FACTURAS_KEY) || { facturas:[], retenciones_convenia:[] }; }
+  catch(e){ return { facturas:[], retenciones_convenia:[] }; }
+}
+function facturasSave(d){ DB.set(FACTURAS_KEY, d); }
+function facturaExists(data, clientId, periodo){
+  return data.facturas.some(f => String(f.client_id) === String(clientId) && f.periodo === periodo);
+}
+function facturaSubtotal(r){
+  return (parseFloat(r.com_efevoo)||0) + (parseFloat(r.com_salem)||0) + (parseFloat(r.com_comisionista)||0);
+}
+
+// ── Period helpers ──
+function _populateFactMeses(){
+  const sel = document.getElementById('fact-mes-sel');
+  if(!sel) return;
+  const now = new Date();
+  let opts = '';
+  for(let i=0;i<12;i++){
+    const d = new Date(now.getFullYear(), now.getMonth()-i, 1);
+    const val = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    const lbl = (typeof MO!=='undefined'?MO[d.getMonth()]:'') + ' ' + d.getFullYear();
+    opts += `<option value="${val}">${lbl}</option>`;
+  }
+  sel.innerHTML = opts;
+}
+
+function setFactMes(which){
+  const sel = document.getElementById('fact-mes-sel');
+  if(!sel) return;
+  const now = new Date();
+  let d = which==='last_month' ? new Date(now.getFullYear(), now.getMonth()-1,1) : now;
+  const val = d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+  sel.value = val;
+  rFactTerminales();
+}
+
+function _periodoToRange(p){
+  const [y,m] = p.split('-').map(Number);
+  const from = `${y}-${String(m).padStart(2,'0')}-01`;
+  const last = new Date(y, m, 0).getDate();
+  const to = `${y}-${String(m).padStart(2,'0')}-${String(last).padStart(2,'0')}`;
+  return {from, to};
+}
+
+// ── Cache for modal ──
+let _factComCache = [];
+let _factClientsCache = [];
+
+// ── Main render ──
+async function rFactTerminales(){
+  // Populate months if empty
+  const sel = document.getElementById('fact-mes-sel');
+  if(!sel) return;
+  if(sel.options.length===0) _populateFactMeses();
+
+  const periodo = sel.value;
+  if(!periodo) return;
+  const {from, to} = _periodoToRange(periodo);
+
+  // Fetch data in parallel
+  const [comRows, clients] = await Promise.all([
+    TPV.clientCommissions(from, to),
+    TPV.getClients()
+  ]);
+
+  // Build promotor map
+  const clientMap = {};
+  clients.forEach(c => { clientMap[c.id] = c; });
+
+  // Cache for modal
+  _factComCache = comRows;
+  _factClientsCache = clients;
+
+  // Load saved invoices
+  const data = facturasLoad();
+
+  // Split regular vs Convenia
+  const regulares = [];
+  const conveniaRows = [];
+  comRows.forEach(r => {
+    const cl = clientMap[r.client_id];
+    const prom = cl && cl.promotor ? cl.promotor.toLowerCase().trim() : '';
+    const sub = facturaSubtotal(r);
+    if(sub <= 0) return; // Skip 0 commission clients
+    if(prom.includes('convenia')){
+      conveniaRows.push(r);
+    } else {
+      regulares.push(r);
+    }
+  });
+
+  // Calculate KPIs
+  let totalPendiente = 0, totalFacturado = 0, totalComisiones = 0;
+  regulares.forEach(r => {
+    const sub = facturaSubtotal(r);
+    totalComisiones += sub;
+    if(facturaExists(data, r.client_id, periodo)){
+      totalFacturado += sub;
+    } else {
+      totalPendiente += sub;
+    }
+  });
+
+  let conveniaSubtotal = 0;
+  conveniaRows.forEach(r => { conveniaSubtotal += facturaSubtotal(r); });
+  totalComisiones += conveniaSubtotal;
+
+  const conveniaFacturada = facturaExists(data, 'CONVENIA', periodo);
+  if(conveniaFacturada){
+    totalFacturado += conveniaSubtotal;
+  } else {
+    totalPendiente += conveniaSubtotal;
+  }
+
+  // Retenciones pendientes
+  let retPendiente = 0;
+  data.retenciones_convenia.filter(r => !r.enviada).forEach(r => { retPendiente += r.retencion||0; });
+
+  // Render KPIs
+  const _f = n => fmtTPV(n);
+  document.getElementById('fact-kpi-pendiente').textContent = _f(totalPendiente);
+  document.getElementById('fact-kpi-facturado').textContent = _f(totalFacturado);
+  document.getElementById('fact-kpi-total').textContent = _f(totalComisiones);
+  document.getElementById('fact-kpi-retenciones').textContent = _f(retPendiente);
+
+  // Render regular table
+  const tbody = document.getElementById('fact-tbody');
+  if(regulares.length === 0){
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">No hay clientes con comisiones en este periodo</td></tr>';
+  } else {
+    tbody.innerHTML = regulares.sort((a,b) => facturaSubtotal(b)-facturaSubtotal(a)).map(r => {
+      const sub = facturaSubtotal(r);
+      const iva = sub * 0.16;
+      const total = sub + iva;
+      const fact = data.facturas.find(f => String(f.client_id)===String(r.client_id) && f.periodo===periodo);
+      if(fact){
+        return `<tr data-name="${(r.cliente||'').toLowerCase()}">
+          <td style="font-weight:600">${r.cliente}</td>
+          <td class="r">${fmtTPV(sub)}</td>
+          <td class="r">${fmtTPV(iva)}</td>
+          <td class="r" style="font-weight:700">${fmtTPV(total)}</td>
+          <td><span class="pill" style="background:var(--green-bg);color:var(--green)">Facturada</span></td>
+          <td style="font-size:.75rem">${fact.numero_factura||'—'}</td>
+          <td style="font-size:.75rem">${fact.fecha||'—'}</td>
+          <td><button onclick="deleteFactura('${fact.id}')" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Eliminar factura">🗑</button></td>
+        </tr>`;
+      } else {
+        return `<tr data-name="${(r.cliente||'').toLowerCase()}">
+          <td style="font-weight:600">${r.cliente}</td>
+          <td class="r">${fmtTPV(sub)}</td>
+          <td class="r">${fmtTPV(iva)}</td>
+          <td class="r" style="font-weight:700">${fmtTPV(total)}</td>
+          <td><span class="pill" style="background:var(--red-bg);color:var(--red)">Pendiente</span></td>
+          <td>—</td><td>—</td>
+          <td><button onclick="openFacturaModal(${r.client_id},'${periodo}')" class="btn" style="font-size:.62rem;height:24px;padding:0 10px">+ Factura</button></td>
+        </tr>`;
+      }
+    }).join('');
+  }
+
+  // Convenia section
+  _renderFactConvenia(conveniaRows, data, periodo);
+
+  // Retenciones section
+  _renderFactRetenciones(data);
+}
+
+// ── Convenia Renderer ──
+function _renderFactConvenia(rows, data, periodo){
+  const section = document.getElementById('fact-convenia-section');
+  if(rows.length === 0){ section.style.display='none'; return; }
+  section.style.display = 'block';
+
+  let subtotal = 0;
+  rows.forEach(r => { subtotal += facturaSubtotal(r); });
+
+  // Neto = subtotal (because +IVA -retIVA cancels out)
+  document.getElementById('fact-conv-subtotal').textContent = fmtTPV(subtotal);
+  document.getElementById('fact-conv-neto').textContent = fmtTPV(subtotal);
+
+  const fact = data.facturas.find(f => f.client_id==='CONVENIA' && f.periodo===periodo);
+  const icoEl = document.getElementById('fact-conv-ico');
+  const estEl = document.getElementById('fact-conv-estado');
+  const actEl = document.getElementById('fact-conv-action');
+
+  if(fact){
+    icoEl.style.background = 'var(--green-bg)'; icoEl.style.color = 'var(--green)'; icoEl.textContent = '✅';
+    estEl.textContent = 'Facturada'; estEl.style.color = 'var(--green)';
+    actEl.innerHTML = `<div style="font-size:.7rem;margin-top:4px">${fact.numero_factura||''} — ${fact.fecha||''} <button onclick="deleteFactura('${fact.id}')" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Eliminar">🗑</button></div>`;
+  } else {
+    icoEl.style.background = 'var(--red-bg)'; icoEl.style.color = 'var(--red)'; icoEl.textContent = '📋';
+    estEl.textContent = 'Pendiente'; estEl.style.color = 'var(--red)';
+    actEl.innerHTML = `<button onclick="openFacturaModal('CONVENIA','${periodo}')" class="btn" style="font-size:.66rem;height:26px;margin-top:6px">+ Factura Consolidada</button>`;
+  }
+
+  // Sub-clients table
+  const tbody = document.getElementById('fact-conv-tbody');
+  let totalEf=0, totalSa=0, totalCo=0, totalSub=0;
+  tbody.innerHTML = rows.sort((a,b)=>facturaSubtotal(b)-facturaSubtotal(a)).map(r => {
+    const ef = parseFloat(r.com_efevoo)||0;
+    const sa = parseFloat(r.com_salem)||0;
+    const co = parseFloat(r.com_comisionista)||0;
+    const sub = ef+sa+co;
+    totalEf+=ef; totalSa+=sa; totalCo+=co; totalSub+=sub;
+    return `<tr>
+      <td style="font-weight:600">${r.cliente}</td>
+      <td class="r">${fmtTPV(ef)}</td>
+      <td class="r">${fmtTPV(sa)}</td>
+      <td class="r">${fmtTPV(co)}</td>
+      <td class="r" style="font-weight:700">${fmtTPV(sub)}</td>
+    </tr>`;
+  }).join('');
+  // Total row
+  tbody.innerHTML += `<tr style="background:var(--bg);font-weight:700">
+    <td>TOTAL</td>
+    <td class="r">${fmtTPV(totalEf)}</td>
+    <td class="r">${fmtTPV(totalSa)}</td>
+    <td class="r">${fmtTPV(totalCo)}</td>
+    <td class="r" style="color:var(--purple)">${fmtTPV(totalSub)}</td>
+  </tr>`;
+}
+
+// ── Retenciones Renderer ──
+function _renderFactRetenciones(data){
+  const section = document.getElementById('fact-retenciones-section');
+  const rets = data.retenciones_convenia || [];
+  if(rets.length === 0){ section.style.display='none'; return; }
+  section.style.display = 'block';
+
+  const tbody = document.getElementById('fact-ret-tbody');
+  tbody.innerHTML = rets.sort((a,b)=>b.periodo.localeCompare(a.periodo)).map(r => {
+    const [y,m] = r.periodo.split('-').map(Number);
+    const mesNom = (typeof MO!=='undefined'?MO[m-1]:'') + ' ' + y;
+    return `<tr>
+      <td style="font-weight:600">${mesNom}</td>
+      <td class="r">${fmtTPV(r.monto_base)}</td>
+      <td class="r" style="font-weight:700;color:var(--purple)">${fmtTPV(r.retencion)}</td>
+      <td>${r.enviada ? '<span class="pill" style="background:var(--green-bg);color:var(--green)">Sí</span>' : '<span class="pill" style="background:var(--red-bg);color:var(--red)">No</span>'}</td>
+      <td style="font-size:.75rem">${r.fecha_envio||'—'}</td>
+      <td>${r.enviada
+        ? `<button onclick="marcarRetencionNoEnviada('${r.id}')" class="btn btn-out" style="font-size:.6rem;height:22px;padding:0 8px">Desmarcar</button>`
+        : `<button onclick="marcarRetencionEnviada('${r.id}')" class="btn" style="font-size:.6rem;height:22px;padding:0 8px">Marcar Enviada</button>`
+      }</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── Modal: Open ──
+let _factModalClientId = null;
+let _factModalPeriodo = null;
+
+function openFacturaModal(clientId, periodo){
+  _factModalClientId = clientId;
+  const ov = document.getElementById('factura-overlay');
+  ov.style.display = 'flex';
+
+  // Set date
+  document.getElementById('fact-modal-fecha').value = new Date().toISOString().split('T')[0];
+  document.getElementById('fact-modal-numero').value = '';
+  document.getElementById('fact-modal-notas').value = '';
+
+  // Period
+  const sel = document.getElementById('fact-mes-sel');
+  const per = periodo || (sel ? sel.value : '');
+  _factModalPeriodo = per;
+  document.getElementById('fact-modal-periodo').value = per;
+
+  // Client selector
+  const cWrap = document.getElementById('fact-modal-cliente-wrap');
+  const cSel = document.getElementById('fact-modal-cliente');
+  const retWrap = document.getElementById('fact-modal-ret-wrap');
+  const titleEl = document.getElementById('fact-modal-title');
+
+  if(clientId === 'CONVENIA'){
+    cWrap.style.display = 'none';
+    retWrap.style.display = 'block';
+    document.getElementById('fact-modal-retencion').checked = true;
+    titleEl.textContent = '🧾 Factura Consolidada — Convenia';
+  } else {
+    retWrap.style.display = 'none';
+    titleEl.textContent = '🧾 Registrar Factura';
+    if(clientId){
+      cWrap.style.display = 'none';
+    } else {
+      cWrap.style.display = 'block';
+      // Populate selector with all clients that have commissions
+      cSel.innerHTML = '<option value="">— Seleccionar —</option>' +
+        _factComCache.filter(r => facturaSubtotal(r)>0).map(r =>
+          `<option value="${r.client_id}">${r.cliente}</option>`
+        ).join('');
+    }
+  }
+
+  facturaUpdatePreview();
+}
+
+function closeFacturaModal(){
+  document.getElementById('factura-overlay').style.display = 'none';
+  _factModalClientId = null;
+  _factModalPeriodo = null;
+}
+
+// ── Modal: Preview ──
+function facturaUpdatePreview(){
+  const preview = document.getElementById('fact-modal-preview');
+  let sub = 0;
+
+  if(_factModalClientId === 'CONVENIA'){
+    // Sum all Convenia sub-clients
+    const clientMap = {};
+    _factClientsCache.forEach(c => { clientMap[c.id] = c; });
+    _factComCache.forEach(r => {
+      const cl = clientMap[r.client_id];
+      const prom = cl && cl.promotor ? cl.promotor.toLowerCase().trim() : '';
+      if(prom.includes('convenia')) sub += facturaSubtotal(r);
+    });
+  } else if(_factModalClientId){
+    const row = _factComCache.find(r => String(r.client_id)===String(_factModalClientId));
+    if(row) sub = facturaSubtotal(row);
+  } else {
+    // Check selector
+    const cSel = document.getElementById('fact-modal-cliente');
+    const cid = cSel ? cSel.value : '';
+    if(cid){
+      const row = _factComCache.find(r => String(r.client_id)===String(cid));
+      if(row) sub = facturaSubtotal(row);
+    }
+  }
+
+  if(sub <= 0){ preview.style.display='none'; return; }
+  preview.style.display = 'block';
+
+  const iva = sub * 0.16;
+  const retCheck = document.getElementById('fact-modal-retencion');
+  const isConvenia = _factModalClientId === 'CONVENIA';
+  const retIva = isConvenia && retCheck && retCheck.checked ? iva : 0;
+  const total = sub + iva - retIva;
+
+  document.getElementById('fact-prev-subtotal').textContent = fmtTPV(sub);
+  document.getElementById('fact-prev-iva').textContent = fmtTPV(iva);
+  const retRow = document.getElementById('fact-prev-ret-row');
+  if(isConvenia){
+    retRow.style.display = 'flex';
+    document.getElementById('fact-prev-retencion').textContent = '−' + fmtTPV(retIva);
+  } else {
+    retRow.style.display = 'none';
+  }
+  document.getElementById('fact-prev-total').textContent = fmtTPV(total);
+}
+
+// ── Modal: Submit ──
+function submitFactura(){
+  const periodo = document.getElementById('fact-modal-periodo').value;
+  if(!periodo){ toast('⚠️ Selecciona un periodo'); return; }
+
+  let clientId = _factModalClientId;
+  let clienteName = '';
+
+  if(!clientId){
+    const cSel = document.getElementById('fact-modal-cliente');
+    clientId = cSel ? cSel.value : '';
+    if(!clientId){ toast('⚠️ Selecciona un cliente'); return; }
+    const opt = cSel.options[cSel.selectedIndex];
+    clienteName = opt ? opt.textContent : '';
+  } else if(clientId === 'CONVENIA'){
+    clienteName = 'CONVENIA (Consolidada)';
+  } else {
+    const row = _factComCache.find(r => String(r.client_id)===String(clientId));
+    clienteName = row ? row.cliente : 'Cliente #'+clientId;
+  }
+
+  const data = facturasLoad();
+  const perKey = periodo.substring(0,7); // YYYY-MM
+
+  // Check duplicate
+  if(facturaExists(data, clientId, perKey)){
+    toast('⚠️ Ya existe una factura para este cliente en este periodo');
+    return;
+  }
+
+  // Calculate amounts
+  let sub = 0;
+  if(clientId === 'CONVENIA'){
+    const clientMap = {};
+    _factClientsCache.forEach(c => { clientMap[c.id] = c; });
+    _factComCache.forEach(r => {
+      const cl = clientMap[r.client_id];
+      const prom = cl && cl.promotor ? cl.promotor.toLowerCase().trim() : '';
+      if(prom.includes('convenia')) sub += facturaSubtotal(r);
+    });
+  } else {
+    const row = _factComCache.find(r => String(r.client_id)===String(clientId));
+    if(row) sub = facturaSubtotal(row);
+  }
+
+  const iva = sub * 0.16;
+  const isConvenia = clientId === 'CONVENIA';
+  const retCheck = document.getElementById('fact-modal-retencion');
+  const retIva = isConvenia && retCheck && retCheck.checked ? iva : 0;
+  const total = sub + iva - retIva;
+
+  const factura = {
+    id: 'f_' + Date.now(),
+    client_id: isConvenia ? 'CONVENIA' : Number(clientId),
+    cliente: clienteName,
+    periodo: perKey,
+    subtotal: Math.round(sub*100)/100,
+    iva: Math.round(iva*100)/100,
+    retencion_iva: Math.round(retIva*100)/100,
+    total: Math.round(total*100)/100,
+    numero_factura: document.getElementById('fact-modal-numero').value.trim(),
+    fecha: document.getElementById('fact-modal-fecha').value,
+    notas: document.getElementById('fact-modal-notas').value.trim(),
+    registrado: new Date().toISOString()
+  };
+
+  data.facturas.push(factura);
+
+  // Auto-create retention record for Convenia
+  if(isConvenia && retIva > 0){
+    const existingRet = data.retenciones_convenia.find(r => r.periodo === perKey);
+    if(!existingRet){
+      data.retenciones_convenia.push({
+        id: 'r_' + Date.now(),
+        periodo: perKey,
+        monto_base: Math.round(sub*100)/100,
+        retencion: Math.round(retIva*100)/100,
+        enviada: false,
+        fecha_envio: null,
+        notas: ''
+      });
+    }
+  }
+
+  facturasSave(data);
+  closeFacturaModal();
+  toast('✅ Factura registrada correctamente');
+  rFactTerminales();
+}
+
+// ── CRUD ──
+function deleteFactura(id){
+  if(!confirm('¿Eliminar esta factura?')) return;
+  const data = facturasLoad();
+  const fact = data.facturas.find(f=>f.id===id);
+  data.facturas = data.facturas.filter(f=>f.id!==id);
+  // If Convenia, also remove retention for that period
+  if(fact && fact.client_id==='CONVENIA'){
+    data.retenciones_convenia = data.retenciones_convenia.filter(r=>r.periodo!==fact.periodo);
+  }
+  facturasSave(data);
+  toast('Factura eliminada');
+  rFactTerminales();
+}
+
+function marcarRetencionEnviada(id){
+  const data = facturasLoad();
+  const r = data.retenciones_convenia.find(x=>x.id===id);
+  if(r){ r.enviada=true; r.fecha_envio=new Date().toISOString().split('T')[0]; }
+  facturasSave(data);
+  rFactTerminales();
+}
+
+function marcarRetencionNoEnviada(id){
+  const data = facturasLoad();
+  const r = data.retenciones_convenia.find(x=>x.id===id);
+  if(r){ r.enviada=false; r.fecha_envio=null; }
+  facturasSave(data);
+  rFactTerminales();
+}
+
+// ── CSV Export ──
+function exportFacturasCSV(){
+  const sel = document.getElementById('fact-mes-sel');
+  const periodo = sel ? sel.value : '';
+  if(!periodo){ toast('⚠️ Selecciona un periodo'); return; }
+  const data = facturasLoad();
+  const rows = data.facturas.filter(f=>f.periodo===periodo);
+  if(rows.length===0){ toast('No hay facturas para exportar en este periodo'); return; }
+
+  let csv = 'Cliente,Periodo,Subtotal (sin IVA),IVA 16%,Retención IVA,Total,No. Factura,Fecha,Notas\n';
+  rows.forEach(f=>{
+    csv += `"${f.cliente}","${f.periodo}",${f.subtotal},${f.iva},${f.retencion_iva},${f.total},"${f.numero_factura||''}","${f.fecha||''}","${(f.notas||'').replace(/"/g,'""')}"\n`;
+  });
+
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `facturas_tpv_${periodo}.csv`; a.click();
+  URL.revokeObjectURL(url);
+  toast('📥 CSV descargado');
+}

@@ -25,7 +25,8 @@ const VT = {
   wb_res:'Wirebit — P&L',wb_ing:'Wirebit — Ingresos',wb_gas:'Wirebit — Costes y Gastos',wb_cripto:'Wirebit — Transacciones Cripto',wb_nom:'Wirebit — Nómina',wb_tarjetas:'Wirebit — Tarjetas WB',wb_upload:'Wirebit — Carga Transacciones Cripto',wb_tar_upload:'Carga — Tarjetas Wirebit',
   tar_dashboard:'Tarjetas — Dashboard CENTUM',tar_conceptos:'Tarjetas — Conceptos',tar_subclientes:'Tarjetas — Subclientes',tar_rechazos:'Tarjetas — Rechazos',tar_tarjetahabientes:'Tarjetas — Tarjetahabientes',
   carga_masiva:'Carga — Masiva Ingresos y Gastos',
-  centum:'Centum Capital',grupo:'Grupo Financiero',cfg_usuarios:'Configuración — Usuarios',cfg_apariencia:'Configuración — Apariencia',cfg_permisos:'Configuración — Permisos',cfg_categorias:'Configuración — Categorías P&L',cfg_bancos:'Configuración — Bancos y Cuentas',tes_flujo:'Tesorería — Flujo de Caja',tes_individual:'Tesorería — Por Empresa',tes_grupo:'Tesorería — Consolidado Grupo',carga_creditos:'Carga — Créditos PDF'
+  centum:'Centum Capital',grupo:'Grupo Financiero',cfg_usuarios:'Configuración — Usuarios',cfg_apariencia:'Configuración — Apariencia',cfg_permisos:'Configuración — Permisos',cfg_categorias:'Configuración — Categorías P&L',cfg_bancos:'Configuración — Bancos y Cuentas',tes_flujo:'Tesorería — Flujo de Caja',tes_individual:'Tesorería — Por Empresa',tes_grupo:'Tesorería — Consolidado Grupo',carga_creditos:'Carga — Créditos PDF',
+  fact_terminales:'Facturación — Terminales',fact_tarjetas:'Facturación — Tarjetas',fact_endless:'Facturación — Endless',fact_dynamo:'Facturación — Dynamo',fact_wirebit:'Facturación — Wirebit'
 };
 
 function navTo(id){
@@ -163,6 +164,8 @@ function render(id){
     case 'cfg_categorias': rCatView(); break;
     case 'cfg_bancos': rBancosView(); break;
     case 'carga_creditos': rCargaCreditos(); break;
+    case 'fact_terminales': rFactTerminales().catch(_c); break;
+    case 'fact_tarjetas': case 'fact_endless': case 'fact_dynamo': case 'fact_wirebit': break;
     case 'carga_masiva': rCargaMasiva(); break;
     case 'flujo_ing': _syncAll().then(()=>rFlujoIng()).catch(_c); break;
     case 'flujo_gas': _syncAll().then(()=>rFlujoGas()).catch(_c); break;
