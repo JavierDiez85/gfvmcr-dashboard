@@ -1367,7 +1367,7 @@ let _activeMenu = null;   // current open menu
 const _MENU_DEFAULTS = {
   grupo_menu:'resumen', salem:'tpv_general',
   endless:'cred_dash', dynamo:'dyn_dash',
-  wirebit:'wb_cripto', config:'cfg_usuarios'
+  wirebit:'wb_cripto', expedientes:'expedientes', config:'cfg_usuarios'
 };
 
 function openMenu(menuId, el, viewOverride){

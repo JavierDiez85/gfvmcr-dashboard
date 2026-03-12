@@ -141,7 +141,7 @@ body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;fon
 .bt{width:100%;border-collapse:collapse;font-size:.78rem;}
 .bt thead tr{background:var(--bg);}
 .bt th{padding:8px 13px;text-align:left;font-size:.63rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;color:var(--muted);border-bottom:2px solid var(--border);white-space:nowrap;}
-.bt th.r{text-align:right;}
+.bt th.r,.bt td.r{text-align:right;}
 .bt td{padding:8px 13px;border-bottom:1px solid var(--border);color:var(--text2);vertical-align:middle;}
 .bt tr:last-child td{border-bottom:none;}
 .bt tr:hover td{background:#f7f9fe;}
@@ -167,7 +167,7 @@ body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;fon
 .cc-clickable:hover .cc-expand{opacity:1;}
 .mbt{width:100%;border-collapse:collapse;font-size:.78rem;}
 .mbt th{padding:7px 11px;text-align:left;font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);border-bottom:2px solid var(--border);background:var(--bg);white-space:nowrap;}
-.mbt th.r{text-align:right;}
+.mbt th.r,.mbt td.r{text-align:right;}
 .mbt td{padding:7px 11px;border-bottom:1px solid var(--border);color:var(--text2);}
 .mbt tr:last-child td{border-bottom:none;}
 .mbt tr:hover td{background:#f7f9fe;}
@@ -229,8 +229,43 @@ body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;fon
 ::-webkit-scrollbar{width:4px;height:4px;}
 ::-webkit-scrollbar-track{background:transparent;}
 ::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
-@media(max-width:1100px){.kpi-row,.ent-grid,.nom-grid,.sem-grid{grid-template-columns:repeat(2,1fr);}.g2,.g31,.ef-grid{grid-template-columns:1fr;}}
+@media(max-width:1100px){.kpi-row,.ent-grid,.nom-grid,.sem-grid{grid-template-columns:repeat(2,1fr);}.g2,.g31,.ef-grid{grid-template-columns:1fr;}
+#view-expedientes>div:nth-child(2){grid-template-columns:1fr!important;}}
 
 /* ── READ-ONLY MODE (viewer) ── */
 body[data-role="viewer"] .edit-action,
 body[data-role="viewer"] .admin-only { display:none !important; }
+
+/* ══════════════════════════════════════ */
+/* EXPEDIENTES                            */
+/* ══════════════════════════════════════ */
+
+/* List items */
+.exp-list-item{padding:9px 12px;border-radius:var(--r);cursor:pointer;transition:background .12s;border:1px solid transparent;margin-bottom:3px;}
+.exp-list-item:hover{background:var(--bg);}
+.exp-list-item.active{background:var(--blue-bg);border-color:var(--blue);}
+
+/* Product chips */
+.exp-chip{display:inline-flex;align-items:center;padding:4px 10px;border-radius:20px;font-size:.68rem;font-weight:600;cursor:pointer;border:1.5px solid var(--border2);background:var(--bg);color:var(--muted);transition:all .12s;user-select:none;}
+.exp-chip.active{background:var(--blue-bg);border-color:var(--blue);color:var(--blue);}
+.exp-chip:hover{border-color:var(--blue);color:var(--blue);}
+
+/* Doc cards */
+.exp-doc-card{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;background:var(--white);}
+.exp-doc-card.has-file{border-color:var(--green);border-left:3px solid var(--green);}
+.exp-doc-header{display:flex;align-items:center;gap:6px;padding:8px 10px;background:var(--bg);border-bottom:1px solid var(--border);}
+.exp-doc-icon{font-size:.85rem;}
+.exp-doc-title{font-size:.7rem;font-weight:700;color:var(--text);}
+.exp-doc-title-edit{font-size:.7rem;font-weight:700;color:var(--text);background:var(--white);border:1px solid var(--border);border-radius:4px;padding:2px 6px;flex:1;}
+.exp-doc-files{padding:0;}
+.exp-doc-file{display:flex;align-items:center;justify-content:space-between;padding:6px 10px;border-bottom:1px solid var(--border);gap:6px;}
+.exp-doc-file:last-child{border-bottom:none;}
+
+/* Drop zone */
+.exp-doc-drop{padding:10px;text-align:center;cursor:pointer;border-top:1px dashed var(--border2);transition:all .15s;background:var(--white);}
+.exp-doc-drop:hover,.exp-doc-drop.dragover{background:var(--blue-bg);border-top-color:var(--blue);}
+
+/* Period toggle buttons (already exist as .pbtn but just in case) */
+.pbtn{font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--white);color:var(--muted);cursor:pointer;transition:all .12s;font-family:'Figtree',sans-serif;}
+.pbtn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+.pbtn:hover:not(.active){background:var(--bg);color:var(--text);}
