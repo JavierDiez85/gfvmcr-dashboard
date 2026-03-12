@@ -386,6 +386,12 @@ const TPV_UPLOAD = {
           rate_comisionista_ti: parseFloat(r['Comisionista_TI']) || 0,
         }));
 
+        // Log parsed client summary
+        const withEfevoo = clients.filter(c => c.rate_efevoo_tc > 0).length;
+        const withSalem = clients.filter(c => c.rate_salem_tc > 0 || c.rate_salem_tc < 0).length;
+        console.log(`[Upload] Client summary: ${clients.length} total, ${withEfevoo} with Efevoo_TC, ${withSalem} with Salem_TC`);
+        console.log('[Upload] Sample (first 3):', clients.slice(0, 3).map(c => ({ n: c.nombre, e_tc: c.rate_efevoo_tc, s_tc: c.rate_salem_tc })));
+
         // Delete stale clients not in the new file
         const newNames = new Set(clients.map(c => c.nombre));
         const { data: existingClients } = await _sb.from('tpv_clients').select('id, nombre');
@@ -422,8 +428,17 @@ const TPV_UPLOAD = {
           this._progress(pct, `Clientes: ${i}/${clients.length}...`);
           const { error } = await _sb.from('tpv_clients')
             .upsert(batch, { onConflict: 'nombre' });
-          if (error) console.warn('[Upload] Client batch error:', error.message);
+          if (error) console.warn('[Upload] Client batch error:', error.message, 'Batch:', batch.map(c => c.nombre));
         }
+
+        // Spot-check: verify rates were saved to DB
+        const { data: spotCheck } = await _sb.from('tpv_clients')
+          .select('nombre, rate_efevoo_tc, rate_salem_tc')
+          .gt('rate_efevoo_tc', 0);
+        const { count: totalInDB } = await _sb.from('tpv_clients').select('*', { count: 'exact', head: true });
+        console.log(`[Upload] Post-upsert verification: ${totalInDB} clients in DB, ${spotCheck?.length || 0} with Efevoo_TC > 0`);
+        this._uploadStats = { totalParsed: clients.length, totalInDB: totalInDB || 0, withRates: spotCheck?.length || 0 };
+
         // Validate: warn about clients with all rates = 0
         const zeroRateClients = clients.filter(c =>
           !c.rate_efevoo_tc && !c.rate_efevoo_td && !c.rate_efevoo_amex && !c.rate_efevoo_ti &&
@@ -845,17 +860,22 @@ async function startCfgUpload() {
     resultDiv.style.display = 'block';
     if (result.success) {
       const zrc = result.zeroRateClients || [];
+      const stats = TPV_UPLOAD._uploadStats || {};
+      const summaryLine = `<div style="font-size:.72rem;margin-bottom:6px;opacity:.85">` +
+        `📊 ${stats.totalParsed || '?'} clientes en Excel → ${stats.totalInDB || '?'} en BD → ${stats.withRates || '?'} con tasas Efevoo</div>`;
+
       if (zrc.length > 0) {
         resultDiv.style.background = '#fef3cd';
         resultDiv.style.color = '#856404';
-        resultDiv.innerHTML = `⚠️ Configuración actualizada, pero <strong>${zrc.length} clientes tienen TODAS las tasas en 0</strong>:<br>` +
+        resultDiv.innerHTML = summaryLine +
+          `⚠️ Configuración actualizada, pero <strong>${zrc.length} clientes tienen TODAS las tasas en 0</strong>:<br>` +
           `<div style="margin-top:6px;font-size:.72rem;max-height:120px;overflow-y:auto;line-height:1.6">` +
           zrc.map(n => `<span style="background:#fff3cd;padding:1px 6px;border-radius:4px;margin:2px;display:inline-block">${n}</span>`).join('') +
           `</div><div style="margin-top:8px;font-size:.72rem">Revisa tu Excel — estas filas no tienen columnas Efevoo_TC, Salem_TC, etc. con valores.</div>`;
       } else {
         resultDiv.style.background = 'var(--green-bg)';
         resultDiv.style.color = 'var(--green)';
-        resultDiv.innerHTML = '✅ Configuración actualizada correctamente (agentes, clientes y tasas MSI)';
+        resultDiv.innerHTML = summaryLine + '✅ Configuración actualizada correctamente — todos los clientes tienen tasas configuradas';
       }
     } else {
       resultDiv.style.background = 'var(--red-bg)';
