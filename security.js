@@ -1,15 +1,21 @@
 // ══════════════════════════════════════
 // SECURITY MODULE — Grupo Financiero Dashboard
-// Centraliza: headers, CORS, rate limiter, path blocking, helpers DRY
+// Centraliza: headers, CORS, rate limiter, path blocking, auth, error handler
 // ══════════════════════════════════════
 
-// ── Headers de seguridad (aplicar a TODAS las respuestas) ──
+// ── Headers de seguridad (helmet-equivalent, sin dependencias) ──
 const SECURITY_HEADERS = {
   'X-Content-Type-Options': 'nosniff',
   'X-Frame-Options': 'DENY',
-  'X-XSS-Protection': '1; mode=block',
+  'X-XSS-Protection': '0',                                    // Desactivar filtro XSS legacy (recomendación OWASP)
   'Referrer-Policy': 'strict-origin-when-cross-origin',
-  'Permissions-Policy': 'camera=(), microphone=(), geolocation=()'
+  'Permissions-Policy': 'camera=(), microphone=(), geolocation=(), payment=()',
+  'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',  // HSTS 1 año
+  'Cross-Origin-Opener-Policy': 'same-origin',
+  'Cross-Origin-Resource-Policy': 'same-origin',
+  'X-DNS-Prefetch-Control': 'off',
+  'X-Permitted-Cross-Domain-Policies': 'none',
+  'X-Download-Options': 'noopen'
 };
 
 // ── Archivos/rutas bloqueadas (nunca servir via HTTP) ──
@@ -36,20 +42,26 @@ function isBlockedPath(urlPath) {
   return BLOCKED_PATTERNS.some(re => re.test(urlPath));
 }
 
-/** Obtener IP real del cliente (sin confiar en x-forwarded-for spoofeable) */
+/** Obtener IP real del cliente — confía en x-forwarded-for solo detrás de proxy conocido */
 function getClientIP(req) {
+  // En producción (Railway, etc.), el proxy inyecta x-forwarded-for confiable
+  const forwarded = req.headers['x-forwarded-for'];
+  if (forwarded && process.env.TRUST_PROXY === '1') {
+    return forwarded.split(',')[0].trim();
+  }
   return req.socket.remoteAddress || '0.0.0.0';
 }
 
-// ── Rate limiter por IP (sliding window 60s) ──
+// ── Rate limiter por IP (sliding window 60s, con buckets por ruta) ──
 const _rl = {};
 
-function isRateLimited(ip, max = 20) {
+/** Rate limiter genérico. key = IP o IP+ruta para granularidad */
+function isRateLimited(key, max = 20) {
   const now = Date.now(), win = 60000;
-  if (!_rl[ip]) _rl[ip] = [];
-  _rl[ip] = _rl[ip].filter(t => now - t < win);
-  if (_rl[ip].length >= max) return true;
-  _rl[ip].push(now);
+  if (!_rl[key]) _rl[key] = [];
+  _rl[key] = _rl[key].filter(t => now - t < win);
+  if (_rl[key].length >= max) return true;
+  _rl[key].push(now);
   return false;
 }
 
@@ -57,9 +69,9 @@ function isRateLimited(ip, max = 20) {
 function startCleanup() {
   setInterval(() => {
     const now = Date.now();
-    for (const ip of Object.keys(_rl)) {
-      _rl[ip] = _rl[ip].filter(t => now - t < 60000);
-      if (_rl[ip].length === 0) delete _rl[ip];
+    for (const key of Object.keys(_rl)) {
+      _rl[key] = _rl[key].filter(t => now - t < 60000);
+      if (_rl[key].length === 0) delete _rl[key];
     }
   }, 300000);
 }
@@ -70,27 +82,34 @@ function sendError(res, code, message) {
   res.end(JSON.stringify({ error: message }));
 }
 
-/** Validar CORS same-origin dinámico. Retorna true si bloqueó (403 enviado). */
+/** Build whitelist of allowed origins (localhost + producción via env) */
+function _buildOrigins(port) {
+  const origins = [
+    `http://localhost:${port}`,
+    `http://127.0.0.1:${port}`
+  ];
+  // Producción: definir CORS_ORIGIN en .env (ej: https://gf-dashboard.up.railway.app)
+  const prod = process.env.CORS_ORIGIN;
+  if (prod) prod.split(',').forEach(o => origins.push(o.trim()));
+  return origins;
+}
+
+/** Validar CORS con whitelist explícita. Retorna true si bloqueó (403 enviado). */
 function checkCors(req, res, port) {
   const origin = req.headers.origin;
   if (!origin) return false;
 
-  const host = req.headers.host || '';
-  const allowedOrigins = [
-    `http://localhost:${port}`,
-    `http://127.0.0.1:${port}`,
-    `https://${host}`,
-    `http://${host}`
-  ];
-
-  if (!allowedOrigins.includes(origin)) {
+  const allowed = _buildOrigins(port);
+  if (!allowed.includes(origin)) {
     sendError(res, 403, 'Origin not allowed');
     return true;
   }
 
   res.setHeader('Access-Control-Allow-Origin', origin);
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');  // Preflight cache 24h
+  res.setHeader('Vary', 'Origin');
   return false;
 }
 
@@ -125,6 +144,46 @@ function validateSbConfig(url, key) {
   if (!url || !key) throw new Error('Supabase not configured');
 }
 
+/** Auth middleware — valida que la petición API lleve sesión de usuario */
+function requireAuth(req, res) {
+  const auth = req.headers.authorization;
+  if (!auth || !auth.startsWith('Bearer ') || auth.length < 30) {
+    sendError(res, 401, 'No autorizado');
+    return false;
+  }
+  // Decodificar base64 y verificar que contiene sesión con user ID
+  try {
+    const decoded = Buffer.from(auth.slice(7), 'base64').toString('utf8');
+    const session = JSON.parse(decoded);
+    if (!session.id || !session.nombre) {
+      sendError(res, 401, 'Sesión inválida');
+      return false;
+    }
+    return true;
+  } catch {
+    sendError(res, 401, 'Token malformado');
+    return false;
+  }
+}
+
+/** Global error handler — registrar sin exponer detalles al cliente */
+function setupGlobalErrorHandlers() {
+  process.on('uncaughtException', (err) => {
+    console.error('[FATAL] Uncaught exception:', err.message);
+    // No exponer stack trace — solo log interno
+    process.exit(1);
+  });
+  process.on('unhandledRejection', (reason) => {
+    console.error('[WARN] Unhandled rejection:', String(reason).slice(0, 200));
+    // No crashear por promise rejection, solo loguear
+  });
+}
+
+/** Rate limit por ruta — genera key compuesto IP+ruta */
+function rateLimitKey(ip, route) {
+  return ip + ':' + route;
+}
+
 module.exports = {
   SECURITY_HEADERS,
   BLOCKED_PATTERNS,
@@ -137,5 +196,8 @@ module.exports = {
   readBody,
   sendError,
   extractDateParams,
-  validateSbConfig
+  validateSbConfig,
+  requireAuth,
+  setupGlobalErrorHandlers,
+  rateLimitKey
 };
