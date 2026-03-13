@@ -6,7 +6,8 @@ const { URL } = require('url');
 const {
   SECURITY_HEADERS, ALLOWED_DIRS,
   isBlockedPath, getClientIP, isRateLimited, startCleanup,
-  checkCors, readBody, sendError, extractDateParams, validateSbConfig
+  checkCors, readBody, sendError, extractDateParams, validateSbConfig,
+  requireAuth, setupGlobalErrorHandlers, rateLimitKey
 } = require('./security');
 
 // Cargar .env (sin dependencias externas)
@@ -38,8 +39,9 @@ const MIME = {
   '.eot': 'application/vnd.ms-fontobject',
 };
 
-// Iniciar limpieza periódica del rate limiter
+// Iniciar limpieza periódica del rate limiter + error handlers globales
 startCleanup();
+setupGlobalErrorHandlers();
 
 // ══════════════════════════════════════
 // SUPABASE REST — Zero-dependency helpers
@@ -305,7 +307,7 @@ async function executeTool(name, input) {
         return { error: 'Tool no reconocida: ' + name };
     }
   } catch (e) {
-    console.error(`[Tool] Error en ${name}`);
+    console.error('[Tool] Execution error');
     return { error: 'Error ejecutando herramienta' };
   }
 }
@@ -453,9 +455,9 @@ http.createServer(async (req, res) => {
   // Preflight CORS
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // ── API: Config (Supabase) — solo same-origin con rate limit ──
+  // ── API: Config (Supabase) — rate limit estricto (10/min), no expone sin auth ──
   if (req.method === 'GET' && req.url === '/api/config') {
-    if (isRateLimited(ip, 30)) { sendError(res, 429, 'Rate limit exceeded'); return; }
+    if (isRateLimited(rateLimitKey(ip, 'config'), 10)) { sendError(res, 429, 'Rate limit exceeded'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
       supabaseUrl: process.env.SUPABASE_URL || '',
@@ -466,9 +468,11 @@ http.createServer(async (req, res) => {
 
   // ── API: AI Chat with Tool Use ──
   if (req.method === 'POST' && req.url === '/api/chat') {
+    // Auth: requiere token de sesión
+    if (!requireAuth(req, res)) return;
     const API_KEY = process.env.ANTHROPIC_API_KEY;
-    if (!API_KEY) { sendError(res, 500, 'ANTHROPIC_API_KEY no configurada en el servidor'); return; }
-    if (isRateLimited(ip, 20)) { sendError(res, 429, 'Demasiadas solicitudes. Espera un momento.'); return; }
+    if (!API_KEY) { sendError(res, 503, 'Servicio no disponible'); return; }
+    if (isRateLimited(rateLimitKey(ip, 'chat'), 15)) { sendError(res, 429, 'Demasiadas solicitudes. Espera un momento.'); return; }
 
     try {
       const body = await readBody(req);
@@ -481,10 +485,9 @@ http.createServer(async (req, res) => {
       res.end(JSON.stringify(response));
 
     } catch (e) {
-      console.error('[Chat] Error:', e.message);
-      // No exponer detalles internos al cliente
-      const isApiError = e.message.includes('API error');
-      sendError(res, isApiError ? 502 : 400, isApiError ? 'Error del servicio AI' : 'Solicitud inválida');
+      // Log genérico sin exponer detalles al cliente
+      console.error('[Chat] Request failed');
+      sendError(res, 502, 'Error procesando solicitud');
     }
     return;
   }
