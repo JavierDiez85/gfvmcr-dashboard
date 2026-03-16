@@ -22,34 +22,19 @@ const NAV_STRUCTURE = {
             {id:'tes_grupo',label:'Consolidado Grupo',icon:'🌐'},
           ]}]
         },
-        { id:'carga', label:'Carga de Datos', icon:'📋', defaultView:'carga_masiva',
-          groups:[
-            { label:'General', views:[
-              {id:'carga_masiva',label:'Carga Masiva',icon:'📋'},
-              {id:'flujo_ing',label:'Flujo de Ingresos',icon:'📥'},
-              {id:'flujo_gas',label:'Flujo de Gastos',icon:'📤'},
-              {id:'nomina',label:'Nómina Compartida',icon:'👥'},
-              {id:'gastos_comp',label:'Gastos Compartidos',icon:'⚙️'},
-              {id:'carga_creditos',label:'Carga de Créditos',icon:'📄'},
-            ]},
-            { label:'Empresas', views:[
-              {id:'tpv_upload',label:'Datos TPV',icon:'⬆️'},
-              {id:'tpv_comisiones',label:'Config. Comisiones',icon:'⚙️'},
-              {id:'tar_upload',label:'Carga Tarjetas',icon:'💳'},
-              {id:'wb_upload',label:'Wirebit Cripto',icon:'⛓'},
-              {id:'wb_tar_upload',label:'Wirebit Tarjetas',icon:'💳'},
-            ]},
-          ]
+        { id:'carga', label:'Carga de Datos', icon:'📋', defaultView:'nomina',
+          groups:[{ label:null, views:[
+            {id:'nomina',label:'Nómina Compartida',icon:'👥'},
+            {id:'gastos_comp',label:'Gastos Compartidos',icon:'⚙️'},
+          ]}]
         },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
           groups:[{ label:null, views:[
             {id:'expedientes',label:'Clientes',icon:'👤'},
           ]}]
         },
-        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'carga_facturas',
+        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'pagos_pendientes',
           groups:[{ label:null, views:[
-            {id:'carga_facturas',label:'Facturas Emitidas',icon:'📤'},
-            {id:'carga_egresos',label:'Facturas Recibidas',icon:'📥'},
             {id:'pagos_pendientes',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
@@ -89,6 +74,16 @@ const NAV_STRUCTURE = {
             ]},
           ]
         },
+        { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'tpv_upload',
+          groups:[{ label:null, views:[
+            {id:'carga_masiva',label:'Carga Masiva',icon:'📊'},
+            {id:'flujo_ing',label:'Flujo de Ingresos',icon:'💰'},
+            {id:'flujo_gas',label:'Flujo de Gastos',icon:'💸'},
+            {id:'tpv_upload',label:'Datos TPV',icon:'📱'},
+            {id:'tpv_comisiones',label:'Config. Comisiones',icon:'⚙️'},
+            {id:'tar_upload',label:'Tarjetas CENTUM',icon:'💳'},
+          ]}]
+        },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
           groups:[{ label:null, views:[
             {id:'expedientes',label:'Clientes',icon:'👤'},
@@ -97,7 +92,9 @@ const NAV_STRUCTURE = {
         { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'fact_terminales',
           groups:[{ label:null, views:[
             {id:'fact_terminales',label:'Terminales',icon:'🖥️'},
-            {id:'fact_tarjetas',label:'Tarjetas',icon:'💳'},
+            {id:'emit_salem',label:'Emitidas',icon:'📤'},
+            {id:'recv_salem',label:'Recibidas',icon:'📥'},
+            {id:'pp_salem',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
       ]
@@ -120,14 +117,24 @@ const NAV_STRUCTURE = {
             {id:'cred_cobr',label:'Cobranza Endless',icon:'⚠️'},
           ]}]
         },
+        { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva',
+          groups:[{ label:null, views:[
+            {id:'carga_masiva',label:'Carga Masiva',icon:'📊'},
+            {id:'flujo_ing',label:'Flujo de Ingresos',icon:'💰'},
+            {id:'flujo_gas',label:'Flujo de Gastos',icon:'💸'},
+            {id:'carga_creditos',label:'Créditos PDF',icon:'📄'},
+          ]}]
+        },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
           groups:[{ label:null, views:[
             {id:'expedientes',label:'Clientes',icon:'👤'},
           ]}]
         },
-        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'fact_endless',
+        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'emit_endless',
           groups:[{ label:null, views:[
-            {id:'fact_endless',label:'Facturación Endless',icon:'💚'},
+            {id:'emit_endless',label:'Emitidas',icon:'📤'},
+            {id:'recv_endless',label:'Recibidas',icon:'📥'},
+            {id:'pp_endless',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
       ]
@@ -150,14 +157,24 @@ const NAV_STRUCTURE = {
             {id:'dyn_cobr',label:'Cobranza Dynamo',icon:'⚠️'},
           ]}]
         },
+        { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva',
+          groups:[{ label:null, views:[
+            {id:'carga_masiva',label:'Carga Masiva',icon:'📊'},
+            {id:'flujo_ing',label:'Flujo de Ingresos',icon:'💰'},
+            {id:'flujo_gas',label:'Flujo de Gastos',icon:'💸'},
+            {id:'carga_creditos',label:'Créditos PDF',icon:'📄'},
+          ]}]
+        },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
           groups:[{ label:null, views:[
             {id:'expedientes',label:'Clientes',icon:'👤'},
           ]}]
         },
-        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'fact_dynamo',
+        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'emit_dynamo',
           groups:[{ label:null, views:[
-            {id:'fact_dynamo',label:'Facturación Dynamo',icon:'🔶'},
+            {id:'emit_dynamo',label:'Emitidas',icon:'📤'},
+            {id:'recv_dynamo',label:'Recibidas',icon:'📥'},
+            {id:'pp_dynamo',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
       ]
@@ -179,14 +196,25 @@ const NAV_STRUCTURE = {
             {id:'wb_tarjetas',label:'Transacciones Tarjetas',icon:'💳'},
           ]}]
         },
+        { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva',
+          groups:[{ label:null, views:[
+            {id:'carga_masiva',label:'Carga Masiva',icon:'📊'},
+            {id:'flujo_ing',label:'Flujo de Ingresos',icon:'💰'},
+            {id:'flujo_gas',label:'Flujo de Gastos',icon:'💸'},
+            {id:'wb_upload',label:'Transacciones Cripto',icon:'🪙'},
+            {id:'wb_tar_upload',label:'Tarjetas Wirebit',icon:'💳'},
+          ]}]
+        },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
           groups:[{ label:null, views:[
             {id:'expedientes',label:'Clientes',icon:'👤'},
           ]}]
         },
-        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'fact_wirebit',
+        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'emit_wirebit',
           groups:[{ label:null, views:[
-            {id:'fact_wirebit',label:'Facturación Wirebit',icon:'💜'},
+            {id:'emit_wirebit',label:'Emitidas',icon:'📤'},
+            {id:'recv_wirebit',label:'Recibidas',icon:'📥'},
+            {id:'pp_wirebit',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
       ]
@@ -202,14 +230,23 @@ const NAV_STRUCTURE = {
             {id:'stel_nom',label:'Nómina',icon:'👥'},
           ]}]
         },
+        { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva',
+          groups:[{ label:null, views:[
+            {id:'carga_masiva',label:'Carga Masiva',icon:'📊'},
+            {id:'flujo_ing',label:'Flujo de Ingresos',icon:'💰'},
+            {id:'flujo_gas',label:'Flujo de Gastos',icon:'💸'},
+          ]}]
+        },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
           groups:[{ label:null, views:[
             {id:'expedientes',label:'Clientes',icon:'👤'},
           ]}]
         },
-        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'fact_stellaris',
+        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'emit_stellaris',
           groups:[{ label:null, views:[
-            {id:'fact_stellaris',label:'Facturación Stellaris',icon:'🔴'},
+            {id:'emit_stellaris',label:'Emitidas',icon:'📤'},
+            {id:'recv_stellaris',label:'Recibidas',icon:'📥'},
+            {id:'pp_stellaris',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
       ]

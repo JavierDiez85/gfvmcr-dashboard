@@ -313,7 +313,7 @@
       if (el.id === 'theme-toggle-btn') {
         const isDark = document.body.classList.contains('dark');
         el.textContent = isDark ? '' : '';
-        el.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center">' + (isDark ? ICONS['sun'] : ICONS['sun']) + '</span>';
+        el.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center">' + (isDark ? ICONS['sun'] : ICONS['target']) + '</span>';
         return;
       }
 

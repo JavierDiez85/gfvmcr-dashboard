@@ -10,6 +10,7 @@ let _theme = DB.get('gf_theme') || 'light';
 
 function applyTheme(t){
   _theme = t;
+  window._theme = t; // sync with global for onclick handlers
   document.body.classList.toggle('dark', t === 'dark');
   const tb = document.getElementById('theme-toggle-btn');
   if(tb) tb.textContent = t === 'dark' ? '☀️' : '🌙';

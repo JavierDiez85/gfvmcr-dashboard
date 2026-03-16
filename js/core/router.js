@@ -30,6 +30,9 @@ const VT = {
   stel_res:'Stellaris — P&L',stel_ing:'Stellaris — Ingresos',stel_gas:'Stellaris — Costes y Gastos',stel_nom:'Stellaris — Nómina',
   carga_facturas:'Facturación — Carga de Facturas',
   carga_egresos:'Facturación — Facturas Recibidas',pagos_pendientes:'Facturación — Pagos Pendientes',
+  emit_salem:'Facturación — Emitidas Salem',emit_endless:'Facturación — Emitidas Endless',emit_dynamo:'Facturación — Emitidas Dynamo',emit_wirebit:'Facturación — Emitidas Wirebit',emit_stellaris:'Facturación — Emitidas Stellaris',
+  recv_salem:'Facturación — Recibidas Salem',recv_endless:'Facturación — Recibidas Endless',recv_dynamo:'Facturación — Recibidas Dynamo',recv_wirebit:'Facturación — Recibidas Wirebit',recv_stellaris:'Facturación — Recibidas Stellaris',
+  pp_salem:'Facturación — Pagos Pendientes Salem',pp_endless:'Facturación — Pagos Pendientes Endless',pp_dynamo:'Facturación — Pagos Pendientes Dynamo',pp_wirebit:'Facturación — Pagos Pendientes Wirebit',pp_stellaris:'Facturación — Pagos Pendientes Stellaris',
   expedientes:'Expedientes — Clientes'
 };
 
