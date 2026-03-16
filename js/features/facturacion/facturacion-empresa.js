@@ -822,20 +822,780 @@ function feViewPDF(cxpId){
 }
 
 // ══════════════════════════════════════════════════════════
+// EMITIDAS — Vista resumen + upload de facturas emitidas
+// ══════════════════════════════════════════════════════════
+var EMIT_VIEW_MAP = {Salem:'emit_salem',Endless:'emit_endless',Dynamo:'emit_dynamo',Wirebit:'emit_wirebit',Stellaris:'emit_stellaris'};
+var RECV_VIEW_MAP = {Salem:'recv_salem',Endless:'recv_endless',Dynamo:'recv_dynamo',Wirebit:'recv_wirebit',Stellaris:'recv_stellaris'};
+var PP_VIEW_MAP   = {Salem:'pp_salem',Endless:'pp_endless',Dynamo:'pp_dynamo',Wirebit:'pp_wirebit',Stellaris:'pp_stellaris'};
+var CF_EMP_KEY    = {Salem:'salem_terminales',Endless:'endless',Dynamo:'dynamo',Wirebit:'wirebit',Stellaris:'stellaris'};
+var CFDI_KEY      = 'gf_cfdi_facturas';
+
+// State for emitidas
+var _emitEmpresa = null;
+var _emitPeriodo = 'mes';  // mes | trimestre | anual
+var _emitPdfData = null;
+var _emitPdfBase64 = null;
+
+function _cfdiLoad(){
+  try{ return DB.get(CFDI_KEY) || {uploads:[]}; }catch(e){ return {uploads:[]}; }
+}
+function _cfdiSave(d){ DB.set(CFDI_KEY, d); }
+
+function _periodRange(periodo){
+  var now = new Date();
+  var y = now.getFullYear(), m = now.getMonth();
+  var start, end;
+  if(periodo === 'trimestre'){
+    var qStart = m - (m % 3);
+    start = new Date(y, qStart, 1);
+    end = new Date(y, qStart + 3, 0);
+  } else if(periodo === 'anual'){
+    start = new Date(y, 0, 1);
+    end = new Date(y, 11, 31);
+  } else {
+    start = new Date(y, m, 1);
+    end = new Date(y, m + 1, 0);
+  }
+  return {
+    from: start.toISOString().substring(0,10),
+    to: end.toISOString().substring(0,10)
+  };
+}
+
+function _inPeriod(dateStr, range){
+  if(!dateStr) return false;
+  var d = dateStr.substring(0,10);
+  return d >= range.from && d <= range.to;
+}
+
+function rFactEmitidas(empresa){
+  _emitEmpresa = empresa;
+  _emitPeriodo = 'mes';
+  _emitPdfData = null;
+  _emitPdfBase64 = null;
+
+  var viewId = EMIT_VIEW_MAP[empresa];
+  if(!viewId) return;
+  var el = document.getElementById('view-'+viewId);
+  if(!el) return;
+
+  var icon = ENT_ICONS[empresa] || '🧾';
+  var color = ENT_COLORS[empresa] || '#666';
+
+  var html = '';
+  html += '<div style="font-family:\'Poppins\',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">'+icon+' Facturas Emitidas — '+_esc(empresa)+'</div>';
+  html += '<div style="font-size:.72rem;color:var(--muted);margin-bottom:14px">Facturas expedidas por '+_esc(empresa)+' a sus clientes</div>';
+
+  // Period buttons
+  html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
+  html += '<button id="emit-p-mes" class="btn" style="font-size:.68rem;padding:4px 14px" onclick="emitSetPeriodo(\'mes\')">Mes</button>';
+  html += '<button id="emit-p-trimestre" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="emitSetPeriodo(\'trimestre\')">Trimestre</button>';
+  html += '<button id="emit-p-anual" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="emitSetPeriodo(\'anual\')">Año</button>';
+  html += '</div>';
+
+  // KPIs
+  html += '<div id="emit-kpis"></div>';
+
+  // Upload section
+  html += '<div class="tw" style="margin-bottom:14px">';
+  html += '<div class="tw-h"><div class="tw-ht">📤 Subir Factura Emitida</div>';
+  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="emitSetManual()">✏️ Registro Manual</button>';
+  html += '</div>';
+  html += '<div style="padding:16px">';
+
+  // Drop zone
+  html += '<div id="emit-dropzone" ondrop="emitHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'emit-file-input\').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
+  html += '<div style="font-size:1.4rem;margin-bottom:4px">📎</div>';
+  html += '<div style="font-size:.78rem;font-weight:600">Arrastra factura CFDI (PDF)</div>';
+  html += '<div style="font-size:.68rem;color:var(--muted);margin-top:3px">Se extraerán datos automáticamente del XML embebido</div>';
+  html += '<input type="file" id="emit-file-input" accept=".pdf" style="display:none" onchange="emitLoadFile(this.files[0])">';
+  html += '</div>';
+
+  // Status + preview
+  html += '<div id="emit-status" style="display:none;font-size:.78rem;padding:10px 14px;border-radius:var(--r);margin-top:10px"></div>';
+  html += '<div id="emit-form-area" style="display:none;margin-top:12px"></div>';
+
+  html += '</div></div>';
+
+  // History table
+  html += '<div class="tw">';
+  html += '<div class="tw-h"><div class="tw-ht">📋 Historial de Facturas Emitidas — '+_esc(empresa)+'</div>';
+  html += '<input type="text" id="emit-search" placeholder="Buscar..." oninput="emitRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '</div>';
+  html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
+  html += '<th>Fecha</th><th>Folio</th><th>Cliente</th><th>RFC</th><th class="r">Subtotal</th><th class="r">IVA</th><th class="r">Total</th><th>UUID</th><th style="width:60px"></th>';
+  html += '</tr></thead><tbody id="emit-tbody"></tbody></table></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+  emitRenderAll();
+}
+
+function emitSetPeriodo(p){
+  _emitPeriodo = p;
+  ['mes','trimestre','anual'].forEach(function(k){
+    var btn = document.getElementById('emit-p-'+k);
+    if(btn){
+      btn.className = (k === p) ? 'btn' : 'btn btn-out';
+    }
+  });
+  emitRenderAll();
+}
+
+function emitRenderAll(){
+  _emitRenderKPIs();
+  _emitRenderTable();
+}
+
+function _emitGetUploads(){
+  var store = _cfdiLoad();
+  var empKey = CF_EMP_KEY[_emitEmpresa];
+  return (store.uploads || []).filter(function(u){ return u.empresa === empKey; });
+}
+
+function _emitRenderKPIs(){
+  var el = document.getElementById('emit-kpis');
+  if(!el) return;
+  var all = _emitGetUploads();
+  var range = _periodRange(_emitPeriodo);
+  var periodUploads = all.filter(function(u){ return _inPeriod(u.fecha || u.created_at, range); });
+
+  var totalAll = 0, totalPeriod = 0;
+  all.forEach(function(u){ totalAll += Number(u.total || 0); });
+  periodUploads.forEach(function(u){ totalPeriod += Number(u.total || 0); });
+
+  el.innerHTML = UI.kpiRow([
+    UI.kpiCard({label:'FACTURAS TOTALES',value:all.length,sub:'Todas las emitidas',icon:'📄',color:'blue',barPct:all.length?70:0}),
+    UI.kpiCard({label:'DEL PERIODO',value:periodUploads.length,sub:_emitPeriodo==='mes'?'Este mes':_emitPeriodo==='trimestre'?'Este trimestre':'Este año',icon:'📅',color:'green',barPct:periodUploads.length?80:0}),
+    UI.kpiCard({label:'MONTO TOTAL',value:_fmt(totalAll),sub:'Acumulado histórico',icon:'💰',color:'purple',barPct:totalAll?60:0}),
+    UI.kpiCard({label:'MONTO PERIODO',value:_fmt(totalPeriod),sub:_emitPeriodo==='mes'?'Facturado este mes':_emitPeriodo==='trimestre'?'Facturado trimestre':'Facturado año',icon:'📊',color:'orange',barPct:totalPeriod?80:0})
+  ],{style:'margin-bottom:14px'});
+}
+
+function _emitRenderTable(){
+  var tb = document.getElementById('emit-tbody');
+  if(!tb) return;
+  var all = _emitGetUploads();
+  var search = (document.getElementById('emit-search')||{}).value || '';
+  if(search){
+    var s = search.toLowerCase();
+    all = all.filter(function(u){
+      return (u.receptor_nombre||'').toLowerCase().indexOf(s) !== -1 ||
+             (u.folio||'').toLowerCase().indexOf(s) !== -1 ||
+             (u.uuid||'').toLowerCase().indexOf(s) !== -1;
+    });
+  }
+  all.sort(function(a,b){ return (b.fecha||b.created_at||'') < (a.fecha||a.created_at||'') ? -1 : 1; });
+
+  if(!all.length){
+    tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">No hay facturas emitidas para '+_esc(_emitEmpresa)+'</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = all.map(function(u){
+    return '<tr>'
+      + '<td>'+_fmtD(u.fecha)+'</td>'
+      + '<td style="font-weight:600">'+_esc(u.folio||'—')+'</td>'
+      + '<td style="max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(u.receptor_nombre||u.cliente||'—')+'</td>'
+      + '<td style="font-size:.7rem">'+_esc(u.receptor_rfc||'—')+'</td>'
+      + '<td class="r mo">'+_fmt(u.subtotal||0)+'</td>'
+      + '<td class="r mo">'+_fmt(u.iva||0)+'</td>'
+      + '<td class="r mo" style="font-weight:700">'+_fmt(u.total||0)+'</td>'
+      + '<td style="font-size:.62rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">'+_esc(u.uuid||'—')+'</td>'
+      + '<td><button class="btn btn-out" style="font-size:.62rem;padding:3px 6px;color:#b02020" onclick="emitDelete(\''+u.id+'\')">✕</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+// Upload handlers for emitidas
+function emitHandleDrop(e){
+  e.preventDefault();
+  e.currentTarget.style.borderColor = 'var(--border2)';
+  var file = e.dataTransfer.files[0];
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.pdf')){
+    _emitStatus('error','Solo se aceptan archivos PDF');
+    return;
+  }
+  emitLoadFile(file);
+}
+
+function emitLoadFile(file){
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.pdf')){
+    _emitStatus('error','Solo se aceptan archivos PDF');
+    return;
+  }
+  _emitStatus('loading','Analizando factura PDF...');
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    _emitPdfBase64 = ev.target.result;
+    _emitAnalyzePDF(ev.target.result, file.name);
+  };
+  reader.onerror = function(){ _emitStatus('error','Error al leer el archivo'); };
+  reader.readAsDataURL(file);
+}
+
+function _emitStatus(type, msg){
+  var el = document.getElementById('emit-status');
+  if(!el) return;
+  el.style.display = 'block';
+  if(type==='loading'){ el.style.background='var(--blue-bg,#e8f0fe)'; el.style.color='var(--blue,#0073ea)'; el.innerHTML='⏳ '+msg; }
+  else if(type==='ok'){ el.style.background='var(--green-bg,#e6f7ee)'; el.style.color='var(--green,#00b875)'; el.innerHTML='✅ '+msg; }
+  else{ el.style.background='var(--red-bg,#fce8e8)'; el.style.color='var(--red,#e53935)'; el.innerHTML='⚠️ '+msg; }
+}
+
+function _emitAnalyzePDF(base64, filename){
+  try{
+    var raw = atob(base64.split(',')[1]);
+    var text = '';
+    // Attempt to extract displayable text for cfParseCFDI
+    for(var i=0;i<raw.length;i++) text += String.fromCharCode(raw.charCodeAt(i));
+    if(typeof cfParseCFDI === 'function'){
+      var parsed = cfParseCFDI(text);
+      if(parsed){
+        _emitPdfData = parsed;
+        _emitPdfData.filename = filename;
+        _emitShowPreview(parsed);
+        _emitStatus('ok','Datos extraídos correctamente');
+        return;
+      }
+    }
+    // If parse fails, show manual form with filename
+    _emitPdfData = {filename:filename};
+    _emitStatus('ok','PDF cargado — completa los datos manualmente');
+    emitSetManual();
+  }catch(e){
+    _emitStatus('error','No se pudieron extraer datos: '+e.message);
+    emitSetManual();
+  }
+}
+
+function _emitShowPreview(data){
+  var fa = document.getElementById('emit-form-area');
+  if(!fa) return;
+  fa.style.display = 'block';
+  var html = '<div style="border:1px solid var(--border2);border-radius:var(--r);padding:14px">';
+  html += '<div style="font-size:.78rem;font-weight:700;margin-bottom:10px">📋 Datos Extraídos</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:.75rem">';
+  html += '<div><b>Emisor:</b> '+_esc(data.emisor_nombre||'—')+'</div>';
+  html += '<div><b>RFC Emisor:</b> '+_esc(data.emisor_rfc||'—')+'</div>';
+  html += '<div><b>Receptor:</b> '+_esc(data.receptor_nombre||'—')+'</div>';
+  html += '<div><b>RFC Receptor:</b> '+_esc(data.receptor_rfc||'—')+'</div>';
+  html += '<div><b>Folio:</b> '+_esc(data.folio||'—')+'</div>';
+  html += '<div><b>Fecha:</b> '+_esc(data.fecha||'—')+'</div>';
+  html += '<div><b>Subtotal:</b> '+_fmt(data.subtotal||0)+'</div>';
+  html += '<div><b>IVA:</b> '+_fmt(data.iva||0)+'</div>';
+  html += '<div><b>Total:</b> <span style="font-weight:700">'+_fmt(data.total||0)+'</span></div>';
+  html += '<div><b>UUID:</b> <span style="font-size:.65rem;color:var(--muted)">'+_esc(data.uuid||'—')+'</span></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:12px">';
+  html += '<button class="btn" style="font-size:.72rem" onclick="emitSaveFromPreview()">💾 Guardar</button>';
+  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="emitClearForm()">Cancelar</button>';
+  html += '</div></div>';
+  fa.innerHTML = html;
+}
+
+function emitSetManual(){
+  var fa = document.getElementById('emit-form-area');
+  if(!fa) return;
+  fa.style.display = 'block';
+  var html = '<div style="border:1px solid var(--border2);border-radius:var(--r);padding:14px">';
+  html += '<div style="font-size:.78rem;font-weight:700;margin-bottom:10px">✏️ Registro Manual de Factura Emitida</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:.78rem">';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Cliente</label>';
+  html += '<input type="text" id="emit-f-cliente" class="fi" placeholder="Nombre del cliente" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">RFC Cliente</label>';
+  html += '<input type="text" id="emit-f-rfc" class="fi" placeholder="RFC" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Folio</label>';
+  html += '<input type="text" id="emit-f-folio" class="fi" placeholder="Folio factura" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha</label>';
+  html += '<input type="date" id="emit-f-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
+  html += '<input type="number" id="emit-f-subtotal" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA</label>';
+  html += '<input type="number" id="emit-f-iva" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
+  html += '<input type="number" id="emit-f-total" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
+  html += '<input type="text" id="emit-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:12px">';
+  html += '<button class="btn" style="font-size:.72rem" onclick="emitSaveManual()">💾 Guardar</button>';
+  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="emitClearForm()">Cancelar</button>';
+  html += '</div></div>';
+  fa.innerHTML = html;
+}
+
+function emitSaveFromPreview(){
+  if(!_emitPdfData) return;
+  var empKey = CF_EMP_KEY[_emitEmpresa];
+  var store = _cfdiLoad();
+  store.uploads.push({
+    id: 'emit_' + Date.now() + '_' + Math.random().toString(36).substring(2,7),
+    empresa: empKey,
+    fecha: _emitPdfData.fecha || _today(),
+    folio: _emitPdfData.folio || '',
+    receptor_nombre: _emitPdfData.receptor_nombre || '',
+    receptor_rfc: _emitPdfData.receptor_rfc || '',
+    emisor_nombre: _emitPdfData.emisor_nombre || '',
+    emisor_rfc: _emitPdfData.emisor_rfc || '',
+    subtotal: Number(_emitPdfData.subtotal || 0),
+    iva: Number(_emitPdfData.iva || 0),
+    total: Number(_emitPdfData.total || 0),
+    uuid: _emitPdfData.uuid || '',
+    concepto: _emitPdfData.concepto || '',
+    pdf_base64: _emitPdfBase64 || null,
+    pdf_filename: _emitPdfData.filename || '',
+    created_at: _now()
+  });
+  _cfdiSave(store);
+  if(typeof toast === 'function') toast('✅ Factura emitida guardada');
+  emitClearForm();
+  emitRenderAll();
+}
+
+function emitSaveManual(){
+  var cliente = (document.getElementById('emit-f-cliente')||{}).value || '';
+  var total = Number((document.getElementById('emit-f-total')||{}).value || 0);
+  if(!cliente && !total){ if(typeof toast==='function') toast('⚠️ Completa al menos cliente y total'); return; }
+  var empKey = CF_EMP_KEY[_emitEmpresa];
+  var store = _cfdiLoad();
+  store.uploads.push({
+    id: 'emit_' + Date.now() + '_' + Math.random().toString(36).substring(2,7),
+    empresa: empKey,
+    fecha: (document.getElementById('emit-f-fecha')||{}).value || _today(),
+    folio: (document.getElementById('emit-f-folio')||{}).value || '',
+    receptor_nombre: cliente,
+    receptor_rfc: (document.getElementById('emit-f-rfc')||{}).value || '',
+    subtotal: Number((document.getElementById('emit-f-subtotal')||{}).value || 0),
+    iva: Number((document.getElementById('emit-f-iva')||{}).value || 0),
+    total: total,
+    concepto: (document.getElementById('emit-f-concepto')||{}).value || '',
+    created_at: _now()
+  });
+  _cfdiSave(store);
+  if(typeof toast === 'function') toast('✅ Factura emitida guardada');
+  emitClearForm();
+  emitRenderAll();
+}
+
+function emitClearForm(){
+  _emitPdfData = null;
+  _emitPdfBase64 = null;
+  var fa = document.getElementById('emit-form-area');
+  if(fa){ fa.style.display = 'none'; fa.innerHTML = ''; }
+  var st = document.getElementById('emit-status');
+  if(st) st.style.display = 'none';
+  // Reset file input
+  var fi = document.getElementById('emit-file-input');
+  if(fi) fi.value = '';
+}
+
+function emitDelete(id){
+  if(!confirm('¿Eliminar esta factura emitida?')) return;
+  var store = _cfdiLoad();
+  store.uploads = store.uploads.filter(function(u){ return u.id !== id; });
+  _cfdiSave(store);
+  if(typeof toast === 'function') toast('🗑️ Factura eliminada');
+  emitRenderAll();
+}
+
+// ══════════════════════════════════════════════════════════
+// RECIBIDAS — Vista resumen de CxP con KPIs y periodo
+// ══════════════════════════════════════════════════════════
+var _recvEmpresa = null;
+var _recvPeriodo = 'mes';
+
+function rFactRecibidas(empresa){
+  _recvEmpresa = empresa;
+  _recvPeriodo = 'mes';
+
+  var viewId = RECV_VIEW_MAP[empresa];
+  if(!viewId) return;
+  var el = document.getElementById('view-'+viewId);
+  if(!el) return;
+
+  var icon = ENT_ICONS[empresa] || '🧾';
+  var color = ENT_COLORS[empresa] || '#666';
+
+  var html = '';
+  html += '<div style="font-family:\'Poppins\',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">'+icon+' Facturas Recibidas — '+_esc(empresa)+'</div>';
+  html += '<div style="font-size:.72rem;color:var(--muted);margin-bottom:14px">Facturas de proveedores y cuentas por pagar de '+_esc(empresa)+'</div>';
+
+  // Period buttons
+  html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
+  html += '<button id="recv-p-mes" class="btn" style="font-size:.68rem;padding:4px 14px" onclick="recvSetPeriodo(\'mes\')">Mes</button>';
+  html += '<button id="recv-p-trimestre" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="recvSetPeriodo(\'trimestre\')">Trimestre</button>';
+  html += '<button id="recv-p-anual" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="recvSetPeriodo(\'anual\')">Año</button>';
+  html += '</div>';
+
+  // KPIs
+  html += '<div id="recv-kpis"></div>';
+
+  // CTA to register
+  html += '<div style="margin-bottom:14px;display:flex;gap:8px">';
+  html += '<button class="btn" style="font-size:.72rem" onclick="feSetMode(\'manual\');navTo(\''+VIEW_MAP[empresa]+'\')">✏️ Registrar Nueva</button>';
+  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="feSetMode(\'efectivo\');navTo(\''+VIEW_MAP[empresa]+'\')">💵 Pago en Efectivo</button>';
+  html += '</div>';
+
+  // CxP Table
+  html += '<div class="tw">';
+  html += '<div class="tw-h"><div class="tw-ht">📋 Facturas Recibidas — '+_esc(empresa)+'</div>';
+  html += '<div style="display:flex;gap:8px;align-items:center">';
+  html += '<select id="recv-f-status" onchange="recvRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
+  html += '<option value="">Todos</option><option value="pendiente">Pendientes</option><option value="parcial">Parciales</option><option value="pagada">Pagadas</option><option value="cancelada">Canceladas</option></select>';
+  html += '<input type="text" id="recv-search" placeholder="Buscar..." oninput="recvRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '</div></div>';
+  html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
+  html += '<th>Fecha</th><th>Proveedor</th><th>Categoría</th><th>Concepto</th><th class="r">Total</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Vencimiento</th><th>Status</th><th>Origen</th>';
+  html += '</tr></thead><tbody id="recv-tbody"></tbody></table></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+  recvRenderAll();
+}
+
+function recvSetPeriodo(p){
+  _recvPeriodo = p;
+  ['mes','trimestre','anual'].forEach(function(k){
+    var btn = document.getElementById('recv-p-'+k);
+    if(btn) btn.className = (k === p) ? 'btn' : 'btn btn-out';
+  });
+  recvRenderAll();
+}
+
+function recvRenderAll(){
+  _recvRenderKPIs();
+  _recvRenderTable();
+}
+
+function _recvGetCuentas(statusFilter, search){
+  var store = _feLoad();
+  return store.cuentas.filter(function(c){
+    if(c.empresa !== _recvEmpresa) return false;
+    if(statusFilter && c.status !== statusFilter) return false;
+    if(search){
+      var s = search.toLowerCase();
+      if((c.proveedor||'').toLowerCase().indexOf(s)===-1 &&
+         (c.concepto||'').toLowerCase().indexOf(s)===-1) return false;
+    }
+    return true;
+  });
+}
+
+function _recvRenderKPIs(){
+  var el = document.getElementById('recv-kpis');
+  if(!el) return;
+  var all = _recvGetCuentas();
+  var range = _periodRange(_recvPeriodo);
+  var periodCxp = all.filter(function(c){ return _inPeriod(c.fecha_factura || c.created_at, range); });
+
+  var totalRecibidas = all.length;
+  var montoTotal = 0, pendPago = 0, pagadasPeriodo = 0;
+  all.forEach(function(c){ montoTotal += c.total_mxn||0; });
+  all.forEach(function(c){
+    if(c.status==='pendiente'||c.status==='parcial') pendPago += c.saldo_mxn||0;
+  });
+  periodCxp.forEach(function(c){ if(c.status==='pagada') pagadasPeriodo++; });
+
+  el.innerHTML = UI.kpiRow([
+    UI.kpiCard({label:'FACTURAS RECIBIDAS',value:totalRecibidas,sub:'Total histórico',icon:'📥',color:'blue',barPct:totalRecibidas?70:0}),
+    UI.kpiCard({label:'MONTO TOTAL',value:_fmt(montoTotal),sub:'Acumulado',icon:'💰',color:'purple',barPct:montoTotal?60:0}),
+    UI.kpiCard({label:'PENDIENTE DE PAGO',value:_fmt(pendPago),sub:'Saldo vivo',icon:'⚠️',color:'red',barPct:pendPago?80:0}),
+    UI.kpiCard({label:'PAGADAS PERIODO',value:pagadasPeriodo,sub:_recvPeriodo==='mes'?'Este mes':_recvPeriodo==='trimestre'?'Este trimestre':'Este año',icon:'✅',color:'green',barPct:pagadasPeriodo?100:0})
+  ],{style:'margin-bottom:14px'});
+}
+
+function _recvRenderTable(){
+  var tb = document.getElementById('recv-tbody');
+  if(!tb) return;
+  var st = (document.getElementById('recv-f-status')||{}).value || '';
+  var search = (document.getElementById('recv-search')||{}).value || '';
+  var rows = _recvGetCuentas(st, search);
+
+  rows.sort(function(a,b){
+    var oa = (a.status==='pendiente'||a.status==='parcial') ? 0 : 1;
+    var ob = (b.status==='pendiente'||b.status==='parcial') ? 0 : 1;
+    if(oa !== ob) return oa - ob;
+    return (b.fecha_factura||'') < (a.fecha_factura||'') ? -1 : 1;
+  });
+
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">No hay facturas recibidas para '+_esc(_recvEmpresa)+'</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = rows.map(function(c){
+    var vencida = _isVencida(c);
+    var vencStyle = vencida ? 'color:#b02020;font-weight:600' : '';
+    return '<tr>'
+      + '<td>'+_fmtD(c.fecha_factura)+'</td>'
+      + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
+      + '<td style="font-size:.72rem">'+_esc(c.categoria||'—')+'</td>'
+      + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.concepto||'—')+'</td>'
+      + '<td class="r mo">'+_fmt(c.total_mxn)+'</td>'
+      + '<td class="r mo pos">'+_fmt(c.monto_pagado_mxn)+'</td>'
+      + '<td class="r mo" style="font-weight:700;'+(c.saldo_mxn>0?'color:#b02020':'color:#007a48')+'">'+_fmt(c.saldo_mxn)+'</td>'
+      + '<td style="'+vencStyle+'">'+(c.fecha_vencimiento ? _fmtD(c.fecha_vencimiento)+(vencida?' ⚠️':'') : '—')+'</td>'
+      + '<td>'+_statusPill(c.status)+'</td>'
+      + '<td>'+_origenPill(c.origen)+'</td>'
+      + '</tr>';
+  }).join('');
+}
+
+// ══════════════════════════════════════════════════════════
+// PAGOS PENDIENTES POR EMPRESA
+// ══════════════════════════════════════════════════════════
+var _ppEmpresa = null;
+var _ppPeriodo = 'mes';
+
+function rPagosPendientesEmp(empresa){
+  _ppEmpresa = empresa;
+  _ppPeriodo = 'mes';
+
+  var viewId = PP_VIEW_MAP[empresa];
+  if(!viewId) return;
+  var el = document.getElementById('view-'+viewId);
+  if(!el) return;
+
+  var icon = ENT_ICONS[empresa] || '🧾';
+  var color = ENT_COLORS[empresa] || '#666';
+
+  var html = '';
+  html += '<div style="font-family:\'Poppins\',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">'+icon+' Pagos Pendientes — '+_esc(empresa)+'</div>';
+  html += '<div style="font-size:.72rem;color:var(--muted);margin-bottom:14px">Control de cuentas por pagar pendientes de '+_esc(empresa)+'</div>';
+
+  // Period buttons
+  html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
+  html += '<button id="pp-p-mes" class="btn" style="font-size:.68rem;padding:4px 14px" onclick="ppSetPeriodo(\'mes\')">Mes</button>';
+  html += '<button id="pp-p-trimestre" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="ppSetPeriodo(\'trimestre\')">Trimestre</button>';
+  html += '<button id="pp-p-anual" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="ppSetPeriodo(\'anual\')">Año</button>';
+  html += '</div>';
+
+  // KPIs
+  html += '<div id="pp-kpis"></div>';
+
+  // CxP Table
+  html += '<div class="tw" style="margin-bottom:16px">';
+  html += '<div class="tw-h"><div class="tw-ht">💳 Cuentas por Pagar Pendientes — '+_esc(empresa)+'</div>';
+  html += '<input type="text" id="pp-search" placeholder="Buscar..." oninput="ppRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '</div>';
+  html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
+  html += '<th>Fecha</th><th>Proveedor</th><th>Concepto</th><th class="r">Total</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Vencimiento</th><th>Status</th><th style="width:80px"></th>';
+  html += '</tr></thead><tbody id="pp-tbody"></tbody></table></div>';
+  html += '</div>';
+
+  // Vencimientos chart
+  html += UI.chartPanel({id:'c-pp-vencimientos',title:'Vencimientos por Mes',subtitle:'Saldo pendiente por mes de vencimiento',height:200,style:'margin-bottom:16px'});
+
+  // Pagos realizados del periodo
+  html += '<div class="tw">';
+  html += '<div class="tw-h"><div class="tw-ht">💸 Pagos Realizados</div></div>';
+  html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
+  html += '<th>Fecha</th><th>Proveedor</th><th class="r">Monto</th><th>Método</th><th>Referencia</th>';
+  html += '</tr></thead><tbody id="pp-pagos-tbody"></tbody></table></div>';
+  html += '</div>';
+
+  el.innerHTML = html;
+  ppRenderAll();
+}
+
+function ppSetPeriodo(p){
+  _ppPeriodo = p;
+  ['mes','trimestre','anual'].forEach(function(k){
+    var btn = document.getElementById('pp-p-'+k);
+    if(btn) btn.className = (k === p) ? 'btn' : 'btn btn-out';
+  });
+  ppRenderAll();
+}
+
+function ppRenderAll(){
+  _ppRenderKPIs();
+  _ppRenderTable();
+  _ppRenderPagos();
+  _ppRenderChart();
+}
+
+function _ppGetPendientes(search){
+  var store = _feLoad();
+  return store.cuentas.filter(function(c){
+    if(c.empresa !== _ppEmpresa) return false;
+    if(c.status !== 'pendiente' && c.status !== 'parcial') return false;
+    if(search){
+      var s = search.toLowerCase();
+      if((c.proveedor||'').toLowerCase().indexOf(s)===-1 &&
+         (c.concepto||'').toLowerCase().indexOf(s)===-1) return false;
+    }
+    return true;
+  });
+}
+
+function _ppRenderKPIs(){
+  var el = document.getElementById('pp-kpis');
+  if(!el) return;
+  var store = _feLoad();
+  var pendientes = store.cuentas.filter(function(c){
+    return c.empresa === _ppEmpresa && (c.status==='pendiente'||c.status==='parcial');
+  });
+  var range = _periodRange(_ppPeriodo);
+  var hoy = _today();
+
+  var totalPend = 0, vencidas = 0, montoVencido = 0, porVencer = 0;
+  pendientes.forEach(function(c){
+    totalPend += c.saldo_mxn || 0;
+    if(c.fecha_vencimiento && c.fecha_vencimiento < hoy){ vencidas++; montoVencido += c.saldo_mxn||0; }
+    else porVencer++;
+  });
+
+  // Pagos del periodo
+  var myCxpIds = {};
+  store.cuentas.forEach(function(c){ if(c.empresa === _ppEmpresa) myCxpIds[c.id] = true; });
+  var pagosDelPeriodo = store.pagos.filter(function(p){
+    return myCxpIds[p.cxp_id] && _inPeriod(p.fecha, range);
+  });
+  var montoPagado = 0;
+  pagosDelPeriodo.forEach(function(p){ montoPagado += p.monto_mxn||0; });
+
+  el.innerHTML = UI.kpiRow([
+    UI.kpiCard({label:'TOTAL PENDIENTE',value:_fmt(totalPend),sub:pendientes.length+' cuentas',icon:'💰',color:'red',barPct:totalPend?80:0}),
+    UI.kpiCard({label:'VENCIDAS',value:vencidas,sub:_fmt(montoVencido),icon:'⚠️',color:'orange',barPct:vencidas?100:0}),
+    UI.kpiCard({label:'POR VENCER',value:porVencer,sub:'Dentro de plazo',icon:'📅',color:'blue',barPct:porVencer?60:0}),
+    UI.kpiCard({label:'PAGADO PERIODO',value:_fmt(montoPagado),sub:pagosDelPeriodo.length+' pagos',icon:'✅',color:'green',barPct:montoPagado?100:0})
+  ],{style:'margin-bottom:14px'});
+}
+
+function _ppRenderTable(){
+  var tb = document.getElementById('pp-tbody');
+  if(!tb) return;
+  var search = (document.getElementById('pp-search')||{}).value || '';
+  var rows = _ppGetPendientes(search);
+
+  rows.sort(function(a,b){
+    return (a.fecha_vencimiento||'9999') < (b.fecha_vencimiento||'9999') ? -1 : 1;
+  });
+
+  if(!rows.length){
+    tb.innerHTML = '<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:30px;font-size:.78rem">🎉 Sin cuentas pendientes para '+_esc(_ppEmpresa)+'</td></tr>';
+    return;
+  }
+
+  var hoy = _today();
+  tb.innerHTML = rows.map(function(c){
+    var vencida = _isVencida(c);
+    var vencStyle = vencida ? 'color:#b02020;font-weight:600' : '';
+    return '<tr>'
+      + '<td>'+_fmtD(c.fecha_factura)+'</td>'
+      + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
+      + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.concepto||'—')+'</td>'
+      + '<td class="r mo">'+_fmt(c.total_mxn)+'</td>'
+      + '<td class="r mo pos">'+_fmt(c.monto_pagado_mxn)+'</td>'
+      + '<td class="r mo" style="font-weight:700;color:#b02020">'+_fmt(c.saldo_mxn)+'</td>'
+      + '<td style="'+vencStyle+'">'+(c.fecha_vencimiento ? _fmtD(c.fecha_vencimiento)+(vencida?' ⚠️':'') : '—')+'</td>'
+      + '<td>'+_statusPill(c.status)+'</td>'
+      + '<td><button class="btn" style="font-size:.62rem;padding:3px 8px" onclick="feOpenPago(\''+c.id+'\')">💳 Pagar</button></td>'
+      + '</tr>';
+  }).join('');
+}
+
+function _ppRenderPagos(){
+  var tb = document.getElementById('pp-pagos-tbody');
+  if(!tb) return;
+  var store = _feLoad();
+  var myCxpIds = {};
+  store.cuentas.forEach(function(c){ if(c.empresa === _ppEmpresa) myCxpIds[c.id] = c; });
+
+  var pagos = store.pagos.filter(function(p){ return myCxpIds[p.cxp_id]; });
+  pagos.sort(function(a,b){ return (b.fecha||'') < (a.fecha||'') ? -1 : 1; });
+
+  if(!pagos.length){
+    tb.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px;font-size:.78rem">No hay pagos registrados</td></tr>';
+    return;
+  }
+
+  tb.innerHTML = pagos.slice(0,50).map(function(p){
+    var cxp = myCxpIds[p.cxp_id];
+    return '<tr>'
+      + '<td>'+_fmtD(p.fecha)+'</td>'
+      + '<td style="font-weight:600">'+_esc(cxp ? cxp.proveedor : '—')+'</td>'
+      + '<td class="r mo pos">'+_fmt(p.monto_mxn)+'</td>'
+      + '<td>'+_esc(p.metodo||'—')+'</td>'
+      + '<td>'+_esc(p.referencia||'—')+'</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function _ppRenderChart(){
+  var canvas = document.getElementById('c-pp-vencimientos');
+  if(!canvas || typeof Chart === 'undefined') return;
+  var pendientes = _ppGetPendientes();
+
+  var meses = {};
+  pendientes.forEach(function(c){
+    var m = (c.fecha_vencimiento||'').substring(0,7);
+    if(!m) m = 'Sin fecha';
+    meses[m] = (meses[m]||0) + (c.saldo_mxn||0);
+  });
+
+  var labels = Object.keys(meses).sort();
+  var data = labels.map(function(l){ return meses[l]; });
+  var color = ENT_COLORS[_ppEmpresa] || '#6b7280';
+
+  if(canvas._ppChart) canvas._ppChart.destroy();
+  canvas._ppChart = new Chart(canvas,{
+    type:'bar',
+    data:{
+      labels:labels,
+      datasets:[{label:'Saldo pendiente',data:data,backgroundColor:color+'40',borderColor:color,borderWidth:1,borderRadius:4}]
+    },
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        y:{beginAtZero:true,ticks:{callback:function(v){return _fmt(v);},font:{size:10}}},
+        x:{ticks:{font:{size:10}}}
+      }
+    }
+  });
+}
+
+// ══════════════════════════════════════════════════════════
 // REGISTER VIEWS
 // ══════════════════════════════════════════════════════════
 if(typeof registerView === 'function'){
+  // CxP Registration (existing)
   registerView('fact_tarjetas',  function(){ rFactEmpresa('Salem'); });
   registerView('fact_endless',   function(){ rFactEmpresa('Endless'); });
   registerView('fact_dynamo',    function(){ rFactEmpresa('Dynamo'); });
   registerView('fact_wirebit',   function(){ rFactEmpresa('Wirebit'); });
   registerView('fact_stellaris', function(){ rFactEmpresa('Stellaris'); });
+  // Emitidas
+  registerView('emit_salem',     function(){ rFactEmitidas('Salem'); });
+  registerView('emit_endless',   function(){ rFactEmitidas('Endless'); });
+  registerView('emit_dynamo',    function(){ rFactEmitidas('Dynamo'); });
+  registerView('emit_wirebit',   function(){ rFactEmitidas('Wirebit'); });
+  registerView('emit_stellaris', function(){ rFactEmitidas('Stellaris'); });
+  // Recibidas (summary)
+  registerView('recv_salem',     function(){ rFactRecibidas('Salem'); });
+  registerView('recv_endless',   function(){ rFactRecibidas('Endless'); });
+  registerView('recv_dynamo',    function(){ rFactRecibidas('Dynamo'); });
+  registerView('recv_wirebit',   function(){ rFactRecibidas('Wirebit'); });
+  registerView('recv_stellaris', function(){ rFactRecibidas('Stellaris'); });
+  // Pagos Pendientes por empresa
+  registerView('pp_salem',       function(){ rPagosPendientesEmp('Salem'); });
+  registerView('pp_endless',     function(){ rPagosPendientesEmp('Endless'); });
+  registerView('pp_dynamo',      function(){ rPagosPendientesEmp('Dynamo'); });
+  registerView('pp_wirebit',     function(){ rPagosPendientesEmp('Wirebit'); });
+  registerView('pp_stellaris',   function(){ rPagosPendientesEmp('Stellaris'); });
 }
 
 // ══════════════════════════════════════════════════════════
 // EXPOSE GLOBALS
 // ══════════════════════════════════════════════════════════
 window.rFactEmpresa   = rFactEmpresa;
+window.rFactEmitidas  = rFactEmitidas;
+window.rFactRecibidas = rFactRecibidas;
+window.rPagosPendientesEmp = rPagosPendientesEmp;
 window.feSetMode      = feSetMode;
 window.feOnMonedaChange = feOnMonedaChange;
 window.feHandleDrop   = feHandleDrop;
@@ -849,5 +1609,21 @@ window.feOpenPago     = feOpenPago;
 window.feSavePago     = feSavePago;
 window.feDeleteCxp    = feDeleteCxp;
 window.feViewPDF      = feViewPDF;
+// Emitidas globals
+window.emitSetPeriodo = emitSetPeriodo;
+window.emitRenderAll  = emitRenderAll;
+window.emitHandleDrop = emitHandleDrop;
+window.emitLoadFile   = emitLoadFile;
+window.emitSetManual  = emitSetManual;
+window.emitSaveFromPreview = emitSaveFromPreview;
+window.emitSaveManual = emitSaveManual;
+window.emitClearForm  = emitClearForm;
+window.emitDelete     = emitDelete;
+// Recibidas globals
+window.recvSetPeriodo = recvSetPeriodo;
+window.recvRenderAll  = recvRenderAll;
+// Pagos Pendientes globals
+window.ppSetPeriodo   = ppSetPeriodo;
+window.ppRenderAll    = ppRenderAll;
 
 })(window);

@@ -444,6 +444,7 @@ body.dark .hnav-tab.active { color: #fff !important; }
   border-bottom: 1px solid var(--border) !important;
   box-shadow: var(--sh) !important;
   transition: box-shadow .2s ease !important;
+  text-align: center !important;
 }
 .kpi-card:hover {
   box-shadow: var(--shm) !important;
