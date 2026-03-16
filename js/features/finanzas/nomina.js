@@ -95,11 +95,11 @@ function nomRefreshRow(i){
   const row=document.getElementById('nom-row-'+i);
   if(row){
     const tds=row.querySelectorAll('td');
-    tds[9].textContent=fmt(e.s*(e.sal/100));
-    tds[10].textContent=fmt(e.s*(e.end/100));
-    tds[11].textContent=fmt(e.s*(e.dyn/100));
-    tds[12].textContent=fmt(e.s*(e.wb/100));
-    tds[13].textContent=fmt(e.s*((e.stel||0)/100));
+    tds[10].textContent=fmt(e.s*(e.sal/100));
+    tds[11].textContent=fmt(e.s*(e.end/100));
+    tds[12].textContent=fmt(e.s*(e.dyn/100));
+    tds[13].textContent=fmt(e.s*(e.wb/100));
+    tds[14].textContent=fmt(e.s*((e.stel||0)/100));
   }
   nomUpdateFooter();
 }
