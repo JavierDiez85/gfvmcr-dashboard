@@ -232,7 +232,7 @@
       progress(80, 'Sincronizando con P&L...');
 
       DB.set('gf_fi', FI_ROWS.filter(function(r){ return !r.auto && !r.autoTPV; }));
-      DB.set('gf_fg', FG_ROWS.filter(function(r){ return !r.autoTPV; }));
+      DB.set('gf_fg', FG_ROWS.filter(function(r){ return !r.autoTPV && !r.autoFactura; }));
       fiInjectCredits();
       syncFlujoToRecs();
 

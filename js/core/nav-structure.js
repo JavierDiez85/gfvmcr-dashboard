@@ -48,7 +48,9 @@ const NAV_STRUCTURE = {
         },
         { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'carga_facturas',
           groups:[{ label:null, views:[
-            {id:'carga_facturas',label:'Carga de Facturas',icon:'📤'},
+            {id:'carga_facturas',label:'Facturas Emitidas',icon:'📤'},
+            {id:'carga_egresos',label:'Facturas Recibidas',icon:'📥'},
+            {id:'pagos_pendientes',label:'Pagos Pendientes',icon:'💳'},
           ]}]
         },
       ]
