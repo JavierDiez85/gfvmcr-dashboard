@@ -1,0 +1,718 @@
+/* ═══════════════════════════════════════════════════
+   THEME ENTERPRISE — Visual Override
+   Inspirado en: Dynamics 365 · Oracle Redwood · SAP Fiori · Monday
+   ─────────────────────────────────────────────────
+   Este archivo NO modifica styles.css.
+   Solo sobreescribe variables y selectores.
+   Para activar: agregar <link> en index.html despues de styles.css
+   Para desactivar: quitar el <link>
+   ═══════════════════════════════════════════════════ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+/* ════════════════════════════════════════
+   1. CSS VARIABLES — LIGHT MODE
+   ════════════════════════════════════════ */
+:root {
+  /* Sidebar — azul oscuro premium (D365 style) */
+  --sb: #1a1f36;
+  --sb-h: #252b48;
+  --sb-a: #2d3561;
+  --sb-t: #a0a5c0;
+  --sb-m: #5c6190;
+
+  /* Background — gris calido (Oracle Redwood) */
+  --bg: #f0f2f5;
+  --white: #ffffff;
+  --border: #dfe3eb;
+  --border2: #c8cdd8;
+
+  /* Accent — azul serio (Tailwind blue-600) */
+  --blue: #2563eb;
+  --blue-lt: #dbeafe;
+  --blue-bg: #eff6ff;
+
+  /* Success — emerald apagado */
+  --green: #059669;
+  --green-lt: #d1fae5;
+  --green-bg: #ecfdf5;
+
+  /* Purple — violeta profundo */
+  --purple: #7c3aed;
+  --purple-lt: #ede9fe;
+  --purple-bg: #f5f3ff;
+
+  /* Orange — ambar quemado */
+  --orange: #ea580c;
+  --orange-lt: #ffedd5;
+  --orange-bg: #fff7ed;
+
+  /* Red — rojo serio */
+  --red: #dc2626;
+  --red-lt: #fee2e2;
+  --red-bg: #fef2f2;
+
+  /* Yellow — ambar oscuro */
+  --yellow: #d97706;
+  --yellow-lt: #fef3c7;
+  --yellow-bg: #fffbeb;
+
+  /* Text */
+  --text: #1a1c2e;
+  --text2: #5a5f7a;
+  --muted: #8c91ab;
+
+  /* Radius — ligeramente mas grande */
+  --r: 8px;
+  --rlg: 12px;
+
+  /* Shadows — mas suaves (SAP Fiori) */
+  --sh: 0 1px 3px rgba(0,0,0,.04), 0 1px 2px rgba(0,0,0,.03);
+  --shm: 0 4px 12px rgba(0,0,0,.07), 0 2px 4px rgba(0,0,0,.04);
+}
+
+/* ════════════════════════════════════════
+   2. CSS VARIABLES — DARK MODE
+   ════════════════════════════════════════ */
+body.dark {
+  --sb: #0d1117;
+  --sb-h: #161b22;
+  --sb-a: #1c2333;
+  --sb-t: #8b949e;
+  --sb-m: #484f58;
+
+  --bg: #0d1117;
+  --white: #161b22;
+  --border: #21262d;
+  --border2: #30363d;
+
+  --blue-lt: #0d1b3a;
+  --blue-bg: #0a1628;
+  --green-lt: #071f17;
+  --green-bg: #051510;
+  --purple-lt: #1a0f2e;
+  --purple-bg: #120a20;
+  --orange-lt: #2e1408;
+  --orange-bg: #1e0d05;
+  --red-lt: #2e0a0a;
+  --red-bg: #1e0707;
+  --yellow-lt: #2e1e00;
+  --yellow-bg: #1e1400;
+
+  --text: #e6edf3;
+  --text2: #8b949e;
+  --muted: #484f58;
+
+  --sh: 0 1px 3px rgba(0,0,0,.3);
+  --shm: 0 4px 12px rgba(0,0,0,.4);
+}
+
+/* ════════════════════════════════════════
+   3. TYPOGRAPHY — Inter (Enterprise standard)
+   ════════════════════════════════════════ */
+body {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-size: 14px !important;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* ════════════════════════════════════════
+   4. SIDEBAR — Premium dark (D365)
+   ════════════════════════════════════════ */
+#sb-companies {
+  background: var(--sb) !important;
+  border-right: 1px solid rgba(255,255,255,.04) !important;
+}
+
+.sb-co {
+  border-radius: 8px !important;
+  transition: all .15s ease !important;
+  position: relative;
+}
+.sb-co:hover {
+  background: var(--sb-h) !important;
+}
+.sb-co.active {
+  background: transparent !important;
+}
+/* Active indicator: left border accent (SAP Fiori style) */
+.sb-co.active::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 20%;
+  height: 60%;
+  width: 3px;
+  background: var(--blue);
+  border-radius: 0 2px 2px 0;
+}
+.sb-co-icon {
+  font-size: 1.1rem !important;
+}
+.sb-co-label {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .52rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .03em !important;
+  color: var(--sb-t) !important;
+}
+.sb-co.active .sb-co-label {
+  color: #ffffff !important;
+}
+
+/* Group labels */
+.sb-group-label {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .48rem !important;
+  font-weight: 700 !important;
+  color: var(--sb-m) !important;
+  letter-spacing: .1em !important;
+  opacity: .8 !important;
+}
+
+/* Dividers */
+.sb-divider {
+  background: rgba(255,255,255,.05) !important;
+}
+
+/* Brand */
+.sb-brand-label {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .48rem !important;
+  font-weight: 700 !important;
+  letter-spacing: .04em !important;
+  color: var(--sb-m) !important;
+}
+
+/* Toggle button */
+#sb-toggle {
+  border-radius: 6px !important;
+  border: 1px solid var(--border) !important;
+  background: var(--white) !important;
+  color: var(--muted) !important;
+  box-shadow: var(--sh) !important;
+}
+#sb-toggle:hover {
+  background: var(--blue) !important;
+  color: #fff !important;
+  border-color: var(--blue) !important;
+}
+
+/* ════════════════════════════════════════
+   5. TOP BAR — Light (D365/SAP style)
+   ════════════════════════════════════════ */
+#tb {
+  background: var(--white) !important;
+  border-bottom: 1px solid var(--border) !important;
+  box-shadow: none !important;
+  height: 48px !important;
+}
+.tb-bc {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .8rem !important;
+  font-weight: 500 !important;
+  color: var(--muted) !important;
+}
+.tb-bc span {
+  color: var(--muted) !important;
+}
+.tb-bc span:last-child {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+}
+.tb-r .btn-out,
+.tb-r .btn-ghost {
+  color: var(--text2) !important;
+  border-color: var(--border) !important;
+}
+.tb-r .btn-out:hover,
+.tb-r .btn-ghost:hover {
+  color: var(--blue) !important;
+  background: var(--blue-bg) !important;
+  border-color: var(--blue) !important;
+}
+#tb-user {
+  color: var(--text2) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-weight: 500 !important;
+}
+
+/* Dark mode topbar */
+body.dark #tb {
+  background: var(--white) !important;
+  border-bottom-color: var(--border) !important;
+}
+body.dark .tb-bc { color: var(--muted) !important; }
+body.dark .tb-bc span { color: var(--muted) !important; }
+body.dark .tb-bc span:last-child { color: var(--blue) !important; }
+body.dark .tb-r .btn-out,
+body.dark .tb-r .btn-ghost { color: var(--text2) !important; border-color: var(--border) !important; }
+body.dark #tb-user { color: var(--text2) !important; }
+
+/* ════════════════════════════════════════
+   6. HORIZONTAL NAV — Light (Oracle Redwood)
+   ════════════════════════════════════════ */
+#hnav {
+  background: var(--white) !important;
+  border-bottom: 1px solid var(--border) !important;
+  padding: 0 28px !important;
+}
+#hnav-sections {
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.hnav-tab {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .8rem !important;
+  font-weight: 500 !important;
+  color: var(--text2) !important;
+  border-bottom-width: 2px !important;
+  transition: color .15s !important;
+}
+.hnav-tab:hover {
+  color: var(--blue) !important;
+}
+.hnav-tab.active {
+  color: var(--blue) !important;
+  font-weight: 600 !important;
+  border-bottom-color: var(--blue) !important;
+}
+
+/* View pills — clean, subtle */
+.hnav-view {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .72rem !important;
+  font-weight: 500 !important;
+  color: var(--text2) !important;
+  background: transparent !important;
+  border: 1px solid var(--border) !important;
+  border-radius: 6px !important;
+  padding: 4px 12px !important;
+  transition: all .15s !important;
+}
+.hnav-view:hover {
+  color: var(--blue) !important;
+  border-color: var(--blue) !important;
+  background: var(--blue-bg) !important;
+}
+.hnav-view.active {
+  color: #fff !important;
+  background: var(--blue) !important;
+  border-color: var(--blue) !important;
+}
+
+/* Group labels in nav */
+.hnav-group-label {
+  font-family: 'Inter', sans-serif !important;
+  color: var(--muted) !important;
+  border-right-color: var(--border) !important;
+}
+
+/* Dark mode hnav */
+body.dark #hnav {
+  background: var(--white) !important;
+  border-bottom-color: var(--border) !important;
+}
+body.dark #hnav-sections { border-bottom-color: var(--border) !important; }
+body.dark .hnav-tab { color: var(--text2) !important; }
+body.dark .hnav-tab:hover { color: var(--blue) !important; }
+body.dark .hnav-tab.active { color: var(--blue) !important; }
+body.dark .hnav-view { color: var(--text2) !important; background: transparent !important; border-color: var(--border) !important; }
+body.dark .hnav-view:hover { color: var(--blue) !important; border-color: var(--blue) !important; }
+body.dark .hnav-view.active { color: #fff !important; background: var(--blue) !important; }
+
+/* ════════════════════════════════════════
+   7. CONTENT AREA
+   ════════════════════════════════════════ */
+#ct {
+  padding: 24px 28px !important;
+}
+
+/* ════════════════════════════════════════
+   8. KPI CARDS — Clean, professional (SAP Fiori)
+   ════════════════════════════════════════ */
+.kpi-row {
+  gap: 14px !important;
+  margin-bottom: 20px !important;
+}
+.kpi-card {
+  border-top: none !important;
+  border-left: 3px solid var(--ac, var(--border)) !important;
+  border-radius: var(--r) !important;
+  padding: 16px 18px !important;
+  box-shadow: var(--sh) !important;
+  transition: box-shadow .2s ease !important;
+}
+.kpi-card:hover {
+  box-shadow: var(--shm) !important;
+  transform: none !important;
+}
+.kpi-lbl {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .65rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .06em !important;
+  color: var(--muted) !important;
+}
+.kpi-val {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1.65rem !important;
+  font-weight: 700 !important;
+  letter-spacing: -.02em !important;
+  color: var(--text) !important;
+}
+.kpi-ico {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: 8px !important;
+  font-size: .9rem !important;
+}
+.kpi-d {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .68rem !important;
+  font-weight: 600 !important;
+  border-radius: 6px !important;
+  padding: 2px 8px !important;
+}
+.kbar {
+  height: 3px !important;
+  border-radius: 2px !important;
+  margin-top: 10px !important;
+}
+
+/* ════════════════════════════════════════
+   9. CHART CARDS — Minimal (Oracle Redwood)
+   ════════════════════════════════════════ */
+.cc {
+  border-radius: var(--rlg) !important;
+  box-shadow: var(--sh) !important;
+}
+.cc-h {
+  padding: 14px 18px 10px !important;
+  border-bottom: none !important;
+}
+.cc-t {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .88rem !important;
+  font-weight: 600 !important;
+  color: var(--text) !important;
+}
+.cc-s {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .7rem !important;
+  color: var(--muted) !important;
+}
+.cc-b {
+  padding: 14px 18px !important;
+}
+.g2, .g31 {
+  gap: 16px !important;
+}
+
+/* ════════════════════════════════════════
+   10. TABLES — Clean professional (D365)
+   ════════════════════════════════════════ */
+.tw {
+  border-radius: var(--rlg) !important;
+  box-shadow: var(--sh) !important;
+  margin-bottom: 20px !important;
+}
+.tw-h {
+  padding: 10px 16px !important;
+  background: var(--white) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.tw-ht {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .85rem !important;
+  font-weight: 600 !important;
+}
+
+.bt {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .8rem !important;
+}
+.bt thead tr {
+  background: var(--white) !important;
+}
+.bt th {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .65rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .06em !important;
+  color: var(--muted) !important;
+  padding: 10px 14px !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+.bt td {
+  padding: 9px 14px !important;
+  color: var(--text2) !important;
+  font-size: .8rem !important;
+}
+.bt tr:hover td {
+  background: var(--bg) !important;
+}
+.bt .pos { color: #059669 !important; }
+.bt .neg { color: #dc2626 !important; }
+.bt .bld { color: var(--text) !important; }
+.bt .grp td {
+  background: var(--bg) !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .62rem !important;
+  letter-spacing: .08em !important;
+}
+
+/* Mini board table */
+.mbt {
+  font-family: 'Inter', sans-serif !important;
+}
+.mbt th {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .62rem !important;
+  font-weight: 600 !important;
+  color: var(--muted) !important;
+  background: var(--white) !important;
+}
+.mbt tr:hover td { background: var(--bg) !important; }
+.mbt .pos { color: #059669 !important; }
+.mbt .neg { color: #dc2626 !important; }
+
+.pill {
+  border-radius: 6px !important;
+  font-family: 'Inter', sans-serif !important;
+  font-size: .62rem !important;
+}
+
+/* ════════════════════════════════════════
+   11. BUTTONS — Simple, professional
+   ════════════════════════════════════════ */
+.btn {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 7px !important;
+  height: 34px !important;
+  font-size: .8rem !important;
+  font-weight: 600 !important;
+  transition: all .15s ease !important;
+}
+.btn-blue {
+  background: var(--blue) !important;
+  box-shadow: none !important;
+}
+.btn-blue:hover {
+  background: #1d4ed8 !important;
+}
+.btn-out {
+  border-radius: 7px !important;
+  border-width: 1px !important;
+}
+
+/* Period bar */
+.pbar {
+  border-radius: 8px !important;
+  padding: 3px !important;
+  border-width: 1px !important;
+}
+.pbtn {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 6px !important;
+  font-size: .72rem !important;
+  font-weight: 500 !important;
+  padding: 5px 14px !important;
+}
+.pbtn.active {
+  font-weight: 600 !important;
+}
+
+/* ════════════════════════════════════════
+   12. FORMS — Clean inputs
+   ════════════════════════════════════════ */
+.fi, .fs {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 7px !important;
+  padding: 7px 10px !important;
+  font-size: .82rem !important;
+  border-width: 1px !important;
+}
+.fi:focus, .fs:focus {
+  border-color: var(--blue) !important;
+  box-shadow: 0 0 0 2px rgba(37,99,235,.12) !important;
+}
+.fl {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .62rem !important;
+  font-weight: 600 !important;
+  letter-spacing: .06em !important;
+}
+
+/* Entry form cards */
+.ef {
+  border-radius: var(--rlg) !important;
+}
+.ef-h {
+  font-family: 'Inter', sans-serif !important;
+  padding: 12px 16px !important;
+  font-size: .84rem !important;
+  font-weight: 600 !important;
+}
+.ef-b {
+  padding: 16px !important;
+}
+
+/* ════════════════════════════════════════
+   13. ENTITY CARDS — Left accent (SAP Fiori)
+   ════════════════════════════════════════ */
+.ent-grid {
+  gap: 14px !important;
+  margin-bottom: 20px !important;
+}
+.ent-card {
+  border-top: none !important;
+  border-left: 3px solid var(--ec, var(--border)) !important;
+  border-radius: var(--r) !important;
+  padding: 13px 16px !important;
+  transition: box-shadow .2s ease !important;
+}
+.ent-card:hover {
+  box-shadow: var(--shm) !important;
+  transform: none !important;
+}
+
+.ent-card-compact {
+  border-radius: var(--r) !important;
+  transition: box-shadow .2s ease !important;
+}
+.ent-card-compact:hover {
+  box-shadow: var(--shm) !important;
+  transform: none !important;
+}
+
+.ent-detail-btn {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 5px !important;
+}
+
+/* ════════════════════════════════════════
+   14. NOMINA CARDS — Clean
+   ════════════════════════════════════════ */
+.nom-grid {
+  gap: 14px !important;
+  margin-bottom: 20px !important;
+}
+.nom-card {
+  border-radius: var(--r) !important;
+  padding: 14px 16px !important;
+}
+.nom-name {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .84rem !important;
+  font-weight: 600 !important;
+}
+.nom-role {
+  font-family: 'Inter', sans-serif !important;
+}
+.nom-sueldo {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+}
+
+/* ════════════════════════════════════════
+   15. MODAL KPIs
+   ════════════════════════════════════════ */
+.m-kpi {
+  border-radius: var(--r) !important;
+  border-left-width: 3px !important;
+}
+.m-kpi-lbl {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .6rem !important;
+  font-weight: 600 !important;
+}
+.m-kpi-val {
+  font-family: 'Inter', sans-serif !important;
+  font-size: 1.05rem !important;
+  font-weight: 700 !important;
+}
+
+/* ════════════════════════════════════════
+   16. TOAST
+   ════════════════════════════════════════ */
+#toast {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 8px !important;
+  font-size: .82rem !important;
+  font-weight: 500 !important;
+}
+
+/* ════════════════════════════════════════
+   17. TABS — Clean underline (D365)
+   ════════════════════════════════════════ */
+.vtabs {
+  margin-bottom: 20px !important;
+  border-bottom-width: 1px !important;
+}
+.vtab {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .82rem !important;
+  font-weight: 500 !important;
+  padding: 8px 16px !important;
+}
+.vtab.active {
+  font-weight: 600 !important;
+}
+
+/* ════════════════════════════════════════
+   18. SCROLLBAR — Minimal
+   ════════════════════════════════════════ */
+::-webkit-scrollbar { width: 5px !important; height: 5px !important; }
+::-webkit-scrollbar-track { background: transparent !important; }
+::-webkit-scrollbar-thumb { background: var(--border2) !important; border-radius: 3px !important; }
+::-webkit-scrollbar-thumb:hover { background: var(--muted) !important; }
+
+/* Sidebar scrollbar (subtle on dark) */
+#sb-companies::-webkit-scrollbar-thumb { background: rgba(255,255,255,.1) !important; }
+
+/* ════════════════════════════════════════
+   19. MISC — Expedientes, status pills, etc
+   ════════════════════════════════════════ */
+.exp-list-item {
+  border-radius: 6px !important;
+}
+.exp-chip {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 6px !important;
+}
+.exp-doc-title, .exp-doc-title-edit {
+  font-family: 'Inter', sans-serif !important;
+}
+
+.status-pill {
+  font-family: 'Inter', sans-serif !important;
+  border-radius: 6px !important;
+}
+
+.sem-item {
+  border-radius: var(--r) !important;
+}
+
+/* Credit cards */
+.kpi-clickable:hover {
+  transform: none !important;
+}
+.cc-expand {
+  font-family: 'Inter', sans-serif !important;
+}
+
+/* ════════════════════════════════════════
+   20. RESPONSIVE
+   ════════════════════════════════════════ */
+@media (max-width: 1100px) {
+  #ct { padding: 18px 16px !important; }
+  #tb { padding-left: 38px !important; }
+  .kpi-card { padding: 14px 16px !important; }
+}
+@media (max-width: 768px) {
+  #hnav { padding: 0 12px !important; }
+  .hnav-tab { font-size: .72rem !important; }
+}
