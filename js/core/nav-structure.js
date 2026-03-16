@@ -191,6 +191,29 @@ const NAV_STRUCTURE = {
         },
       ]
     },
+    {
+      id:'stellaris', label:'Stellaris', icon:'🔴', color:'#e53935',
+      sections:[
+        { id:'finanzas', label:'Finanzas', icon:'💹', defaultView:'stel_res',
+          groups:[{ label:null, views:[
+            {id:'stel_res',label:'Resumen P&L',icon:'📊'},
+            {id:'stel_ing',label:'Ingresos',icon:'💰'},
+            {id:'stel_gas',label:'Costes y Gastos',icon:'💸'},
+            {id:'stel_nom',label:'Nómina',icon:'👥'},
+          ]}]
+        },
+        { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',
+          groups:[{ label:null, views:[
+            {id:'expedientes',label:'Clientes',icon:'👤'},
+          ]}]
+        },
+        { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'fact_stellaris',
+          groups:[{ label:null, views:[
+            {id:'fact_stellaris',label:'Facturación Stellaris',icon:'🔴'},
+          ]}]
+        },
+      ]
+    },
   ],
   crossCutting: [
     {
@@ -209,7 +232,7 @@ const NAV_STRUCTURE = {
 // ═══════════════════════════════════════
 // NAV STATE
 // ═══════════════════════════════════════
-let _activeCompany  = null;   // 'grupo','salem','endless','dynamo','wirebit'
+let _activeCompany  = null;   // 'grupo','salem','endless','dynamo','wirebit','stellaris'
 let _activeSection  = null;   // 'finanzas','operacion','carga','expedientes','facturacion','tesoreria'
 let _activeCross    = null;   // 'config'
 

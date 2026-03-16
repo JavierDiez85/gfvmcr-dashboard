@@ -253,11 +253,11 @@
       },options:{...smOpts(false),scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}},stacked:true},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
       // Nomina por empresa donut
       dc('c-grupo-nom');
-      const _nomE={Salem:0,Endless:0,Dynamo:0,Wirebit:0};
-      try{NOM_EDIT.forEach(n=>{_nomE.Salem+=n.s*(n.sal||0)/100;_nomE.Endless+=n.s*(n.end||0)/100;_nomE.Dynamo+=n.s*(n.dyn||0)/100;_nomE.Wirebit+=n.s*(n.wb||0)/100;})}catch(e){}
+      const _nomE={Salem:0,Endless:0,Dynamo:0,Wirebit:0,Stellaris:0};
+      try{NOM_EDIT.forEach(n=>{_nomE.Salem+=n.s*(n.sal||0)/100;_nomE.Endless+=n.s*(n.end||0)/100;_nomE.Dynamo+=n.s*(n.dyn||0)/100;_nomE.Wirebit+=n.s*(n.wb||0)/100;_nomE.Stellaris+=n.s*((n.stel||0))/100;})}catch(e){}
       CH['c-grupo-nom']=new Chart(document.getElementById('c-grupo-nom'),{type:'doughnut',data:{
-        labels:['Salem '+fmtK(_nomE.Salem),'Endless '+fmtK(_nomE.Endless),'Dynamo '+fmtK(_nomE.Dynamo),'Wirebit '+fmtK(_nomE.Wirebit)],
-        datasets:[{data:[_nomE.Salem,_nomE.Endless,_nomE.Dynamo,_nomE.Wirebit],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)'],borderWidth:0}]
+        labels:['Salem '+fmtK(_nomE.Salem),'Endless '+fmtK(_nomE.Endless),'Dynamo '+fmtK(_nomE.Dynamo),'Wirebit '+fmtK(_nomE.Wirebit),'Stellaris '+fmtK(_nomE.Stellaris)],
+        datasets:[{data:[_nomE.Salem,_nomE.Endless,_nomE.Dynamo,_nomE.Wirebit,_nomE.Stellaris],backgroundColor:['rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)','rgba(229,57,53,.7)'],borderWidth:0}]
       },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
     }
   }

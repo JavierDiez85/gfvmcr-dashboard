@@ -52,41 +52,41 @@
   const WB_NOM_TOTAL = [0,0,0,0,0,0,0,0,0,0,0,0];
 
   const NOM = [
-    {n:'\u00c1ngel Ahedo',     r:'Dir. Comercial',    s:120000, tipo:'Administrativo', dist:{Salem:.9, Endless:.05,Dynamo:.05,Wirebit:0}},
-    {n:'Javier Diez',     r:'DOF / CFO',         s:120000, tipo:'Administrativo', dist:{Salem:.4, Endless:.1, Dynamo:.1, Wirebit:.4}},
-    {n:'Joaquin Vallejo', r:'CEO Wirebit',       s:120000, tipo:'Administrativo', dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1}},
-    {n:'Ezequiel',        r:'Tech Wirebit',      s:44000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1}},
-    {n:'Anna',            r:'Marketing',         s:40000,  tipo:'Administrativo', dist:{Salem:.4, Endless:.1, Dynamo:.1, Wirebit:.4}},
-    {n:'Ricardo',         r:'Tech Wirebit',      s:38000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1}},
-    {n:'David',           r:'Ops Wirebit',       s:30000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1}},
-    {n:'Ismael',          r:'Tech Wirebit',      s:22000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1}},
-    {n:'Emiliano Mendoza',r:'Serv. al cliente',  s:10000,  tipo:'Operativo',      dist:{Salem:.6, Endless:.1, Dynamo:.1, Wirebit:.2}},
-    {n:'Sergio',          r:'Administraci\u00f3n',    s:8000,   tipo:'Administrativo', dist:{Salem:1,  Endless:0,  Dynamo:0,  Wirebit:0}},
+    {n:'\u00c1ngel Ahedo',     r:'Dir. Comercial',    s:120000, tipo:'Administrativo', dist:{Salem:.9, Endless:.05,Dynamo:.05,Wirebit:0, Stellaris:0}},
+    {n:'Javier Diez',     r:'DOF / CFO',         s:120000, tipo:'Administrativo', dist:{Salem:.4, Endless:.1, Dynamo:.1, Wirebit:.4, Stellaris:0}},
+    {n:'Joaquin Vallejo', r:'CEO Wirebit',       s:120000, tipo:'Administrativo', dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1, Stellaris:0}},
+    {n:'Ezequiel',        r:'Tech Wirebit',      s:44000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1, Stellaris:0}},
+    {n:'Anna',            r:'Marketing',         s:40000,  tipo:'Administrativo', dist:{Salem:.4, Endless:.1, Dynamo:.1, Wirebit:.4, Stellaris:0}},
+    {n:'Ricardo',         r:'Tech Wirebit',      s:38000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1, Stellaris:0}},
+    {n:'David',           r:'Ops Wirebit',       s:30000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1, Stellaris:0}},
+    {n:'Ismael',          r:'Tech Wirebit',      s:22000,  tipo:'Operativo',      dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1, Stellaris:0}},
+    {n:'Emiliano Mendoza',r:'Serv. al cliente',  s:10000,  tipo:'Operativo',      dist:{Salem:.6, Endless:.1, Dynamo:.1, Wirebit:.2, Stellaris:0}},
+    {n:'Sergio',          r:'Administraci\u00f3n',    s:8000,   tipo:'Administrativo', dist:{Salem:1,  Endless:0,  Dynamo:0,  Wirebit:0, Stellaris:0}},
   ];
-  const NOM_DIST = {Salem:186000, Endless:23000, Dynamo:23000, Wirebit:320000};
+  const NOM_DIST = {Salem:186000, Endless:23000, Dynamo:23000, Wirebit:320000, Stellaris:0};
 
   const GCOMP = [
     // Porcentajes de distribuci\u00f3n (data real pendiente de captura)
-    {c:'Renta impresora',    cat:'Administrativo', sal:.2,end:.2,dyn:.2,wb:.4, vals:[]},
-    {c:'Renta oficina',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-    {c:'Mantenimiento',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-    {c:'Alestra',            cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-    {c:'Luz',                cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-    {c:'Insumos Oficina',    cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-    {c:'Efevoo Tarjetas',    cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'Efevoo TPV',         cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'Material MKT',       cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'Evento NL',          cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'Viajes',             cat:'Representaci\u00f3n', sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'Software',           cat:'Operaciones',    sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
-    {c:'Hardware',           cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'STP',                cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'Comisiones SitesPay',cat:'Com. Bancarias', sal:1, end:0, dyn:0, wb:0,  vals:[]},
-    {c:'CNBV Endless',       cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  vals:[]},
-    {c:'CNBV Dynamo',        cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  vals:[]},
-    {c:'Icarus Endless',     cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  vals:[]},
-    {c:'Icarus Dynamo',      cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  vals:[]},
-    {c:'Otros/Varios',       cat:'Varios',         sal:.4,end:.1,dyn:.1,wb:.4, vals:[]},
+    {c:'Renta impresora',    cat:'Administrativo', sal:.2,end:.2,dyn:.2,wb:.4, stel:0, vals:[]},
+    {c:'Renta oficina',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
+    {c:'Mantenimiento',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
+    {c:'Alestra',            cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
+    {c:'Luz',                cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
+    {c:'Insumos Oficina',    cat:'Administrativo', sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
+    {c:'Efevoo Tarjetas',    cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Efevoo TPV',         cat:'Costo Directo',  sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Material MKT',       cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Evento NL',          cat:'Marketing',      sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Viajes',             cat:'Representaci\u00f3n', sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Software',           cat:'Operaciones',    sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
+    {c:'Hardware',           cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'STP',                cat:'Operaciones',    sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Comisiones SitesPay',cat:'Com. Bancarias', sal:1, end:0, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'CNBV Endless',       cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'CNBV Dynamo',        cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  stel:0, vals:[]},
+    {c:'Icarus Endless',     cat:'Regulatorio',    sal:0, end:1, dyn:0, wb:0,  stel:0, vals:[]},
+    {c:'Icarus Dynamo',      cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  stel:0, vals:[]},
+    {c:'Otros/Varios',       cat:'Varios',         sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
   ];
 
   const SAL_TPV_CLIENTES = [];
@@ -129,12 +129,14 @@
     'Endless': ['Cr\u00e9dito Simple','Otros Ingresos'],
     'Dynamo':  ['Cr\u00e9dito Simple','Cr\u00e9dito Automotriz','Otros Ingresos'],
     'Wirebit': ['Exchange','OTC','Retiro Blockchain','Retiro FIAT','Tarjeta Wirebit','Otros Ingresos'],
+    'Stellaris': ['Otros Ingresos'],
   };
   const ENT_CATS_GAS = {
     'Salem':   ['N\u00f3mina','Costo Directo','Renta','Marketing','Operaciones','Regulatorio','Administrativo','Representaci\u00f3n','Com. Bancarias','Varios'],
     'Endless': ['N\u00f3mina','Costo Directo','Renta','Marketing','Operaciones','Regulatorio','Administrativo','Representaci\u00f3n','Com. Bancarias','Varios'],
     'Dynamo':  ['N\u00f3mina','Costo Directo','Renta','Marketing','Operaciones','Regulatorio','Administrativo','Representaci\u00f3n','Com. Bancarias','Varios'],
     'Wirebit': ['N\u00f3mina','Costo Directo','Renta','Marketing','Operaciones','Regulatorio','Administrativo','Representaci\u00f3n','Com. Bancarias','Varios'],
+    'Stellaris': ['N\u00f3mina','Costo Directo','Renta','Marketing','Operaciones','Regulatorio','Administrativo','Representaci\u00f3n','Com. Bancarias','Varios'],
   };
   function catsIng(ent){ return ENT_CATS_ING[ent] || CATS_ING; }
   function catsGas(ent){ return ENT_CATS_GAS[ent] || CATS_GAS; }

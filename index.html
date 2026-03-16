@@ -62,6 +62,10 @@
     <div class="sb-co" id="co-grupo" onclick="selectCompany('grupo')" title="Grupo Financiero">
       <div class="sb-co-icon">🏢</div><div class="sb-co-label">Grupo</div>
     </div>
+
+    <div class="sb-divider"></div>
+    <div class="sb-group-label">CENTUM</div>
+
     <div class="sb-co" id="co-salem" onclick="selectCompany('salem')" title="Salem Internacional">
       <div class="sb-co-icon">💙</div><div class="sb-co-label">Salem</div>
     </div>
@@ -71,8 +75,17 @@
     <div class="sb-co" id="co-dynamo" onclick="selectCompany('dynamo')" title="Dynamo Finance">
       <div class="sb-co-icon">🔶</div><div class="sb-co-label">Dynamo</div>
     </div>
+
+    <div class="sb-divider"></div>
+
     <div class="sb-co" id="co-wirebit" onclick="selectCompany('wirebit')" title="Wirebit">
       <div class="sb-co-icon">💜</div><div class="sb-co-label">Wirebit</div>
+    </div>
+
+    <div class="sb-divider"></div>
+
+    <div class="sb-co" id="co-stellaris" onclick="selectCompany('stellaris')" title="Stellaris">
+      <div class="sb-co-icon">🔴</div><div class="sb-co-label">Stellaris</div>
     </div>
 
     <!-- Config pinned bottom -->
@@ -809,6 +822,11 @@
       <div class="kpi-val" id="nom-kpi-wb">—</div>
       <div class="kpi-d dnu">por mes</div>
     </div>
+    <div class="kpi-card" style="--ac:#e53935">
+      <div class="kpi-top"><div class="kpi-lbl">Stellaris</div><div class="kpi-ico" style="background:#fce4ec;color:#e53935">🔴</div></div>
+      <div class="kpi-val" id="nom-kpi-stel">—</div>
+      <div class="kpi-d dnu">por mes</div>
+    </div>
   </div>
 
   <!-- Tabla editable -->
@@ -821,6 +839,7 @@
           <span style="width:9px;height:9px;border-radius:50%;background:#00b875;display:inline-block;margin-left:6px"></span>END
           <span style="width:9px;height:9px;border-radius:50%;background:#ff7043;display:inline-block;margin-left:6px"></span>DYN
           <span style="width:9px;height:9px;border-radius:50%;background:#9b51e0;display:inline-block;margin-left:6px"></span>WB
+          <span style="width:9px;height:9px;border-radius:50%;background:#e53935;display:inline-block;margin-left:6px"></span>STEL
           <span style="margin-left:8px;color:var(--blue)">· La suma de % debe ser 100%</span>
         </div>
       </div>
@@ -830,31 +849,36 @@
         <thead><tr>
           <th style="width:140px">Nombre</th>
           <th style="width:130px">Rol</th>
+          <th style="width:90px">Tipo</th>
           <th class="r" style="width:110px">Sueldo/Mes</th>
-          <th class="r" style="width:70px;color:#0073ea">SAL %</th>
-          <th class="r" style="width:70px;color:#00b875">END %</th>
-          <th class="r" style="width:70px;color:#ff7043">DYN %</th>
-          <th class="r" style="width:70px;color:#9b51e0">WB %</th>
-          <th class="r" style="width:60px">Total %</th>
-          <th class="r" style="width:90px">Salem/mes</th>
-          <th class="r" style="width:90px">Endless/mes</th>
-          <th class="r" style="width:90px">Dynamo/mes</th>
-          <th class="r" style="width:90px">Wirebit/mes</th>
+          <th class="r" style="width:60px;color:#0073ea">SAL %</th>
+          <th class="r" style="width:60px;color:#00b875">END %</th>
+          <th class="r" style="width:60px;color:#ff7043">DYN %</th>
+          <th class="r" style="width:60px;color:#9b51e0">WB %</th>
+          <th class="r" style="width:60px;color:#e53935">STEL %</th>
+          <th class="r" style="width:50px">Total %</th>
+          <th class="r" style="width:80px">Salem/mes</th>
+          <th class="r" style="width:80px">Endless/mes</th>
+          <th class="r" style="width:80px">Dynamo/mes</th>
+          <th class="r" style="width:80px">Wirebit/mes</th>
+          <th class="r" style="width:80px">Stellaris/mes</th>
           <th style="width:36px"></th>
         </tr></thead>
         <tbody id="nom-edit-tbody"></tbody>
         <tfoot><tr style="background:var(--bg);font-weight:700;border-top:2px solid var(--border2)">
-          <td colspan="2" style="padding:8px 12px;font-size:.78rem;color:var(--text)">TOTAL</td>
+          <td colspan="3" style="padding:8px 12px;font-size:.78rem;color:var(--text)">TOTAL</td>
           <td class="mo bld pos" id="nom-ft-total" style="padding:8px 12px"></td>
           <td class="mo" id="nom-ft-sal-p" style="padding:8px 12px;color:#0073ea;font-size:.75rem"></td>
           <td class="mo" id="nom-ft-end-p" style="padding:8px 12px;color:#00b875;font-size:.75rem"></td>
           <td class="mo" id="nom-ft-dyn-p" style="padding:8px 12px;color:#ff7043;font-size:.75rem"></td>
           <td class="mo" id="nom-ft-wb-p" style="padding:8px 12px;color:#9b51e0;font-size:.75rem"></td>
+          <td class="mo" id="nom-ft-stel-p" style="padding:8px 12px;color:#e53935;font-size:.75rem"></td>
           <td style="padding:8px 12px"></td>
           <td class="mo bld neg" id="nom-ft-sal" style="padding:8px 12px;color:#0073ea"></td>
           <td class="mo bld neg" id="nom-ft-end" style="padding:8px 12px;color:#00b875"></td>
           <td class="mo bld neg" id="nom-ft-dyn" style="padding:8px 12px;color:#ff7043"></td>
           <td class="mo bld neg" id="nom-ft-wb" style="padding:8px 12px;color:#9b51e0"></td>
+          <td class="mo bld neg" id="nom-ft-stel" style="padding:8px 12px;color:#e53935"></td>
           <td style="padding:8px 12px"></td>
         </tr></tfoot>
       </table>
@@ -1615,6 +1639,82 @@
 </div>
 
 
+<!-- ══════════ STELLARIS: P&L ══════════ -->
+<div id="view-stel_res" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">📊 Stellaris — P&L 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Casino · Entretenimiento · <span style="color:#e53935;font-weight:600">clic en tarjetas para detalle</span></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div class="pbar">
+        <button class="pbtn active" onclick="setPLMode('stel','mensual',this)">Mensual</button>
+        <button class="pbtn" onclick="setPLMode('stel','trimestral',this)">Trimestral</button>
+        <button class="pbtn" onclick="setPLMode('stel','anual',this)">Anual</button>
+      </div>
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#e53935;color:#e53935" onclick="sv('stel_ing',null)">💰 Ingresos</button>
+      <button class="btn btn-out" style="font-size:.7rem" onclick="sv('stel_nom',null)">👥 Nómina</button>
+    </div>
+  </div>
+  <div class="kpi-row" id="stel-kpi-row" style="margin-bottom:10px">
+    <div class="kpi-card" style="--ac:#e53935">
+      <div class="kpi-top"><div class="kpi-lbl">Ingresos Anuales</div><div class="kpi-ico" style="background:#fce4ec;color:#e53935">💰</div></div>
+      <div class="kpi-val" id="stel-k-ing" style="color:var(--muted);font-size:.85rem">Sin datos</div>
+      <div class="kpi-d dnu">Pendiente de captura</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--red)">
+      <div class="kpi-top"><div class="kpi-lbl">Costos Directos</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">📉</div></div>
+      <div class="kpi-val" id="stel-k-gas" style="color:var(--muted);font-size:.85rem">Sin datos</div>
+      <div class="kpi-d dnu">Pendiente de captura</div>
+    </div>
+    <div class="kpi-card kpi-clickable" style="--ac:#e53935" onclick="openModal('nomina')">
+      <div class="kpi-hint">ver detalle →</div>
+      <div class="kpi-top"><div class="kpi-lbl">Nómina Stellaris</div><div class="kpi-ico" style="background:#fce4ec;color:#e53935">👥</div></div>
+      <div class="kpi-val" id="stel-kpi-nomina" style="color:var(--muted);font-size:.85rem">—</div>
+      <div class="kpi-d dnu">Desde config nóminas</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--orange)">
+      <div class="kpi-top"><div class="kpi-lbl">Crecimiento</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🚀</div></div>
+      <div class="kpi-val" style="color:var(--muted);font-size:.85rem">—</div>
+      <div class="kpi-d dnu">Pendiente de captura</div>
+    </div>
+  </div>
+  <!-- Evolución mensual -->
+  <div class="cc" style="margin-bottom:10px">
+    <div class="cc-h"><div><div class="cc-t">Evolución Mensual — Stellaris</div><div class="cc-s">Ingresos, costes, gastos y EBITDA</div></div></div>
+    <div class="cc-b" style="padding:10px 12px"><canvas id="c-stel-evo" height="130"></canvas></div>
+  </div>
+  <!-- Gráficas compactas -->
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Ingresos vs Costos — Stellaris 2026</div><div class="cc-s">Datos reales</div></div></div>
+      <div class="cc-b" style="padding:10px 12px"><canvas id="c-stel-pl" height="110"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Mix Ingresos Stellaris</div><div class="cc-s">Por fuente anual</div></div></div>
+      <div class="cc-b" style="padding:10px 12px"><canvas id="c-stel-pl-pie" height="110"></canvas></div>
+    </div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Estado de Resultados — Stellaris</div></div>
+  <div style="overflow-x:auto"><table class="bt" id="stel-res-table">
+    <thead><tr id="stel-res-thead"></tr></thead><tbody id="stel-res-tbody"></tbody>
+  </table></div></div>
+</div>
+
+<div id="view-stel_ing" class="view"><div id="stel_ing-root"></div></div>
+<div id="view-stel_gas" class="view"><div id="stel_gas-root"></div></div>
+<div id="view-stel_nom" class="view"><div id="stel_nom-root"></div></div>
+
+<!-- ══════════ STELLARIS: FACTURACIÓN ══════════ -->
+<div id="view-fact_stellaris" class="view">
+  <div style="padding:40px;text-align:center;color:var(--muted)">
+    <div style="font-size:2rem;margin-bottom:8px">🔴</div>
+    <div style="font-weight:700">Facturación Stellaris</div>
+    <div style="font-size:.75rem;margin-top:4px">Módulo en construcción</div>
+  </div>
+</div>
+
+
 <!-- ══════════ TESORERÍA: FLUJO DE CAJA ══════════ -->
 <div id="view-tes_flujo" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
@@ -2140,7 +2240,7 @@
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <div>
       <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🏆 Grupo Financiero — Consolidado 2026</div>
-      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Centum Capital + Wirebit · <span style="color:#9b51e0;font-weight:600">clic en tarjetas para detalle</span></div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Centum Capital + Wirebit + Stellaris · <span style="color:var(--blue);font-weight:600">clic en tarjetas para detalle</span></div>
     </div>
     <button class="btn btn-out" style="font-size:.7rem" onclick="navTo('centum')">← Ver Centum Capital</button>
   </div>
@@ -4476,61 +4576,61 @@
 </div>
 
   <!-- ── Scripts: Core ── -->
-  <script src="js/core/storage.js?v=4"></script>
-  <script src="js/core/supabase.js?v=4"></script>
-  <script src="js/core/login.js?v=4"></script>
-  <script src="js/core/helpers.js?v=4"></script>
-  <script src="js/core/nav-structure.js?v=4"></script>
-  <script src="js/core/router.js?v=4"></script>
-  <script src="js/core/auth.js?v=4"></script>
+  <script src="js/core/storage.js?v=5"></script>
+  <script src="js/core/supabase.js?v=5"></script>
+  <script src="js/core/login.js?v=5"></script>
+  <script src="js/core/helpers.js?v=5"></script>
+  <script src="js/core/nav-structure.js?v=5"></script>
+  <script src="js/core/router.js?v=5"></script>
+  <script src="js/core/auth.js?v=5"></script>
 
   <!-- ── Scripts: Shared Layer ── -->
-  <script src="js/shared/data-constants.js?v=4"></script>
-  <script src="js/shared/ui-components.js?v=4"></script>
-  <script src="js/shared/ui-kit.js?v=4"></script>
-  <script src="js/shared/chart-helpers.js?v=4"></script>
-  <script src="js/shared/pl-engine.js?v=4"></script>
-  <script src="js/shared/flujo-engine.js?v=4"></script>
+  <script src="js/shared/data-constants.js?v=5"></script>
+  <script src="js/shared/ui-components.js?v=5"></script>
+  <script src="js/shared/ui-kit.js?v=5"></script>
+  <script src="js/shared/chart-helpers.js?v=5"></script>
+  <script src="js/shared/pl-engine.js?v=5"></script>
+  <script src="js/shared/flujo-engine.js?v=5"></script>
 
   <!-- ── Scripts: Features ── -->
-  <script src="js/features/dashboard/inicio.js?v=4"></script>
-  <script src="js/features/dashboard/resumen.js?v=4"></script>
-  <script src="js/features/finanzas/nomina.js?v=4"></script>
-  <script src="js/features/finanzas/gastos-comp.js?v=4"></script>
-  <script src="js/features/finanzas/flujo-ingresos.js?v=4"></script>
-  <script src="js/features/finanzas/flujo-gastos.js?v=4"></script>
-  <script src="js/features/finanzas/carga-masiva.js?v=4"></script>
-  <script src="js/features/creditos/credit-engine.js?v=4"></script>
-  <script src="js/features/creditos/credit-dashboard.js?v=4"></script>
-  <script src="js/features/creditos/credit-detail.js?v=4"></script>
-  <script src="js/features/creditos/credit-cobranza.js?v=4"></script>
-  <script src="js/features/creditos/credit-carga.js?v=4"></script>
-  <script src="js/features/tpv/tpv-data.js?v=4"></script>
-  <script src="js/features/tpv/tpv-general.js?v=4"></script>
-  <script src="js/features/tpv/tpv-upload.js?v=4"></script>
-  <script src="js/features/tpv/tpv-dashboard.js?v=4"></script>
-  <script src="js/features/tpv/tpv-agentes.js?v=4"></script>
-  <script src="js/features/tpv/tpv-promotores.js?v=4"></script>
-  <script src="js/features/tpv/tpv-terminales.js?v=4"></script>
-  <script src="js/features/tpv/tpv-pagos.js?v=4"></script>
-  <script src="js/features/tpv/tpv-resumen.js?v=4"></script>
-  <script src="js/features/tpv/tpv-comisiones.js?v=4"></script>
-  <script src="js/features/tpv/tpv-facturacion.js?v=4"></script>
-  <script src="js/features/facturacion/facturacion-egresos.js?v=4"></script>
-  <script src="js/features/tarjetas/tarjetas-data.js?v=4"></script>
-  <script src="js/features/tarjetas/tarjetas-charts.js?v=4"></script>
-  <script src="js/features/tarjetas/tarjetas-upload.js?v=4"></script>
-  <script src="js/features/wirebit/wirebit-data.js?v=4"></script>
-  <script src="js/features/wirebit/wirebit-views.js?v=4"></script>
-  <script src="js/features/wirebit/wirebit-upload.js?v=4"></script>
-  <script src="js/features/tesoreria/tesoreria.js?v=4"></script>
-  <script src="js/features/tickets/tickets.js?v=4"></script>
-  <script src="js/features/config/config.js?v=4"></script>
-  <script src="js/features/expedientes/expedientes.js?v=4"></script>
-  <script src="js/features/ai-chat/ai-chat.js?v=4"></script>
+  <script src="js/features/dashboard/inicio.js?v=5"></script>
+  <script src="js/features/dashboard/resumen.js?v=5"></script>
+  <script src="js/features/finanzas/nomina.js?v=5"></script>
+  <script src="js/features/finanzas/gastos-comp.js?v=5"></script>
+  <script src="js/features/finanzas/flujo-ingresos.js?v=5"></script>
+  <script src="js/features/finanzas/flujo-gastos.js?v=5"></script>
+  <script src="js/features/finanzas/carga-masiva.js?v=5"></script>
+  <script src="js/features/creditos/credit-engine.js?v=5"></script>
+  <script src="js/features/creditos/credit-dashboard.js?v=5"></script>
+  <script src="js/features/creditos/credit-detail.js?v=5"></script>
+  <script src="js/features/creditos/credit-cobranza.js?v=5"></script>
+  <script src="js/features/creditos/credit-carga.js?v=5"></script>
+  <script src="js/features/tpv/tpv-data.js?v=5"></script>
+  <script src="js/features/tpv/tpv-general.js?v=5"></script>
+  <script src="js/features/tpv/tpv-upload.js?v=5"></script>
+  <script src="js/features/tpv/tpv-dashboard.js?v=5"></script>
+  <script src="js/features/tpv/tpv-agentes.js?v=5"></script>
+  <script src="js/features/tpv/tpv-promotores.js?v=5"></script>
+  <script src="js/features/tpv/tpv-terminales.js?v=5"></script>
+  <script src="js/features/tpv/tpv-pagos.js?v=5"></script>
+  <script src="js/features/tpv/tpv-resumen.js?v=5"></script>
+  <script src="js/features/tpv/tpv-comisiones.js?v=5"></script>
+  <script src="js/features/tpv/tpv-facturacion.js?v=5"></script>
+  <script src="js/features/facturacion/facturacion-egresos.js?v=5"></script>
+  <script src="js/features/tarjetas/tarjetas-data.js?v=5"></script>
+  <script src="js/features/tarjetas/tarjetas-charts.js?v=5"></script>
+  <script src="js/features/tarjetas/tarjetas-upload.js?v=5"></script>
+  <script src="js/features/wirebit/wirebit-data.js?v=5"></script>
+  <script src="js/features/wirebit/wirebit-views.js?v=5"></script>
+  <script src="js/features/wirebit/wirebit-upload.js?v=5"></script>
+  <script src="js/features/tesoreria/tesoreria.js?v=5"></script>
+  <script src="js/features/tickets/tickets.js?v=5"></script>
+  <script src="js/features/config/config.js?v=5"></script>
+  <script src="js/features/expedientes/expedientes.js?v=5"></script>
+  <script src="js/features/ai-chat/ai-chat.js?v=5"></script>
 
   <!-- ── Inicialización ── -->
-  <script src="js/main.js?v=4"></script>
+  <script src="js/main.js?v=5"></script>
 
 </body>
 </html>
