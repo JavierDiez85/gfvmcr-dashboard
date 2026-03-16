@@ -375,9 +375,22 @@
     configurable: true
   });
 
+  // Input helpers used by flujo-ingresos.js and flujo-gastos.js
+  var inS = function(align, extra) {
+    align = align || 'right'; extra = extra || '';
+    return 'style="width:100%;border:none;background:transparent;font-size:.76rem;font-family:inherit;text-align:'+align+';padding:1px 2px;'+extra+'"';
+  };
+  var moInput = function(rowId, idx, v, isGas) {
+    return '<input type="number" '+inS()+' value="'+(v||'')+'" placeholder="0" min="0" step="100"'+
+      ' oninput="flRowUpdate(\''+(isGas?'fg':'fi')+'\','+rowId+','+idx+',+this.value)"'+
+      ' style="width:100%;border:none;background:transparent;font-size:.75rem;text-align:right;padding:1px 2px;color:'+(isGas?'var(--orange)':'var(--green)')+'">';
+  };
+
   // Expose globals
   window.EMPRESAS = EMPRESAS;
   window.ENT_COLOR = ENT_COLOR;
+  window.inS = inS;
+  window.moInput = moInput;
   window.fiLoad = fiLoad;
   window.fgLoad = fgLoad;
   window.fiInjectCredits = fiInjectCredits;

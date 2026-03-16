@@ -287,4 +287,9 @@ function filterSalemClients(q) {
   window.closeSalemEarnings = closeSalemEarnings;
   window.filterSalemClients = filterSalemClients;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_dashboard', function(){ return initTPVDashboard(); });
+  }
+
 })(window);

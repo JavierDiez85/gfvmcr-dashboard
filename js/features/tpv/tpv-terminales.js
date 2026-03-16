@@ -136,4 +136,9 @@ const TPV_CHARTS = {};
   window.rTPVTerminales = rTPVTerminales;
   window.rTPVCambios = rTPVCambios;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_terminales', function(){ return rTPVTerminalesView(); });
+  }
+
 })(window);

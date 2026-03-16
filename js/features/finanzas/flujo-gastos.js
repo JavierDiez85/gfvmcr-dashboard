@@ -154,4 +154,10 @@ function fgExport(){
   window.fgUpdateKPIs = fgUpdateKPIs;
   window.fgSave = fgSave;
   window.fgExport = fgExport;
+
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('flujo_gas', function(){ return _syncAll().then(function(){ rFlujoGas(); }); });
+  }
+
 })(window);

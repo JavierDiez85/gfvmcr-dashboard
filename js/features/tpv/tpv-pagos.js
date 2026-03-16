@@ -682,4 +682,9 @@ function exportHistorialPDF() {
   window.exportHistorialXLSX = exportHistorialXLSX;
   window.exportHistorialPDF = exportHistorialPDF;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_pagos', function(){ return rTPVPagosView(); });
+  }
+
 })(window);

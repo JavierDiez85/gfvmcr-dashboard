@@ -412,4 +412,12 @@
   window.rDynCred            = rDynCred;
   window.syncDynResKPIs      = syncDynResKPIs;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('cred_dash', function(){ rCredDash('end','cred-dash'); });
+    registerView('dyn_dash', function(){ rCredDash('dyn','dyn-dash'); });
+    registerView('end_cred', function(){ rEndCred(); });
+    registerView('dyn_cred', function(){ rDynCred(); });
+  }
+
 })(window);

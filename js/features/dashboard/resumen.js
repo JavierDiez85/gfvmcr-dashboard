@@ -383,4 +383,9 @@ function rEDO(){
   window.rEntSummary = rEntSummary;
   window.rEDO = rEDO;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('resumen', function(){ return _syncAll().then(function(){ rResumen(); }); });
+  }
+
 })(window);

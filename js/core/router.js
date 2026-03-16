@@ -31,6 +31,26 @@ const VT = {
   expedientes:'Expedientes — Clientes'
 };
 
+// ═══════════════════════════════════════
+// VIEW REGISTRY — Features auto-register via registerView()
+// ═══════════════════════════════════════
+const VIEW_REGISTRY = {};
+
+function registerView(id, handler) {
+  VIEW_REGISTRY[id] = handler;
+}
+
+// Register P&L suite for an entity (4 views: _res, _ing, _gas, _nom)
+function registerPL(entKey) {
+  registerView(entKey+'_res', function(){ return _syncAll().then(function(){ rPL(entKey); rPLCharts(entKey); rEvoChart('c-'+entKey+'-evo', entKey); }); });
+  registerView(entKey+'_ing', function(){ return _syncAll().then(function(){ rIngView(entKey); }); });
+  registerView(entKey+'_gas', function(){ return _syncAll().then(function(){ rGasView(entKey); }); });
+  registerView(entKey+'_nom', function(){ rNomView(entKey); });
+}
+
+// ═══════════════════════════════════════
+// NAVIGATION
+// ═══════════════════════════════════════
 function navTo(id){
   if(id === 'inicio'){ navHome(); return; }
 
@@ -109,76 +129,21 @@ function _viewError(viewId, error) {
   }
 }
 
+// ═══════════════════════════════════════
+// RENDER — Dispatches to registered view handlers
+// ═══════════════════════════════════════
 function render(id){
-  // Helper: catch async errors and show visible banner
-  const _c = e => _viewError(id, e);
-
-  switch(id){
-    case 'inicio': rInicio().catch(_c); break;
-    case 'resumen': _syncAll().then(()=>rResumen()).catch(_c); break;
-    case 'nomina': rNomina(); break;
-    case 'gastos_comp': rGastosComp(); break;
-    case 'tpv_general': initTPVGeneral().catch(_c); break;
-    case 'tpv_dashboard': initTPVDashboard().catch(_c); break;
-    case 'tpv_pagos': rTPVPagosView().catch(_c); break;
-    case 'tpv_resumen': rTPVResumen().catch(_c); break;
-    case 'tpv_agentes': rTPVAgentes().catch(_c); break;
-    case 'tar_dashboard': setTimeout(()=>initTarCharts('tar_dashboard'),50); break;
-    case 'tar_conceptos': setTimeout(()=>initTarCharts('tar_conceptos'),50); break;
-    case 'tar_subclientes': setTimeout(()=>initTarCharts('tar_subclientes'),50); break;
-    case 'tar_rechazos': setTimeout(()=>initTarCharts('tar_rechazos'),50); break;
-    case 'tar_tarjetahabientes': setTimeout(()=>initTarCharts('tar_tarjetahabientes'),50); break;
-    case 'tpv_terminales': rTPVTerminalesView().catch(_c); break;
-    case 'tpv_promotores': rTPVPromotores().catch(_c); break;
-    case 'tpv_comisiones': rTPVComisiones().catch(_c); break;
-    case 'tpv_upload': rTPVUpload().catch(_c); break;
-    case 'tk_pagos_tpv': rTkPagosTpv().catch(_c); break;
-    case 'tar_upload': rTarUpload().catch(_c); break;
-    case 'sal_res': _syncAll().then(()=>{rPL('sal'); rPLCharts('sal'); rEvoChart('c-sal-evo','sal');}).catch(_c); break;
-    case 'sal_ing': _syncAll().then(()=>rIngView('sal')).catch(_c); break;
-    case 'sal_gas': _syncAll().then(()=>rGasView('sal')).catch(_c); break;
-    case 'sal_nom': rNomView('sal'); break;
-    case 'end_res': _syncAll().then(()=>{rPL('end'); rPLCharts('end'); rEvoChart('c-end-evo','end');}).catch(_c); break;
-    case 'end_ing': _syncAll().then(()=>rIngView('end')).catch(_c); break;
-    case 'end_gas': _syncAll().then(()=>rGasView('end')).catch(_c); break;
-    case 'end_nom': rNomView('end'); break;
-    case 'cred_dash': rCredDash('end','cred-dash'); break;
-    case 'cred_cobr': rCredCobr('end','cobr'); break;
-    case 'end_cred': rEndCred(); break;
-    case 'dyn_res': _syncAll().then(()=>{rPL('dyn'); rPLCharts('dyn'); rEvoChart('c-dyn-evo','dyn');}).catch(_c); break;
-    case 'dyn_ing': _syncAll().then(()=>rIngView('dyn')).catch(_c); break;
-    case 'dyn_gas': _syncAll().then(()=>rGasView('dyn')).catch(_c); break;
-    case 'dyn_nom': rNomView('dyn'); break;
-    case 'dyn_cred': rDynCred(); break;
-    case 'dyn_dash': rCredDash('dyn','dyn-dash'); break;
-    case 'dyn_cobr': rCredCobr('dyn','dyn-cobr'); break;
-    case 'wb_res': _syncAll().then(()=>{rPL('wb'); rPLCharts('wb'); rEvoChart('c-wb-evo','wb');}).catch(_c); break;
-    case 'wb_ing': wbLoadFees(); rWBIng(); break;
-    case 'wb_gas': _syncAll().then(()=>rGasView('wb')).catch(_c); break;
-    case 'wb_nom': rWBNom(); break;
-    case 'wb_upload': rWBUpload(); break;
-    case 'wb_cripto': rWBCripto(); break;
-    case 'wb_tarjetas': rWBTarjetas(); break;
-    case 'wb_tar_upload': rWBTarUpload(); break;
-    case 'centum': _syncAll().then(()=>{rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']);}).catch(_c); break;
-    case 'grupo': _syncAll().then(()=>{rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb']);}).catch(_c); break;
-    case 'tes_flujo': rTesFlujo(); break;
-    case 'tes_individual': rTesIndividual(); break;
-    case 'tes_grupo': rTesGrupo(); break;
-    case 'cfg_usuarios': rUsuarios(); break;
-    case 'cfg_apariencia': rApariencia(); break;
-    case 'cfg_permisos': rPermisos(); break;
-    case 'cfg_categorias': rCatView(); break;
-    case 'cfg_bancos': rBancosView(); break;
-    case 'carga_creditos': rCargaCreditos(); break;
-    case 'fact_terminales': rFactTerminales().catch(_c); break;
-    case 'fact_tarjetas': case 'fact_endless': case 'fact_dynamo': case 'fact_wirebit': break;
-    case 'carga_facturas': rCargaFacturas(); break;
-    case 'carga_masiva': rCargaMasiva(); break;
-    case 'expedientes': rExpedientes().catch(_c); break;
-    case 'flujo_ing': _syncAll().then(()=>rFlujoIng()).catch(_c); break;
-    case 'flujo_gas': _syncAll().then(()=>rFlujoGas()).catch(_c); break;
-    case 'ingresar': rFlujoIng(); break;
+  const _c = function(e){ _viewError(id, e); };
+  const handler = VIEW_REGISTRY[id];
+  if(handler){
+    try {
+      const result = handler();
+      // If handler returns a Promise, catch errors
+      if(result && typeof result.catch === 'function') result.catch(_c);
+    } catch(e){ _c(e); }
+  } else {
+    // Stub views (fact_tarjetas, fact_endless, etc.) — no handler, no error
+    if(!VT[id]) console.warn('[Router] Vista no registrada:', id);
   }
 }
 

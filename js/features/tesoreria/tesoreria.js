@@ -962,4 +962,11 @@ function bancosGuardar(){
   window.bancosShowModal = bancosShowModal;
   window.bancosGuardar = bancosGuardar;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tes_flujo', function(){ rTesFlujo(); });
+    registerView('tes_individual', function(){ rTesIndividual(); });
+    registerView('tes_grupo', function(){ rTesGrupo(); });
+  }
+
 })(window);

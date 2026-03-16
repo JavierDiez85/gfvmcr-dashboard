@@ -751,4 +751,16 @@
   window.rSalTPV = rSalTPV;
   window.rSalGas = rSalGas;
 
+  // Register P&L views for all 4 entities + consolidados
+  if(typeof registerPL === 'function'){
+    registerPL('sal');
+    registerPL('end');
+    registerPL('dyn');
+    registerPL('wb');
+  }
+  if(typeof registerView === 'function'){
+    registerView('centum', function(){ return _syncAll().then(function(){ rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']); }); });
+    registerView('grupo', function(){ return _syncAll().then(function(){ rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb']); }); });
+  }
+
 })(window);

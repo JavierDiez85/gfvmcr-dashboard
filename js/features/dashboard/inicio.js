@@ -258,4 +258,9 @@ function renderTareas() {
   window.deleteTarea = deleteTarea;
   window.renderTareas = renderTareas;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('inicio', function(){ return rInicio(); });
+  }
+
 })(window);

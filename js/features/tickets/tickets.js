@@ -532,4 +532,9 @@ function openTkDetail(id){
   window.changeTkStatus = changeTkStatus;
   window.openTkDetail = openTkDetail;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tk_pagos_tpv', function(){ rTkPagosTpv(); });
+  }
+
 })(window);
