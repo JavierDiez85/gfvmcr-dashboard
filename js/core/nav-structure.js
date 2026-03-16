@@ -421,7 +421,7 @@ function renderHNav(co){
   hnav.style.display = '';
 }
 
-/** Render view chips for a section (with group labels) */
+/** Render view chips for a section (with group labels / dropdowns) */
 function renderHNavViews(sec){
   const viewRow = document.getElementById('hnav-views');
   if(!viewRow) return;
@@ -433,23 +433,70 @@ function renderHNavViews(sec){
   const hasCustom = Object.keys(perms).length > 0;
   const coId = _activeCompany;
 
-  let html = '';
+  // Build visible groups
+  const visibleGroups = [];
   for(const grp of sec.groups){
-    const visibleViews = grp.views.filter(v => {
+    const views = grp.views.filter(v => {
       if(isAdmin && !hasCustom) return true;
       return _navViewAllowed(v.id, coId, perms, isAdmin);
     });
-    if(!visibleViews.length) continue;
+    if(views.length) visibleGroups.push({label:grp.label, views});
+  }
 
-    // Group label (only if there's a label and multiple groups have views)
-    if(grp.label){
-      html += `<div class="hnav-group-label">${grp.label}</div>`;
+  // Detect if we need dropdown mode (any group has a label)
+  const useDropdowns = visibleGroups.some(g => g.label);
+
+  let html = '';
+  if(useDropdowns){
+    for(const grp of visibleGroups){
+      if(grp.label){
+        // Dropdown group
+        html += `<div class="hnav-group" data-group="${grp.label}">`;
+        html += `<div class="hnav-group-toggle" onclick="toggleHNavGroup(this, event)">${grp.label} <span class="hnav-arrow">&#9662;</span></div>`;
+        html += `<div class="hnav-group-items">`;
+        for(const v of grp.views){
+          html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+        }
+        html += `</div></div>`;
+      } else {
+        // No label — render flat
+        for(const v of grp.views){
+          html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+        }
+      }
     }
-    for(const v of visibleViews){
-      html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+  } else {
+    // All groups without labels — flat rendering (original behavior)
+    for(const grp of visibleGroups){
+      for(const v of grp.views){
+        html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+      }
     }
   }
+
   viewRow.innerHTML = html;
+}
+
+/** Toggle a dropdown group in hnav (accordion: close others) */
+function toggleHNavGroup(el, evt){
+  if(evt) evt.stopPropagation();
+  const group = el.closest('.hnav-group');
+  if(!group) return;
+  const wasExpanded = group.classList.contains('expanded');
+  // Close all groups first (accordion)
+  document.querySelectorAll('.hnav-group.expanded').forEach(g => g.classList.remove('expanded'));
+  // Toggle this one
+  if(!wasExpanded) group.classList.add('expanded');
+}
+
+/** Highlight the group toggle that contains the active view (without expanding) */
+function _highlightActiveGroup(){
+  // Remove active-group from all toggles
+  document.querySelectorAll('.hnav-group').forEach(g => g.classList.remove('has-active'));
+  const active = document.querySelector('.hnav-view.active');
+  if(!active) return;
+  const group = active.closest('.hnav-group');
+  if(group) group.classList.add('has-active');
 }
 
 /** Select a specific view chip */
@@ -459,8 +506,21 @@ function selectView(viewId){
   const chip = document.querySelector(`.hnav-view[data-view="${viewId}"]`);
   if(chip) chip.classList.add('active');
 
+  // Close all dropdowns after selecting a view
+  document.querySelectorAll('.hnav-group.expanded').forEach(g => g.classList.remove('expanded'));
+
+  // Highlight the group toggle containing the active view
+  _highlightActiveGroup();
+
   sv(viewId, null);
 }
+
+// Close dropdown groups when clicking outside
+document.addEventListener('click', function(e){
+  if(!e.target.closest('.hnav-group') && !e.target.closest('.hnav-view')){
+    document.querySelectorAll('.hnav-group.expanded').forEach(g => g.classList.remove('expanded'));
+  }
+});
 
 /** Check if a view is allowed by permissions */
 function _navViewAllowed(viewId, companyId, perms, isAdmin){
