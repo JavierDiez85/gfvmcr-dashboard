@@ -427,4 +427,9 @@ async function rollbackTarUpload(batchId) {
   window.startTarUpload = startTarUpload;
   window.rollbackTarUpload = rollbackTarUpload;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tar_upload', function(){ return rTarUpload(); });
+  }
+
 })(window);

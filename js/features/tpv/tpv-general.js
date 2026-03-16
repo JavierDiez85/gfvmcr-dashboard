@@ -373,4 +373,9 @@ const TPV_CHARTS = {};
   window._termAllData = _termAllData;
   window.TPV_CHARTS = TPV_CHARTS;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_general', function(){ return initTPVGeneral(); });
+  }
+
 })(window);

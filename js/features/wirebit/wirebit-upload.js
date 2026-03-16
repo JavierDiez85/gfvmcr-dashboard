@@ -406,4 +406,10 @@ function startWBUpload() { WB_UPLOAD.startWBUpload(); }
   window.rWBUpload = rWBUpload;
   window.startWBUpload = startWBUpload;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('wb_upload', function(){ rWBUpload(); });
+    registerView('wb_tar_upload', function(){ rWBTarUpload(); });
+  }
+
 })(window);

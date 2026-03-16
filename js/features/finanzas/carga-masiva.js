@@ -347,4 +347,10 @@
   window.rCargaMasiva = rCargaMasiva;
   window._cmRenderPreview = _cmRenderPreview;
   window._cmUpdateKPIs = _cmUpdateKPIs;
+
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('carga_masiva', function(){ rCargaMasiva(); });
+  }
+
 })(window);

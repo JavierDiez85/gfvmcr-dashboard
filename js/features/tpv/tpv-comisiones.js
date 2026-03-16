@@ -455,4 +455,9 @@ async function saveComEdit() {
   window.closeRateChanges = closeRateChanges;
   window.saveComEdit = saveComEdit;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_comisiones', function(){ return rTPVComisiones(); });
+  }
+
 })(window);

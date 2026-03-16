@@ -913,4 +913,9 @@ async function rollbackUpload(batchId) {
   window.startCfgUpload = startCfgUpload;
   window.rollbackUpload = rollbackUpload;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_upload', function(){ return rTPVUpload(); });
+  }
+
 })(window);

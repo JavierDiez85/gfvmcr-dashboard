@@ -150,4 +150,13 @@ function pSelectAll(on){
   window.pCancelPerms = pCancelPerms;
   window.pSelectAll = pSelectAll;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('cfg_usuarios', function(){ rUsuarios(); });
+    registerView('cfg_apariencia', function(){ rApariencia(); });
+    registerView('cfg_permisos', function(){ rPermisos(); });
+    registerView('cfg_categorias', function(){ rCatView(); });
+    registerView('cfg_bancos', function(){ rBancosView(); });
+  }
+
 })(window);

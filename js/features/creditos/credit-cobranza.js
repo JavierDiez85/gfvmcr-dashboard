@@ -218,4 +218,10 @@
   window.cobrFilter     = cobrFilter;
   window.dynCobrFilter  = dynCobrFilter;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('cred_cobr', function(){ rCredCobr('end','cobr'); });
+    registerView('dyn_cobr', function(){ rCredCobr('dyn','dyn-cobr'); });
+  }
+
 })(window);

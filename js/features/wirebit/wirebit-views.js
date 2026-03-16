@@ -88,4 +88,12 @@ function rWBIng(){
   // Expose globals
   window.rWBIng = rWBIng;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('wb_ing', function(){ wbLoadFees(); rWBIng(); });
+    registerView('wb_nom', function(){ rWBNom(); });
+    registerView('wb_cripto', function(){ rWBCripto(); });
+    registerView('wb_tarjetas', function(){ rWBTarjetas(); });
+  }
+
 })(window);

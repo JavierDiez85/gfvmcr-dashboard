@@ -111,4 +111,11 @@ function fiExport(){
   window.fiDelRow = fiDelRow;
   window.fiSave = fiSave;
   window.fiExport = fiExport;
+
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('flujo_ing', function(){ return _syncAll().then(function(){ rFlujoIng(); }); });
+    registerView('ingresar', function(){ rFlujoIng(); });
+  }
+
 })(window);

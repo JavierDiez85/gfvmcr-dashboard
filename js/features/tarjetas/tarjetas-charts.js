@@ -661,4 +661,13 @@ function catToggleEmp(idx, sec, empresa, checked){
   window._catEditIdx = _catEditIdx;
   window._catEditSec = _catEditSec;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tar_dashboard', function(){ setTimeout(function(){ initTarCharts('tar_dashboard'); }, 50); });
+    registerView('tar_conceptos', function(){ setTimeout(function(){ initTarCharts('tar_conceptos'); }, 50); });
+    registerView('tar_subclientes', function(){ setTimeout(function(){ initTarCharts('tar_subclientes'); }, 50); });
+    registerView('tar_rechazos', function(){ setTimeout(function(){ initTarCharts('tar_rechazos'); }, 50); });
+    registerView('tar_tarjetahabientes', function(){ setTimeout(function(){ initTarCharts('tar_tarjetahabientes'); }, 50); });
+  }
+
 })(window);

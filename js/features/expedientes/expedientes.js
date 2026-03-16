@@ -737,4 +737,9 @@ function _expRenderPendingFixed(categoria){
   window._expRenderPendingInUI = _expRenderPendingInUI;
   window._expRenderPendingFixed = _expRenderPendingFixed;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('expedientes', function(){ return rExpedientes(); });
+  }
+
 })(window);

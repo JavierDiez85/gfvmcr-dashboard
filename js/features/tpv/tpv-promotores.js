@@ -274,4 +274,9 @@ function exportPromotoresCSV(){
   window.deletePromPago = deletePromPago;
   window.exportPromotoresCSV = exportPromotoresCSV;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_promotores', function(){ return rTPVPromotores(); });
+  }
+
 })(window);

@@ -329,4 +329,9 @@ async function submitEditAgente() {
   window.closeEditAgente = closeEditAgente;
   window.submitEditAgente = submitEditAgente;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_agentes', function(){ return rTPVAgentes(); });
+  }
+
 })(window);

@@ -283,4 +283,9 @@
   window.ccRenderHistory   = ccRenderHistory;
   window.ccDeleteHistory   = ccDeleteHistory;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('carga_creditos', function(){ rCargaCreditos(); });
+  }
+
 })(window);

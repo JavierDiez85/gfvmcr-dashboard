@@ -109,4 +109,10 @@ function rGastosComp(){
   window.gcDelRow = gcDelRow;
   window.gcSave = gcSave;
   window.rGastosComp = rGastosComp;
+
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('gastos_comp', function(){ rGastosComp(); });
+  }
+
 })(window);

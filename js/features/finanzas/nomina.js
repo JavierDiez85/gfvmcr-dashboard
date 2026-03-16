@@ -136,4 +136,10 @@ function rNomina(){
   window.nomDelRow = nomDelRow;
   window.nomSave = nomSave;
   window.rNomina = rNomina;
+
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('nomina', function(){ rNomina(); });
+  }
+
 })(window);

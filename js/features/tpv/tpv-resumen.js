@@ -213,4 +213,9 @@ async function rTPVResumenDetail() {
   window.filterResumenOptions = filterResumenOptions;
   window.rTPVResumenDetail = rTPVResumenDetail;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('tpv_resumen', function(){ return rTPVResumen(); });
+  }
+
 })(window);

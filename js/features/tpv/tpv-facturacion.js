@@ -970,4 +970,10 @@ function cfDeleteUpload(index){
   window.cfDownloadPDF = cfDownloadPDF;
   window.cfDeleteUpload = cfDeleteUpload;
 
+  // Register views
+  if(typeof registerView === 'function'){
+    registerView('fact_terminales', function(){ return rFactTerminales(); });
+    registerView('carga_facturas', function(){ rCargaFacturas(); });
+  }
+
 })(window);
