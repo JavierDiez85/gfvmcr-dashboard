@@ -194,8 +194,8 @@ body {
   background: var(--sb) !important;
   border-bottom: 1px solid rgba(255,255,255,.08) !important;
   box-shadow: none !important;
-  height: 48px !important;
-  padding: 0 28px 0 42px !important;
+  height: 36px !important;
+  padding: 0 20px 0 36px !important;
 }
 .tb-bc {
   font-family: 'Inter', sans-serif !important;
@@ -250,7 +250,7 @@ body.dark .tb-bc span:last-child { color: #fff !important; }
 #hnav {
   background: var(--sb) !important;
   border-bottom: 1px solid rgba(255,255,255,.08) !important;
-  padding: 0 26px !important;
+  padding: 0 20px !important;
 }
 #hnav-sections {
   border-bottom: 1px solid rgba(255,255,255,.1) !important;
@@ -259,11 +259,11 @@ body.dark .tb-bc span:last-child { color: #fff !important; }
 /* ── Section tabs — gris neutro fijo ── */
 .hnav-tab {
   font-family: 'Inter', sans-serif !important;
-  font-size: .8rem !important;
+  font-size: .7rem !important;
   font-weight: 500 !important;
   color: rgba(255,255,255,.75) !important;
   border-bottom: 2px solid transparent !important;
-  padding: 8px 16px !important;
+  padding: 5px 12px !important;
   transition: all .15s ease !important;
 }
 .hnav-tab:hover {
@@ -282,13 +282,13 @@ body.dark .tb-bc span:last-child { color: #fff !important; }
 /* ── View pills — gris neutro fijo, relieve suave ── */
 .hnav-view {
   font-family: 'Inter', sans-serif !important;
-  font-size: .72rem !important;
+  font-size: .64rem !important;
   font-weight: 500 !important;
   color: #fff !important;
   background: linear-gradient(135deg, rgba(107,114,128, .2), rgba(107,114,128, .1)) !important;
   border: 1px solid rgba(107,114,128, .25) !important;
-  border-radius: 8px !important;
-  padding: 4px 12px !important;
+  border-radius: 6px !important;
+  padding: 3px 10px !important;
   transition: all .15s ease !important;
   box-shadow: 0 1px 3px rgba(0,0,0,.1), inset 0 1px 0 rgba(255,255,255,.1) !important;
   backdrop-filter: blur(4px) !important;
@@ -328,20 +328,20 @@ body.dark .hnav-tab.active { color: #fff !important; }
    CONTENT AREA
    ══════════════════════════════════════ */
 #ct {
-  padding: 24px 28px !important;
+  padding: 14px 20px !important;
 }
 
 /* ══════════════════════════════════════
    KPI CARDS — Limpias, borde superior color
    ══════════════════════════════════════ */
 .kpi-row {
-  gap: 14px !important;
-  margin-bottom: 20px !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
 }
 .kpi-card {
   border-top: 2px solid var(--ac, var(--border2)) !important;
-  border-radius: var(--rlg) !important;
-  padding: 18px 20px !important;
+  border-radius: var(--r) !important;
+  padding: 10px 14px !important;
   border-left: none !important;
   border-right: 1px solid var(--border) !important;
   border-bottom: 1px solid var(--border) !important;
@@ -356,38 +356,38 @@ body.dark .hnav-tab.active { color: #fff !important; }
 }
 .kpi-lbl {
   font-family: 'Inter', sans-serif !important;
-  font-size: .68rem !important;
+  font-size: .6rem !important;
   font-weight: 600 !important;
   letter-spacing: .05em !important;
 }
 .kpi-val {
   font-family: 'Inter', sans-serif !important;
-  font-size: 1.65rem !important;
+  font-size: 1.25rem !important;
   font-weight: 700 !important;
   letter-spacing: -.02em !important;
 }
 .kpi-ico {
-  width: 34px !important;
-  height: 34px !important;
-  border-radius: 10px !important;
-  font-size: .95rem !important;
+  width: 26px !important;
+  height: 26px !important;
+  border-radius: 7px !important;
+  font-size: .8rem !important;
 }
 .kpi-d {
   font-family: 'Inter', sans-serif !important;
-  font-size: .7rem !important;
-  padding: 2px 9px !important;
-  border-radius: 6px !important;
+  font-size: .6rem !important;
+  padding: 1px 7px !important;
+  border-radius: 5px !important;
 }
 .kbar {
-  height: 4px !important;
-  border-radius: 3px !important;
+  height: 3px !important;
+  border-radius: 2px !important;
 }
 
 /* ══════════════════════════════════════
    CHART CARDS — Limpias
    ══════════════════════════════════════ */
 .cc {
-  border-radius: var(--rlg) !important;
+  border-radius: var(--r) !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--sh) !important;
 }
@@ -395,34 +395,39 @@ body.dark .hnav-tab.active { color: #fff !important; }
   border-color: var(--border2) !important;
 }
 .cc-h {
-  padding: 14px 18px 10px !important;
+  padding: 8px 14px 6px !important;
   border-bottom: none !important;
 }
 .cc-t {
   font-family: 'Inter', sans-serif !important;
-  font-size: .88rem !important;
+  font-size: .76rem !important;
   font-weight: 600 !important;
 }
 .cc-s {
-  font-size: .7rem !important;
+  font-size: .6rem !important;
 }
 .cc-b {
-  padding: 14px 18px !important;
+  padding: 6px 14px 10px !important;
 }
 .g2, .g31 {
-  gap: 16px !important;
+  gap: 10px !important;
+}
+
+/* ── Charts — más compactos ── */
+canvas {
+  max-height: 110px !important;
 }
 
 /* ══════════════════════════════════════
    TABS
    ══════════════════════════════════════ */
 .vtabs {
-  margin-bottom: 20px !important;
+  margin-bottom: 10px !important;
 }
 .vtab {
   font-family: 'Inter', sans-serif !important;
-  font-size: .82rem !important;
-  padding: 8px 16px !important;
+  font-size: .72rem !important;
+  padding: 5px 12px !important;
   font-weight: 500 !important;
 }
 .vtab.active {
@@ -433,33 +438,33 @@ body.dark .hnav-tab.active { color: #fff !important; }
    TABLES — Profesional, densidad media
    ══════════════════════════════════════ */
 .tw {
-  border-radius: var(--rlg) !important;
-  margin-bottom: 20px !important;
+  border-radius: var(--r) !important;
+  margin-bottom: 12px !important;
   border: 1px solid var(--border) !important;
   box-shadow: var(--sh) !important;
 }
 .tw-h {
-  padding: 10px 16px !important;
+  padding: 6px 12px !important;
 }
 .tw-ht {
   font-family: 'Inter', sans-serif !important;
-  font-size: .84rem !important;
+  font-size: .74rem !important;
   font-weight: 600 !important;
 }
 .bt {
   font-family: 'Inter', sans-serif !important;
 }
 .bt th {
-  padding: 9px 14px !important;
-  font-size: .63rem !important;
+  padding: 5px 10px !important;
+  font-size: .58rem !important;
   font-family: 'Inter', sans-serif !important;
   font-weight: 600 !important;
   letter-spacing: .05em !important;
   color: var(--muted) !important;
 }
 .bt td {
-  padding: 8px 14px !important;
-  font-size: .78rem !important;
+  padding: 4px 10px !important;
+  font-size: .7rem !important;
   border-bottom-color: rgba(138,150,173,.12) !important;
 }
 .bt tr:hover td {
@@ -470,8 +475,9 @@ body.dark .hnav-tab.active { color: #fff !important; }
 .bt .grp td {
   background: var(--bg) !important;
   font-family: 'Inter', sans-serif !important;
-  font-size: .62rem !important;
+  font-size: .56rem !important;
   letter-spacing: .07em !important;
+  padding: 3px 10px !important;
 }
 
 /* Mini board table */
@@ -480,9 +486,14 @@ body.dark .hnav-tab.active { color: #fff !important; }
 }
 .mbt th {
   font-family: 'Inter', sans-serif !important;
-  font-size: .62rem !important;
+  font-size: .56rem !important;
   font-weight: 600 !important;
   color: var(--muted) !important;
+  padding: 4px 8px !important;
+}
+.mbt td {
+  padding: 3px 8px !important;
+  font-size: .68rem !important;
 }
 .mbt .pos { color: #059669 !important; }
 .mbt .neg { color: #dc2626 !important; }
@@ -498,10 +509,11 @@ body.dark .hnav-tab.active { color: #fff !important; }
    ══════════════════════════════════════ */
 .btn {
   font-family: 'Inter', sans-serif !important;
-  border-radius: 8px !important;
-  height: 34px !important;
-  font-size: .8rem !important;
+  border-radius: 6px !important;
+  height: 28px !important;
+  font-size: .7rem !important;
   font-weight: 600 !important;
+  padding: 0 10px !important;
   transition: all .12s ease !important;
 }
 .btn-blue {
@@ -519,10 +531,10 @@ body.dark .hnav-tab.active { color: #fff !important; }
   padding: 3px !important;
 }
 .pbtn {
-  border-radius: 6px !important;
-  font-size: .73rem !important;
+  border-radius: 5px !important;
+  font-size: .64rem !important;
   font-family: 'Inter', sans-serif !important;
-  padding: 5px 14px !important;
+  padding: 3px 10px !important;
 }
 
 /* ══════════════════════════════════════
@@ -530,9 +542,9 @@ body.dark .hnav-tab.active { color: #fff !important; }
    ══════════════════════════════════════ */
 .fi, .fs {
   font-family: 'Inter', sans-serif !important;
-  border-radius: 8px !important;
-  padding: 7px 11px !important;
-  font-size: .82rem !important;
+  border-radius: 6px !important;
+  padding: 5px 9px !important;
+  font-size: .72rem !important;
 }
 .fi:focus, .fs:focus {
   box-shadow: 0 0 0 3px rgba(59,130,246,.12) !important;
@@ -556,14 +568,14 @@ body.dark .hnav-tab.active { color: #fff !important; }
    ENTITY CARDS
    ══════════════════════════════════════ */
 .ent-grid {
-  gap: 14px !important;
-  margin-bottom: 20px !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
 }
 .ent-card {
   border: 1px solid var(--border) !important;
   border-top: 2px solid var(--ec, var(--border2)) !important;
-  border-radius: var(--rlg) !important;
-  padding: 14px 16px !important;
+  border-radius: var(--r) !important;
+  padding: 10px 12px !important;
   box-shadow: var(--sh) !important;
   transition: box-shadow .15s, border-color .15s !important;
 }
@@ -574,8 +586,8 @@ body.dark .hnav-tab.active { color: #fff !important; }
   transform: none !important;
 }
 .ent-card-compact {
-  border-radius: var(--rlg) !important;
-  padding: 14px 16px !important;
+  border-radius: var(--r) !important;
+  padding: 10px 12px !important;
 }
 .ent-card-compact:hover {
   transform: none !important;
@@ -589,16 +601,16 @@ body.dark .hnav-tab.active { color: #fff !important; }
    NOMINA CARDS
    ══════════════════════════════════════ */
 .nom-grid {
-  gap: 14px !important;
-  margin-bottom: 20px !important;
+  gap: 10px !important;
+  margin-bottom: 12px !important;
 }
 .nom-card {
-  border-radius: var(--rlg) !important;
-  padding: 16px !important;
+  border-radius: var(--r) !important;
+  padding: 10px 12px !important;
 }
 .nom-name {
   font-family: 'Inter', sans-serif !important;
-  font-size: .86rem !important;
+  font-size: .74rem !important;
   font-weight: 600 !important;
 }
 .nom-sueldo {
@@ -665,12 +677,31 @@ body.dark .hnav-tab.active { color: #fff !important; }
 /* ══════════════════════════════════════
    RESPONSIVE
    ══════════════════════════════════════ */
+/* ── Títulos de página y sección — compactos ── */
+.page-title, #ct > h2, .section-title {
+  font-size: 1rem !important;
+  margin-bottom: 6px !important;
+}
+.page-subtitle, #ct > h2 + p, .section-subtitle {
+  font-size: .68rem !important;
+  margin-bottom: 10px !important;
+}
+.sec-title {
+  font-size: .72rem !important;
+  margin: 10px 0 6px !important;
+}
+
+/* ── Sem grid (semáforo) ── */
+.sem-grid {
+  gap: 10px !important;
+}
+
 @media (max-width: 1100px) {
-  #ct { padding: 18px 14px !important; }
-  #tb { padding: 0 14px !important; }
-  .kpi-card { padding: 14px 16px !important; }
+  #ct { padding: 12px 10px !important; }
+  #tb { padding: 0 10px !important; }
+  .kpi-card { padding: 8px 10px !important; }
 }
 @media (max-width: 768px) {
-  #hnav { padding: 0 10px !important; }
-  .hnav-tab { font-size: .72rem !important; }
+  #hnav { padding: 0 8px !important; }
+  .hnav-tab { font-size: .62rem !important; }
 }
