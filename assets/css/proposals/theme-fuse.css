@@ -309,11 +309,107 @@ body.dark .tb-bc span:last-child { color: #fff !important; }
   box-shadow: 0 2px 6px rgba(107,114,128, .3), inset 0 1px 0 rgba(255,255,255,.12) !important;
 }
 
-/* Group labels */
+/* Group labels (legacy flat) */
 .hnav-group-label {
   font-family: 'Inter', sans-serif !important;
   color: var(--sb-m) !important;
   border-right-color: rgba(255,255,255,.1) !important;
+}
+
+/* ── Dropdown groups ── */
+#hnav-views {
+  overflow: visible !important;
+}
+
+.hnav-group {
+  position: relative !important;
+}
+
+.hnav-group-toggle {
+  font-family: 'Inter', sans-serif !important;
+  font-size: .64rem !important;
+  font-weight: 600 !important;
+  color: rgba(255,255,255,.85) !important;
+  padding: 3px 10px !important;
+  border-radius: 6px !important;
+  cursor: pointer !important;
+  background: rgba(107,114,128, .18) !important;
+  border: 1px solid rgba(107,114,128, .25) !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  transition: all .15s ease !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+.hnav-group-toggle:hover {
+  color: #fff !important;
+  background: rgba(107,114,128, .32) !important;
+  border-color: rgba(107,114,128, .45) !important;
+}
+
+.hnav-group.expanded .hnav-group-toggle {
+  color: #fff !important;
+  background: rgba(107,114,128, .4) !important;
+  border-color: rgba(107,114,128, .6) !important;
+}
+
+/* Group that contains the currently active view */
+.hnav-group.has-active .hnav-group-toggle {
+  color: #fff !important;
+  background: rgba(107,114,128, .38) !important;
+  border: 2px solid rgba(107,114,128, .6) !important;
+}
+
+.hnav-arrow {
+  font-size: .55rem !important;
+  transition: transform .15s ease !important;
+  display: inline-block !important;
+}
+.hnav-group.expanded .hnav-arrow {
+  transform: rotate(180deg) !important;
+}
+
+/* Dropdown panel */
+.hnav-group-items {
+  display: none !important;
+  position: absolute !important;
+  top: calc(100% + 4px) !important;
+  left: 0 !important;
+  z-index: 50 !important;
+  background: var(--sb) !important;
+  border: 1px solid rgba(255,255,255,.12) !important;
+  border-radius: 8px !important;
+  padding: 5px !important;
+  box-shadow: 0 8px 24px rgba(0,0,0,.3), 0 2px 8px rgba(0,0,0,.15) !important;
+  min-width: 190px !important;
+  flex-direction: column !important;
+  gap: 2px !important;
+}
+
+.hnav-group.expanded .hnav-group-items {
+  display: flex !important;
+}
+
+/* Views inside dropdown — full width, left-aligned */
+.hnav-group-items .hnav-view {
+  display: block !important;
+  width: 100% !important;
+  text-align: left !important;
+  border-radius: 5px !important;
+  box-sizing: border-box !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: none !important;
+}
+
+.hnav-group-items .hnav-view:hover {
+  box-shadow: none !important;
+}
+
+.hnav-group-items .hnav-view.active {
+  box-shadow: none !important;
 }
 
 /* Dark hnav — misma lógica, los colores de empresa funcionan igual */
