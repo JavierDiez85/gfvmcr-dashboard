@@ -56,6 +56,103 @@ function _catOptions(selected){
   return cats.map(function(c){ return '<option value="'+c+'"'+(c===selected?' selected':'')+'>'+c+'</option>'; }).join('');
 }
 
+// Auto-suggest P&L category from concept description
+function ceSuggestCategory(desc){
+  desc = (desc||'').toUpperCase();
+  if(/COMISI[OÓ]N|TARJETA|MENSUALIDAD|DISPERSION|INTERCHANGE/.test(desc)) return 'Com. Bancarias';
+  if(/SAAS|PLATAFORMA|SOFTWARE|SISTEMA|LICENCIA|HOSTING|SERVIDOR/.test(desc)) return 'Operaciones';
+  if(/RENTA|ARRENDAMIENTO|ALQUILER/.test(desc)) return 'Renta';
+  if(/N[OÓ]MINA|SUELDO|SALARIO|AGUINALDO/.test(desc)) return 'Nómina';
+  if(/MARKETING|PUBLICIDAD|ANUNCIO|FACEBOOK|GOOGLE\s*ADS/.test(desc)) return 'Marketing';
+  if(/NOTARI|LEGAL|ABOGAD|CONTAB|AUDIT/.test(desc)) return 'Regulatorio';
+  if(/PAPELER[IÍ]A|OFICINA|LIMPIEZA|MATERIAL/.test(desc)) return 'Administrativo';
+  return '';
+}
+
+// Build line-items table HTML (shared between CFDI preview and manual form)
+function _ceLineasTableHTML(conceptos, editable){
+  var html = '<div style="margin-top:6px;margin-bottom:14px">';
+  html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
+  html += '<span style="font-size:.68rem;font-weight:600;color:var(--muted)">Conceptos de la Factura (' + conceptos.length + ' líneas)</span>';
+  if(editable) html += '<button class="btn btn-out" style="font-size:.62rem;padding:2px 8px" onclick="ceAddManualLinea()">+ Línea</button>';
+  html += '</div>';
+  html += '<table class="bt" style="font-size:.74rem"><thead><tr>';
+  html += '<th>Descripción</th><th class="r" style="width:110px">Importe</th><th style="width:150px">Categoría P&L</th>';
+  if(editable) html += '<th style="width:30px"></th>';
+  html += '</tr></thead><tbody id="ce-lineas-tbody">';
+  conceptos.forEach(function(c, i){
+    var suggested = ceSuggestCategory(c.descripcion || c.concepto || '');
+    html += '<tr class="ce-linea-row">';
+    html += '<td><input type="text" class="fi ce-linea-desc" value="'+_esc(c.descripcion || c.concepto || '')+'" style="width:100%;font-size:.73rem;padding:4px 6px"></td>';
+    html += '<td class="r"><input type="number" class="fi ce-linea-importe" value="'+(c.importe||0)+'" step="0.01" min="0" oninput="ceRecalcFromLineas()" style="width:100%;font-size:.73rem;padding:4px 6px;text-align:right"></td>';
+    html += '<td><select class="ce-linea-cat" style="width:100%;padding:5px 6px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
+    html += '<option value="">—</option>' + _catOptions(suggested);
+    html += '</select></td>';
+    if(editable) html += '<td>'+(i > 0 ? '<button class="btn btn-out" style="font-size:.6rem;padding:2px 5px" onclick="ceRemoveLinea(this)">✕</button>' : '')+'</td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  return html;
+}
+
+// Add a new blank line to the lineas table
+function ceAddManualLinea(){
+  var tbody = document.getElementById('ce-lineas-tbody');
+  if(!tbody) return;
+  var tr = document.createElement('tr');
+  tr.className = 'ce-linea-row';
+  tr.innerHTML = '<td><input type="text" class="fi ce-linea-desc" placeholder="Concepto..." style="width:100%;font-size:.73rem;padding:4px 6px"></td>'
+    + '<td class="r"><input type="number" class="fi ce-linea-importe" step="0.01" min="0" placeholder="0" oninput="ceRecalcFromLineas()" style="width:100%;font-size:.73rem;padding:4px 6px;text-align:right"></td>'
+    + '<td><select class="ce-linea-cat" style="width:100%;padding:5px 6px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)"><option value="">—</option>' + _catOptions() + '</select></td>'
+    + '<td><button class="btn btn-out" style="font-size:.6rem;padding:2px 5px" onclick="ceRemoveLinea(this)">✕</button></td>';
+  tbody.appendChild(tr);
+}
+
+// Remove a line item row
+function ceRemoveLinea(btn){
+  var tr = btn.closest('tr');
+  if(tr) tr.remove();
+  ceRecalcFromLineas();
+}
+
+// Recalculate subtotal/IVA/total from line item importes
+function ceRecalcFromLineas(){
+  var importes = document.querySelectorAll('.ce-linea-importe');
+  var sub = 0;
+  importes.forEach(function(inp){ sub += parseFloat(inp.value) || 0; });
+  var subField = document.getElementById('ce-f-subtotal');
+  if(subField) subField.value = sub.toFixed(2);
+  var ivaField = document.getElementById('ce-f-iva');
+  var iva = Math.round(sub * 0.16 * 100) / 100;
+  if(ivaField) ivaField.value = iva.toFixed(2);
+  var totField = document.getElementById('ce-f-total');
+  if(totField) totField.value = (sub + iva).toFixed(2);
+}
+
+// Gather line items from the DOM
+function ceGatherLineas(){
+  var rows = document.querySelectorAll('.ce-linea-row');
+  if(!rows || rows.length <= 1) return null;
+  var lineas = [];
+  var totalIva = parseFloat((document.getElementById('ce-f-iva')||{}).value) || 0;
+  rows.forEach(function(row){
+    var desc    = row.querySelector('.ce-linea-desc');
+    var importe = row.querySelector('.ce-linea-importe');
+    var cat     = row.querySelector('.ce-linea-cat');
+    if(desc && importe && cat){
+      var imp = parseFloat(importe.value) || 0;
+      if(imp > 0) lineas.push({ concepto: (desc.value||'').trim(), importe: imp, iva: 0, categoria: cat.value||'' });
+    }
+  });
+  if(lineas.length <= 1) return null;
+  // Distribute IVA proportionally
+  var totalImporte = lineas.reduce(function(a,l){ return a + l.importe; }, 0);
+  if(totalImporte > 0){
+    lineas.forEach(function(l){ l.iva = Math.round(totalIva * (l.importe / totalImporte) * 100) / 100; });
+  }
+  return lineas;
+}
+
 // ══════════════════════════════════════════════════════════
 //  VISTA: CARGA EGRESOS  (Facturas Recibidas)
 // ══════════════════════════════════════════════════════════
@@ -257,8 +354,16 @@ function ceRenderPreview(){
   html += _pvField('RFC Receptor', d.rfc_receptor);
   html += _pvField('Folio Fiscal', d.folio_fiscal);
   html += _pvField('Fecha Emisión', d.fecha_emision ? d.fecha_emision.substring(0,10) : '', 'ce-f-fecha-factura', true, 'date');
-  html += '<div style="grid-column:1/-1">'+_pvField('Descripción / Concepto', d.descripcion, 'ce-f-concepto', true)+'</div>';
+  // Single-line description (only if ≤1 conceptos)
+  if(!d.conceptos || d.conceptos.length <= 1){
+    html += '<div style="grid-column:1/-1">'+_pvField('Descripción / Concepto', d.descripcion, 'ce-f-concepto', true)+'</div>';
+  }
   html += '</div>';
+
+  // Multi-concepto line-items table
+  if(d.conceptos && d.conceptos.length > 1){
+    html += _ceLineasTableHTML(d.conceptos, false);
+  }
 
   // Montos
   html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">';
@@ -288,6 +393,12 @@ function ceRenderPreview(){
   if(d.fecha_emision){
     var fd = document.getElementById('ce-f-fecha-factura');
     if(fd && fd.type === 'date') fd.value = d.fecha_emision.substring(0,10);
+  }
+
+  // Hide global category dropdown when multi-concepto (each line has its own)
+  if(d.conceptos && d.conceptos.length > 1){
+    var globalCat = document.getElementById('ce-categoria');
+    if(globalCat && globalCat.parentElement) globalCat.parentElement.style.display = 'none';
   }
 }
 
@@ -319,13 +430,15 @@ function _ceManualFormHTML(mode){
   var html = '<div style="margin-bottom:14px">';
   html += '<div style="font-size:.78rem;font-weight:700;color:var(--text);margin-bottom:10px">'+title+'</div>';
 
-  // Row: Proveedor + RFC + Concepto
+  // Row: Proveedor + RFC
   html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:.78rem;margin-bottom:14px">';
   html += _pvField('Proveedor', '', 'ce-f-proveedor', true);
   if(!isEfectivo) html += _pvField('RFC Proveedor (opcional)', '', 'ce-f-rfc', true);
   else html += '<div></div>';
-  html += '<div style="grid-column:1/-1">'+_pvField('Concepto / Descripción', '', 'ce-f-concepto', true)+'</div>';
   html += '</div>';
+
+  // Line items table (start with 1 row, expandable)
+  html += _ceLineasTableHTML([{descripcion:'', importe:0}], true);
 
   // Montos
   html += '<div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:14px">';
@@ -415,9 +528,17 @@ function ceSave(){
   var fechaFact = (document.getElementById('ce-f-fecha-factura')||{}).value || _today();
   var vencim    = (document.getElementById('ce-f-vencimiento')||{}).value || '';
 
+  // Gather multi-line items (returns null if ≤1 line)
+  var lineItems = ceGatherLineas();
+
   // Validations
   if(!empresa){ toast('❌ Selecciona la empresa que paga'); return; }
-  if(!categoria){ toast('❌ Selecciona la categoría P&L'); return; }
+  if(lineItems && lineItems.length > 1){
+    var missingCat = lineItems.some(function(l){ return !l.categoria; });
+    if(missingCat){ toast('❌ Selecciona la categoría para cada línea'); return; }
+  } else {
+    if(!categoria){ toast('❌ Selecciona la categoría P&L'); return; }
+  }
   if(!proveedor.trim()){ toast('❌ Ingresa el nombre del proveedor'); return; }
   if(!total || total <= 0){ toast('❌ El total debe ser mayor a 0'); return; }
 
@@ -436,6 +557,12 @@ function ceSave(){
   if(moneda === 'MXN') tc = 1;
   var totalMXN = Math.round(total * tc);
 
+  // For multi-line: use first line's categoria, build combined concepto
+  if(lineItems && lineItems.length > 1){
+    categoria = lineItems[0].categoria;
+    concepto = lineItems.map(function(l){ return l.concepto; }).join(' | ');
+  }
+
   var cxp = {
     id: 'cxp_' + Date.now(),
     proveedor: proveedor.trim(),
@@ -443,6 +570,7 @@ function ceSave(){
     empresa: empresa,
     categoria: categoria,
     concepto: concepto.trim(),
+    lineas: lineItems || null,
     moneda: moneda,
     tipo_cambio: tc,
     subtotal: subtotal,
@@ -507,12 +635,20 @@ function ceRenderHistory(filter){
     return;
   }
   tb.innerHTML = rows.map(function(c){
+    // Category display: show first cat + badge if multi-line
+    var catDisplay;
+    if(c.lineas && c.lineas.length > 1){
+      catDisplay = '<span class="pill" style="background:var(--bg);color:var(--muted)">'+_esc(c.lineas[0].categoria)+'</span>'
+        + '<span style="font-size:.58rem;color:var(--blue);margin-left:2px">+' + (c.lineas.length-1) + '</span>';
+    } else {
+      catDisplay = '<span class="pill" style="background:var(--bg);color:var(--muted)">'+_esc(c.categoria)+'</span>';
+    }
     return '<tr>'
       + '<td>'+_fmtD(c.fecha_factura)+'</td>'
       + '<td style="font-weight:600">'+_esc(c.proveedor)+'</td>'
       + '<td>'+_empPill(c.empresa)+'</td>'
-      + '<td><span class="pill" style="background:var(--bg);color:var(--muted)">'+_esc(c.categoria)+'</span></td>'
-      + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.concepto)+'</td>'
+      + '<td>'+catDisplay+'</td>'
+      + '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.lineas&&c.lineas.length>1 ? c.lineas.length+' conceptos' : c.concepto)+'</td>'
       + '<td class="r mo" style="font-weight:600">'+_fmt(c.total_mxn)+'</td>'
       + '<td>'+_statusPill(c.status)+'</td>'
       + '<td>'+_origenPill(c.origen)+'</td>'
@@ -674,7 +810,7 @@ function ppRenderCxpTable(search){
     return '<tr>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
       + '<td>'+_empPill(c.empresa)+'</td>'
-      + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.concepto)+'</td>'
+      + '<td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.lineas&&c.lineas.length>1 ? c.lineas.length+' conceptos' : c.concepto)+'</td>'
       + '<td class="r mo">'+_fmt(c.total_mxn)+'</td>'
       + '<td class="r mo pos">'+_fmt(c.monto_pagado_mxn)+'</td>'
       + '<td class="r mo" style="font-weight:700;'+(c.saldo_mxn>0?'color:#b02020':'color:#007a48')+'">'+_fmt(c.saldo_mxn)+'</td>'
@@ -868,12 +1004,7 @@ function ppRenderChart(){
 //  P&L INJECTION: ceInjectGastos()
 // ══════════════════════════════════════════════════════════
 function ceInjectGastos(){
-  // Access FG_ROWS from flujo-engine (it's in the closure but accessible via window patterns)
-  // We filter and unshift into FG_ROWS which is in the flujo-engine IIFE scope
-  // Since FG_ROWS is not directly accessible, we use the global injection approach
-
   // 1. Remove previous auto-invoice rows
-  // FG_ROWS is accessed via the flujo-engine's window references
   if(typeof _ceCleanFGRows === 'function') _ceCleanFGRows();
 
   // 2. Load CxP data
@@ -881,19 +1012,48 @@ function ceInjectGastos(){
   var yr = String(typeof _year !== 'undefined' ? _year : new Date().getFullYear());
 
   // 3. Group payments by CxP and month
-  var cxpMap = {};
+  var cxpPayments = {};
   _cxpStore.pagos.forEach(function(pago){
     if(!pago.fecha || !pago.fecha.startsWith(yr)) return;
     var cxp = _cxpStore.cuentas.find(function(c){ return c.id === pago.cxp_id; });
     if(!cxp) return;
 
-    if(!cxpMap[cxp.id]) cxpMap[cxp.id] = { cxp:cxp, vals:Array(12).fill(0) };
+    if(!cxpPayments[cxp.id]) cxpPayments[cxp.id] = { cxp:cxp, monthlyPayments:Array(12).fill(0) };
     var mes = parseInt(pago.fecha.substring(5,7)) - 1;
-    if(mes >= 0 && mes < 12) cxpMap[cxp.id].vals[mes] += pago.monto_mxn;
+    if(mes >= 0 && mes < 12) cxpPayments[cxp.id].monthlyPayments[mes] += pago.monto_mxn;
   });
 
-  // 4. Inject into FG_ROWS via the global helper
-  var entries = Object.values(cxpMap);
+  // 4. Build entries: split per line item for multi-concepto CxPs
+  var entries = [];
+  Object.values(cxpPayments).forEach(function(item){
+    var cxp = item.cxp;
+    var payments = item.monthlyPayments;
+
+    if(cxp.lineas && cxp.lineas.length > 1){
+      // Multi-line: distribute payments proportionally per line
+      var totalImporte = cxp.lineas.reduce(function(a,l){ return a + l.importe; }, 0);
+      cxp.lineas.forEach(function(linea, idx){
+        var ratio = totalImporte > 0 ? linea.importe / totalImporte : 0;
+        var lineVals = payments.map(function(v){ return Math.round(v * ratio); });
+        entries.push({
+          cxp: {
+            id: cxp.id + '_L' + idx,
+            proveedor: cxp.proveedor,
+            concepto: linea.concepto || cxp.concepto,
+            empresa: cxp.empresa,
+            categoria: linea.categoria,
+            folio_fiscal: cxp.folio_fiscal
+          },
+          vals: lineVals
+        });
+      });
+    } else {
+      // Single-line (legacy): one entry with full payment
+      entries.push({ cxp: cxp, vals: payments });
+    }
+  });
+
+  // 5. Inject into FG_ROWS via the global helper
   if(typeof _ceInjectEntries === 'function') _ceInjectEntries(entries, yr);
 }
 
@@ -917,8 +1077,12 @@ window.ppFilter         = ppFilter;
 window.ppOpenPago       = ppOpenPago;
 window.ppSavePago       = ppSavePago;
 window.ppViewPDF        = ppViewPDF;
-window.ceInjectGastos   = ceInjectGastos;
-window.cxpLoad          = cxpLoad;
+window.ceInjectGastos     = ceInjectGastos;
+window.cxpLoad            = cxpLoad;
+window.ceAddManualLinea   = ceAddManualLinea;
+window.ceRemoveLinea      = ceRemoveLinea;
+window.ceRecalcFromLineas = ceRecalcFromLineas;
+window.ceSuggestCategory  = ceSuggestCategory;
 
 // Register views
 if(typeof registerView === 'function'){

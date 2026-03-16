@@ -605,35 +605,61 @@ function cfParseCFDI(text){
     descripcion: '', periodo: '',
     subtotal: 0, iva_amount: 0, total: 0,
     moneda: '', forma_pago: '', metodo_pago: '',
-    uso_cfdi: '', efecto: ''
+    uso_cfdi: '', efecto: '',
+    conceptos: []
   };
 
-  // RFC emisor
+  // RFC emisor — Pattern A: "RFC del emisor: XXX" / "RFC emisor: XXX"
   let m = text.match(/RFC\s*(?:del?\s*)?emisor[:\s]*([A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3})/i);
+  // Fallback B: "EMISOR: ... RFC: XXX" (EFEVOO-style sequential blocks)
+  if(!m) m = text.match(/EMISOR[:\s][\s\S]*?RFC[:\s]\s*([A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3})/i);
   if(m) d.rfc_emisor = m[1].toUpperCase();
 
-  // RFC receptor
+  // RFC receptor — Pattern A: "RFC del receptor: XXX"
   m = text.match(/RFC\s*(?:del?\s*)?receptor[:\s]*([A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3})/i);
+  // Fallback B: "RECEPTOR: ... RFC: XXX"
+  if(!m) m = text.match(/RECEPTOR[:\s][\s\S]*?RFC[:\s]\s*([A-ZÑ&]{3,4}\d{6}[A-Z0-9]{3})/i);
   if(m) d.rfc_receptor = m[1].toUpperCase();
 
-  // Nombre emisor — stop at "RFC receptor"
+  // Nombre emisor — Pattern A: "Nombre del emisor: XXX"
   d.nombre_emisor = _cfExtract(text, 'Nombre\\s*(?:del?\\s*)?emisor', ['RFC\\s*receptor', 'Código', 'Nombre\\s*receptor']).substring(0,80);
+  // Fallback B: extract text between "EMISOR:" and next "RFC:"
+  if(!d.nombre_emisor){
+    var _em = text.match(/EMISOR[:\s]+(.+?)(?=\s{2,}RFC|\s+RFC[:\s])/i);
+    if(_em) d.nombre_emisor = _em[1].replace(/\s+/g,' ').trim().substring(0,80);
+  }
 
-  // Nombre receptor — stop at "Código postal" or "Régimen"
+  // Nombre receptor — Pattern A: "Nombre del receptor: XXX"
   d.nombre_receptor = _cfExtract(text, 'Nombre\\s*(?:del?\\s*)?receptor', ['Código\\s*postal', 'Régimen', 'Uso\\s*CFDI']).substring(0,80);
+  // Fallback B: extract text between "RECEPTOR:" and next "RFC:"
+  if(!d.nombre_receptor){
+    var _rm = text.match(/RECEPTOR[:\s]+(.+?)(?=\s{2,}RFC|\s+RFC[:\s])/i);
+    if(_rm) d.nombre_receptor = _rm[1].replace(/\s+/g,' ').trim().substring(0,80);
+  }
 
   // Folio fiscal (UUID)
   m = text.match(/([A-F0-9]{8}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{4}-[A-F0-9]{12})/i);
   if(m) d.folio_fiscal = m[1].toUpperCase();
 
-  // Fecha emisión — look in "fecha y hora de emisión:" or standalone date
+  // Fecha emisión — Pattern A: "fecha y hora de emisión: YYYY-MM-DD HH:MM:SS"
   m = text.match(/fecha\s*(?:y\s*hora\s*)?(?:de\s*)?emisi[oó]n[:\s]*(?:\d{5}\s+)?(\d{4}-\d{2}-\d{2})\s*[T ]?\s*(\d{2}:\d{2}:\d{2})?/i);
   if(!m) m = text.match(/(\d{4}-\d{2}-\d{2})\s*[T ]?\s*(\d{2}:\d{2}:\d{2})?/);
   if(m) d.fecha_emision = m[1] + (m[2] ? ' ' + m[2] : '');
+  // Fallback B: "FECHA/ HORA DEL COMPROBANTE: DD/MM/YYYY HH:MM" (EFEVOO format)
+  if(!d.fecha_emision){
+    m = text.match(/FECHA[\s\/]*HORA\s*(?:DEL?\s*)?COMPROBANTE[:\s]*(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}:\d{2}(?::\d{2})?)/i);
+    if(m) d.fecha_emision = m[3]+'-'+m[2]+'-'+m[1]+' '+m[4];
+  }
+  // Fallback C: any DD/MM/YYYY date
+  if(!d.fecha_emision){
+    m = text.match(/(\d{2})\/(\d{2})\/(\d{4})\s+(\d{1,2}:\d{2})/);
+    if(m) d.fecha_emision = m[3]+'-'+m[2]+'-'+m[1]+' '+m[4];
+  }
 
-  // Subtotal — "Subtotal   $ 117,732.41"
+  // Subtotal — "Subtotal   $ 117,732.41" or "Subtotal: $35,596.76"
   m = text.match(/Subtotal\s+\$\s*([\d,]+\.?\d*)/i);
   if(!m) m = text.match(/Sub\s*total[:\s]*\$?\s*([\d,]+\.?\d*)/i);
+  if(!m) m = text.match(/Subtotal[:\s]+\$\s*([\d,]+\.?\d*)/i);
   if(m) d.subtotal = parseFloat(m[1].replace(/,/g,'')) || 0;
 
   // IVA — "Impuestos trasladados   IVA   16.00%   $ 18,837.19"
@@ -646,11 +672,17 @@ function cfParseCFDI(text){
     // Fallback: just $ after 16.00%
     m = text.match(/16\.00%\s+\$\s*([\d,]+\.?\d*)/i);
   }
+  if(!m){
+    // Fallback D: "IVA: $5,695.48" (with colon)
+    m = text.match(/\bIVA[:\s]+\$\s*([\d,]+\.?\d*)/i);
+  }
   if(m) d.iva_amount = parseFloat(m[1].replace(/,/g,'')) || 0;
 
   // Total — "Total   $ 136,569.60" but NOT "Subtotal"
   m = text.match(/(?:^|[^b])Total\s+\$\s*([\d,]+\.?\d*)/i);
   if(!m) m = text.match(/\bTotal\s+\$\s*([\d,]+\.?\d*)/i);
+  // Fallback: "TOTAL: $41,292.24MXN" (with colon and optional MXN suffix)
+  if(!m) m = text.match(/\bTOTAL[:\s]+\$\s*([\d,]+\.?\d*)\s*(?:MXN|USD)?/i);
   if(m) d.total = parseFloat(m[1].replace(/,/g,'')) || 0;
   // If total matched subtotal, try finding the larger one
   if(d.total === d.subtotal && d.iva_amount > 0){
@@ -687,6 +719,45 @@ function cfParseCFDI(text){
 
   // Efecto — "Efecto de comprobante:   Ingreso  Régimen fiscal:"
   d.efecto = _cfExtract(text, 'Efecto\\s*(?:del?\\s*)?comprobante', ['Régimen', 'Exportación', 'Conceptos']).substring(0,30);
+
+  // ── Conceptos extraction (multi-line items) ──
+  // Find each SAT product/service code (8 digits) + qty + unit code
+  var _satRx = /\b(\d{8})\s+(\d+(?:\.\d+)?)\s+([A-Z0-9]{2,4})\s+/g;
+  var _satPositions = [], _sm;
+  while((_sm = _satRx.exec(text)) !== null){
+    _satPositions.push({ index:_sm.index, endIndex:_sm.index+_sm[0].length, clave:_sm[1], cantidad:_sm[2], unidad:_sm[3] });
+  }
+  // For each SAT code block, extract description and last positive $ amount (= importe)
+  for(var _si=0; _si<_satPositions.length; _si++){
+    var _start = _satPositions[_si].endIndex;
+    var _end = (_si+1 < _satPositions.length) ? _satPositions[_si+1].index : text.indexOf('Subtotal', _start);
+    if(_end < 0 || _end < _start) _end = Math.min(_start + 600, text.length);
+    var _block = text.substring(_start, _end);
+    // Description: text before "Obj." or first "$"
+    var _descEnd = _block.search(/\bObj\.\s|(?<!\S)\$/);
+    if(_descEnd < 0) _descEnd = Math.min(100, _block.length);
+    var _desc = _block.substring(0, _descEnd).replace(/\s+/g,' ').trim();
+    // Importe: last positive dollar amount in block
+    var _amounts = [], _amRx = /\$([\d,]+\.\d{2})/g, _am;
+    while((_am = _amRx.exec(_block)) !== null){
+      var _val = parseFloat(_am[1].replace(/,/g,''));
+      if(_val > 0) _amounts.push(_val);
+    }
+    var _importe = _amounts.length > 0 ? _amounts[_amounts.length-1] : 0;
+    if(_desc && _importe > 0){
+      d.conceptos.push({
+        clave_prodserv: _satPositions[_si].clave,
+        cantidad: parseFloat(_satPositions[_si].cantidad) || 1,
+        clave_unidad: _satPositions[_si].unidad,
+        descripcion: _desc.substring(0,200),
+        importe: _importe
+      });
+    }
+  }
+  // If multiple conceptos, build a combined description if none was extracted
+  if(d.conceptos.length > 1 && !d.descripcion){
+    d.descripcion = d.conceptos.map(function(c){ return c.descripcion; }).join(' | ').substring(0,200);
+  }
 
   return d;
 }
