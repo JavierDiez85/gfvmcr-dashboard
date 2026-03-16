@@ -45,6 +45,7 @@ body{background:var(--bg);color:var(--text);font-family:'Figtree',sans-serif;fon
 .sb-co-label{font-size:.58rem;font-weight:600;color:var(--sb-t);text-align:center;white-space:nowrap;}
 .sb-co.active .sb-co-label{color:#fff;}
 .sb-divider{width:44px;height:1px;background:rgba(255,255,255,.1);margin:6px 0;}
+.sb-group-label{font-size:.5rem;font-weight:700;color:var(--sb-m,#8b8fb5);text-transform:uppercase;letter-spacing:.08em;padding:2px 0 1px;text-align:center;opacity:.7;}
 
 /* ── Brand/Logo in sidebar ── */
 .sb-brand{padding:10px 0 8px;cursor:pointer;text-align:center;}

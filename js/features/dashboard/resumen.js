@@ -13,12 +13,12 @@ function rResumen(){
   // This ensures wbLoadFees + fiLoad + fgLoad + fiInjectTPV + fiInjectCredits + syncFlujoToRecs
   // are all executed, so S.recs contains ALL data (TPV, créditos, Wirebit fees, flujos).
 
-  const entKeys = ['Salem','Endless','Dynamo','Wirebit'];
-  const entC    = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
-  const entCBg  = {Salem:'rgba(0,115,234,.22)',Endless:'rgba(0,184,117,.22)',Dynamo:'rgba(255,112,67,.22)',Wirebit:'rgba(155,81,224,.22)'};
+  const entKeys = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+  const entC    = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
+  const entCBg  = {Salem:'rgba(0,115,234,.22)',Endless:'rgba(0,184,117,.22)',Dynamo:'rgba(255,112,67,.22)',Wirebit:'rgba(155,81,224,.22)',Stellaris:'rgba(229,57,53,.22)'};
 
   // ── Ingresos por empresa desde S.recs ──
-  const ingByEnt = {Salem:Array(12).fill(0),Endless:Array(12).fill(0),Dynamo:Array(12).fill(0),Wirebit:Array(12).fill(0)};
+  const ingByEnt = {Salem:Array(12).fill(0),Endless:Array(12).fill(0),Dynamo:Array(12).fill(0),Wirebit:Array(12).fill(0),Stellaris:Array(12).fill(0)};
   try {
     (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.yr==_year).forEach(r=>{
       if(ingByEnt[r.ent]) r.vals.forEach((v,i)=> ingByEnt[r.ent][i] += (v||0));
@@ -26,7 +26,7 @@ function rResumen(){
   } catch(e){}
 
   // ── Gastos por empresa desde S.recs ──
-  const gasByEnt = {Salem:Array(12).fill(0),Endless:Array(12).fill(0),Dynamo:Array(12).fill(0),Wirebit:Array(12).fill(0)};
+  const gasByEnt = {Salem:Array(12).fill(0),Endless:Array(12).fill(0),Dynamo:Array(12).fill(0),Wirebit:Array(12).fill(0),Stellaris:Array(12).fill(0)};
   try {
     (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.yr==_year).forEach(r=>{
       if(gasByEnt[r.ent]) r.vals.forEach((v,i)=> gasByEnt[r.ent][i] += (v||0));
@@ -34,15 +34,16 @@ function rResumen(){
   } catch(e){}
 
   // ── Nómina mensual por empresa (siempre disponible desde NOM_EDIT) ──
-  const nomByEnt = {Salem:0,Endless:0,Dynamo:0,Wirebit:0};
+  const nomByEnt = {Salem:0,Endless:0,Dynamo:0,Wirebit:0,Stellaris:0};
   try {
     NOM_EDIT.forEach(n=>{
       nomByEnt.Salem   += n.s*(n.sal||0)/100;
       nomByEnt.Endless += n.s*(n.end||0)/100;
       nomByEnt.Dynamo  += n.s*(n.dyn||0)/100;
       nomByEnt.Wirebit += n.s*(n.wb||0)/100;
+      nomByEnt.Stellaris += n.s*(n.stel||0)/100;
     });
-  } catch(e){ nomByEnt.Salem=186000;nomByEnt.Endless=23000;nomByEnt.Dynamo=23000;nomByEnt.Wirebit=320000; }
+  } catch(e){ nomByEnt.Salem=186000;nomByEnt.Endless=23000;nomByEnt.Dynamo=23000;nomByEnt.Wirebit=320000;nomByEnt.Stellaris=0; }
   const nomTotal = Object.values(nomByEnt).reduce((a,b)=>a+b,0);
 
   // ── Totales anuales ──
@@ -227,13 +228,13 @@ function rEntSummary(){
 
   const entC   = {Salem:'#0073ea', Endless:'#00b875', Dynamo:'#ff7043', Wirebit:'#9b51e0'};
   const entBg  = {Salem:'var(--blue-bg)', Endless:'var(--green-bg)', Dynamo:'var(--orange-bg)', Wirebit:'var(--purple-bg)'};
-  const entIco = {Salem:'💳', Endless:'🏦', Dynamo:'🏦', Wirebit:'⛓'};
-  const entNav = {Salem:"navTo('sal_res')", Endless:"navTo('end_res')", Dynamo:"navTo('dyn_res')", Wirebit:"navTo('wb_res')"};
+  const entIco = {Salem:'💳', Endless:'🏦', Dynamo:'🏦', Wirebit:'⛓', Stellaris:'🔴'};
+  const entNav = {Salem:"navTo('sal_res')", Endless:"navTo('end_res')", Dynamo:"navTo('dyn_res')", Wirebit:"navTo('wb_res')", Stellaris:"navTo('stel_res')"};
 
-  const cards = ['Salem','Endless','Dynamo','Wirebit'].map(e => {
+  const cards = ['Salem','Endless','Dynamo','Wirebit','Stellaris'].map(e => {
     const ing  = (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+sum(r.vals),0);
     const gas  = (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+sum(r.vals),0);
-    const nom  = NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:n.wb)||0)/100,0)*12;
+    const nom  = NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:e==='Stellaris'?n.stel:n.wb)||0)/100,0)*12;
     const ingD = ing || (e==='Wirebit' ? sum(WB_ING_TOTAL) : 0);
     const gasD = gas || nom;
     const mg   = ingD - gasD;

@@ -7,8 +7,8 @@
 // TESORERÍA — MÓDULO COMPLETO
 // ══════════════════════════════════════
 const TES_KEY = 'gf_tesoreria';
-const TES_EMPS = ['Salem','Endless','Dynamo','Wirebit'];
-const TES_EMP_COLORS = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
+const TES_EMPS = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+const TES_EMP_COLORS = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
 
 const TES_CATS_ING = ['Comisiones TPV','Fondeo Tarjetas','Intereses Crédito','Comisión Apertura','Fee Exchange','Fee OTC','Fee Retiro','Otros Ingresos'];
 const TES_CATS_GAS = ['Nómina Operativa','Nómina Administrativa','Renta Oficina','Mantenimiento','Renta Impresora','Software','Hardware','Efevoo Tarjetas','Efevoo TPV','Marketing','Luz','Insumos Oficina','Viáticos','Comisiones Bancarias','Cumplimiento','Liquidity Providers','Comisiones Promotoría','Otros Gastos'];
@@ -614,7 +614,7 @@ function rDashTesoreria(){
   // Per company neto
   const byEmp = {};
   const EMP_COLS = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
-  ['Salem','Endless','Dynamo','Wirebit'].forEach(e=>{ byEmp[e]={ing:0,gas:0}; });
+  ['Salem','Endless','Dynamo','Wirebit','Stellaris'].forEach(e=>{ byEmp[e]={ing:0,gas:0}; });
   data.forEach(m=>{ if(byEmp[m.empresa]){ if(m.tipo==='Ingreso')byEmp[m.empresa].ing+=m.monto; else byEmp[m.empresa].gas+=m.monto; }});
 
   // Update KPI cards
@@ -643,7 +643,7 @@ function rDashTesoreria(){
   // Per company mini cards
   const empCont = document.getElementById('dash-tes-emp-cards');
   if(empCont){
-    empCont.innerHTML = ['Salem','Endless','Dynamo','Wirebit'].map(e=>{
+    empCont.innerHTML = ['Salem','Endless','Dynamo','Wirebit','Stellaris'].map(e=>{
       const col  = EMP_COLS[e];
       const neto = byEmp[e].ing - byEmp[e].gas;
       const sign = neto>=0?'+':'-';
@@ -742,7 +742,7 @@ function rBancosView(){
   const root = document.getElementById('cfg-bancos-root');
   if(!root) return;
   const bancos = tesBancosLoad();
-  const emps   = ['Salem','Endless','Dynamo','Wirebit'];
+  const emps   = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
 
   function empBadges(empresas){
     return emps.map(e=>{
@@ -819,7 +819,7 @@ function rBancosView(){
 function bancosToggleEmp(idx, empresa, checked){
   const bancos = tesBancosLoad();
   if(!bancos[idx]) return;
-  let emps = bancos[idx].empresas ? [...bancos[idx].empresas] : ['Salem','Endless','Dynamo','Wirebit'];
+  let emps = bancos[idx].empresas ? [...bancos[idx].empresas] : ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
   if(checked && !emps.includes(empresa)) emps.push(empresa);
   if(!checked) emps = emps.filter(e=>e!==empresa);
   if(!emps.length){ toast('⚠️ Debe quedar al menos una empresa'); return; }
@@ -845,7 +845,7 @@ function bancosEditModal(idx){ _bancosEditIdx=idx; bancosShowModal(idx); }
 function bancosShowModal(idx){
   const bancos = tesBancosLoad();
   const item   = idx !== null ? bancos[idx] : null;
-  const emps   = ['Salem','Endless','Dynamo','Wirebit'];
+  const emps   = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
   const curEmp = item?.empresa || item?.empresas?.[0] || emps[0];
 
   const empOptions = emps.map(e =>
@@ -891,7 +891,7 @@ function bancosShowModal(idx){
 function bancosGuardar(){
   const nombre = document.getElementById('bm-nombre')?.value.trim();
   const tipo   = document.getElementById('bm-tipo')?.value;
-  const emps   = ['Salem','Endless','Dynamo','Wirebit'].filter(e=>document.getElementById('bm-emp-'+e)?.checked);
+  const emps   = ['Salem','Endless','Dynamo','Wirebit','Stellaris'].filter(e=>document.getElementById('bm-emp-'+e)?.checked);
   if(!nombre){ toast('⚠️ Ingresa el nombre de la cuenta'); return; }
   if(!emps.length){ toast('⚠️ Selecciona al menos una empresa'); return; }
   const bancos = tesBancosLoad();

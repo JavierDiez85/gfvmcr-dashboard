@@ -31,6 +31,7 @@
     end:{name:'Endless Money',fullName:'Endless',nomKey:'end',color:'#00b875'},
     dyn:{name:'Dynamo Finance',fullName:'Dynamo',nomKey:'dyn',color:'#ff7043'},
     wb:{name:'Wirebit',fullName:'Wirebit',nomKey:'wb',color:'#9b51e0'},
+    stel:{name:'Stellaris',fullName:'Stellaris',nomKey:'stel',color:'#e53935'},
   };
 
   // ═══════════════════════════════════════
@@ -48,7 +49,7 @@
     // NOM_EDIT-aware: recalcula la distribucion real desde la config de nomina
     function nomPorEmpresa(empKey){
       return NOM_EDIT.reduce((sum, e) => {
-        const pct = {Salem:e.sal, Endless:e.end, Dynamo:e.dyn, Wirebit:e.wb}[empKey] || 0;
+        const pct = {Salem:e.sal, Endless:e.end, Dynamo:e.dyn, Wirebit:e.wb, Stellaris:e.stel}[empKey] || 0;
         return sum + (e.s * pct / 100);
       }, 0);
     }
@@ -207,6 +208,34 @@
           { type:'gasto', label:'  Vi\u00e1ticos',               cats:['Representaci\u00f3n'], concepts:['viaje','viatico'] },
           { type:'gasto', label:'  Comisiones Bancarias',   cats:['Com. Bancarias'] },
           { type:'gasto', label:'  Cumplimiento',           cats:['Regulatorio'], concepts:['alestra','cnbv','icarus','stp','cumpl'] },
+          { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
+          { type:'ebitda',    label:'EBITDA', bold:true, util:true },
+        ]
+      },
+
+      // ── STELLARIS ──
+      stel: { id:'stel-res', entName:'Stellaris', acColor:'#e53935',
+        sections:[
+          { type:'header', label:'\u25b6 INGRESOS' },
+          { type:'ing', label:'  Otros Ingresos',           cats:['Otros Ingresos'] },
+          { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
+
+          { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
+          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: ()=>nomMesOp('Stellaris') },
+          { type:'gasto', label:'  Costo Directo',           cats:['Costo Directo'] },
+          { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
+          { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
+
+          { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
+          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: ()=>nomMesAdm('Stellaris') },
+          { type:'gasto', label:'  Renta',                   cats:['Renta'] },
+          { type:'gasto', label:'  Marketing',               cats:['Marketing'] },
+          { type:'gasto', label:'  Operaciones',             cats:['Operaciones'] },
+          { type:'gasto', label:'  Administrativo',          cats:['Administrativo'] },
+          { type:'gasto', label:'  Representaci\u00f3n',          cats:['Representaci\u00f3n'] },
+          { type:'gasto', label:'  Com. Bancarias',          cats:['Com. Bancarias'] },
+          { type:'gasto', label:'  Regulatorio',             cats:['Regulatorio'] },
+          { type:'gasto', label:'  Varios',                  cats:['Varios'] },
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
         ]
@@ -422,7 +451,7 @@
       let total=0;
       try{ NOM_EDIT.forEach(n=>{
         ea.forEach(e=>{
-          const k=e==='Salem'?'sal':e==='Endless'?'end':e==='Dynamo'?'dyn':'wb';
+          const k=e==='Salem'?'sal':e==='Endless'?'end':e==='Dynamo'?'dyn':e==='Stellaris'?'stel':'wb';
           total+=n.s*(n[k]||0)/100;
         });
       });}catch(e){}
@@ -453,24 +482,27 @@
         {l:'EBITDA CENTUM CAPITAL',vals:ebitda,t:'util',bold:true},
       ];
     } else {
-      const cIng=_rv(centumEnts,'ingreso'), wIng=_rv('Wirebit','ingreso');
-      const totIng=_add(cIng,wIng);
-      const cGas=_rv(centumEnts,'gasto'), wGas=_rv('Wirebit','gasto');
-      const totGas=_add(cGas,wGas);
+      const cIng=_rv(centumEnts,'ingreso'), wIng=_rv('Wirebit','ingreso'), stIng=_rv('Stellaris','ingreso');
+      const totIng=_add(_add(cIng,wIng),stIng);
+      const cGas=_rv(centumEnts,'gasto'), wGas=_rv('Wirebit','gasto'), stGas=_rv('Stellaris','gasto');
+      const totGas=_add(_add(cGas,wGas),stGas);
       const margen=_sub(totIng,totGas);
-      const cNom=_nom(centumEnts), wNom=_nom('Wirebit');
-      const totNom=_add(cNom,wNom);
+      const cNom=_nom(centumEnts), wNom=_nom('Wirebit'), stNom=_nom('Stellaris');
+      const totNom=_add(_add(cNom,wNom),stNom);
       const ebitda=_sub(margen,totNom);
       rows=[
         {l:'\u25b8 CENTUM CAPITAL \u2014 Ingresos',vals:cIng,t:'ing'},
         {l:'\u25b8 WIREBIT \u2014 Ingresos',vals:wIng,t:'ing'},
+        {l:'\u25b8 STELLARIS \u2014 Ingresos',vals:stIng,t:'ing'},
         {l:'TOTAL INGRESOS GRUPO',vals:totIng,t:'total',bold:true},
         {l:'\u25b8 CENTUM CAPITAL \u2014 Gastos',vals:cGas,t:'gasto'},
         {l:'\u25b8 WIREBIT \u2014 Gastos',vals:wGas,t:'gasto'},
+        {l:'\u25b8 STELLARIS \u2014 Gastos',vals:stGas,t:'gasto'},
         {l:'TOTAL GASTOS',vals:totGas,t:'total',bold:true},
         {l:'MARGEN BRUTO GRUPO',vals:margen,t:'util',bold:true},
         {l:'\u25b8 CENTUM CAPITAL \u2014 N\u00f3mina',vals:cNom,t:'gasto'},
         {l:'\u25b8 WIREBIT \u2014 N\u00f3mina',vals:wNom,t:'gasto'},
+        {l:'\u25b8 STELLARIS \u2014 N\u00f3mina',vals:stNom,t:'gasto'},
         {l:'TOTAL N\u00d3MINA GRUPO',vals:totNom,t:'total',bold:true},
         {l:'EBITDA GRUPO',vals:ebitda,t:'util',bold:true},
       ];
@@ -501,8 +533,8 @@
       if(kCart) kCart.textContent = carteraTotal > 0 ? fmtK(carteraTotal) : '\u2014';
       if(kCartSub) kCartSub.textContent = allCred.length + ' cr\u00e9dito' + (allCred.length!==1?'s':'') + ' (End+Dyn)';
     } else {
-      const totI = _rv(['Salem','Endless','Dynamo','Wirebit'],'ingreso').reduce((a,b)=>a+b,0);
-      const totG = _rv(['Salem','Endless','Dynamo','Wirebit'],'gasto').reduce((a,b)=>a+b,0);
+      const totI = _rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'ingreso').reduce((a,b)=>a+b,0);
+      const totG = _rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'gasto').reduce((a,b)=>a+b,0);
       const kIng = document.getElementById('grupo-k-ing');
       const kGas = document.getElementById('grupo-k-gas');
       if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '\u2014';
@@ -751,16 +783,17 @@
   window.rSalTPV = rSalTPV;
   window.rSalGas = rSalGas;
 
-  // Register P&L views for all 4 entities + consolidados
+  // Register P&L views for all 5 entities + consolidados
   if(typeof registerPL === 'function'){
     registerPL('sal');
     registerPL('end');
     registerPL('dyn');
     registerPL('wb');
+    registerPL('stel');
   }
   if(typeof registerView === 'function'){
     registerView('centum', function(){ return _syncAll().then(function(){ rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']); }); });
-    registerView('grupo', function(){ return _syncAll().then(function(){ rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb']); }); });
+    registerView('grupo', function(){ return _syncAll().then(function(){ rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb','stel']); }); });
   }
 
 })(window);

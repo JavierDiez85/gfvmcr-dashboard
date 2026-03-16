@@ -428,7 +428,8 @@ const CF_EMPRESAS = {
   salem_tarjetas:   { label:'Salem Tarjetas',   rfc:'SIN2202283E4', nombre:'SALEM INTERNACIONAL' },
   endless:          { label:'Endless Money',     rfc:'', nombre:'ENDLESS' },
   dynamo:           { label:'Dynamo Finance',    rfc:'', nombre:'DYNAMO' },
-  wirebit:          { label:'Wirebit',           rfc:'', nombre:'WIREBIT' }
+  wirebit:          { label:'Wirebit',           rfc:'', nombre:'WIREBIT' },
+  stellaris:        { label:'Stellaris',         rfc:'', nombre:'STELLARIS' }
 };
 
 const CF_MESES = {

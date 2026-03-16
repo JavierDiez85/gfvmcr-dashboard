@@ -18,8 +18,8 @@ function cxpSave(){
 }
 
 // ── Helpers ─────────────────────────────────────────────
-var _EMPRESAS = ['Salem','Endless','Dynamo','Wirebit'];
-var _ENT_C = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
+var _EMPRESAS = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+var _ENT_C = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
 var _METODOS_PAGO = ['Transferencia','Efectivo','Cheque','Tarjeta'];
 
 function _fmt(n){ return typeof fmtMXN==='function' ? fmtMXN(n) : '$'+Number(n||0).toLocaleString('es-MX',{minimumFractionDigits:0}); }

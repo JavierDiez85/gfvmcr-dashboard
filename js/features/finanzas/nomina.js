@@ -3,29 +3,30 @@
   'use strict';
 
 // ── ESTADO EDITABLE DE NOMINA (en memoria) ──
-let NOM_EDIT = NOM.map(e=>({n:e.n,r:e.r,s:e.s,tipo:e.tipo||'Administrativo',sal:Math.round(e.dist.Salem*100),end:Math.round(e.dist.Endless*100),dyn:Math.round(e.dist.Dynamo*100),wb:Math.round(e.dist.Wirebit*100)}));
+let NOM_EDIT = NOM.map(e=>({n:e.n,r:e.r,s:e.s,tipo:e.tipo||'Administrativo',sal:Math.round(e.dist.Salem*100),end:Math.round(e.dist.Endless*100),dyn:Math.round(e.dist.Dynamo*100),wb:Math.round(e.dist.Wirebit*100),stel:Math.round((e.dist.Stellaris||0)*100)}));
 
-const _nomDist = (e,n) => n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:n.wb)||0)/100;
+const _nomDist = (e,n) => n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:e==='Stellaris'?n.stel:n.wb)||0)/100;
 const nomMesTotal = e => NOM_EDIT.reduce((a,n)=>a+_nomDist(e,n),0);
 const nomMesOp    = e => NOM_EDIT.filter(n=>n.tipo==='Operativo').reduce((a,n)=>a+_nomDist(e,n),0);
 const nomMesAdm   = e => NOM_EDIT.filter(n=>n.tipo==='Administrativo').reduce((a,n)=>a+_nomDist(e,n),0);
 
 function nomCalcTotals(){
-  let ts=0,te=0,td=0,tw=0,tot=0;
+  let ts=0,te=0,td=0,tw=0,tst=0,tot=0;
   NOM_EDIT.forEach(e=>{
-    ts+=e.s*(e.sal/100); te+=e.s*(e.end/100); td+=e.s*(e.dyn/100); tw+=e.s*(e.wb/100); tot+=e.s;
+    ts+=e.s*(e.sal/100); te+=e.s*(e.end/100); td+=e.s*(e.dyn/100); tw+=e.s*(e.wb/100); tst+=e.s*((e.stel||0)/100); tot+=e.s;
   });
-  return{ts,te,td,tw,tot};
+  return{ts,te,td,tw,tst,tot};
 }
 
 function nomUpdateFooter(){
-  const {ts,te,td,tw,tot}=nomCalcTotals();
+  const {ts,te,td,tw,tst,tot}=nomCalcTotals();
   const q=id=>document.getElementById(id);
   q('nom-ft-total').textContent=fmt(tot);
   q('nom-ft-sal').textContent=fmt(ts);
   q('nom-ft-end').textContent=fmt(te);
   q('nom-ft-dyn').textContent=fmt(td);
   q('nom-ft-wb').textContent=fmt(tw);
+  var _stelFt=q('nom-ft-stel'); if(_stelFt) _stelFt.textContent=fmt(tst);
   // KPI cards
   q('nom-kpi-total').textContent=fmtK(tot);
   q('nom-kpi-emp').textContent=NOM_EDIT.length+' empleados';
@@ -33,24 +34,27 @@ function nomUpdateFooter(){
   q('nom-kpi-end').textContent=fmtK(te);
   q('nom-kpi-dyn').textContent=fmtK(td);
   q('nom-kpi-wb').textContent=fmtK(tw);
+  var _stelKpi=q('nom-kpi-stel'); if(_stelKpi) _stelKpi.textContent=fmtK(tst);
   // avg % cols
   const n=NOM_EDIT.length||1;
   const as=NOM_EDIT.reduce((a,e)=>a+e.sal,0)/n;
   const ae=NOM_EDIT.reduce((a,e)=>a+e.end,0)/n;
   const ad=NOM_EDIT.reduce((a,e)=>a+e.dyn,0)/n;
   const aw=NOM_EDIT.reduce((a,e)=>a+e.wb,0)/n;
+  const ast=NOM_EDIT.reduce((a,e)=>a+(e.stel||0),0)/n;
   q('nom-ft-sal-p').textContent=as.toFixed(1)+'% avg';
   q('nom-ft-end-p').textContent=ae.toFixed(1)+'% avg';
   q('nom-ft-dyn-p').textContent=ad.toFixed(1)+'% avg';
   q('nom-ft-wb-p').textContent=aw.toFixed(1)+'% avg';
+  var _stelFtP=q('nom-ft-stel-p'); if(_stelFtP) _stelFtP.textContent=ast.toFixed(1)+'% avg';
   // propagate to NOM global
   NOM_EDIT.forEach((e,i)=>{
-    if(NOM[i]){NOM[i].s=e.s;NOM[i].dist={Salem:e.sal/100,Endless:e.end/100,Dynamo:e.dyn/100,Wirebit:e.wb/100};}
+    if(NOM[i]){NOM[i].s=e.s;NOM[i].dist={Salem:e.sal/100,Endless:e.end/100,Dynamo:e.dyn/100,Wirebit:e.wb/100,Stellaris:(e.stel||0)/100};}
   });
 }
 
 function nomRenderRow(e,i){
-  const tot=e.sal+e.end+e.dyn+e.wb;
+  const tot=e.sal+e.end+e.dyn+e.wb+(e.stel||0);
   const ok=tot===100;
   const totCls=ok?'pos':'neg';
   const inStyle='style="width:100%;border:none;background:transparent;text-align:right;font-size:.78rem;font-family:inherit;color:inherit;padding:0"';
@@ -70,18 +74,20 @@ function nomRenderRow(e,i){
     <td style="background:rgba(0,184,117,.05)"><input type="number" ${inStyle} value="${e.end}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].end=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#00b875;font-weight:600"></td>
     <td style="background:rgba(255,112,67,.05)"><input type="number" ${inStyle} value="${e.dyn}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].dyn=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#ff7043;font-weight:600"></td>
     <td style="background:rgba(155,81,224,.05)"><input type="number" ${inStyle} value="${e.wb}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].wb=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#9b51e0;font-weight:600"></td>
+    <td style="background:rgba(229,57,53,.05)"><input type="number" ${inStyle} value="${e.stel||0}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].stel=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#e53935;font-weight:600"></td>
     <td class="mo ${totCls}" style="font-weight:700" id="nom-tot-${i}">${tot}%</td>
     <td class="mo" style="color:#0073ea">${fmt(e.s*(e.sal/100))}</td>
     <td class="mo" style="color:#00b875">${fmt(e.s*(e.end/100))}</td>
     <td class="mo" style="color:#ff7043">${fmt(e.s*(e.dyn/100))}</td>
     <td class="mo" style="color:#9b51e0">${fmt(e.s*(e.wb/100))}</td>
+    <td class="mo" style="color:#e53935">${fmt(e.s*((e.stel||0)/100))}</td>
     <td style="text-align:center"><button onclick="nomDelRow(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 5px" title="Eliminar">✕</button></td>
   </tr>`;
 }
 
 function nomRefreshRow(i){
   const e=NOM_EDIT[i];
-  const tot=e.sal+e.end+e.dyn+e.wb;
+  const tot=e.sal+e.end+e.dyn+e.wb+(e.stel||0);
   const ok=tot===100;
   const el=document.getElementById('nom-tot-'+i);
   if(el){el.textContent=tot+'%';el.className='mo '+(ok?'pos':'neg');el.style.fontWeight='700';}
@@ -89,16 +95,17 @@ function nomRefreshRow(i){
   const row=document.getElementById('nom-row-'+i);
   if(row){
     const tds=row.querySelectorAll('td');
-    tds[8].textContent=fmt(e.s*(e.sal/100));
-    tds[9].textContent=fmt(e.s*(e.end/100));
-    tds[10].textContent=fmt(e.s*(e.dyn/100));
-    tds[11].textContent=fmt(e.s*(e.wb/100));
+    tds[9].textContent=fmt(e.s*(e.sal/100));
+    tds[10].textContent=fmt(e.s*(e.end/100));
+    tds[11].textContent=fmt(e.s*(e.dyn/100));
+    tds[12].textContent=fmt(e.s*(e.wb/100));
+    tds[13].textContent=fmt(e.s*((e.stel||0)/100));
   }
   nomUpdateFooter();
 }
 
 function nomAddRow(){
-  NOM_EDIT.push({n:'Nuevo empleado',r:'Rol',s:0,tipo:'Administrativo',sal:100,end:0,dyn:0,wb:0});
+  NOM_EDIT.push({n:'Nuevo empleado',r:'Rol',s:0,tipo:'Administrativo',sal:100,end:0,dyn:0,wb:0,stel:0});
   rNomina();
 }
 

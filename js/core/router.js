@@ -26,7 +26,8 @@ const VT = {
   tar_dashboard:'Tarjetas — Dashboard CENTUM',tar_conceptos:'Tarjetas — Conceptos',tar_subclientes:'Tarjetas — Subclientes',tar_rechazos:'Tarjetas — Rechazos',tar_tarjetahabientes:'Tarjetas — Tarjetahabientes',
   carga_masiva:'Carga — Masiva Ingresos y Gastos',
   centum:'Centum Capital',grupo:'Grupo Financiero',cfg_usuarios:'Configuración — Usuarios',cfg_apariencia:'Configuración — Apariencia',cfg_permisos:'Configuración — Permisos',cfg_categorias:'Configuración — Categorías P&L',cfg_bancos:'Configuración — Bancos y Cuentas',tes_flujo:'Tesorería — Flujo de Caja',tes_individual:'Tesorería — Por Empresa',tes_grupo:'Tesorería — Consolidado Grupo',carga_creditos:'Carga — Créditos PDF',
-  fact_terminales:'Facturación — Terminales',fact_tarjetas:'Facturación — Tarjetas',fact_endless:'Facturación — Endless',fact_dynamo:'Facturación — Dynamo',fact_wirebit:'Facturación — Wirebit',
+  fact_terminales:'Facturación — Terminales',fact_tarjetas:'Facturación — Tarjetas',fact_endless:'Facturación — Endless',fact_dynamo:'Facturación — Dynamo',fact_wirebit:'Facturación — Wirebit',fact_stellaris:'Facturación — Stellaris',
+  stel_res:'Stellaris — P&L',stel_ing:'Stellaris — Ingresos',stel_gas:'Stellaris — Costes y Gastos',stel_nom:'Stellaris — Nómina',
   carga_facturas:'Facturación — Carga de Facturas',
   carga_egresos:'Facturación — Facturas Recibidas',pagos_pendientes:'Facturación — Pagos Pendientes',
   expedientes:'Expedientes — Clientes'

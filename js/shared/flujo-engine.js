@@ -8,8 +8,8 @@
   let FI_ROWS = /*EMBED:FI_ROWS*/[]/*END:FI_ROWS*/; // [{id, concepto, ent, cat, yr, vals:[12], auto, credId}]
   let FG_ROWS = /*EMBED:FG_ROWS*/[]/*END:FG_ROWS*/; // [{id, concepto, ent, cat, yr, shared, gcConcept, vals:[12]}]
 
-  const EMPRESAS  = ['Salem','Endless','Dynamo','Wirebit'];
-  const ENT_COLOR = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
+  const EMPRESAS  = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+  const ENT_COLOR = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
 
   // ═══════════════════════════════════════
   // fiLoad / fgLoad (from finanzas.js)
