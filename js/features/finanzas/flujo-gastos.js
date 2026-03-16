@@ -121,8 +121,8 @@ function fgAutoDetect(ri){
 function fgUpdateKPIs(){ flUpdateKPIs('fg'); }
 
 function fgSave(){
-  // Persist only non-auto rows (exclude TPV auto-injected)
-  const toSave = FG_ROWS.filter(r => !r.autoTPV);
+  // Persist only non-auto rows (exclude TPV and factura auto-injected)
+  const toSave = FG_ROWS.filter(r => !r.autoTPV && !r.autoFactura);
   DB.set('gf_fg', toSave);
   syncFlujoToRecs();
   refreshActivePL();

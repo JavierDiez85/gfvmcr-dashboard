@@ -386,6 +386,30 @@
       ' style="width:100%;border:none;background:transparent;font-size:.75rem;text-align:right;padding:1px 2px;color:'+(isGas?'var(--orange)':'var(--green)')+'">';
   };
 
+  // ═══════════════════════════════════════
+  // Factura injection helpers (used by facturacion-egresos.js)
+  // ═══════════════════════════════════════
+  function _ceCleanFGRows(){
+    FG_ROWS = FG_ROWS.filter(function(r){ return !r.autoFactura; });
+  }
+  function _ceInjectEntries(entries, yr){
+    entries.forEach(function(entry){
+      var c = entry.cxp;
+      FG_ROWS.unshift({
+        id: 'fact_' + c.id,
+        concepto: c.proveedor + ' \u2014 ' + (c.concepto || 'Factura'),
+        ent: c.empresa,
+        cat: c.categoria,
+        yr: yr,
+        shared: false,
+        gcConcept: '',
+        vals: entry.vals.slice(),
+        autoFactura: true,
+        note: 'Auto \u2014 Factura ' + (c.folio_fiscal || c.id)
+      });
+    });
+  }
+
   // Expose globals
   window.EMPRESAS = EMPRESAS;
   window.ENT_COLOR = ENT_COLOR;
@@ -406,5 +430,7 @@
   window.clearData = clearData;
   window.delRec = delRec;
   window.expData = expData;
+  window._ceCleanFGRows = _ceCleanFGRows;
+  window._ceInjectEntries = _ceInjectEntries;
 
 })(window);
