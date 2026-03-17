@@ -67,7 +67,7 @@ function rWBCripto(){
         tooltip:{...cOpts().plugins?.tooltip, callbacks:{label:ctx=> ctx.datasetIndex===0 ? ' $'+Math.round(ctx.raw).toLocaleString()+' MXN' : ' '+ctx.raw.toLocaleString()+' txns'}}},
       scales:{
         x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10}}},
-        y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}},
+        y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}},
         y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#0073ea',font:{size:9}}}
       }
     }
@@ -203,7 +203,7 @@ function rWBTarjetas(){
       plugins:{legend:{display:true,position:'top',labels:{color:'#8b8fb5',font:{size:10},boxWidth:8,padding:8}}},
       scales:{
         x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10}}},
-        y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}},
+        y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}},
         y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#0073ea',font:{size:9}}}
       }
     }
