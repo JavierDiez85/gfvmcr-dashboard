@@ -33,7 +33,28 @@ const VT = {
   emit_salem:'Facturación — Emitidas Salem',emit_endless:'Facturación — Emitidas Endless',emit_dynamo:'Facturación — Emitidas Dynamo',emit_wirebit:'Facturación — Emitidas Wirebit',emit_stellaris:'Facturación — Emitidas Stellaris',
   recv_salem:'Facturación — Recibidas Salem',recv_endless:'Facturación — Recibidas Endless',recv_dynamo:'Facturación — Recibidas Dynamo',recv_wirebit:'Facturación — Recibidas Wirebit',recv_stellaris:'Facturación — Recibidas Stellaris',
   pp_salem:'Facturación — Pagos Pendientes Salem',pp_endless:'Facturación — Pagos Pendientes Endless',pp_dynamo:'Facturación — Pagos Pendientes Dynamo',pp_wirebit:'Facturación — Pagos Pendientes Wirebit',pp_stellaris:'Facturación — Pagos Pendientes Stellaris',
-  expedientes:'Expedientes — Clientes'
+  expedientes:'Expedientes — Clientes',
+  // Flujo Ingresos por empresa
+  flujo_ing_sal:'Flujo de Ingresos — Salem',flujo_ing_end:'Flujo de Ingresos — Endless',flujo_ing_dyn:'Flujo de Ingresos — Dynamo',flujo_ing_wb:'Flujo de Ingresos — Wirebit',flujo_ing_stel:'Flujo de Ingresos — Stellaris',
+  // Flujo Gastos por empresa
+  flujo_gas_sal:'Flujo de Gastos — Salem',flujo_gas_end:'Flujo de Gastos — Endless',flujo_gas_dyn:'Flujo de Gastos — Dynamo',flujo_gas_wb:'Flujo de Gastos — Wirebit',flujo_gas_stel:'Flujo de Gastos — Stellaris',
+  // Carga Masiva por empresa
+  carga_masiva_sal:'Carga Masiva — Salem',carga_masiva_end:'Carga Masiva — Endless',carga_masiva_dyn:'Carga Masiva — Dynamo',carga_masiva_wb:'Carga Masiva — Wirebit',carga_masiva_stel:'Carga Masiva — Stellaris',
+  // Créditos PDF por empresa
+  carga_creditos_end:'Créditos PDF — Endless',carga_creditos_dyn:'Créditos PDF — Dynamo',
+  // Expedientes por empresa
+  expedientes_sal:'Expedientes — Salem',expedientes_end:'Expedientes — Endless',expedientes_dyn:'Expedientes — Dynamo',expedientes_wb:'Expedientes — Wirebit',expedientes_stel:'Expedientes — Stellaris',
+  // Grupo Finanzas — vistas consolidado por empresa
+  wb_grupo:'Wirebit — Consolidado',stel_grupo:'Stellaris — Consolidado',
+};
+
+// VIEW_ALIAS: mapea viewIds con sufijo de empresa al div HTML compartido
+const VIEW_ALIAS = {
+  flujo_ing_sal:'flujo_ing',flujo_ing_end:'flujo_ing',flujo_ing_dyn:'flujo_ing',flujo_ing_wb:'flujo_ing',flujo_ing_stel:'flujo_ing',
+  flujo_gas_sal:'flujo_gas',flujo_gas_end:'flujo_gas',flujo_gas_dyn:'flujo_gas',flujo_gas_wb:'flujo_gas',flujo_gas_stel:'flujo_gas',
+  carga_masiva_sal:'carga_masiva',carga_masiva_end:'carga_masiva',carga_masiva_dyn:'carga_masiva',carga_masiva_wb:'carga_masiva',carga_masiva_stel:'carga_masiva',
+  carga_creditos_end:'carga_creditos',carga_creditos_dyn:'carga_creditos',
+  expedientes_sal:'expedientes',expedientes_end:'expedientes',expedientes_dyn:'expedientes',expedientes_wb:'expedientes',expedientes_stel:'expedientes',
 };
 
 // ═══════════════════════════════════════
@@ -76,7 +97,8 @@ function navTo(id){
 function sv(id, navEl){
   _currentView = id;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
-  const v = document.getElementById('view-'+id);
+  const divId = VIEW_ALIAS[id] || id;
+  const v = document.getElementById('view-'+divId);
   if(v) v.classList.add('active');
 
   // Highlight active chip in horizontal nav
@@ -123,7 +145,8 @@ async function _syncAll(){
 // Error banner visible para el usuario cuando una vista async falla
 function _viewError(viewId, error) {
   console.error(`[View ${viewId}] Error:`, error);
-  const el = document.getElementById('view-' + viewId);
+  const divId = VIEW_ALIAS[viewId] || viewId;
+  const el = document.getElementById('view-' + divId);
   if (el) {
     const existing = el.querySelector('.view-error-banner');
     if (existing) existing.remove();

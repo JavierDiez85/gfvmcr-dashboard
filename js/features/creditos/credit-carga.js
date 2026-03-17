@@ -10,9 +10,23 @@
     try{ CC_HISTORY = DB.get('gf_cc_hist') || []; }catch(e){ CC_HISTORY=[]; }
   }
 
-  function rCargaCreditos(){
+  // Filtro activo por empresa (null = sin filtro)
+  window._ccFilterEmpresa = null;
+
+  function rCargaCreditos(filterEmpresa){
+    window._ccFilterEmpresa = (filterEmpresa !== undefined) ? filterEmpresa : null;
     ccLoad();
     ccRenderHistory();
+    // Pre-select and optionally lock empresa selector
+    var sel = document.getElementById('cc-empresa');
+    if(sel && window._ccFilterEmpresa){
+      sel.value = window._ccFilterEmpresa;
+      sel.disabled = true;
+      sel.style.opacity = '0.7';
+    } else if(sel){
+      sel.disabled = false;
+      sel.style.opacity = '1';
+    }
   }
 
   function ccHandleDrop(e){
@@ -285,7 +299,9 @@
 
   // Register views
   if(typeof registerView === 'function'){
-    registerView('carga_creditos', function(){ rCargaCreditos(); });
+    registerView('carga_creditos', function(){ rCargaCreditos(null); });
+    registerView('carga_creditos_end', function(){ rCargaCreditos('endless'); });
+    registerView('carga_creditos_dyn', function(){ rCargaCreditos('dynamo'); });
   }
 
 })(window);

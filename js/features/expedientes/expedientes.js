@@ -10,6 +10,17 @@ let _expCurrentId = null;
 let _expOtroCount = 0;
 let _expPendingDocs = []; // Files queued before client is saved
 
+// Filtro activo por empresa (null = todas)
+window._expFilterEnt = null;
+
+// Mapeo productos → empresas para filtro
+const PROD_TO_ENT = {
+  'TPV':'Salem','Tarjeta Centum Black':'Salem','Tarjeta Centum Blue':'Salem',
+  'Crédito Simple':'Endless','Crédito Automotriz':'Dynamo',
+  'Exchange':'Wirebit','OTC':'Wirebit','Tarjeta Wirebit':'Wirebit',
+  'Retiro Blockchain':'Wirebit','Retiro FIAT':'Wirebit',
+};
+
 // ── Doc categories by tipo_persona ──
 const EXP_DOCS_FISICA = [
   { key:'csf', icon:'📄', label:'Constancia de Situación Fiscal' },
@@ -27,12 +38,23 @@ const EXP_DOCS_MORAL_EXTRA = [
 // ══════════════════════════════════════
 // RENDER PRINCIPAL
 // ══════════════════════════════════════
-async function rExpedientes(){
+async function rExpedientes(filterEnt){
+  window._expFilterEnt = (filterEnt !== undefined) ? filterEnt : null;
   await _ensureSupabase();
   await expLoadList();
   _expCurrentId = null;
   document.getElementById('exp-detail').style.display = 'none';
   document.getElementById('exp-placeholder').style.display = '';
+  // Show filter banner
+  var banner = document.getElementById('exp-filter-banner');
+  if(banner){
+    banner.style.display = window._expFilterEnt ? 'flex' : 'none';
+    if(window._expFilterEnt){
+      var ec = (typeof ENT_COLOR!=='undefined' ? ENT_COLOR[window._expFilterEnt] : null) || '#555';
+      var count = _expClients.length;
+      banner.innerHTML = '<span style="font-size:.75rem;font-weight:600;color:'+ec+'">Clientes de: '+window._expFilterEnt+'</span><span style="font-size:.65rem;color:var(--muted);margin-left:8px">('+count+' clientes)</span>';
+    }
+  }
 }
 
 // ══════════════════════════════════════
@@ -43,7 +65,18 @@ async function expLoadList(){
     .select('id, tipo_persona, nombre_completo, razon_social, productos, correo')
     .order('nombre_completo', { ascending: true });
 
-  _expClients = data || [];
+  let clients = data || [];
+  // Apply company filter if active
+  if(window._expFilterEnt){
+    clients = clients.filter(function(c){
+      var prods = c.productos || [];
+      return prods.some(function(p){
+        var ent = PROD_TO_ENT[p];
+        return ent === window._expFilterEnt;
+      });
+    });
+  }
+  _expClients = clients;
   expRenderList(_expClients);
 }
 
@@ -739,7 +772,13 @@ function _expRenderPendingFixed(categoria){
 
   // Register views
   if(typeof registerView === 'function'){
-    registerView('expedientes', function(){ return rExpedientes(); });
+    registerView('expedientes', function(){ return rExpedientes(null); });
+    // Vistas filtradas por empresa
+    registerView('expedientes_sal',  function(){ return rExpedientes('Salem'); });
+    registerView('expedientes_end',  function(){ return rExpedientes('Endless'); });
+    registerView('expedientes_dyn',  function(){ return rExpedientes('Dynamo'); });
+    registerView('expedientes_wb',   function(){ return rExpedientes('Wirebit'); });
+    registerView('expedientes_stel', function(){ return rExpedientes('Stellaris'); });
   }
 
 })(window);

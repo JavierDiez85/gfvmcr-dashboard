@@ -2316,6 +2316,68 @@
   </table></div></div>
 </div>
 
+<!-- ══════════ WIREBIT — CONSOLIDADO GRUPO ══════════ -->
+<div id="view-wb_grupo" class="view">
+  <div class="section-header" style="font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;margin-bottom:14px">💜 Wirebit — Consolidado 2026</div>
+  <div class="kpi-row" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:var(--green)">
+      <div class="kpi-top"><div class="kpi-lbl">Ingresos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div>
+      <div class="kpi-val" id="wbg-k-ing">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--red)">
+      <div class="kpi-top"><div class="kpi-lbl">Costos + Gastos</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">💸</div></div>
+      <div class="kpi-val" id="wbg-k-gas">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--orange)">
+      <div class="kpi-top"><div class="kpi-lbl">Nomina</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">👥</div></div>
+      <div class="kpi-val" id="wbg-k-nom">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+    <div class="kpi-card" style="--ac:#6366f1">
+      <div class="kpi-top"><div class="kpi-lbl">EBITDA</div><div class="kpi-ico" style="background:rgba(99,102,241,.1);color:#6366f1">📈</div></div>
+      <div class="kpi-val" id="wbg-k-ebitda">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+  </div>
+  <div class="chart-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="chart-box" style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)"><canvas id="c-wbg-evo"></canvas></div>
+    <div class="chart-box" style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)"><canvas id="c-wbg-ing"></canvas></div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Estado de Resultados — Wirebit</div></div>
+  <div style="overflow-x:auto"><table class="bt" id="wbg-table">
+    <thead><tr id="wbg-thead"></tr></thead><tbody id="wbg-tbody"></tbody>
+  </table></div></div>
+</div>
+
+<!-- ══════════ STELLARIS — CONSOLIDADO GRUPO ══════════ -->
+<div id="view-stel_grupo" class="view">
+  <div class="section-header" style="font-family:'Poppins',sans-serif;font-size:1rem;font-weight:700;margin-bottom:14px">🔴 Stellaris — Consolidado 2026</div>
+  <div class="kpi-row" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:var(--green)">
+      <div class="kpi-top"><div class="kpi-lbl">Ingresos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div>
+      <div class="kpi-val" id="stelg-k-ing">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--red)">
+      <div class="kpi-top"><div class="kpi-lbl">Costos + Gastos</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">💸</div></div>
+      <div class="kpi-val" id="stelg-k-gas">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+    <div class="kpi-card" style="--ac:var(--orange)">
+      <div class="kpi-top"><div class="kpi-lbl">Nomina</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">👥</div></div>
+      <div class="kpi-val" id="stelg-k-nom">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+    <div class="kpi-card" style="--ac:#6366f1">
+      <div class="kpi-top"><div class="kpi-lbl">EBITDA</div><div class="kpi-ico" style="background:rgba(99,102,241,.1);color:#6366f1">📈</div></div>
+      <div class="kpi-val" id="stelg-k-ebitda">$0</div><div class="kpi-d dnu">anual</div>
+    </div>
+  </div>
+  <div class="chart-row" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="chart-box" style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)"><canvas id="c-stelg-evo"></canvas></div>
+    <div class="chart-box" style="background:var(--card);border-radius:12px;padding:14px;border:1px solid var(--border)"><canvas id="c-stelg-ing"></canvas></div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Estado de Resultados — Stellaris</div></div>
+  <div style="overflow-x:auto"><table class="bt" id="stelg-table">
+    <thead><tr id="stelg-thead"></tr></thead><tbody id="stelg-tbody"></tbody>
+  </table></div></div>
+</div>
+
 <!-- ══════════ INGRESAR DATOS ══════════ -->
 <div id="view-flujo_ing" class="view">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
@@ -2329,6 +2391,9 @@
       <button class="btn btn-out" onclick="fiExport()" style="font-size:.72rem">⬇ Excel</button>
     </div>
   </div>
+
+  <!-- Filter banner (visible when filtered by company) -->
+  <div id="fi-filter-banner" style="display:none;align-items:center;gap:8px;padding:6px 14px;margin-bottom:8px;background:rgba(0,115,234,.06);border:1px solid rgba(0,115,234,.15);border-radius:8px"></div>
 
   <!-- KPI resumen -->
   <div class="kpi-row" style="margin-bottom:10px">
@@ -2394,6 +2459,7 @@
 <!-- ══════════ FLUJO DE GASTOS ══════════ -->
 <!-- ═══════════════ CARGA MASIVA ═══════════════ -->
 <div id="view-carga_masiva" class="view">
+  <div id="cm-filter-banner" style="display:none;align-items:center;gap:8px;padding:6px 14px;margin-bottom:8px;background:rgba(0,115,234,.06);border:1px solid rgba(0,115,234,.15);border-radius:8px"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
     <div>
       <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">📋 Carga Masiva — Ingresos y Gastos</div>
@@ -2485,6 +2551,9 @@
       <button class="btn btn-out" onclick="fgExport()" style="font-size:.72rem">⬇ Excel</button>
     </div>
   </div>
+
+  <!-- Filter banner (visible when filtered by company) -->
+  <div id="fg-filter-banner" style="display:none;align-items:center;gap:8px;padding:6px 14px;margin-bottom:8px;background:rgba(255,112,67,.06);border:1px solid rgba(255,112,67,.15);border-radius:8px"></div>
 
   <!-- KPI resumen -->
   <div class="kpi-row" style="margin-bottom:10px">
@@ -4367,6 +4436,7 @@
 
 <!-- ══════════ EXPEDIENTES: CLIENTES ══════════ -->
 <div id="view-expedientes" class="view">
+  <div id="exp-filter-banner" style="display:none;align-items:center;gap:8px;padding:6px 14px;margin-bottom:8px;background:rgba(0,115,234,.06);border:1px solid rgba(0,115,234,.15);border-radius:8px"></div>
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
     <div>
       <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">📁 Expedientes de Clientes</div>

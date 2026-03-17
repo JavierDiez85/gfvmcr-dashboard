@@ -5,6 +5,9 @@
   var CM_STORAGE_KEY = 'gf_cm_last_upload';
   var CM_MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
+  // Filtro activo por empresa (null = todas)
+  window._cmFilterEnt = null;
+
   // ── Descargar plantilla Excel ──────────────────────────
   function downloadPlantilla(){
     if(typeof XLSX === 'undefined'){ toast('XLSX no disponible'); return; }
@@ -191,6 +194,17 @@
 
       progress(65, 'Validación completa. Guardando datos...');
 
+      // Si hay filtro por empresa, filtrar las filas parseadas
+      if(window._cmFilterEnt){
+        var _filt = window._cmFilterEnt;
+        var preIng = parsedIng.length, preGas = parsedGas.length;
+        parsedIng = parsedIng.filter(function(r){ return r.empresa === _filt; });
+        parsedGas = parsedGas.filter(function(r){ return r.empresa === _filt; });
+        if(preIng - parsedIng.length > 0 || preGas - parsedGas.length > 0){
+          errors.push('Filtro: '+(preIng - parsedIng.length)+' ingresos y '+(preGas - parsedGas.length)+' gastos de otras empresas omitidos');
+        }
+      }
+
       var validCount = parsedIng.length + parsedGas.length;
       if(validCount === 0){
         throw new Error('No se encontraron filas válidas.\n' + errors.slice(0, 10).join('\n'));
@@ -330,7 +344,8 @@
     }
   }
 
-  function rCargaMasiva(){
+  function rCargaMasiva(filterEnt){
+    window._cmFilterEnt = (filterEnt !== undefined) ? filterEnt : null;
     _cmUpdateKPIs();
     var fi = document.getElementById('cm-file');
     if(fi) fi.value = '';
@@ -338,6 +353,15 @@
     if(p) p.style.display = 'none';
     var r = document.getElementById('cm-result');
     if(r) r.style.display = 'none';
+    // Show filter banner
+    var banner = document.getElementById('cm-filter-banner');
+    if(banner){
+      banner.style.display = window._cmFilterEnt ? 'flex' : 'none';
+      if(window._cmFilterEnt){
+        var ec = (typeof ENT_COLOR!=='undefined' ? ENT_COLOR[window._cmFilterEnt] : null) || '#555';
+        banner.innerHTML = '<span style="font-size:.75rem;font-weight:600;color:'+ec+'">Cargando datos para: '+window._cmFilterEnt+'</span><span style="font-size:.65rem;color:var(--muted);margin-left:8px">(solo se importar\u00e1n filas de esta empresa)</span>';
+      }
+    }
   }
 
   // Expose globals
@@ -350,7 +374,13 @@
 
   // Register views
   if(typeof registerView === 'function'){
-    registerView('carga_masiva', function(){ rCargaMasiva(); });
+    registerView('carga_masiva', function(){ rCargaMasiva(null); });
+    // Vistas filtradas por empresa
+    registerView('carga_masiva_sal',  function(){ rCargaMasiva('Salem'); });
+    registerView('carga_masiva_end',  function(){ rCargaMasiva('Endless'); });
+    registerView('carga_masiva_dyn',  function(){ rCargaMasiva('Dynamo'); });
+    registerView('carga_masiva_wb',   function(){ rCargaMasiva('Wirebit'); });
+    registerView('carga_masiva_stel', function(){ rCargaMasiva('Stellaris'); });
   }
 
 })(window);

@@ -182,7 +182,9 @@
   // flUpdateFooter (from finanzas.js)
   // ═══════════════════════════════════════
   function flUpdateFooter(type){
-    const rows = type==='fi' ? FI_ROWS : FG_ROWS;
+    const allRows = type==='fi' ? FI_ROWS : FG_ROWS;
+    const filt = type==='fi' ? window._fiFilterEnt : window._fgFilterEnt;
+    const rows = filt ? allRows.filter(r=>r.ent===filt) : allRows;
     const _MO = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     const moTots = Array(12).fill(0);
     rows.forEach(r => r.vals.forEach((v,i) => moTots[i] += v));
@@ -199,8 +201,10 @@
   // flUpdateKPIs (from finanzas.js)
   // ═══════════════════════════════════════
   function flUpdateKPIs(type){
-    const rows = type==='fi' ? FI_ROWS : FG_ROWS;
-    const kpis = {total:0, Salem:0, Endless:0, Dynamo:0, Wirebit:0};
+    const allRows = type==='fi' ? FI_ROWS : FG_ROWS;
+    const filt = type==='fi' ? window._fiFilterEnt : window._fgFilterEnt;
+    const rows = filt ? allRows.filter(r=>r.ent===filt) : allRows;
+    const kpis = {total:0, Salem:0, Endless:0, Dynamo:0, Wirebit:0, Stellaris:0};
     rows.forEach(r => r.vals.forEach(v => { kpis[r.ent]=(kpis[r.ent]||0)+v; kpis.total+=v; }));
     const pfx = type;
     const qk = id => document.getElementById(id);
