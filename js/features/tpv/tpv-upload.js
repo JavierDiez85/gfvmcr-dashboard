@@ -624,6 +624,20 @@ const TPV_UPLOAD = {
         }
       }
 
+      // ── Register config upload in history ──
+      const cfgBatchId = crypto.randomUUID ? crypto.randomUUID() : 'cfg_' + Date.now();
+      const clientCount = this._uploadStats ? this._uploadStats.totalParsed : 0;
+      await _sb.from('tpv_upload_batches').insert({
+        id: cfgBatchId,
+        filename: file.name,
+        row_count: clientCount,
+        date_range_from: null,
+        date_range_to: null,
+        strategy: 'config',
+        uploaded_by: localStorage.getItem('sb_client_id') || 'unknown'
+      }).then(() => console.log('[Upload] Config batch registered:', cfgBatchId))
+        .catch(e => console.warn('[Upload] Config batch insert failed:', e.message));
+
       // ── STEP 4: Re-link transactions to clients ──
       // Sort by name length DESC so longer names match first
       // (prevents "QUESOS CHIAPAS" from stealing "QUESOS CHIAPAS 2" transactions)
@@ -775,7 +789,7 @@ async function rTPVUpload() {
     el.innerHTML = history.map(h => {
       const d = new Date(h.created_at);
       const fecha = d.toLocaleDateString('es-MX', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
-      const strategy = { replace_all: '🔄 Reemplazar', replace_period: '📅 Período', append_new: '➕ Agregar' }[h.strategy] || h.strategy || '—';
+      const strategy = { replace_all: '🔄 Reemplazar', replace_period: '📅 Período', append_new: '➕ Agregar', config: '⚙️ Configuración' }[h.strategy] || h.strategy || '—';
       const periodo = (h.date_range_from && h.date_range_to)
         ? `${h.date_range_from} → ${h.date_range_to}`
         : '—';
@@ -785,7 +799,7 @@ async function rTPVUpload() {
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.row_count || 0).toLocaleString()}</td>
         <td style="font-size:.72rem">${periodo}</td>
-        <td><button class="btn btn-out" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" onclick="rollbackUpload('${h.id}')">🗑️ Deshacer</button></td>
+        <td>${h.strategy !== 'config' ? `<button class="btn btn-out" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" onclick="rollbackUpload('${h.id}')">🗑️ Deshacer</button>` : ''}</td>
       </tr>`;
     }).join('');
   } catch (e) { console.warn('[Upload UI] History error:', e.message); }

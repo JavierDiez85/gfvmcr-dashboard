@@ -67,7 +67,7 @@ async function rTPVTerminales(){
     const c1=document.getElementById('c-tpv-term-top');
     if(c1){TPV_CHARTS['term_top']=new Chart(c1,{type:'bar',
       data:{labels:top10.map(t=>(t.cliente||'').substring(0,16)),datasets:[{data:top10.map(t=>parseFloat(t.ingresos)),backgroundColor:'#0073ea22',borderColor:'#0073ea',borderWidth:1.5,borderRadius:4}]},
-      options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v}},y:{grid:{display:false},ticks:{color:textC,font:{size:8}}}}}
+      options:{indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{color:textC,font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}},y:{grid:{display:false},ticks:{color:textC,font:{size:8}}}}}
     });}
     // Status doughnut
     if(TPV_CHARTS['term_status'])TPV_CHARTS['term_status'].destroy();

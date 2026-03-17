@@ -6,9 +6,7 @@
   // fmtK (from finanzas.js)
   // ═══════════════════════════════════════
   function fmtK(v){
-    if(Math.abs(v)>=1000000) return'$'+(v/1000000).toFixed(2)+'M';
-    if(Math.abs(v)>=1000) return'$'+(v/1000).toFixed(1)+'K';
-    return'$'+Math.round(v).toLocaleString();
+    return(v<0?'-':'')+'$'+Math.abs(Math.round(v)).toLocaleString('es-MX');
   }
 
   // ═══════════════════════════════════════

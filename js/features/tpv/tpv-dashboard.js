@@ -190,7 +190,7 @@ function _renderSalemEarnings(data) {
       plugins: { legend: { position: 'bottom', labels: { font: { size: 9 }, color: textC, boxWidth: 10, padding: 8 } } },
       scales: {
         x: { stacked: true, grid: { display: false }, ticks: { color: textC, font: { size: 8 } } },
-        y: { stacked: true, grid: { color: gridC }, ticks: { color: textC, font: { size: 8 }, callback: v => v >= 1e6 ? '$' + (v / 1e6).toFixed(1) + 'M' : v >= 1000 ? '$' + (v / 1000).toFixed(0) + 'K' : '$' + v } }
+        y: { stacked: true, grid: { color: gridC }, ticks: { color: textC, font: { size: 8 }, callback: v => '$' + Math.abs(Math.round(v)).toLocaleString('es-MX') } }
       }
     }
   });

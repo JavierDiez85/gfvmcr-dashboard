@@ -45,10 +45,8 @@ function periodColumns(mode) {
 const colVal = (arr, idxs) => idxs.reduce((a,i) => a + (arr[i]||0), 0);
 function fmt(n,d=0){
   if(n==null||isNaN(n)) return '—';
-  const neg=n<0,a=Math.abs(n),s=(neg?'-':'')+'$';
-  if(a>=1000000) return s+(a/1000000).toFixed(1)+'M';
-  if(a>=1000) return s+(a/1000).toFixed(a>=10000?0:1)+'K';
-  return s+a.toFixed(d);
+  const neg=n<0,a=Math.abs(n);
+  return(neg?'-':'')+'$'+a.toLocaleString('es-MX',{minimumFractionDigits:d,maximumFractionDigits:d});
 }
 function fmtFull(n){
   if(n==null||isNaN(n)) return '—';
