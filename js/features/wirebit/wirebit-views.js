@@ -54,7 +54,7 @@ function rWBIng(){
   dc('cwbi2');
   CH['cwbi2']=new Chart(document.getElementById('c-wb-ing2'),{type:'bar',data:{labels:MO,
     datasets:Object.entries(WB_ING).map(([k,v],i)=>({label:k,data:v,backgroundColor:colors[i]+'33',borderColor:colors[i],borderWidth:1.5}))
-  },options:cOpts({scales:{x:{stacked:true,grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:11}}},y:{stacked:true,grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:11},callback:v=>'$'+Math.abs(v/1000).toFixed(0)+'K'}}}})});
+  },options:cOpts({scales:{x:{stacked:true,grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:11}}},y:{stacked:true,grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:11},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}}}})});
 
   const annual=Object.entries(WB_ING).map(([k,v])=>[k,sum(v)]);
   dc('cwbm');
