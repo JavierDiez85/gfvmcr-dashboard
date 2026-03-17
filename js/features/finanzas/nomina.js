@@ -2,8 +2,12 @@
 (function(window) {
   'use strict';
 
-// ── ESTADO EDITABLE DE NOMINA (en memoria) ──
-let NOM_EDIT = NOM.map(e=>({n:e.n,r:e.r,s:e.s,tipo:e.tipo||'Administrativo',sal:Math.round(e.dist.Salem*100),end:Math.round(e.dist.Endless*100),dyn:Math.round(e.dist.Dynamo*100),wb:Math.round(e.dist.Wirebit*100),stel:Math.round((e.dist.Stellaris||0)*100)}));
+// ── ESTADO EDITABLE DE NOMINA ──
+// Intentar cargar de DB primero; si no hay, usar defaults de data-constants
+var _nomSaved = (typeof DB !== 'undefined' && DB.get) ? DB.get('gf_nomina') : null;
+let NOM_EDIT = (_nomSaved && _nomSaved.length)
+  ? _nomSaved
+  : NOM.map(e=>({n:e.n,r:e.r,s:e.s,tipo:e.tipo||'Administrativo',sal:Math.round(e.dist.Salem*100),end:Math.round(e.dist.Endless*100),dyn:Math.round(e.dist.Dynamo*100),wb:Math.round(e.dist.Wirebit*100),stel:Math.round((e.dist.Stellaris||0)*100)}));
 
 const _nomDist = (e,n) => n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:e==='Stellaris'?n.stel:n.wb)||0)/100;
 const nomMesTotal = e => NOM_EDIT.reduce((a,n)=>a+_nomDist(e,n),0);
@@ -117,9 +121,15 @@ function nomDelRow(i){
 function nomSave(){
   // propagate to NOM global so P&Ls update
   nomUpdateFooter();
+  // Persistir a localStorage + Supabase
+  DB.set('gf_nomina', NOM_EDIT);
+  // Propagar cambios al P&L
+  if(typeof syncFlujoToRecs === 'function') syncFlujoToRecs();
+  if(typeof refreshActivePL === 'function') refreshActivePL();
   const btn=event.target;
   btn.textContent='✅ Guardado';
   setTimeout(()=>btn.textContent='💾 Guardar',1500);
+  toast('✅ Nómina guardada — P&L actualizado');
 }
 
 function rNomina(){
