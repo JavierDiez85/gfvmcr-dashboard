@@ -2,16 +2,31 @@
 (function(window) {
   'use strict';
 
-function rFlujoIng(){
+// Filtro activo por empresa (null = todas)
+window._fiFilterEnt = null;
+
+function rFlujoIng(filterEnt){
+  window._fiFilterEnt = (filterEnt !== undefined) ? filterEnt : null;
   if(!document.getElementById('fi-tbody')) return; // view not active
   const tbody = document.getElementById('fi-tbody');
   if(!tbody) return;
+
+  // Show filter banner
+  const filterBanner = document.getElementById('fi-filter-banner');
+  if(filterBanner) filterBanner.style.display = window._fiFilterEnt ? 'flex' : 'none';
+  if(filterBanner && window._fiFilterEnt){
+    const ec = ENT_COLOR[window._fiFilterEnt]||'#555';
+    filterBanner.innerHTML = `<span style="font-size:.75rem;font-weight:600;color:${ec}">Mostrando solo: ${window._fiFilterEnt}</span><span style="font-size:.65rem;color:var(--muted);margin-left:8px">(${FI_ROWS.filter(r=>r.ent===window._fiFilterEnt).length} filas de ${FI_ROWS.length})</span>`;
+  }
 
   // Show credits notice if any auto rows
   const notice = document.getElementById('fi-cred-notice');
   if(notice) notice.style.display = FI_ROWS.some(r=>r.auto) ? 'flex' : 'none';
 
-  tbody.innerHTML = FI_ROWS.map((r,ri) => {
+  // Apply filter
+  const visibleRows = window._fiFilterEnt ? FI_ROWS.map((r,i)=>({r,ri:i})).filter(x=>x.r.ent===window._fiFilterEnt) : FI_ROWS.map((r,i)=>({r,ri:i}));
+
+  tbody.innerHTML = visibleRows.map(({r,ri}) => {
     const isAuto = r.auto || r.autoTPV;
     const rowBg  = isAuto ? (r.autoTPV ? 'background:rgba(0,115,234,.04)' : 'background:rgba(0,184,117,.04)') : '';
     const badge  = r.autoTPV
@@ -30,7 +45,7 @@ function rFlujoIng(){
         ${isAuto
           ? `<span style="font-weight:600;font-size:.76rem;color:${entC}">${r.ent}</span>`
           : `<select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.74rem;padding:2px 4px;background:var(--bg);color:${entC};font-weight:600"
-              onchange="FI_ROWS[${ri}].ent=this.value;this.style.color=ENT_COLOR[this.value]||'#555';FI_ROWS[${ri}].cat=catsIng(this.value)[0];rFlujoIng()">
+              onchange="FI_ROWS[${ri}].ent=this.value;this.style.color=ENT_COLOR[this.value]||'#555';FI_ROWS[${ri}].cat=catsIng(this.value)[0];rFlujoIng(window._fiFilterEnt)">
               ${EMPRESAS.map(e=>`<option${e===r.ent?' selected':''} style="color:${ENT_COLOR[e]}">${e}</option>`).join('')}
             </select>`}
       </td>
@@ -66,8 +81,10 @@ function rFlujoIng(){
 }
 
 function fiAddRow(){
-  FI_ROWS.push({id: Date.now(), concepto:'', ent:'Salem', cat:'TPV', yr:String(_year), vals:Array(12).fill(0), auto:false});
-  rFlujoIng();
+  const ent = window._fiFilterEnt || 'Salem';
+  const cat = (typeof catsIng==='function' ? catsIng(ent)[0] : 'TPV') || 'TPV';
+  FI_ROWS.push({id: Date.now(), concepto:'', ent:ent, cat:cat, yr:String(_year), vals:Array(12).fill(0), auto:false});
+  rFlujoIng(window._fiFilterEnt);
   // Scroll to last row
   setTimeout(()=>{
     const t=document.getElementById('fi-tbody');
@@ -77,7 +94,7 @@ function fiAddRow(){
 
 function fiDelRow(id){
   FI_ROWS = FI_ROWS.filter(r=>String(r.id)!==String(id));
-  rFlujoIng();
+  rFlujoIng(window._fiFilterEnt);
 }
 
 function fiSave(){
@@ -114,8 +131,14 @@ function fiExport(){
 
   // Register views
   if(typeof registerView === 'function'){
-    registerView('flujo_ing', function(){ return _syncAll().then(function(){ rFlujoIng(); }); });
-    registerView('ingresar', function(){ rFlujoIng(); });
+    registerView('flujo_ing', function(){ return _syncAll().then(function(){ rFlujoIng(null); }); });
+    registerView('ingresar', function(){ rFlujoIng(null); });
+    // Vistas filtradas por empresa
+    registerView('flujo_ing_sal',  function(){ return _syncAll().then(function(){ rFlujoIng('Salem'); }); });
+    registerView('flujo_ing_end',  function(){ return _syncAll().then(function(){ rFlujoIng('Endless'); }); });
+    registerView('flujo_ing_dyn',  function(){ return _syncAll().then(function(){ rFlujoIng('Dynamo'); }); });
+    registerView('flujo_ing_wb',   function(){ return _syncAll().then(function(){ rFlujoIng('Wirebit'); }); });
+    registerView('flujo_ing_stel', function(){ return _syncAll().then(function(){ rFlujoIng('Stellaris'); }); });
   }
 
 })(window);

@@ -769,6 +769,125 @@
   // ═══════════════════════════════════════
   function rSalGas(){ rGasView('sal'); }
 
+  // ═══════════════════════════════════════
+  // rEntGrupo — Vista consolidado para una empresa individual (Grupo → Finanzas)
+  // ═══════════════════════════════════════
+  function rEntGrupo(entKey){
+    const cfg = ENT_MAP[entKey];
+    if(!cfg) return;
+    const eName = cfg.fullName; // 'Wirebit' or 'Stellaris'
+    const pfx = entKey === 'wb' ? 'wbg' : 'stelg';
+
+    // Helpers
+    function _rv(tipo){
+      return MO.map((_,i)=>
+        (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo===tipo&&r.ent===eName&&r.yr==_year)
+          .reduce((s,r)=>s+(r.vals[i]||0),0)
+      );
+    }
+    function _nom(){
+      let total=0;
+      try{ NOM_EDIT.forEach(n=>{
+        total+=n.s*(n[cfg.nomKey]||0)/100;
+      });}catch(e){}
+      return MO.map(()=>Math.round(total));
+    }
+    const _sub=(a,b)=>a.map((v,i)=>v-(b[i]||0));
+
+    const ing = _rv('ingreso');
+    const gas = _rv('gasto');
+    const nom = _nom();
+    const margen = _sub(ing, gas);
+    const ebitda = _sub(margen, nom);
+
+    // KPIs
+    const totIng = ing.reduce((a,b)=>a+b,0);
+    const totGas = gas.reduce((a,b)=>a+b,0);
+    const totNom = nom.reduce((a,b)=>a+b,0);
+    const totEbitda = ebitda.reduce((a,b)=>a+b,0);
+
+    const qk = id => document.getElementById(id);
+    if(qk(pfx+'-k-ing')) qk(pfx+'-k-ing').textContent = totIng>0 ? fmtK(totIng) : '\u2014';
+    if(qk(pfx+'-k-gas')) qk(pfx+'-k-gas').textContent = totGas>0 ? fmtK(totGas) : '\u2014';
+    if(qk(pfx+'-k-nom')) qk(pfx+'-k-nom').textContent = totNom>0 ? fmtK(totNom) : '\u2014';
+    if(qk(pfx+'-k-ebitda')){
+      qk(pfx+'-k-ebitda').textContent = fmtK(totEbitda);
+      qk(pfx+'-k-ebitda').style.color = totEbitda>=0 ? 'var(--green)' : 'var(--red)';
+    }
+
+    // Table — breakdown by category
+    const thead = document.getElementById(pfx+'-thead');
+    const tbody = document.getElementById(pfx+'-tbody');
+    if(!thead || !tbody) return;
+    thead.innerHTML=`<th>Concepto</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total ${_year}</th>`;
+
+    // Build rows: Ingresos by category, Gastos by category, Nomina, EBITDA
+    const ingCats = (typeof ENT_CATS_ING !== 'undefined' ? ENT_CATS_ING[eName] : []) || [];
+    const gasCats = (typeof ENT_CATS_GAS !== 'undefined' ? ENT_CATS_GAS[eName] : []) || [];
+
+    function _rvCat(tipo, cat){
+      return MO.map((_,i)=>
+        (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo===tipo&&r.ent===eName&&r.cat===cat&&r.yr==_year)
+          .reduce((s,r)=>s+(r.vals[i]||0),0)
+      );
+    }
+
+    let rows = [];
+    rows.push({l:'\u25b8 INGRESOS',hdr:true});
+    ingCats.forEach(cat=>{
+      const v = _rvCat('ingreso', cat);
+      if(v.some(x=>x!==0)) rows.push({l:'  \u00b7 '+cat, vals:v, t:'ing'});
+    });
+    rows.push({l:'TOTAL INGRESOS', vals:ing, t:'total', bold:true});
+
+    rows.push({l:'\u25b8 COSTOS + GASTOS', hdr:true});
+    gasCats.forEach(cat=>{
+      const v = _rvCat('gasto', cat);
+      if(v.some(x=>x!==0)) rows.push({l:'  \u00b7 '+cat, vals:v, t:'gasto'});
+    });
+    rows.push({l:'TOTAL GASTOS', vals:gas, t:'total', bold:true});
+
+    rows.push({l:'MARGEN BRUTO', vals:margen, t:'util', bold:true});
+    rows.push({l:'N\u00d3MINA', vals:nom, t:'gasto', bold:true});
+    rows.push({l:'EBITDA '+eName.toUpperCase(), vals:ebitda, t:'util', bold:true});
+
+    tbody.innerHTML = rows.map(r=>{
+      if(r.hdr) return`<tr class="grp"><td colspan="${MO.length+2}">${r.l}</td></tr>`;
+      const tot=sum(r.vals);
+      const cls=r.t==='util'?(tot>=0?'pos':'neg'):'';
+      return`<tr><td${r.bold?' class="bld"':''}>${r.l}</td>${r.vals.map(v=>`<td class="mo ${v<0?'neg':v>0&&r.t==='ing'?'pos':''}">${v?fmtFull(v):'\u2014'}</td>`).join('')}<td class="mo bld ${cls}">${fmtFull(tot)}</td></tr>`;
+    }).join('');
+
+    // Charts
+    rEvoChart('c-'+pfx+'-evo', [entKey]);
+    _rEntGrupoIngChart(pfx, eName, ingCats);
+  }
+
+  // Helper chart: income mix donut for entity grupo views
+  function _rEntGrupoIngChart(pfx, eName, ingCats){
+    const canvasId = 'c-'+pfx+'-ing';
+    const el = document.getElementById(canvasId);
+    if(!el) return;
+    if(typeof dc === 'function') dc(canvasId);
+
+    const colors = ['rgba(0,115,234,.6)','rgba(0,184,117,.6)','rgba(255,112,67,.6)','rgba(155,81,224,.6)','rgba(229,57,53,.6)','rgba(33,150,243,.6)'];
+    const data = ingCats.map(cat =>
+      (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===eName&&r.cat===cat&&r.yr==_year)
+        .reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0)
+    ).filter((_,i)=>ingCats[i]);
+
+    const labels = ingCats.map((cat,i) => cat + ' ' + (typeof fmtK==='function'?fmtK(data[i]||0):''));
+
+    if(typeof CH !== 'undefined') CH[canvasId] = new Chart(el,{
+      type:'doughnut',
+      data:{
+        labels: labels,
+        datasets:[{data:data, backgroundColor:colors.slice(0, data.length), borderWidth:0}]
+      },
+      options:{responsive:true, plugins:{legend:{position:'bottom',labels:{font:{size:10}}},title:{display:true,text:'Mix Ingresos '+eName,font:{size:12}}}}
+    });
+  }
+
   // Expose globals
   window.fmtK = fmtK;
   window._isCostRow = _isCostRow;
@@ -776,6 +895,7 @@
   window.ENT_MAP = ENT_MAP;
   window.rPL = rPL;
   window.rConsolidado = rConsolidado;
+  window.rEntGrupo = rEntGrupo;
   window.rIngView = rIngView;
   window.rGasView = rGasView;
   window.rNomView = rNomView;
@@ -794,6 +914,8 @@
   if(typeof registerView === 'function'){
     registerView('centum', function(){ return _syncAll().then(function(){ rConsolidado('centum'); rConsCharts('centum'); rEvoChart('c-centum-evo',['sal','end','dyn']); }); });
     registerView('grupo', function(){ return _syncAll().then(function(){ rConsolidado('grupo'); rConsCharts('grupo'); rEvoChart('c-grupo-evo',['sal','end','dyn','wb','stel']); }); });
+    registerView('wb_grupo', function(){ return _syncAll().then(function(){ rEntGrupo('wb'); }); });
+    registerView('stel_grupo', function(){ return _syncAll().then(function(){ rEntGrupo('stel'); }); });
   }
 
 })(window);

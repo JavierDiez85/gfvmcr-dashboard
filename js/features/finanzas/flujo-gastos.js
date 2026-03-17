@@ -2,16 +2,31 @@
 (function(window) {
   'use strict';
 
-function rFlujoGas(){
+// Filtro activo por empresa (null = todas)
+window._fgFilterEnt = null;
+
+function rFlujoGas(filterEnt){
+  window._fgFilterEnt = (filterEnt !== undefined) ? filterEnt : null;
   if(!document.getElementById('fg-tbody')) return; // view not active
   const tbody = document.getElementById('fg-tbody');
   if(!tbody) return;
+
+  // Show filter banner
+  const filterBanner = document.getElementById('fg-filter-banner');
+  if(filterBanner) filterBanner.style.display = window._fgFilterEnt ? 'flex' : 'none';
+  if(filterBanner && window._fgFilterEnt){
+    const ec = ENT_COLOR[window._fgFilterEnt]||'#555';
+    filterBanner.innerHTML = `<span style="font-size:.75rem;font-weight:600;color:${ec}">Mostrando solo: ${window._fgFilterEnt}</span><span style="font-size:.65rem;color:var(--muted);margin-left:8px">(${FG_ROWS.filter(r=>r.ent===window._fgFilterEnt).length} filas de ${FG_ROWS.length})</span>`;
+  }
 
   // Show TPV auto notice if any autoTPV rows
   const fgTpvNotice = document.getElementById('fg-tpv-notice');
   if(fgTpvNotice) fgTpvNotice.style.display = FG_ROWS.some(r=>r.autoTPV) ? 'flex' : 'none';
 
-  tbody.innerHTML = FG_ROWS.map((r,ri) => {
+  // Apply filter
+  const visibleRows = window._fgFilterEnt ? FG_ROWS.map((r,i)=>({r,ri:i})).filter(x=>x.r.ent===window._fgFilterEnt) : FG_ROWS.map((r,i)=>({r,ri:i}));
+
+  tbody.innerHTML = visibleRows.map(({r,ri}) => {
     // Auto-injected TPV rows: non-editable display
     if(r.autoTPV) {
       const entC = ENT_COLOR[r.ent]||'#555';
@@ -89,8 +104,10 @@ function rFlujoGas(){
 }
 
 function fgAddRow(){
-  FG_ROWS.push({id:Date.now(), concepto:'', ent:'Salem', cat:'Administrativo', yr:String(_year), shared:false, gcConcept:'', vals:Array(12).fill(0)});
-  rFlujoGas();
+  const ent = window._fgFilterEnt || 'Salem';
+  const cat = (typeof catsGas==='function' ? catsGas(ent)[0] : 'Administrativo') || 'Administrativo';
+  FG_ROWS.push({id:Date.now(), concepto:'', ent:ent, cat:cat, yr:String(_year), shared:false, gcConcept:'', vals:Array(12).fill(0)});
+  rFlujoGas(window._fgFilterEnt);
   setTimeout(()=>{
     const t=document.getElementById('fg-tbody');
     if(t){const rows=t.querySelectorAll('tr');if(rows.length>1)rows[rows.length-2].scrollIntoView({behavior:'smooth',block:'nearest'});}
@@ -99,7 +116,7 @@ function fgAddRow(){
 
 function fgDelRow(id){
   FG_ROWS = FG_ROWS.filter(r=>String(r.id)!==String(id));
-  rFlujoGas();
+  rFlujoGas(window._fgFilterEnt);
 }
 
 function fgToggleShared(ri){
@@ -107,7 +124,7 @@ function fgToggleShared(ri){
   if(!FG_ROWS[ri].shared) FG_ROWS[ri].gcConcept='';
   // Auto-detect concept
   if(FG_ROWS[ri].shared) fgAutoDetect(ri);
-  rFlujoGas();
+  rFlujoGas(window._fgFilterEnt);
 }
 
 function fgAutoDetect(ri){
@@ -115,7 +132,7 @@ function fgAutoDetect(ri){
   if(!r.shared || !r.concepto) return;
   const con = r.concepto.toLowerCase();
   const match = GC_EDIT.find(g=>g.c.toLowerCase()===con||con.includes(g.c.toLowerCase())||g.c.toLowerCase().includes(con));
-  if(match && !r.gcConcept){ FG_ROWS[ri].gcConcept=match.c; rFlujoGas(); }
+  if(match && !r.gcConcept){ FG_ROWS[ri].gcConcept=match.c; rFlujoGas(window._fgFilterEnt); }
 }
 
 function fgUpdateKPIs(){ flUpdateKPIs('fg'); }
@@ -157,7 +174,13 @@ function fgExport(){
 
   // Register views
   if(typeof registerView === 'function'){
-    registerView('flujo_gas', function(){ return _syncAll().then(function(){ rFlujoGas(); }); });
+    registerView('flujo_gas', function(){ return _syncAll().then(function(){ rFlujoGas(null); }); });
+    // Vistas filtradas por empresa
+    registerView('flujo_gas_sal',  function(){ return _syncAll().then(function(){ rFlujoGas('Salem'); }); });
+    registerView('flujo_gas_end',  function(){ return _syncAll().then(function(){ rFlujoGas('Endless'); }); });
+    registerView('flujo_gas_dyn',  function(){ return _syncAll().then(function(){ rFlujoGas('Dynamo'); }); });
+    registerView('flujo_gas_wb',   function(){ return _syncAll().then(function(){ rFlujoGas('Wirebit'); }); });
+    registerView('flujo_gas_stel', function(){ return _syncAll().then(function(){ rFlujoGas('Stellaris'); }); });
   }
 
 })(window);
