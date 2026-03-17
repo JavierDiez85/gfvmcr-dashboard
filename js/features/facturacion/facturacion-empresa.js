@@ -795,6 +795,8 @@ function feSavePago(cxpId){
   closeModal();
   toast('✅ Pago registrado — '+_fmt(monto));
   feRenderAll();
+  ppRenderAll();
+  recvRenderAll();
 }
 
 // ══════════════════════════════════════════════════════════
@@ -808,6 +810,8 @@ function feDeleteCxp(cxpId){
   _feSaveStore(store);
   toast('🗑️ CxP eliminada');
   feRenderAll();
+  ppRenderAll();
+  recvRenderAll();
 }
 
 // ══════════════════════════════════════════════════════════

@@ -53,7 +53,9 @@ const APP_KEYS = [
   // Wirebit data (year-dependent)
   'gf_wb_fees_2026','gf_wb_upload_summary','gf_wb_tarjetas_2026',
   // Nómina y gastos compartidos
-  'gf_nomina','gf_gc'
+  'gf_nomina','gf_gc',
+  // Facturación CxP
+  'gf_cxp'
 ];
 
 // Estado de sync
