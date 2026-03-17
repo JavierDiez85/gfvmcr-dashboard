@@ -1202,14 +1202,18 @@ function emitDelete(id){
 }
 
 // ══════════════════════════════════════════════════════════
-// RECIBIDAS — Vista resumen de CxP con KPIs y periodo
+// RECIBIDAS — Vista con upload PDF CFDI + registro manual + tabla CxP
 // ══════════════════════════════════════════════════════════
 var _recvEmpresa = null;
 var _recvPeriodo = 'mes';
+var _recvPdfData = null;
+var _recvPdfBase64 = null;
 
 function rFactRecibidas(empresa){
   _recvEmpresa = empresa;
   _recvPeriodo = 'mes';
+  _recvPdfData = null;
+  _recvPdfBase64 = null;
 
   var viewId = RECV_VIEW_MAP[empresa];
   if(!viewId) return;
@@ -1233,11 +1237,26 @@ function rFactRecibidas(empresa){
   // KPIs
   html += '<div id="recv-kpis"></div>';
 
-  // CTA to register
-  html += '<div style="margin-bottom:14px;display:flex;gap:8px">';
-  html += '<button class="btn" style="font-size:.72rem" onclick="feSetMode(\'manual\');navTo(\''+VIEW_MAP[empresa]+'\')">✏️ Registrar Nueva</button>';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="feSetMode(\'efectivo\');navTo(\''+VIEW_MAP[empresa]+'\')">💵 Pago en Efectivo</button>';
+  // Upload section — drop zone PDF CFDI
+  html += '<div class="tw" style="margin-bottom:14px">';
+  html += '<div class="tw-h"><div class="tw-ht">📥 Registrar Factura Recibida</div>';
+  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="recvSetManual()">✏️ Registro Manual</button>';
   html += '</div>';
+  html += '<div style="padding:16px">';
+
+  // Drop zone
+  html += '<div id="recv-dropzone" ondrop="recvHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'recv-file-input\').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
+  html += '<div style="font-size:1.4rem;margin-bottom:4px">📎</div>';
+  html += '<div style="font-size:.78rem;font-weight:600">Arrastra factura CFDI de proveedor (PDF)</div>';
+  html += '<div style="font-size:.68rem;color:var(--muted);margin-top:3px">Se extraerán datos automáticamente del XML embebido</div>';
+  html += '<input type="file" id="recv-file-input" accept=".pdf" style="display:none" onchange="recvLoadFile(this.files[0])">';
+  html += '</div>';
+
+  // Status + preview
+  html += '<div id="recv-status" style="display:none;font-size:.78rem;padding:10px 14px;border-radius:var(--r);margin-top:10px"></div>';
+  html += '<div id="recv-form-area" style="display:none;margin-top:12px"></div>';
+
+  html += '</div></div>';
 
   // CxP Table
   html += '<div class="tw">';
@@ -1342,6 +1361,220 @@ function _recvRenderTable(){
       + '<td>'+_origenPill(c.origen)+'</td>'
       + '</tr>';
   }).join('');
+}
+
+// ── Recibidas: Upload PDF CFDI + Manual entry ───────────
+
+function recvHandleDrop(e){
+  e.preventDefault();
+  e.currentTarget.style.borderColor = 'var(--border2)';
+  var file = e.dataTransfer.files[0];
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.pdf')){
+    _recvStatus('error','Solo se aceptan archivos PDF');
+    return;
+  }
+  recvLoadFile(file);
+}
+
+function recvLoadFile(file){
+  if(!file) return;
+  if(!file.name.toLowerCase().endsWith('.pdf')){
+    _recvStatus('error','Solo se aceptan archivos PDF');
+    return;
+  }
+  _recvStatus('loading','Analizando factura PDF...');
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    _recvPdfBase64 = ev.target.result;
+    _recvAnalyzePDF(ev.target.result, file.name);
+  };
+  reader.onerror = function(){ _recvStatus('error','Error al leer el archivo'); };
+  reader.readAsDataURL(file);
+}
+
+function _recvStatus(type, msg){
+  var el = document.getElementById('recv-status');
+  if(!el) return;
+  el.style.display = 'block';
+  if(type==='loading'){ el.style.background='var(--blue-bg,#e8f0fe)'; el.style.color='var(--blue,#0073ea)'; el.innerHTML='⏳ '+msg; }
+  else if(type==='ok'){ el.style.background='var(--green-bg,#e6f7ee)'; el.style.color='var(--green,#00b875)'; el.innerHTML='✅ '+msg; }
+  else{ el.style.background='var(--red-bg,#fce8e8)'; el.style.color='var(--red,#e53935)'; el.innerHTML='⚠️ '+msg; }
+}
+
+function _recvAnalyzePDF(base64, filename){
+  try{
+    var raw = atob(base64.split(',')[1]);
+    var text = '';
+    for(var i=0;i<raw.length;i++) text += String.fromCharCode(raw.charCodeAt(i));
+    if(typeof cfParseCFDI === 'function'){
+      var parsed = cfParseCFDI(text);
+      if(parsed){
+        _recvPdfData = parsed;
+        _recvPdfData.filename = filename;
+        _recvShowPreview(parsed);
+        _recvStatus('ok','Datos extraídos correctamente del CFDI');
+        return;
+      }
+    }
+    _recvPdfData = {filename:filename};
+    _recvStatus('ok','PDF cargado — completa los datos manualmente');
+    recvSetManual();
+  }catch(e){
+    _recvStatus('error','No se pudieron extraer datos: '+e.message);
+    recvSetManual();
+  }
+}
+
+function _recvShowPreview(data){
+  var fa = document.getElementById('recv-form-area');
+  if(!fa) return;
+  fa.style.display = 'block';
+  var html = '<div style="border:1px solid var(--border2);border-radius:var(--r);padding:14px">';
+  html += '<div style="font-size:.78rem;font-weight:700;margin-bottom:10px">📋 Datos Extraídos del CFDI</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px 14px;font-size:.75rem">';
+  html += '<div><b>Emisor (Proveedor):</b> '+_esc(data.emisor_nombre||'—')+'</div>';
+  html += '<div><b>RFC Emisor:</b> '+_esc(data.emisor_rfc||'—')+'</div>';
+  html += '<div><b>Receptor:</b> '+_esc(data.receptor_nombre||'—')+'</div>';
+  html += '<div><b>RFC Receptor:</b> '+_esc(data.receptor_rfc||'—')+'</div>';
+  html += '<div><b>Folio:</b> '+_esc(data.folio||'—')+'</div>';
+  html += '<div><b>Fecha:</b> '+_esc(data.fecha||'—')+'</div>';
+  html += '<div><b>Subtotal:</b> '+_fmt(data.subtotal||0)+'</div>';
+  html += '<div><b>IVA:</b> '+_fmt(data.iva||0)+'</div>';
+  html += '<div><b>Total:</b> <span style="font-weight:700">'+_fmt(data.total||0)+'</span></div>';
+  html += '<div><b>UUID:</b> <span style="font-size:.65rem;color:var(--muted)">'+_esc(data.uuid||'—')+'</span></div>';
+  html += '</div>';
+  // Categoría y vencimiento editables
+  html += '<div style="display:flex;gap:14px;margin-top:10px">';
+  html += _selField('recv-prev-cat','Categoría','<option value="">Sin categoría</option>'+_catOptions());
+  html += '<div style="flex:1;min-width:150px"><label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Fecha Vencimiento</label>';
+  html += '<input type="date" id="recv-prev-venc" class="fi" style="width:100%;padding:7px 10px;font-size:.78rem"></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:12px">';
+  html += '<button class="btn" style="font-size:.72rem" onclick="recvSaveFromPreview()">💾 Guardar como CxP</button>';
+  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="recvClearForm()">Cancelar</button>';
+  html += '</div></div>';
+  fa.innerHTML = html;
+}
+
+function recvSetManual(){
+  var fa = document.getElementById('recv-form-area');
+  if(!fa) return;
+  fa.style.display = 'block';
+  var html = '<div style="border:1px solid var(--border2);border-radius:var(--r);padding:14px">';
+  html += '<div style="font-size:.78rem;font-weight:700;margin-bottom:10px">✏️ Registro Manual de Factura Recibida</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:.78rem">';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Proveedor</label>';
+  html += '<input type="text" id="recv-f-prov" class="fi" placeholder="Nombre del proveedor" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">RFC Proveedor</label>';
+  html += '<input type="text" id="recv-f-rfc" class="fi" placeholder="RFC" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha Factura</label>';
+  html += '<input type="date" id="recv-f-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Folio</label>';
+  html += '<input type="text" id="recv-f-folio" class="fi" placeholder="Folio factura" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div>'+_selField('recv-f-cat','Categoría','<option value="">Sin categoría</option>'+_catOptions())+'</div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
+  html += '<input type="text" id="recv-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
+  html += '<input type="number" id="recv-f-subtotal" class="fi" step="0.01" placeholder="0.00" oninput="recvCalcTotal()" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA</label>';
+  html += '<input type="number" id="recv-f-iva" class="fi" step="0.01" placeholder="0.00" oninput="recvCalcTotal()" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
+  html += '<input type="number" id="recv-f-total" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha Vencimiento</label>';
+  html += '<input type="date" id="recv-f-venc" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '</div>';
+  html += '<div style="display:flex;gap:8px;margin-top:12px">';
+  html += '<button class="btn" style="font-size:.72rem" onclick="recvSaveManual()">💾 Guardar como CxP</button>';
+  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="recvClearForm()">Cancelar</button>';
+  html += '</div></div>';
+  fa.innerHTML = html;
+}
+
+function recvCalcTotal(){
+  var sub = Number((document.getElementById('recv-f-subtotal')||{}).value || 0);
+  var iva = Number((document.getElementById('recv-f-iva')||{}).value || 0);
+  var totalEl = document.getElementById('recv-f-total');
+  if(totalEl) totalEl.value = (sub + iva).toFixed(2);
+}
+
+function recvSaveFromPreview(){
+  if(!_recvPdfData) return;
+  var cat = (document.getElementById('recv-prev-cat')||{}).value || '';
+  var venc = (document.getElementById('recv-prev-venc')||{}).value || '';
+  var total = Number(_recvPdfData.total || 0);
+  var store = _feLoad();
+  store.cuentas.push({
+    id: 'cxp_' + Date.now() + '_' + Math.random().toString(36).substring(2,7),
+    empresa: _recvEmpresa,
+    proveedor: _recvPdfData.emisor_nombre || '',
+    rfc_proveedor: _recvPdfData.emisor_rfc || '',
+    folio: _recvPdfData.folio || '',
+    concepto: _recvPdfData.concepto || '',
+    categoria: cat,
+    fecha_factura: _recvPdfData.fecha || _today(),
+    fecha_vencimiento: venc || '',
+    moneda: 'MXN',
+    subtotal_mxn: Number(_recvPdfData.subtotal || 0),
+    iva_mxn: Number(_recvPdfData.iva || 0),
+    total_mxn: total,
+    monto_pagado_mxn: 0,
+    saldo_mxn: total,
+    status: 'pendiente',
+    origen: 'cfdi',
+    uuid: _recvPdfData.uuid || '',
+    pdf_base64: _recvPdfBase64 || null,
+    pdf_filename: _recvPdfData.filename || '',
+    created_at: _now()
+  });
+  _feSaveStore(store);
+  if(typeof toast === 'function') toast('✅ Factura recibida guardada como CxP');
+  recvClearForm();
+  recvRenderAll();
+}
+
+function recvSaveManual(){
+  var prov = (document.getElementById('recv-f-prov')||{}).value || '';
+  var total = Number((document.getElementById('recv-f-total')||{}).value || 0);
+  if(!prov && !total){ if(typeof toast==='function') toast('⚠️ Completa al menos proveedor y total'); return; }
+  var store = _feLoad();
+  store.cuentas.push({
+    id: 'cxp_' + Date.now() + '_' + Math.random().toString(36).substring(2,7),
+    empresa: _recvEmpresa,
+    proveedor: prov,
+    rfc_proveedor: (document.getElementById('recv-f-rfc')||{}).value || '',
+    folio: (document.getElementById('recv-f-folio')||{}).value || '',
+    concepto: (document.getElementById('recv-f-concepto')||{}).value || '',
+    categoria: (document.getElementById('recv-f-cat')||{}).value || '',
+    fecha_factura: (document.getElementById('recv-f-fecha')||{}).value || _today(),
+    fecha_vencimiento: (document.getElementById('recv-f-venc')||{}).value || '',
+    moneda: 'MXN',
+    subtotal_mxn: Number((document.getElementById('recv-f-subtotal')||{}).value || 0),
+    iva_mxn: Number((document.getElementById('recv-f-iva')||{}).value || 0),
+    total_mxn: total,
+    monto_pagado_mxn: 0,
+    saldo_mxn: total,
+    status: 'pendiente',
+    origen: 'manual',
+    pdf_base64: _recvPdfBase64 || null,
+    pdf_filename: (_recvPdfData && _recvPdfData.filename) ? _recvPdfData.filename : '',
+    created_at: _now()
+  });
+  _feSaveStore(store);
+  if(typeof toast === 'function') toast('✅ Factura recibida guardada como CxP');
+  recvClearForm();
+  recvRenderAll();
+}
+
+function recvClearForm(){
+  _recvPdfData = null;
+  _recvPdfBase64 = null;
+  var fa = document.getElementById('recv-form-area');
+  if(fa){ fa.style.display = 'none'; fa.innerHTML = ''; }
+  var st = document.getElementById('recv-status');
+  if(st) st.style.display = 'none';
+  var fi = document.getElementById('recv-file-input');
+  if(fi) fi.value = '';
 }
 
 // ══════════════════════════════════════════════════════════
@@ -1622,6 +1855,13 @@ window.emitDelete     = emitDelete;
 // Recibidas globals
 window.recvSetPeriodo = recvSetPeriodo;
 window.recvRenderAll  = recvRenderAll;
+window.recvHandleDrop = recvHandleDrop;
+window.recvLoadFile   = recvLoadFile;
+window.recvSetManual  = recvSetManual;
+window.recvSaveFromPreview = recvSaveFromPreview;
+window.recvSaveManual = recvSaveManual;
+window.recvClearForm  = recvClearForm;
+window.recvCalcTotal  = recvCalcTotal;
 // Pagos Pendientes globals
 window.ppSetPeriodo   = ppSetPeriodo;
 window.ppRenderAll    = ppRenderAll;
