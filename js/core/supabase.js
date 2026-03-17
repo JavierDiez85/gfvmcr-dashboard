@@ -51,7 +51,9 @@ const APP_KEYS = [
   'gf_tickets_pagos_tpv','gf_tpv_agente_pagos',
   'gf_tpv_promotor_pagos','gf_tpv_rate_changes',
   // Wirebit data (year-dependent)
-  'gf_wb_fees_2026','gf_wb_upload_summary','gf_wb_tarjetas_2026'
+  'gf_wb_fees_2026','gf_wb_upload_summary','gf_wb_tarjetas_2026',
+  // Nómina y gastos compartidos
+  'gf_nomina','gf_gc'
 ];
 
 // Estado de sync

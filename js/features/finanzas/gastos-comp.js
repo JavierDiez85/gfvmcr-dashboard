@@ -3,7 +3,11 @@
   'use strict';
 
 // ── ESTADO EDITABLE DE GASTOS COMPARTIDOS ──
-let GC_EDIT = GCOMP.map(g=>({c:g.c,cat:g.cat,ppto:g.ppto||0,sal:Math.round(g.sal*100),end:Math.round(g.end*100),dyn:Math.round(g.dyn*100),wb:Math.round(g.wb*100)}));
+// Intentar cargar de DB primero; si no hay, usar defaults de data-constants
+var _gcSaved = (typeof DB !== 'undefined' && DB.get) ? DB.get('gf_gc') : null;
+let GC_EDIT = (_gcSaved && _gcSaved.length)
+  ? _gcSaved
+  : GCOMP.map(g=>({c:g.c,cat:g.cat,ppto:g.ppto||0,sal:Math.round(g.sal*100),end:Math.round(g.end*100),dyn:Math.round(g.dyn*100),wb:Math.round(g.wb*100)}));
 
 function gcUpdateKPIs(){
   const n=GC_EDIT.length;
@@ -86,9 +90,15 @@ function gcDelRow(i){
 
 function gcSave(){
   gcUpdateKPIs();
+  // Persistir a localStorage + Supabase
+  DB.set('gf_gc', GC_EDIT);
+  // Propagar cambios al P&L
+  if(typeof syncFlujoToRecs === 'function') syncFlujoToRecs();
+  if(typeof refreshActivePL === 'function') refreshActivePL();
   const btn=event.target;
   btn.textContent='✅ Guardado';
   setTimeout(()=>btn.textContent='💾 Guardar',1500);
+  toast('✅ Gastos compartidos guardados — P&L actualizado');
 }
 
 function rGastosComp(){
