@@ -96,7 +96,7 @@ async function rTPVAgentes(){
       ]},
       options:{plugins:{legend:{position:'bottom',labels:{font:{size:9},color:textC,boxWidth:10}}},scales:{
         x:{grid:{display:false},ticks:{color:textC,font:{size:9}}},
-        y:{grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'},ticks:{color:textC,font:{size:9},callback:v=>v>=1e6?'$'+(v/1e6).toFixed(1)+'M':v>=1000?'$'+(v/1000).toFixed(0)+'K':'$'+v}}
+        y:{grid:{color:isDark?'rgba(255,255,255,.06)':'rgba(0,0,0,.06)'},ticks:{color:textC,font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}}
       }}
     });
   },50);
