@@ -69,7 +69,7 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: ()=>nomMesOp('Salem') },
+          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Salem',m,y) },
           { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
           { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
           { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias','TPV Comisiones'], concepts:['sitespay','promotor','promotor\u00eda'] },
@@ -78,7 +78,7 @@
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: ()=>nomMesAdm('Salem') },
+          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Salem',m,y) },
           { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
           { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
           { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
@@ -110,7 +110,7 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: ()=>nomMesOp('Endless') },
+          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Endless',m,y) },
           { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
           { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
           { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias'], concepts:['sitespay','promotor','promotor\u00eda'] },
@@ -118,7 +118,7 @@
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: ()=>nomMesAdm('Endless') },
+          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Endless',m,y) },
           { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
           { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
           { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
@@ -149,7 +149,7 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: ()=>nomMesOp('Dynamo') },
+          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Dynamo',m,y) },
           { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
           { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
           { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias'], concepts:['sitespay','promotor','promotor\u00eda'] },
@@ -157,7 +157,7 @@
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: ()=>nomMesAdm('Dynamo') },
+          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Dynamo',m,y) },
           { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
           { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
           { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
@@ -188,7 +188,7 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: ()=>nomMesOp('Wirebit') },
+          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Wirebit',m,y) },
           { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
           { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
           { type:'gasto', label:'  Liquidity Providers',    cats:['Costos Directos'], concepts:['liquidity','proveedor liquidez'] },
@@ -197,7 +197,7 @@
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: ()=>nomMesAdm('Wirebit') },
+          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Wirebit',m,y) },
           { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
           { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
           { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
@@ -224,13 +224,13 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: ()=>nomMesOp('Stellaris') },
+          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Stellaris',m,y) },
           { type:'gasto', label:'  Costo Directo',           cats:['Costo Directo'] },
           { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: ()=>nomMesAdm('Stellaris') },
+          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Stellaris',m,y) },
           { type:'gasto', label:'  Renta',                   cats:['Renta'] },
           { type:'gasto', label:'  Marketing',               cats:['Marketing'] },
           { type:'gasto', label:'  Operaciones',             cats:['Operaciones'] },
@@ -306,7 +306,7 @@
         // Fallback a vals_fallback si existe (ej. nomina Wirebit)
         if(!v && s.vals_fallback) v = s.vals_fallback;
         // Fallback a ppto calculado — solo para gastos, NO para ingresos (ingresos deben ser reales)
-        if(!v && s.ppto && s.type==='gasto') v = MO.map(()=>Math.round(s.ppto()));
+        if(!v && s.ppto && s.type==='gasto') v = MO.map((_,i)=>Math.round(s.ppto(i, +_year)));
         const isReal = !!recsVals(s.type==='ing'?'ingreso':'gasto', s.cats||null, s.concepts||null);
         const vals = v || MO.map(()=>0);
         if(s.type==='ing')  totIng  = totIng.map((x,i)=>x+vals[i]);
@@ -658,10 +658,10 @@
 
     const hasNomRecs=gastos.some(r=>r.cat==='N\u00f3mina');
     if(!hasNomRecs && typeof NOM_EDIT!=='undefined'){
-      const nomOp=Math.round(nomMesOp(entName));
-      const nomAdm=Math.round(nomMesAdm(entName));
-      if(nomOp>0) agg.set('N\u00f3mina Operativa',{concepto:'N\u00f3mina Operativa',cat:'N\u00f3mina',vals:Array(12).fill(nomOp),ppto:true});
-      if(nomAdm>0) agg.set('N\u00f3mina Administrativa',{concepto:'N\u00f3mina Administrativa',cat:'N\u00f3mina',vals:Array(12).fill(nomAdm),ppto:true});
+      const nomOpVals=Array.from({length:12},(_,m)=>Math.round(nomMesOp(entName,m,+_year)));
+      const nomAdmVals=Array.from({length:12},(_,m)=>Math.round(nomMesAdm(entName,m,+_year)));
+      if(nomOpVals.some(v=>v>0)) agg.set('N\u00f3mina Operativa',{concepto:'N\u00f3mina Operativa',cat:'N\u00f3mina',vals:nomOpVals,ppto:true});
+      if(nomAdmVals.some(v=>v>0)) agg.set('N\u00f3mina Administrativa',{concepto:'N\u00f3mina Administrativa',cat:'N\u00f3mina',vals:nomAdmVals,ppto:true});
     }
 
     if(typeof GC_EDIT!=='undefined'){
