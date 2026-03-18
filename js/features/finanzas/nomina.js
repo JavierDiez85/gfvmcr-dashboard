@@ -7,12 +7,31 @@
 var _nomSaved = (typeof DB !== 'undefined' && DB.get) ? DB.get('gf_nomina') : null;
 let NOM_EDIT = (_nomSaved && _nomSaved.length)
   ? _nomSaved
-  : NOM.map(e=>({n:e.n,r:e.r,s:e.s,tipo:e.tipo||'Administrativo',sal:Math.round(e.dist.Salem*100),end:Math.round(e.dist.Endless*100),dyn:Math.round(e.dist.Dynamo*100),wb:Math.round(e.dist.Wirebit*100),stel:Math.round((e.dist.Stellaris||0)*100)}));
+  : NOM.map(e=>({n:e.n,r:e.r,s:e.s,tipo:e.tipo||'Administrativo',fi:'',sal:Math.round(e.dist.Salem*100),end:Math.round(e.dist.Endless*100),dyn:Math.round(e.dist.Dynamo*100),wb:Math.round(e.dist.Wirebit*100),stel:Math.round((e.dist.Stellaris||0)*100)}));
 
-const _nomDist = (e,n) => n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:e==='Stellaris'?n.stel:n.wb)||0)/100;
-const nomMesTotal = e => NOM_EDIT.reduce((a,n)=>a+_nomDist(e,n),0);
-const nomMesOp    = e => NOM_EDIT.filter(n=>n.tipo==='Operativo').reduce((a,n)=>a+_nomDist(e,n),0);
-const nomMesAdm   = e => NOM_EDIT.filter(n=>n.tipo==='Administrativo').reduce((a,n)=>a+_nomDist(e,n),0);
+// Factor de nómina por mes/año considerando fecha de ingreso
+// fi: "YYYY-MM-DD" — si vacío o ausente, factor = 1 (siempre activo)
+function _nomFactor(n, mes, year) {
+  if (!n.fi) return 1;
+  const parts = n.fi.split('-');
+  if (parts.length < 2) return 1;
+  const fiY = +parts[0], fiM = +parts[1] - 1, fiD = parts[2] ? +parts[2] : 1;
+  const yr = +year, m = +mes;
+  if (yr < fiY || (yr === fiY && m < fiM)) return 0;         // antes del ingreso
+  if (yr > fiY || (yr === fiY && m > fiM)) return 1;         // mes completo posterior
+  // mismo año y mes → prorrateo por días
+  const diasMes = new Date(yr, m + 1, 0).getDate();
+  return Math.max(0, (diasMes - fiD + 1) / diasMes);
+}
+
+const _nomDist = (e, n, mes, year) => {
+  const pct = (e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:e==='Stellaris'?n.stel:n.wb)||0;
+  const factor = (mes !== undefined && year !== undefined) ? _nomFactor(n, mes, year) : 1;
+  return n.s * (pct/100) * factor;
+};
+const nomMesTotal = (e, mes, year) => NOM_EDIT.reduce((a,n)=>a+_nomDist(e,n,mes,year),0);
+const nomMesOp    = (e, mes, year) => NOM_EDIT.filter(n=>n.tipo==='Operativo').reduce((a,n)=>a+_nomDist(e,n,mes,year),0);
+const nomMesAdm   = (e, mes, year) => NOM_EDIT.filter(n=>n.tipo==='Administrativo').reduce((a,n)=>a+_nomDist(e,n,mes,year),0);
 
 function nomCalcTotals(){
   let ts=0,te=0,td=0,tw=0,tst=0,tot=0;
@@ -63,9 +82,17 @@ function nomRenderRow(e,i){
   const totCls=ok?'pos':'neg';
   const inStyle='style="width:100%;border:none;background:transparent;text-align:right;font-size:.78rem;font-family:inherit;color:inherit;padding:0"';
   const tipoColor = e.tipo==='Operativo' ? '#0073ea' : '#9b51e0';
+  // Indicador visual de fecha de ingreso
+  const fiVal = e.fi || '';
+  const fiLabel = fiVal ? ('<span style="font-size:.62rem;color:var(--muted);display:block;margin-top:1px">desde '+fiVal.substring(0,7)+'</span>') : '';
   return`<tr id="nom-row-${i}">
     <td><input ${inStyle} value="${e.n}" onchange="NOM_EDIT[${i}].n=this.value" style="text-align:left;width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit"></td>
     <td><input ${inStyle} value="${e.r}" onchange="NOM_EDIT[${i}].r=this.value" style="text-align:left;width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;color:var(--muted)"></td>
+    <td style="padding:2px 6px">
+      <input type="date" value="${fiVal}" title="Fecha de ingreso — nómina aplica desde esta fecha (proporcional en el mes de entrada)"
+        style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.7rem;padding:2px 4px;background:var(--bg);font-family:inherit;color:var(--text)"
+        onchange="NOM_EDIT[${i}].fi=this.value;nomUpdateFooter()">
+    </td>
     <td style="padding:2px 6px">
       <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.72rem;padding:2px 4px;background:var(--bg);color:${tipoColor};font-weight:600"
         onchange="NOM_EDIT[${i}].tipo=this.value;nomRefreshRow(${i})">
@@ -95,21 +122,21 @@ function nomRefreshRow(i){
   const ok=tot===100;
   const el=document.getElementById('nom-tot-'+i);
   if(el){el.textContent=tot+'%';el.className='mo '+(ok?'pos':'neg');el.style.fontWeight='700';}
-  // refresh calculated cells
+  // refresh calculated cells — columna "Fecha Ingreso" añadida → índices +1
   const row=document.getElementById('nom-row-'+i);
   if(row){
     const tds=row.querySelectorAll('td');
-    tds[10].textContent=fmt(e.s*(e.sal/100));
-    tds[11].textContent=fmt(e.s*(e.end/100));
-    tds[12].textContent=fmt(e.s*(e.dyn/100));
-    tds[13].textContent=fmt(e.s*(e.wb/100));
-    tds[14].textContent=fmt(e.s*((e.stel||0)/100));
+    tds[11].textContent=fmt(e.s*(e.sal/100));
+    tds[12].textContent=fmt(e.s*(e.end/100));
+    tds[13].textContent=fmt(e.s*(e.dyn/100));
+    tds[14].textContent=fmt(e.s*(e.wb/100));
+    tds[15].textContent=fmt(e.s*((e.stel||0)/100));
   }
   nomUpdateFooter();
 }
 
 function nomAddRow(){
-  NOM_EDIT.push({n:'Nuevo empleado',r:'Rol',s:0,tipo:'Administrativo',sal:100,end:0,dyn:0,wb:0,stel:0});
+  NOM_EDIT.push({n:'Nuevo empleado',r:'Rol',s:0,tipo:'Administrativo',fi:'',sal:100,end:0,dyn:0,wb:0,stel:0});
   rNomina();
 }
 
@@ -141,6 +168,7 @@ function rNomina(){
 
   // Expose globals
   window.NOM_EDIT = NOM_EDIT;
+  window._nomFactor = _nomFactor;
   window._nomDist = _nomDist;
   window.nomMesTotal = nomMesTotal;
   window.nomMesOp = nomMesOp;
