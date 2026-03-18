@@ -153,8 +153,10 @@ const WB_UPLOAD = (() => {
     progressCb(50, 'Tipos de cambio obtenidos. Convirtiendo USD→MXN...');
 
     // Convert and aggregate
-    const byYear = {};   // { year: { concepto: [12 monthly values] } }
-    const byClient = {}; // { client: { total_usd, total_mxn, txn_count } }
+    const byYear = {};       // { year: { concepto: [12 monthly values] } }
+    const byYearClient = {}; // { year: { client: { total_usd, total_mxn, txn_count } } }
+    const byYearUSD = {};    // { year: totalUSD }
+    const byYearMXN = {};    // { year: totalMXN }
     const monthlyFX = {}; // { 'YYYY-MM': { sum_rate, count } }  for avg FX per month
     let totalUSD = 0;
     let totalMXN = 0;
@@ -186,11 +188,14 @@ const WB_UPLOAD = (() => {
       }
       byYear[year][tx.concepto][month] += feeMXN;
 
-      // Aggregate by client
-      if (!byClient[tx.client]) byClient[tx.client] = { total_usd: 0, total_mxn: 0, txn_count: 0 };
-      byClient[tx.client].total_usd += tx.feesUSD;
-      byClient[tx.client].total_mxn += feeMXN;
-      byClient[tx.client].txn_count++;
+      // Aggregate by client (per year)
+      if (!byYearClient[year]) byYearClient[year] = {};
+      if (!byYearClient[year][tx.client]) byYearClient[year][tx.client] = { total_usd: 0, total_mxn: 0, txn_count: 0 };
+      byYearClient[year][tx.client].total_usd += tx.feesUSD;
+      byYearClient[year][tx.client].total_mxn += feeMXN;
+      byYearClient[year][tx.client].txn_count++;
+      byYearUSD[year] = (byYearUSD[year] || 0) + tx.feesUSD;
+      byYearMXN[year] = (byYearMXN[year] || 0) + feeMXN;
 
       // Track monthly FX for display
       if (!monthlyFX[ym]) monthlyFX[ym] = { sum_rate: 0, count: 0, usd: 0, mxn: 0 };
@@ -212,7 +217,8 @@ const WB_UPLOAD = (() => {
         monthly[concepto] = monthly[concepto].map(v => Math.round(v));
       }
 
-      const clientList = Object.entries(byClient)
+      const yearClients = byYearClient[year] || {};
+      const clientList = Object.entries(yearClients)
         .map(([client, d]) => ({ client, ...d }))
         .sort((a, b) => b.total_mxn - a.total_mxn);
 
@@ -221,8 +227,8 @@ const WB_UPLOAD = (() => {
         monthly,
         byClient: clientList,
         txn_count: txns.filter(t => t.date.startsWith(year)).length,
-        total_usd: totalUSD,
-        total_mxn: totalMXN,
+        total_usd: byYearUSD[year] || 0,
+        total_mxn: byYearMXN[year] || 0,
         fx_source: 'frankfurter.app',
         updated: new Date().toISOString()
       });

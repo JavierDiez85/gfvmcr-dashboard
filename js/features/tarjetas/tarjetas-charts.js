@@ -38,6 +38,9 @@ function _tarNoData(canvasId) {
 }
 
 async function initTarCharts(view) {
+  if(typeof gfpRender === 'function'){
+    gfpRender(view+'-pbar', {ent:'sal', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:view});
+  }
   const isDark = document.body.classList.contains('dark');
   const gc = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
   const tc = isDark ? '#9da0c5' : '#8b8fb5';

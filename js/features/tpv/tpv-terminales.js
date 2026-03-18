@@ -4,6 +4,9 @@
 
 // ── WRAPPER: Vista unificada Terminales + Cambios ──
 async function rTPVTerminalesView(){
+  if(typeof gfpRender === 'function'){
+    gfpRender('tpv-terminales-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:'tpv_terminales'});
+  }
   await rTPVTerminales();
   await rTPVCambios();
 }
