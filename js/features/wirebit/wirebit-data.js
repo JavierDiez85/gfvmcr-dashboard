@@ -139,9 +139,34 @@ function rWBCripto(){
 }
 
 
+// ── Helper: merge tarjetas data from all year keys ──
+function _getWBTarData(){
+  const years = ['2025','2026'];
+  const allTxns = [];
+  let totalMonto = 0, updated = null, filename = null;
+  const allMonthly = {};
+  for(const y of years){
+    const d = DB.get('gf_wb_tarjetas_'+y);
+    if(!d || !d.transactions) continue;
+    allTxns.push(...d.transactions);
+    totalMonto += d.totalMonto || 0;
+    if(!updated || d.updated > updated){ updated = d.updated; filename = d.filename; }
+    (d.monthlySummary||[]).forEach(r=>{
+      if(!allMonthly[r.period]) allMonthly[r.period] = {monto:0, txnCount:0};
+      allMonthly[r.period].monto += r.monto;
+      allMonthly[r.period].txnCount += r.txnCount;
+    });
+  }
+  if(!allTxns.length) return null;
+  const monthlySummary = Object.entries(allMonthly)
+    .sort(([a],[b])=>a.localeCompare(b))
+    .map(([period,d])=>({period,...d}));
+  return { transactions: allTxns, totalMonto, monthlySummary, updated, filename, txnCount: allTxns.length };
+}
+
 // ── 2. Wirebit Tarjetas Dashboard (wb_tarjetas) ──
 function rWBTarjetas(){
-  const data = DB.get('gf_wb_tarjetas_2026');
+  const data = _getWBTarData();
   const emptyDiv   = document.getElementById('wbt-empty');
   const contentDiv = document.getElementById('wbt-content');
 
@@ -254,7 +279,7 @@ function rWBTarjetas(){
 
 // ── 3. Wirebit Tarjetas Upload (wb_tar_upload) ──
 function rWBTarUpload(){
-  const data = DB.get('gf_wb_tarjetas_2026');
+  const data = _getWBTarData();
   const kTxns  = document.getElementById('wbtu-kpi-txns');
   const kMonto = document.getElementById('wbtu-kpi-monto');
   const kLast  = document.getElementById('wbtu-kpi-last');
@@ -354,8 +379,14 @@ async function startWBTarUpload(){
         const d = new Date((raw-25569)*86400000);
         dateStr = d.toISOString().slice(0,10);
       } else {
-        const parsed = new Date(raw);
-        dateStr = isNaN(parsed) ? null : parsed.toISOString().slice(0,10);
+        // Handle DD/MM/YYYY format (Spanish dates) before falling back to JS Date parsing
+        const ddmmyyyy = typeof raw === 'string' && raw.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+        if (ddmmyyyy) {
+          dateStr = `${ddmmyyyy[3]}-${ddmmyyyy[2].padStart(2,'0')}-${ddmmyyyy[1].padStart(2,'0')}`;
+        } else {
+          const parsed = new Date(raw);
+          dateStr = isNaN(parsed) ? null : parsed.toISOString().slice(0,10);
+        }
       }
       if(!dateStr) continue;
 
@@ -393,15 +424,38 @@ async function startWBTarUpload(){
       .sort(([a],[b])=>a.localeCompare(b))
       .map(([period,d])=>({period,...d}));
 
-    DB.set('gf_wb_tarjetas_2026', {
-      year:'2026',
-      transactions: txns,
-      monthlySummary,
-      totalMonto,
-      txnCount: txns.length,
-      filename: file.name,
-      updated: new Date().toISOString()
-    });
+    // Save per year (merge with existing data for each year)
+    const byYear = {};
+    for(const tx of txns){
+      const y = tx.date.slice(0,4);
+      if(!byYear[y]) byYear[y] = [];
+      byYear[y].push(tx);
+    }
+    const yearsProcessed = [];
+    for(const [year, yearTxns] of Object.entries(byYear)){
+      const key = 'gf_wb_tarjetas_'+year;
+      const existing = DB.get(key);
+      const merged = existing && existing.transactions ? [...existing.transactions, ...yearTxns] : yearTxns;
+      // Recalculate monthly summary for this year
+      const yByMonth = {};
+      let yTotal = 0;
+      for(const tx of merged){
+        const ym = tx.date.slice(0,7);
+        if(!yByMonth[ym]) yByMonth[ym] = {monto:0, txnCount:0};
+        yByMonth[ym].monto += tx.monto;
+        yByMonth[ym].txnCount++;
+        yTotal += tx.monto;
+      }
+      const yMonthlySummary = Object.entries(yByMonth)
+        .sort(([a],[b])=>a.localeCompare(b))
+        .map(([period,d])=>({period,...d}));
+      DB.set(key, {
+        year, transactions: merged, monthlySummary: yMonthlySummary,
+        totalMonto: yTotal, txnCount: merged.length,
+        filename: file.name, updated: new Date().toISOString()
+      });
+      yearsProcessed.push(year);
+    }
 
     progressBar.style.width = '100%';
     progressMsg.textContent = 'Carga completa!';
@@ -414,6 +468,7 @@ async function startWBTarUpload(){
       <div>• <b>${txns.length.toLocaleString()}</b> transacciones procesadas</div>
       <div>• Monto total: <b>$${Math.round(totalMonto).toLocaleString()}</b></div>
       <div>• Periodos: <b>${monthlySummary.length} meses</b></div>
+      <div>• Años: <b>${yearsProcessed.join(', ')}</b></div>
       ${colFecha ? '' : '<div style="color:var(--orange)">⚠️ Columna de fecha no detectada automaticamente</div>'}
     `;
 
@@ -431,11 +486,20 @@ async function startWBTarUpload(){
   }
 }
 
+function clearWBTarData(){
+  if(!confirm('¿Eliminar TODOS los datos de tarjetas Wirebit? Esta acción no se puede deshacer.')) return;
+  ['2025','2026'].forEach(y => DB.set('gf_wb_tarjetas_'+y, null));
+  toast('🗑️ Datos de tarjetas WB eliminados');
+  rWBTarUpload();
+}
+
   // Expose globals
   window.rWBCripto = rWBCripto;
   window.rWBTarjetas = rWBTarjetas;
   window.rWBTarUpload = rWBTarUpload;
   window._renderWBTarMonthly = _renderWBTarMonthly;
   window.startWBTarUpload = startWBTarUpload;
+  window.clearWBTarData = clearWBTarData;
+  window._getWBTarData = _getWBTarData;
 
 })(window);
