@@ -122,7 +122,7 @@
           const entC={Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
           const rows=['Salem','Endless','Dynamo','Wirebit','Stellaris'].map(e=>{
             const ing=S.recs.filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+r.vals.reduce((x,y)=>x+y,0),0);
-            const nom=NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:n.wb)||0)/100,0)*12;
+            const nom=Array.from({length:12},(_,m)=>nomMesTotal(e,m,+_year)).reduce((a,b)=>a+b,0);
             const gas=S.recs.filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+r.vals.reduce((x,y)=>x+y,0),0);
             const margen=ing-(nom+gas);
             return {e, ing, nom, gas, margen};
@@ -146,7 +146,7 @@
           fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
           const rows=['Salem','Endless','Dynamo','Wirebit','Stellaris'].map(e=>{
             const ing=S.recs.filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+r.vals.reduce((x,y)=>x+y,0),0);
-            const nom=NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:n.wb)||0)/100,0)*12;
+            const nom=Array.from({length:12},(_,m)=>nomMesTotal(e,m,+_year)).reduce((a,b)=>a+b,0);
             const gas=S.recs.filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+r.vals.reduce((x,y)=>x+y,0),0);
             return {e, v:ing-(nom+gas)};
           });
