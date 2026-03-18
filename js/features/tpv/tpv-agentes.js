@@ -14,6 +14,9 @@ function agenteTotalPagado(agenteId) {
 }
 
 async function rTPVAgentes(){
+  if(typeof gfpRender === 'function'){
+    gfpRender('tpv-agentes-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:'tpv_agentes'});
+  }
   const tbody=document.getElementById('agentes-tbody');if(!tbody)return;
   const agents = await TPV.agentSummary() || [];
   const agPagosData = agentePagosLoad();

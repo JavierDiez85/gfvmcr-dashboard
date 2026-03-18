@@ -32,6 +32,9 @@ function filterPromotorOptions(q){
 }
 
 async function rTPVPromotores(){
+  if(typeof gfpRender === 'function'){
+    gfpRender('tpv-promotores-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:'tpv_promotores'});
+  }
   // Populate dropdown from unique promotor values in tpv_clients
   const allClients=await TPV.getClients()||[];
   const promotores=[...new Set(allClients.map(c=>c.promotor||'Sin Promotor'))].filter(p=>p&&p!=='Sin Promotor').sort();

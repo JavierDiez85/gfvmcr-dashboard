@@ -35,6 +35,9 @@ function pagosSaldo(cliente) {
 
 // ── WRAPPER: Vista unificada Pagos + Historial ──
 async function rTPVPagosView(){
+  if(typeof gfpRender === 'function'){
+    gfpRender('tpv-pagos-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:'tpv_pagos'});
+  }
   await rTPVPagos();
   await rTPVHistorial();
 }

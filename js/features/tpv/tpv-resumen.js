@@ -32,6 +32,9 @@ function setResumenDates(period) {
 
 /** Load client list into filter dropdown */
 async function rTPVResumen() {
+  if(typeof gfpRender === 'function'){
+    gfpRender('tpv-resumen-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:'tpv_resumen'});
+  }
   await _ensureSupabase();
   const filterType = document.getElementById('resumen-filter-type');
   const filterValue = document.getElementById('resumen-filter-value');

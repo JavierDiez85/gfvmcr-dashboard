@@ -10,6 +10,13 @@
     // elPrefix: prefijo de IDs HTML (default 'cred-dash')
     if(!elPrefix) elPrefix = 'cred-dash';
 
+    // Period filter bar
+    if(typeof gfpRender === 'function'){
+      const viewId = entFilter==='dyn' ? 'dyn_dash' : 'cred_dash';
+      const color = entFilter==='dyn' ? '#ff7043' : '#00b875';
+      gfpRender(elPrefix+'-pbar', {ent: entFilter||'end', color, type:'sub', years:['2025','2026'], viewId});
+    }
+
     // Load latest data from DB
     try{const s=DB.get('gf_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
     try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
@@ -371,11 +378,17 @@
   }
 
   function rEndCred(){
+    if(typeof gfpRender === 'function'){
+      gfpRender('end-cred-pbar', {ent:'end', color:'#00b875', type:'sub', years:['2025','2026'], viewId:'end_cred'});
+    }
     try{const s=DB.get('gf_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
     credRenderDashKPIs(END_CREDITS,'end');
     credRenderList(END_CREDITS,'end');
   }
   function rDynCred(){
+    if(typeof gfpRender === 'function'){
+      gfpRender('dyn-cred-pbar', {ent:'dyn', color:'#ff7043', type:'sub', years:['2025','2026'], viewId:'dyn_cred'});
+    }
     try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
     credRenderDashKPIs(DYN_CREDITS,'dyn');
     credRenderList(DYN_CREDITS,'dyn');
