@@ -2036,13 +2036,8 @@
       <button class="btn btn-out" style="font-size:.7rem" onclick="navTo('wb_ing')">⛓ Ingresos</button>
     </div>
   </div>
-  <!-- Year filter bar -->
-  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-    <span style="font-size:.68rem;color:var(--muted);font-weight:600;margin-right:2px">AÑO:</span>
-    <button id="wbc-f-ambos" class="btn"         style="font-size:.7rem;background:#9b51e0;color:white;border:none" onclick="wbcSetYear('ambos')">Ambos años</button>
-    <button id="wbc-f-2025"  class="btn btn-out" style="font-size:.7rem" onclick="wbcSetYear('2025')">2025</button>
-    <button id="wbc-f-2026"  class="btn btn-out" style="font-size:.7rem" onclick="wbcSetYear('2026')">2026</button>
-  </div>
+  <!-- Year filter bar (dynamic) -->
+  <div id="wbc-year-bar" style="margin-bottom:14px"></div>
   <!-- KPIs -->
   <div class="kpi-row" style="margin-bottom:14px">
     <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Total Transacciones</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🔢</div></div><div class="kpi-val" id="wbc-kpi-txns" style="color:var(--muted)">—</div><div class="kpi-d dnu" id="wbc-kpi-txns-sub">Sin datos cargados</div></div>
@@ -2075,16 +2070,8 @@
     <button class="btn" style="font-size:.7rem;background:#9b51e0;color:white;border:none" onclick="navTo('wb_tar_upload')">⬆️ Subir Datos</button>
   </div>
   <!-- Period filter bar -->
-  <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-    <span style="font-size:.68rem;color:var(--muted);font-weight:600;margin-right:2px">PERIODO:</span>
-    <button id="wbt-f-mes"       class="btn"     style="font-size:.7rem;background:#9b51e0;color:white;border:none" onclick="wbtSetPeriodo('mes')">Mes actual</button>
-    <button id="wbt-f-trimestre" class="btn btn-out" style="font-size:.7rem" onclick="wbtSetPeriodo('trimestre')">Trimestre</button>
-    <button id="wbt-f-anual"     class="btn btn-out" style="font-size:.7rem" onclick="wbtSetPeriodo('anual')">Año actual</button>
-    <div style="width:1px;height:20px;background:var(--border);margin:0 2px"></div>
-    <button id="wbt-f-2025"      class="btn btn-out" style="font-size:.7rem" onclick="wbtSetPeriodo('2025')">2025</button>
-    <button id="wbt-f-2026"      class="btn btn-out" style="font-size:.7rem" onclick="wbtSetPeriodo('2026')">2026</button>
-    <span id="wbt-period-label"  style="font-size:.68rem;color:var(--muted);margin-left:6px"></span>
-  </div>
+  <!-- Period filter bar (dynamic) -->
+  <div id="wbt-periodo-bar" style="margin-bottom:14px"></div>
   <!-- Empty state -->
   <div id="wbt-empty" style="text-align:center;padding:60px 20px">
     <div style="font-size:3rem;margin-bottom:16px">💳</div>

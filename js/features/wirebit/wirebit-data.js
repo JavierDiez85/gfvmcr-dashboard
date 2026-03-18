@@ -11,6 +11,73 @@
 let _wbtPeriodo = 'mes';   // Tarjetas WB: mes | trimestre | anual | 2025 | 2026
 let _wbcYear    = 'ambos'; // Cripto WB:   ambos | 2025 | 2026
 
+/** Render the universal-style year bar for wb_cripto */
+function _wbcRenderBar(){
+  const el = document.getElementById('wbc-year-bar');
+  if(!el) return;
+  const color = '#9b51e0';
+  const curY = String(new Date().getFullYear());
+
+  const opts = [
+    { key:'ambos', label:'Ambos años', isCurrent:false },
+    { key:'2025',  label:'2025',       isCurrent:'2025'===curY },
+    { key:'2026',  label:'2026',       isCurrent:'2026'===curY },
+  ];
+
+  const yBtns = opts.map(o=>{
+    const isAct = o.key === _wbcYear;
+    const sty = isAct ? `background:${color};color:white;border-color:${color};` : '';
+    const dot = o.isCurrent ? ' <span style="font-size:.45rem;vertical-align:middle;opacity:.7">●</span>' : '';
+    return `<button class="pbtn" style="${sty}font-size:.68rem" onclick="wbcSetYear('${o.key}')">${o.label}${dot}</button>`;
+  }).join('');
+
+  el.innerHTML = `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px">
+    <span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">AÑO</span>
+    ${yBtns}
+  </div>`;
+}
+
+/** Render the universal-style period bar for wb_tarjetas */
+function _wbtRenderBar(){
+  const el = document.getElementById('wbt-periodo-bar');
+  if(!el) return;
+  const color = '#9b51e0';
+  const curY = String(new Date().getFullYear());
+
+  // Active year: '2025' if periodo is '2025', else curY
+  const activeYear = _wbtPeriodo === '2025' ? '2025' : curY;
+
+  const yBtns = ['2025','2026'].map(y=>{
+    const isAct = y === activeYear;
+    const sty = isAct ? `background:${color};color:white;border-color:${color};` : '';
+    const dot = y === curY ? ' <span style="font-size:.45rem;vertical-align:middle;opacity:.7">●</span>' : '';
+    return `<button class="pbtn" style="${sty}font-size:.68rem" onclick="wbtSetYear('${y}')">${y}${dot}</button>`;
+  }).join('');
+
+  // Sub-period buttons only for current year
+  let subHTML = '';
+  if(activeYear === curY){
+    const subOpts = [
+      {k:'mes',       l:'Mes actual'},
+      {k:'trimestre', l:'Trimestre'},
+      {k:'anual',     l:'Año completo'},
+    ];
+    const curSub = (_wbtPeriodo === '2025') ? 'anual' : _wbtPeriodo;
+    const sBtns = subOpts.map(o=>{
+      const isA = o.k === curSub;
+      return `<button class="pbtn${isA?' active':''}" style="font-size:.68rem" onclick="wbtSetPeriodo('${o.k}')">${o.l}</button>`;
+    }).join('');
+    subHTML = `<span style="display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle"></span>`
+            + `<span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">PERÍODO</span>`
+            + sBtns;
+  }
+
+  el.innerHTML = `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px">
+    <span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">AÑO</span>
+    ${yBtns}${subHTML}
+  </div>`;
+}
+
 /** Returns {from, to, label, groupBy} for a given period key */
 function _wbtRange(p){
   const now = new Date(), y = now.getFullYear(), m = now.getMonth();
@@ -51,14 +118,26 @@ function _setFilterBtns(prefix, active, opts, activeStyle){
 /** Public: set period for Tarjetas WB */
 function wbtSetPeriodo(p){
   _wbtPeriodo = p;
-  _setFilterBtns('wbt-f-', p, ['mes','trimestre','anual','2025','2026']);
+  _wbtRenderBar();
+  rWBTarjetas();
+}
+
+/** Public: set year for Tarjetas WB (from AÑO buttons) */
+function wbtSetYear(y){
+  if(y === '2025'){
+    _wbtPeriodo = '2025';
+  } else {
+    // Switch to current year: keep sub-period if already set, else default to 'mes'
+    if(_wbtPeriodo === '2025') _wbtPeriodo = 'mes';
+  }
+  _wbtRenderBar();
   rWBTarjetas();
 }
 
 /** Public: set year filter for Cripto WB */
 function wbcSetYear(y){
   _wbcYear = y;
-  _setFilterBtns('wbc-f-', y, ['ambos','2025','2026']);
+  _wbcRenderBar();
   rWBCripto();
 }
 
@@ -116,6 +195,7 @@ function _mergeWBCripto(year){
 
 // ── 1. Crypto Transaction Analysis (wb_cripto) ──
 function rWBCripto(){
+  _wbcRenderBar();
   const merged = _mergeWBCripto(_wbcYear);
 
   const kTxns = document.getElementById('wbc-kpi-txns');
@@ -279,6 +359,7 @@ function _getWBTarData(){
 
 // ── 2. Wirebit Tarjetas Dashboard (wb_tarjetas) ──
 function rWBTarjetas(){
+  _wbtRenderBar();
   const data     = _getWBTarData();
   const emptyDiv   = document.getElementById('wbt-empty');
   const contentDiv = document.getElementById('wbt-content');
@@ -649,7 +730,10 @@ function clearWBTarData(){
   window.clearWBTarData = clearWBTarData;
   window._getWBTarData = _getWBTarData;
   window.wbtSetPeriodo = wbtSetPeriodo;
+  window.wbtSetYear    = wbtSetYear;
   window.wbcSetYear    = wbcSetYear;
+  window._wbcRenderBar = _wbcRenderBar;
+  window._wbtRenderBar = _wbtRenderBar;
   window._mergeWBCripto = _mergeWBCripto;
 
 })(window);
