@@ -40,6 +40,11 @@
     const tableEl = document.getElementById(ent+'-res-thead');
     if(!tableEl) return;
 
+    // Period filter bar (year + sub-period)
+    if(typeof gfpRender === 'function'){
+      gfpRender(ent+'-res-pbar', {ent, color:ENT_MAP[ent].color, type:'res', years:['2025','2026']});
+    }
+
     const NOM_SAL  = 186000;
     const NOM_END  = 23000;
     const NOM_DYN  = 23000;
@@ -435,6 +440,12 @@
     const tid=isCentum?'centum':'grupo';
     const thead=document.getElementById(tid+'-thead');
     const tbody=document.getElementById(tid+'-tbody');
+
+    // Period filter bar (year only)
+    if(typeof gfpRender === 'function'){
+      gfpRender(tid+'-pbar', {ent:tid, color:'var(--blue)', type:'sub', years:['2025','2026'], viewId:tid});
+    }
+
     thead.innerHTML=`<th>Concepto</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total ${_year}</th>`;
 
     function _rv(ents, tipo){
@@ -550,6 +561,11 @@
     const tbody=document.getElementById(entKey+'-ing-tbody');
     if(!thead||!tbody) return;
 
+    // Period filter bar (year only)
+    if(typeof gfpRender === 'function'){
+      gfpRender(entKey+'-ing-pbar', {ent:entKey, color, type:'sub', years:['2025','2026'], viewId:entKey+'_ing'});
+    }
+
     const rows=FI_ROWS.filter(r=>r.ent===entName&&r.yr==_year);
     const curMonth=new Date().getMonth();
     const totalAnual=rows.reduce((s,r)=>s+sum(r.vals),0);
@@ -615,6 +631,11 @@
   function rGasView(entKey){
     const cfg=ENT_MAP[entKey]; if(!cfg) return;
     const entName=cfg.fullName, nomK=cfg.nomKey, color=cfg.color;
+
+    // Period filter bar (year only)
+    if(typeof gfpRender === 'function'){
+      gfpRender(entKey+'-gas-pbar', {ent:entKey, color, type:'sub', years:['2025','2026'], viewId:entKey+'_gas'});
+    }
 
     const costThead=document.getElementById(entKey+'-cost-thead');
     const costTbody=document.getElementById(entKey+'-cost-tbody');
@@ -709,6 +730,11 @@
     const tbody=document.getElementById(entKey+'-nom-tbody');
     if(!thead||!tbody) return;
 
+    // Period filter bar (year only)
+    if(typeof gfpRender === 'function'){
+      gfpRender(entKey+'-nom-pbar', {ent:entKey, color:cfg.color, type:'sub', years:['2025','2026'], viewId:entKey+'_nom'});
+    }
+
     const emps=NOM_EDIT.filter(e=>(e[nomK]||0)>0);
     const detail=emps.map(e=>{
       const mc=Math.round(e.s*(e[nomK]||0)/100);
@@ -775,6 +801,11 @@
     if(!cfg) return;
     const eName = cfg.fullName; // 'Wirebit' or 'Stellaris'
     const pfx = entKey === 'wb' ? 'wbg' : 'stelg';
+
+    // Period filter bar (year only)
+    if(typeof gfpRender === 'function'){
+      gfpRender(pfx+'-pbar', {ent:entKey, color:cfg.color, type:'sub', years:['2025','2026'], viewId:entKey+'_grupo'});
+    }
 
     // Helpers
     function _rv(tipo){

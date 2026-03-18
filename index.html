@@ -992,11 +992,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">TPV · Fondeo Tarjetas Centum Black · <span style="color:#0073ea;font-weight:600">haz clic en las tarjetas para ver detalle</span></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <div class="pbar">
-        <button class="pbtn active" onclick="setPLMode('sal','mensual',this)">Mensual</button>
-        <button class="pbtn" onclick="setPLMode('sal','trimestral',this)">Trimestral</button>
-        <button class="pbtn" onclick="setPLMode('sal','anual',this)">Anual</button>
-      </div>
+      <div id="sal-res-pbar"></div>
       <button class="btn btn-out" style="font-size:.7rem;border-color:#0073ea;color:#0073ea" onclick="navTo('tpv_general')">💳 Terminales</button>
       <button class="btn btn-out" style="font-size:.7rem" onclick="sv('sal_gas',null)">💸 Gastos</button>
     </div>
@@ -1268,11 +1264,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Crédito Simple · Tarjetas Centum Blue · SOFOM CNBV · <span style="color:#00b875;font-weight:600">clic en tarjetas para detalle</span></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <div class="pbar">
-        <button class="pbtn active" onclick="setPLMode('end','mensual',this)">Mensual</button>
-        <button class="pbtn" onclick="setPLMode('end','trimestral',this)">Trimestral</button>
-        <button class="pbtn" onclick="setPLMode('end','anual',this)">Anual</button>
-      </div>
+      <div id="end-res-pbar"></div>
       <button class="btn btn-out" style="font-size:.7rem;border-color:#00b875;color:#00b875" onclick="sv('end_cred',null)">🏦 Ver Cartera</button>
     </div>
   </div>
@@ -1527,11 +1519,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Crédito Simple · SOFOM CNBV · <span style="color:#ff7043;font-weight:600">clic en tarjetas para detalle</span></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <div class="pbar">
-        <button class="pbtn active" onclick="setPLMode('dyn','mensual',this)">Mensual</button>
-        <button class="pbtn" onclick="setPLMode('dyn','trimestral',this)">Trimestral</button>
-        <button class="pbtn" onclick="setPLMode('dyn','anual',this)">Anual</button>
-      </div>
+      <div id="dyn-res-pbar"></div>
       <button class="btn btn-out" style="font-size:.7rem;border-color:#ff7043;color:#ff7043" onclick="navTo('dyn_cred')">🏦 Ver Cartera</button>
     </div>
   </div>
@@ -1585,11 +1573,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Exchange · Onramp · Offramp · Tarjetas Cripto · TC $17.9 · <span style="color:#9b51e0;font-weight:600">clic en tarjetas para detalle</span></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <div class="pbar">
-        <button class="pbtn active" onclick="setPLMode('wb','mensual',this)">Mensual</button>
-        <button class="pbtn" onclick="setPLMode('wb','trimestral',this)">Trimestral</button>
-        <button class="pbtn" onclick="setPLMode('wb','anual',this)">Anual</button>
-      </div>
+      <div id="wb-res-pbar"></div>
       <button class="btn btn-out" style="font-size:.7rem;border-color:#9b51e0;color:#9b51e0" onclick="sv('wb_ing',null)">⛓ Ingresos</button>
       <button class="btn btn-out" style="font-size:.7rem" onclick="sv('wb_nom',null)">👥 Nómina</button>
     </div>
@@ -1648,11 +1632,7 @@
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Casino · Entretenimiento · <span style="color:#e53935;font-weight:600">clic en tarjetas para detalle</span></div>
     </div>
     <div style="display:flex;gap:6px;align-items:center">
-      <div class="pbar">
-        <button class="pbtn active" onclick="setPLMode('stel','mensual',this)">Mensual</button>
-        <button class="pbtn" onclick="setPLMode('stel','trimestral',this)">Trimestral</button>
-        <button class="pbtn" onclick="setPLMode('stel','anual',this)">Anual</button>
-      </div>
+      <div id="stel-res-pbar"></div>
       <button class="btn btn-out" style="font-size:.7rem;border-color:#e53935;color:#e53935" onclick="sv('stel_ing',null)">💰 Ingresos</button>
       <button class="btn btn-out" style="font-size:.7rem" onclick="sv('stel_nom',null)">👥 Nómina</button>
     </div>
@@ -2648,6 +2628,7 @@
       <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🌐 Dashboard General — Histórico Completo</div>
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px" id="tpv-general-subtitle">Análisis acumulado · Sin filtro de fechas</div>
     </div>
+    <div id="tpv-pbar"></div>
   </div>
   <div class="kpi-row" id="tpv-general-kpis" style="margin-bottom:14px">
     <div class="kpi-card" style="--ac:var(--muted)"><div class="kpi-val" style="color:var(--muted);font-size:.85rem">Cargando...</div></div>
@@ -4678,6 +4659,7 @@
   <script src="js/shared/ui-components.js?v=5"></script>
   <script src="js/shared/ui-kit.js?v=5"></script>
   <script src="js/shared/chart-helpers.js?v=5"></script>
+  <script src="js/shared/period-filter.js?v=1"></script>
   <script src="js/shared/pl-engine.js?v=5"></script>
   <script src="js/shared/flujo-engine.js?v=5"></script>
 
