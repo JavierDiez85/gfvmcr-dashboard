@@ -7,17 +7,123 @@
 // Transacciones Cripto + Tarjetas WB
 // ══════════════════════════════════════
 
+// ─── Period filter state ───────────────────────────────────────────────────
+let _wbtPeriodo = 'mes';   // Tarjetas WB: mes | trimestre | anual | 2025 | 2026
+let _wbcYear    = 'ambos'; // Cripto WB:   ambos | 2025 | 2026
+
+/** Returns {from, to, label, groupBy} for a given period key */
+function _wbtRange(p){
+  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
+  if(p === 'mes'){
+    return { from: new Date(y,m,1).toISOString().slice(0,10),
+             to:   new Date(y,m+1,0).toISOString().slice(0,10),
+             label: (typeof MNF!=='undefined'?MNF[m]:'')+' '+y, groupBy:'day' };
+  }
+  if(p === 'trimestre'){
+    const qs = m-(m%3);
+    return { from: new Date(y,qs,1).toISOString().slice(0,10),
+             to:   new Date(y,qs+3,0).toISOString().slice(0,10),
+             label: 'Q'+(Math.floor(qs/3)+1)+' '+y, groupBy:'month' };
+  }
+  if(p === 'anual') return { from:y+'-01-01', to:y+'-12-31', label:'Año '+y, groupBy:'month' };
+  if(p === '2025')  return { from:'2025-01-01', to:'2025-12-31', label:'2025', groupBy:'month' };
+  if(p === '2026')  return { from:'2026-01-01', to:'2026-12-31', label:'2026', groupBy:'month' };
+  return { from:'2000-01-01', to:'2099-12-31', label:'Todo', groupBy:'month' };
+}
+
+/** Toggle active button style for a filter group */
+function _setFilterBtns(prefix, active, opts, activeStyle){
+  opts.forEach(k=>{
+    const btn = document.getElementById(prefix+k);
+    if(!btn) return;
+    if(k === active){
+      btn.className = 'btn';
+      Object.assign(btn.style, activeStyle || {background:'#9b51e0',color:'white',border:'none'});
+    } else {
+      btn.className = 'btn btn-out';
+      btn.style.background = '';
+      btn.style.color      = '';
+      btn.style.border     = '';
+    }
+  });
+}
+
+/** Public: set period for Tarjetas WB */
+function wbtSetPeriodo(p){
+  _wbtPeriodo = p;
+  _setFilterBtns('wbt-f-', p, ['mes','trimestre','anual','2025','2026']);
+  rWBTarjetas();
+}
+
+/** Public: set year filter for Cripto WB */
+function wbcSetYear(y){
+  _wbcYear = y;
+  _setFilterBtns('wbc-f-', y, ['ambos','2025','2026']);
+  rWBCripto();
+}
+
+/** Merge cripto fees data from selected year(s) */
+function _mergeWBCripto(year){
+  const years = year === 'ambos' ? ['2025','2026'] : [year];
+  const mergedConcepto = {}; // { concepto: { 'YYYY-MM': value } }
+  const mergedClients  = {}; // { client: {total_usd, total_mxn, txn_count} }
+  let totalUSD = 0, totalMXN = 0, txnCount = 0, updated = null;
+
+  for(const y of years){
+    const d = DB.get('gf_wb_fees_'+y);
+    if(!d) continue;
+    totalUSD  += d.total_usd  || 0;
+    totalMXN  += d.total_mxn  || 0;
+    txnCount  += d.txn_count  || d.txnCount || 0;
+    if(!updated || (d.updated && d.updated > updated)) updated = d.updated;
+
+    // monthly by concepto: array of 12 values indexed by month (0-based)
+    for(const [concepto, vals] of Object.entries(d.monthly || {})){
+      if(!mergedConcepto[concepto]) mergedConcepto[concepto] = {};
+      (vals||[]).forEach((v,i)=>{
+        const ym = y+'-'+String(i+1).padStart(2,'0');
+        mergedConcepto[concepto][ym] = (mergedConcepto[concepto][ym]||0)+v;
+      });
+    }
+
+    // clients
+    for(const c of (d.byClient||[])){
+      if(!mergedClients[c.client]) mergedClients[c.client]={total_usd:0,total_mxn:0,txn_count:0};
+      mergedClients[c.client].total_usd  += c.total_usd  || 0;
+      mergedClients[c.client].total_mxn  += c.total_mxn  || 0;
+      mergedClients[c.client].txn_count  += c.txn_count  || 0;
+    }
+  }
+
+  if(!totalUSD && !totalMXN) return null;
+
+  // Build sorted monthly summary
+  const allPeriods = new Set();
+  Object.values(mergedConcepto).forEach(m=>Object.keys(m).forEach(p=>allPeriods.add(p)));
+  const periods = [...allPeriods].sort();
+  const monthlySummary = periods.map(ym=>({
+    period: ym,
+    mxn: Object.values(mergedConcepto).reduce((s,m)=>s+(m[ym]||0),0),
+    txnCount: 0
+  }));
+
+  const byClient = Object.entries(mergedClients)
+    .map(([client,d])=>({client,...d}))
+    .sort((a,b)=>b.total_mxn-a.total_mxn);
+
+  return { monthly:mergedConcepto, monthlySummary, byClient, totalUSD, totalMXN, txnCount, updated };
+}
+
 // ── 1. Crypto Transaction Analysis (wb_cripto) ──
 function rWBCripto(){
-  const feesData = DB.get('gf_wb_fees_2026');
-  const summary  = DB.get('gf_wb_upload_summary');
+  const merged = _mergeWBCripto(_wbcYear);
 
   const kTxns = document.getElementById('wbc-kpi-txns');
   const kUSD  = document.getElementById('wbc-kpi-usd');
   const kMXN  = document.getElementById('wbc-kpi-mxn');
   const kFX   = document.getElementById('wbc-kpi-fx');
 
-  if(!feesData || !summary){
+  if(!merged){
     kTxns.textContent='—'; kTxns.style.color='var(--muted)';
     document.getElementById('wbc-kpi-txns-sub').textContent='Sin datos cargados';
     kUSD.textContent='—'; kUSD.style.color='var(--muted)';
@@ -27,56 +133,62 @@ function rWBCripto(){
     return;
   }
 
+  const yearLabel = _wbcYear === 'ambos' ? '2025–2026' : _wbcYear;
+
   // ── KPIs ──
-  kTxns.textContent = (summary.txnCount||0).toLocaleString();
+  kTxns.textContent = (merged.txnCount||0).toLocaleString();
   kTxns.style.color = '#0073ea';
-  document.getElementById('wbc-kpi-txns-sub').textContent =
-    'Actualizado: '+new Date(summary.updated).toLocaleDateString('es-MX');
+  document.getElementById('wbc-kpi-txns-sub').textContent = 'Fees válidos · '+yearLabel;
 
-  kUSD.textContent = '$'+Math.round(summary.totalUSD).toLocaleString()+' USD';
+  kUSD.textContent = '$'+Math.round(merged.totalUSD).toLocaleString()+' USD';
   kUSD.style.color = 'var(--green)';
-  document.getElementById('wbc-kpi-usd-sub').textContent = 'Fees acumulados 2026';
+  document.getElementById('wbc-kpi-usd-sub').textContent = 'Fees acumulados '+yearLabel;
 
-  kMXN.textContent = '$'+Math.round(summary.totalMXN).toLocaleString()+' MXN';
+  kMXN.textContent = '$'+Math.round(merged.totalMXN).toLocaleString()+' MXN';
   kMXN.style.color = 'var(--purple)';
-  document.getElementById('wbc-kpi-mxn-sub').textContent = 'Conversion diaria USD→MXN';
+  document.getElementById('wbc-kpi-mxn-sub').textContent = 'Conversión diaria USD→MXN';
 
-  const avgFX = summary.totalMXN / summary.totalUSD;
+  const avgFX = merged.totalMXN / (merged.totalUSD || 1);
   kFX.textContent = '$'+avgFX.toFixed(2);
   kFX.style.color = 'var(--orange)';
   document.getElementById('wbc-kpi-fx-sub').textContent = 'USD/MXN prom. ponderado';
 
-  // ── Chart 1: Monthly volume bar + transaction count line ──
+  // ── Update title ──
+  const titleEl = document.getElementById('wbc-title');
+  if(titleEl) titleEl.textContent = 'Wirebit — Transacciones Cripto '+yearLabel;
+
+  // ── Chart 1: Monthly fees MXN ──
   dc('cwbcm');
-  const monthlyData = summary.monthlySummary || [];
-  const labels    = monthlyData.map(r=>{ const m=parseInt(r.period.split('-')[1])-1; return MO[m]; });
-  const mxnValues = monthlyData.map(r=>Math.round(r.mxn));
-  const txnCounts = monthlyData.map(r=>r.txnCount);
+  const multiYear = _wbcYear === 'ambos';
+  const periods = merged.monthlySummary;
+  const chartLabels = periods.map(r=>{
+    const [yr,mo] = r.period.split('-');
+    return MO[parseInt(mo)-1]+(multiYear?' '+yr.slice(2):'');
+  });
+  const mxnValues = periods.map(r=>Math.round(r.mxn));
 
   CH['cwbcm'] = new Chart(document.getElementById('c-wbc-monthly'),{
     type:'bar',
     data:{
-      labels,
+      labels: chartLabels,
       datasets:[
-        { label:'Fees MXN', data:mxnValues, backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4, yAxisID:'y' },
-        { label:'Transacciones', data:txnCounts, type:'line', borderColor:'#0073ea', backgroundColor:'rgba(0,115,234,.08)', borderWidth:2, pointRadius:3, yAxisID:'y1', tension:.3, fill:true }
+        { label:'Fees MXN', data:mxnValues, backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4 }
       ]
     },
     options:{...cOpts(),
-      plugins:{legend:{display:true,position:'top',labels:{color:'#8b8fb5',font:{size:10},boxWidth:8,padding:8}},
-        tooltip:{...cOpts().plugins?.tooltip, callbacks:{label:ctx=> ctx.datasetIndex===0 ? ' $'+Math.round(ctx.raw).toLocaleString()+' MXN' : ' '+ctx.raw.toLocaleString()+' txns'}}},
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:ctx=>' $'+Math.round(ctx.raw).toLocaleString()+' MXN'}}},
       scales:{
         x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10}}},
-        y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}},
-        y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#0073ea',font:{size:9}}}
+        y:{grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+Math.abs(Math.round(v/1000))+'K'}}
       }
     }
   });
 
-  // ── Chart 2: By transaction type doughnut ──
+  // ── Chart 2: By concepto doughnut ──
   dc('cwbct');
-  const conceptoTotals = Object.entries(feesData.monthly)
-    .map(([concepto,vals])=>({label:concepto, total:vals.reduce((s,v)=>s+v,0)}))
+  const conceptoTotals = Object.entries(merged.monthly)
+    .map(([concepto,byPeriod])=>({label:concepto, total:Object.values(byPeriod).reduce((s,v)=>s+v,0)}))
     .filter(x=>x.total>0)
     .sort((a,b)=>b.total-a.total);
 
@@ -106,10 +218,13 @@ function rWBCripto(){
 
   // ── Client table ──
   const tbody = document.getElementById('wbc-clients-tbody');
-  if(feesData.byClient && feesData.byClient.length>0){
-    const totalMXN = feesData.byClient.reduce((s,c)=>s+c.total_mxn,0);
-    tbody.innerHTML = feesData.byClient.map((c,i)=>{
-      const pct = ((c.total_mxn/totalMXN)*100).toFixed(1);
+  const clients = merged.byClient;
+  if(clients && clients.length>0){
+    const totMXN = clients.reduce((s,c)=>s+c.total_mxn,0);
+    const totUSD = clients.reduce((s,c)=>s+c.total_usd,0);
+    const totTxn = clients.reduce((s,c)=>s+c.txn_count,0);
+    tbody.innerHTML = clients.map((c,i)=>{
+      const pct = ((c.total_mxn/totMXN)*100).toFixed(1);
       return `<tr>
         <td style="font-weight:600;color:var(--muted)">${i+1}</td>
         <td style="font-weight:600">${c.client||'Sin nombre'}</td>
@@ -118,23 +233,21 @@ function rWBCripto(){
         <td class="r" style="font-weight:600">$${Math.round(c.total_mxn).toLocaleString()}</td>
         <td class="r">
           <div style="display:flex;align-items:center;justify-content:flex-end;gap:6px">
-            <div style="width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div style="height:100%;width:${Math.min(pct,100)}%;background:#9b51e0;border-radius:3px"></div></div>
+            <div style="width:50px;height:6px;border-radius:3px;background:var(--border);overflow:hidden"><div style="height:100%;width:${Math.min(parseFloat(pct),100)}%;background:#9b51e0;border-radius:3px"></div></div>
             ${pct}%
           </div>
         </td>
       </tr>`;
     }).join('');
-
-    // Totals row
-    const totUSD = feesData.byClient.reduce((s,c)=>s+c.total_usd,0);
-    const totTxn = feesData.byClient.reduce((s,c)=>s+c.txn_count,0);
     tbody.innerHTML += `<tr class="bld" style="border-top:2px solid var(--border)">
       <td colspan="2" style="font-weight:700">TOTAL</td>
       <td class="r" style="font-weight:700">${totTxn.toLocaleString()}</td>
       <td class="r" style="font-weight:700">$${totUSD.toLocaleString('en',{minimumFractionDigits:2,maximumFractionDigits:2})}</td>
-      <td class="r" style="font-weight:700;color:var(--purple)">$${Math.round(totalMXN).toLocaleString()}</td>
+      <td class="r" style="font-weight:700;color:var(--purple)">$${Math.round(totMXN).toLocaleString()}</td>
       <td class="r" style="font-weight:700">100%</td>
     </tr>`;
+  } else {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sin datos de clientes para '+yearLabel+'</td></tr>';
   }
 }
 
@@ -166,79 +279,100 @@ function _getWBTarData(){
 
 // ── 2. Wirebit Tarjetas Dashboard (wb_tarjetas) ──
 function rWBTarjetas(){
-  const data = _getWBTarData();
+  const data     = _getWBTarData();
   const emptyDiv   = document.getElementById('wbt-empty');
   const contentDiv = document.getElementById('wbt-content');
 
   if(!data || !data.transactions || data.transactions.length===0){
-    if(emptyDiv)   emptyDiv.style.display   = '';
-    if(contentDiv) contentDiv.style.display  = 'none';
+    if(emptyDiv)   emptyDiv.style.display = '';
+    if(contentDiv) contentDiv.style.display = 'none';
     return;
   }
+  if(emptyDiv)   emptyDiv.style.display = 'none';
+  if(contentDiv) contentDiv.style.display = 'block';
 
-  // Has data → show content
-  if(emptyDiv)   emptyDiv.style.display   = 'none';
-  if(contentDiv) contentDiv.style.display  = 'block';
-
-  const txns = data.transactions;
+  // ── Apply period filter ──
+  const range  = _wbtRange(_wbtPeriodo);
+  const txns   = data.transactions.filter(t => t.date >= range.from && t.date <= range.to);
   const totalMonto = txns.reduce((s,t)=>s+(t.monto||0),0);
-  const clients = [...new Set(txns.map(t=>t.cliente).filter(Boolean))];
 
-  // KPIs
+  // Update period label
+  const lblEl = document.getElementById('wbt-period-label');
+  if(lblEl) lblEl.textContent = range.label;
+
+  // ── KPIs ──
   const kTxns = document.getElementById('wbt-kpi-txns');
   kTxns.textContent = txns.length.toLocaleString();
   kTxns.style.color = '#0073ea';
-  document.getElementById('wbt-kpi-txns-sub').textContent = 'Actualizado: '+new Date(data.updated).toLocaleDateString('es-MX');
+  document.getElementById('wbt-kpi-txns-sub').textContent = range.label;
 
   const kMonto = document.getElementById('wbt-kpi-monto');
   kMonto.textContent = '$'+Math.round(totalMonto).toLocaleString();
   kMonto.style.color = 'var(--green)';
-  document.getElementById('wbt-kpi-monto-sub').textContent = 'Volumen total operado';
+  document.getElementById('wbt-kpi-monto-sub').textContent = 'Volumen operado';
 
   const kAvg = document.getElementById('wbt-kpi-avg');
-  kAvg.textContent = '$'+Math.round(totalMonto/txns.length).toLocaleString();
+  kAvg.textContent = txns.length ? '$'+Math.round(totalMonto/txns.length).toLocaleString() : '—';
   kAvg.style.color = 'var(--purple)';
   document.getElementById('wbt-kpi-avg-sub').textContent = 'Ticket promedio';
 
+  const clients = [...new Set(txns.map(t=>t.cliente).filter(Boolean))];
   const kClients = document.getElementById('wbt-kpi-clients');
   kClients.textContent = clients.length;
   kClients.style.color = 'var(--orange)';
-  document.getElementById('wbt-kpi-clients-sub').textContent = 'Clientes unicos';
+  document.getElementById('wbt-kpi-clients-sub').textContent = 'Clientes únicos';
 
-  // Chart: Monthly volume
+  if(!txns.length){
+    dc('cwbtm'); dc('cwbtt');
+    const tbody = document.getElementById('wbt-clients-tbody');
+    if(tbody) tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sin transacciones en ${range.label}</td></tr>`;
+    return;
+  }
+
+  // ── Chart 1: Volumen por período ──
   dc('cwbtm');
-  const byMonth = {};
+  const byPeriod = {};
   txns.forEach(t=>{
-    const ym = t.date.slice(0,7);
-    if(!byMonth[ym]) byMonth[ym] = {monto:0, count:0};
-    byMonth[ym].monto += (t.monto||0);
-    byMonth[ym].count++;
+    const key = range.groupBy === 'day' ? t.date : t.date.slice(0,7);
+    if(!byPeriod[key]) byPeriod[key] = {monto:0, count:0};
+    byPeriod[key].monto += (t.monto||0);
+    byPeriod[key].count++;
   });
-  const months = Object.keys(byMonth).sort();
+  const periods = Object.keys(byPeriod).sort();
+  const multiYear = periods.some(p=>p.startsWith('2025')) && periods.some(p=>p.startsWith('2026'));
+  const chartLabels = periods.map(p=>{
+    if(range.groupBy === 'day'){
+      return p.slice(8); // day number
+    }
+    const [yr,mo] = p.split('-');
+    return MO[parseInt(mo)-1]+(multiYear?' '+yr.slice(2):'');
+  });
+
   CH['cwbtm'] = new Chart(document.getElementById('c-wbt-monthly'),{
     type:'bar',
     data:{
-      labels: months.map(ym=>{ const m=parseInt(ym.split('-')[1])-1; return MO[m]; }),
+      labels: chartLabels,
       datasets:[
-        { label:'Monto', data:months.map(m=>Math.round(byMonth[m].monto)), backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4, yAxisID:'y' },
-        { label:'Transacciones', data:months.map(m=>byMonth[m].count), type:'line', borderColor:'#0073ea', borderWidth:2, pointRadius:3, yAxisID:'y1', tension:.3 }
+        { label:'Monto', data:periods.map(p=>Math.round(byPeriod[p].monto)), backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4, yAxisID:'y' },
+        { label:'Transacciones', data:periods.map(p=>byPeriod[p].count), type:'line', borderColor:'#0073ea', borderWidth:2, pointRadius:3, yAxisID:'y1', tension:.3 }
       ]
     },
     options:{...cOpts(),
-      plugins:{legend:{display:true,position:'top',labels:{color:'#8b8fb5',font:{size:10},boxWidth:8,padding:8}}},
+      plugins:{legend:{display:true,position:'top',labels:{color:'#8b8fb5',font:{size:10},boxWidth:8,padding:8}},
+        tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?' $'+Math.round(ctx.raw).toLocaleString():' '+ctx.raw+' txns'}}},
       scales:{
-        x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10}}},
+        x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10},maxRotation:0}},
         y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}},
         y1:{position:'right',grid:{drawOnChartArea:false},ticks:{color:'#0073ea',font:{size:9}}}
       }
     }
   });
 
-  // Chart: By type doughnut
+  // ── Chart 2: Por tipo ──
   dc('cwbtt');
   const byType = {};
   txns.forEach(t=>{ const k=t.tipo||'Otro'; byType[k]=(byType[k]||0)+(t.monto||0); });
-  const types = Object.entries(byType).sort((a,b)=>b[1]-a[1]);
+  const types   = Object.entries(byType).sort((a,b)=>b[1]-a[1]);
   const tColors = ['#9b51e0','#0073ea','#00b875','#ff7043','#ffa000','#e91e63'];
   CH['cwbtt'] = new Chart(document.getElementById('c-wbt-types'),{
     type:'doughnut',
@@ -247,12 +381,16 @@ function rWBTarjetas(){
       datasets:[{ data:types.map(x=>x[1]), backgroundColor:tColors.map(c=>c+'33'), borderColor:tColors, borderWidth:2 }]
     },
     options:{...cOpts(), cutout:'60%',
-      plugins:{legend:{position:'bottom',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8,padding:6}}},
+      plugins:{legend:{position:'bottom',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8,padding:6}},
+        tooltip:{callbacks:{label:ctx=>{
+          const tot=ctx.dataset.data.reduce((a,b)=>a+b,0);
+          return ' $'+Math.round(ctx.raw).toLocaleString()+' ('+(ctx.raw/tot*100).toFixed(1)+'%)';
+        }}}},
       scales:{x:{display:false},y:{display:false}}
     }
   });
 
-  // Client table
+  // ── Tabla clientes ──
   const byClient = {};
   txns.forEach(t=>{
     const k = t.cliente||'Sin nombre';
@@ -263,8 +401,8 @@ function rWBTarjetas(){
   const clientList = Object.entries(byClient).sort((a,b)=>b[1].monto-a[1].monto);
   const tbody = document.getElementById('wbt-clients-tbody');
   tbody.innerHTML = clientList.map(([cl,d],i)=>{
-    const pct = ((d.monto/totalMonto)*100).toFixed(1);
-    const avg = Math.round(d.monto/d.count);
+    const pct = totalMonto ? ((d.monto/totalMonto)*100).toFixed(1) : '0.0';
+    const avg = d.count ? Math.round(d.monto/d.count) : 0;
     return `<tr>
       <td style="font-weight:600;color:var(--muted)">${i+1}</td>
       <td style="font-weight:600">${cl}</td>
@@ -274,6 +412,15 @@ function rWBTarjetas(){
       <td class="r">${pct}%</td>
     </tr>`;
   }).join('');
+  if(clientList.length){
+    tbody.innerHTML += `<tr class="bld" style="border-top:2px solid var(--border)">
+      <td colspan="2" style="font-weight:700">TOTAL</td>
+      <td class="r" style="font-weight:700">${txns.length.toLocaleString()}</td>
+      <td class="r" style="font-weight:700;color:var(--green)">$${Math.round(totalMonto).toLocaleString()}</td>
+      <td class="r" style="font-weight:700">$${(txns.length?Math.round(totalMonto/txns.length):0).toLocaleString()}</td>
+      <td class="r" style="font-weight:700">100%</td>
+    </tr>`;
+  }
 }
 
 
@@ -501,5 +648,8 @@ function clearWBTarData(){
   window.startWBTarUpload = startWBTarUpload;
   window.clearWBTarData = clearWBTarData;
   window._getWBTarData = _getWBTarData;
+  window.wbtSetPeriodo = wbtSetPeriodo;
+  window.wbcSetYear    = wbcSetYear;
+  window._mergeWBCripto = _mergeWBCripto;
 
 })(window);
