@@ -328,6 +328,10 @@ function _renderCharts(topKey, pieKey, clients, mix, barColor) {
 }
 
 async function initTPVGeneral() {
+  // Period filter bar (year selector)
+  if(typeof gfpRender === 'function'){
+    gfpRender('tpv-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026']});
+  }
   console.log('[TPV] initTPVGeneral loading...');
   const [clients, kpis, mix] = await Promise.all([
     TPV.clientsByVolume(), TPV.kpis(), TPV.commissionMix()

@@ -115,8 +115,10 @@
 
   function setPLMode(ent, mode, btn){
     _plMode[ent] = mode;
-    btn.closest('.pbar').querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
-    btn.classList.add('active');
+    if(btn){
+      btn.closest('.pbar').querySelectorAll('.pbtn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+    }
     rPL(ent); rPLCharts(ent);
   }
 
