@@ -86,15 +86,27 @@ async function _inicioTPVKPIs() {
   } catch (e) { console.warn('[Inicio] TPV KPIs error:', e); }
 }
 
-function _inicioTarKPIs() {
+async function _inicioTarKPIs() {
+  const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
   try {
-    // Tarjetas data is hardcoded in tar_dashboard HTML — read from the DOM if available,
-    // otherwise use the known static values
-    const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    _s('inicio-tar-monto', '$18.7M');
-    _s('inicio-tar-txns', '7,232');
-    _s('inicio-tar-th', '1,847');
-  } catch (e) { console.warn('[Inicio] Tarjetas KPIs error:', e); }
+    if (typeof _loadConfig === 'function') await _loadConfig();
+    if (!_sb) { _s('inicio-tar-monto','—'); _s('inicio-tar-txns','—'); _s('inicio-tar-th','—'); return; }
+    const [r1, r2, r3] = await Promise.all([
+      _sb.from('tar_transactions').select('monto', {count:'exact'}).limit(0),
+      _sb.from('tar_transactions').select('monto').limit(100000),
+      _sb.from('tar_cardholders').select('id', {count:'exact', head:true})
+    ]);
+    const txnCount = r1.count || 0;
+    const totalMonto = (r2.data || []).reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
+    const thCount = r3.count || 0;
+    _s('inicio-tar-monto', txnCount > 0 ? fmtK(totalMonto) : '—');
+    _s('inicio-tar-monto-sub', txnCount > 0 ? 'Total procesado' : 'Sin transacciones');
+    _s('inicio-tar-txns', txnCount > 0 ? txnCount.toLocaleString('es-MX') : '—');
+    _s('inicio-tar-th', thCount > 0 ? thCount.toLocaleString('es-MX') : '—');
+  } catch (e) {
+    console.warn('[Inicio] Tarjetas KPIs error:', e);
+    _s('inicio-tar-monto','—'); _s('inicio-tar-txns','—'); _s('inicio-tar-th','—');
+  }
 }
 
 async function _inicioAlertas() {
