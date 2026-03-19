@@ -19,9 +19,12 @@ function rFlujoGas(filterEnt){
     filterBanner.innerHTML = `<span style="font-size:.75rem;font-weight:600;color:${ec}">Mostrando solo: ${window._fgFilterEnt}</span><span style="font-size:.65rem;color:var(--muted);margin-left:8px">(${FG_ROWS.filter(r=>r.ent===window._fgFilterEnt).length} filas de ${FG_ROWS.length})</span>`;
   }
 
-  // Show TPV auto notice if any autoTPV rows
+  // Show TPV auto notice only if visible (filtered) rows include autoTPV
   const fgTpvNotice = document.getElementById('fg-tpv-notice');
-  if(fgTpvNotice) fgTpvNotice.style.display = FG_ROWS.some(r=>r.autoTPV) ? 'flex' : 'none';
+  const _hasVisibleTPV = window._fgFilterEnt
+    ? FG_ROWS.some(r=>r.autoTPV && r.ent===window._fgFilterEnt)
+    : FG_ROWS.some(r=>r.autoTPV);
+  if(fgTpvNotice) fgTpvNotice.style.display = _hasVisibleTPV ? 'flex' : 'none';
 
   // Apply filter
   const visibleRows = window._fgFilterEnt ? FG_ROWS.map((r,i)=>({r,ri:i})).filter(x=>x.r.ent===window._fgFilterEnt) : FG_ROWS.map((r,i)=>({r,ri:i}));
