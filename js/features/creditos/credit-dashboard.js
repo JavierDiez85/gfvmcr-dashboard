@@ -22,8 +22,8 @@
     try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
 
     let all = [];
-    if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})));
-    if(!entFilter || entFilter==='dyn') all.push(...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'})));
+    if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map((c,i)=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875', _origIdx:i})));
+    if(!entFilter || entFilter==='dyn') all.push(...DYN_CREDITS.map((c,i)=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043', _origIdx:i})));
 
     // ── KPIs consolidados ──
     const activos    = all.filter(c=>c.st==='Activo');
@@ -196,8 +196,7 @@
     listEl.innerHTML = sorted.map(c=>{
       const saldo = credSaldoActual(c);
       const intTot = credTotalIntereses(c);
-      const credits = c._ent==='end' ? END_CREDITS : DYN_CREDITS;
-      const origIdx = credits.findIndex(x=>x.cl===c.cl);
+      const origIdx = c._origIdx;
 
       return `<div class="cred-dash-row" data-name="${(c.cl||'').toLowerCase()}" onclick="credOpenDetail('${c._ent}','${(c.cl||'').replace(/'/g,"\\'")}',${origIdx})"
         style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"

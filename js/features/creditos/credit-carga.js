@@ -129,9 +129,13 @@
 
     if(!nombre || amort.length < 1) return null;
 
+    var montoVal = parseMXN(monto);
+    var creditId = (nombre||'').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase() + '_' + montoVal + '_' + (parseInt(plazo)||0);
+
     return {
+      creditId:   creditId,
       cl:         nombre,
-      monto:      parseMXN(monto),
+      monto:      montoVal,
       plazo:      parseInt(plazo)||0,
       vencimiento:venc||'Años',
       tasa:       parseFloat(tasa)||0,
@@ -183,35 +187,41 @@
 
   function creditos_count(){ return CC_PREVIEW.length; }
 
+  function _getCreditId(c){
+    // Generate creditId if missing (backward compat for old credits)
+    if(c.creditId) return c.creditId;
+    return (c.cl||'').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase() + '_' + (c.monto||0) + '_' + (c.plazo||0);
+  }
+
   function ccImport(){
     if(!CC_PREVIEW.length){ toast('⚠️ No hay creditos para importar'); return; }
     const empresa = document.getElementById('cc-empresa').value;
 
+    // Ensure all preview credits have creditId
+    CC_PREVIEW.forEach(c => { if(!c.creditId) c.creditId = _getCreditId(c); });
+
     if(empresa === 'endless'){
-      // Merge: keep existing non-auto credits, add new ones (avoid duplicates by cl name)
-      const existingNames = END_CREDITS.map(c=>c.cl.toLowerCase());
-      const newOnes = CC_PREVIEW.filter(c => !existingNames.includes(c.cl.toLowerCase()));
-      const updated = CC_PREVIEW.map(c => {
-        const idx = END_CREDITS.findIndex(x=>x.cl.toLowerCase()===c.cl.toLowerCase());
-        return idx>=0 ? {...END_CREDITS[idx], ...c} : c;
+      // Match by creditId (unique per credit), NOT by client name
+      CC_PREVIEW.forEach(c => {
+        const idx = END_CREDITS.findIndex(x => _getCreditId(x) === c.creditId);
+        if(idx >= 0){
+          // Update existing credit (same monto+plazo+client)
+          END_CREDITS[idx] = {...END_CREDITS[idx], ...c};
+        } else {
+          // New credit — append (even if same client name)
+          END_CREDITS.push(c);
+        }
       });
-      // Add any existing ones not in the new list
-      END_CREDITS.forEach(c => {
-        if(!updated.find(x=>x.cl.toLowerCase()===c.cl.toLowerCase())) updated.push(c);
-      });
-      END_CREDITS.length = 0;
-      updated.forEach(c => END_CREDITS.push(c));
       DB.set('gf_cred_end', END_CREDITS);
     } else {
-      const updated = CC_PREVIEW.map(c => {
-        const idx = DYN_CREDITS.findIndex(x=>x.cl.toLowerCase()===c.cl.toLowerCase());
-        return idx>=0 ? {...DYN_CREDITS[idx], ...c} : c;
+      CC_PREVIEW.forEach(c => {
+        const idx = DYN_CREDITS.findIndex(x => _getCreditId(x) === c.creditId);
+        if(idx >= 0){
+          DYN_CREDITS[idx] = {...DYN_CREDITS[idx], ...c};
+        } else {
+          DYN_CREDITS.push(c);
+        }
       });
-      DYN_CREDITS.forEach(c => {
-        if(!updated.find(x=>x.cl.toLowerCase()===c.cl.toLowerCase())) updated.push(c);
-      });
-      DYN_CREDITS.length = 0;
-      updated.forEach(c => DYN_CREDITS.push(c));
       DB.set('gf_cred_dyn', DYN_CREDITS);
     }
 
