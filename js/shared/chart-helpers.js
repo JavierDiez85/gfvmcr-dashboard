@@ -5,6 +5,9 @@
   // ═══════════════════════════════════════
   // rPLCharts (from finanzas.js)
   // ═══════════════════════════════════════
+  // Helper: sum record vals respecting period filter
+  function _recSum(r, ent) { return _periodSum(r.vals, ent); }
+
   function rPLCharts(ent){
     // Guard: skip if charts not in DOM
     const canvasId = 'c-'+ent+'-pl';
@@ -26,18 +29,19 @@
       ];
       const salGasVals = salGasCats.map(gc => {
         const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent==='Salem' && r.yr==_year && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())) && (!gc.concepts || gc.concepts.some(c=>r.concepto.toLowerCase().includes(c))));
-        return matched.reduce((s,r) => s + r.vals.reduce((a,b)=>a+b,0), 0);
+        return matched.reduce((s,r) => s + _recSum(r, ent), 0);
       });
-      if(salGasVals[0]===0){ try{ salGasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n.sal||0)/100,0) * 12; }catch(e){} }
+      const _pIdxs = _periodIdxs(ent);
+      if(salGasVals[0]===0){ try{ salGasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n.sal||0)/100,0) * _pIdxs.length; }catch(e){} }
       const colors=['rgba(229,57,53,.7)','rgba(255,112,67,.7)','rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,160,0,.7)','rgba(134,134,134,.5)'];
       dc('c-sal-gas');
       CH['c-sal-gas']=new Chart(document.getElementById('c-sal-gas'),{type:'bar',data:{labels:salGasCats.map(g=>g.lbl),datasets:[{data:salGasVals,backgroundColor:colors,borderWidth:0}]},options:compactOpts()});
 
       // TPV donut — ingresos por fuente from S.recs
       dc('c-sal-pie');
-      const tpvIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat==='TPV'&&r.yr==_year).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
-      const tarIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&(r.cat.includes('Tarjeta')||r.cat.includes('Centum'))&&r.yr==_year).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
-      const otrosIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat!=='TPV'&&!r.cat.includes('Tarjeta')&&!r.cat.includes('Centum')&&r.yr==_year).reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0);
+      const tpvIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat==='TPV'&&r.yr==_year).reduce((s,r)=>s+_recSum(r,ent),0);
+      const tarIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&(r.cat.includes('Tarjeta')||r.cat.includes('Centum'))&&r.yr==_year).reduce((s,r)=>s+_recSum(r,ent),0);
+      const otrosIng = (S.recs||[]).filter(r=>r.ent==='Salem'&&r.tipo==='ingreso'&&r.cat!=='TPV'&&!r.cat.includes('Tarjeta')&&!r.cat.includes('Centum')&&r.yr==_year).reduce((s,r)=>s+_recSum(r,ent),0);
       const hasSalIng = tpvIng>0||tarIng>0||otrosIng>0;
       CH['c-sal-pie']=new Chart(document.getElementById('c-sal-pie'),{type:'doughnut',data:{
         labels: hasSalIng ? [`TPV ${fmtK(tpvIng)}`,`Tarjetas ${fmtK(tarIng)}`,`Otros ${fmtK(otrosIng)}`] : ['Sin datos'],
@@ -64,11 +68,12 @@
       ];
       const gasVals = gasCats.map(gc => {
         const matched = (S.recs||[]).filter(r => !r.isSharedSource && r.tipo==='gasto' && r.ent===entName && r.yr==_year && gc.cats.some(c=>r.cat.toLowerCase().includes(c.toLowerCase())));
-        return matched.reduce((s,r) => s + r.vals.reduce((a,b)=>a+b,0), 0);
+        return matched.reduce((s,r) => s + _recSum(r, ent), 0);
       });
       // Add nomina from NOM_EDIT if not in S.recs
+      const _pIdxsEnt = _periodIdxs(ent);
       if(gasVals[0]===0){
-        try{ gasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n[ent]||0)/100,0) * 12; }catch(e){}
+        try{ gasVals[0] = NOM_EDIT.reduce((s,n)=>s+n.s*(n[ent]||0)/100,0) * _pIdxsEnt.length; }catch(e){}
       }
       dc('c-'+ent+'-gas');
       if(document.getElementById('c-'+ent+'-gas')) CH['c-'+ent+'-gas']=new Chart(document.getElementById('c-'+ent+'-gas'),{type:'bar',data:{labels:gasCats.map(g=>g.lbl),datasets:[{data:gasVals,backgroundColor:colors,borderWidth:0}]},options:compactOpts()});
@@ -93,14 +98,18 @@
       },options:{...cOpts(),plugins:{legend:{position:'bottom',labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:pieTip},cutout:'55%',scales:noAxes}});
     }
     if(ent==='wb'){
-      // Line ingresos vs costos
+      // Line ingresos vs costos — filtered by period
       dc('c-wb-pl');
-      CH['c-wb-pl']=new Chart(document.getElementById('c-wb-pl'),{type:'line',data:{labels:MO,datasets:[
-        {label:'Ingresos',data:WB_ING_TOTAL,borderColor:'#9b51e0',backgroundColor:'rgba(155,81,224,.08)',fill:true,tension:.4,pointRadius:2,borderWidth:2},
-        {label:'Costos',data:WB_COSTO_TOTAL,borderColor:'#ff7043',fill:false,tension:.4,pointRadius:2,borderWidth:1.5},
+      const _wbPI = _periodIdxs('wb');
+      const _wbLabels = _wbPI.map(i=>MO[i]);
+      const _wbIngF = _wbPI.map(i=>WB_ING_TOTAL[i]||0);
+      const _wbCosF = _wbPI.map(i=>WB_COSTO_TOTAL[i]||0);
+      CH['c-wb-pl']=new Chart(document.getElementById('c-wb-pl'),{type:'line',data:{labels:_wbLabels,datasets:[
+        {label:'Ingresos',data:_wbIngF,borderColor:'#9b51e0',backgroundColor:'rgba(155,81,224,.08)',fill:true,tension:.4,pointRadius:2,borderWidth:2},
+        {label:'Costos',data:_wbCosF,borderColor:'#ff7043',fill:false,tension:.4,pointRadius:2,borderWidth:1.5},
       ]},options:{...cOpts(),plugins:{legend:{labels:{color:'#8b8fb5',font:{size:9},boxWidth:7,padding:7}},tooltip:cOpts().plugins.tooltip},scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
-      // Fuentes donut
-      const wbAnn=Object.entries(WB_ING).map(([k,v])=>[k.replace('Fees ',''),sum(v)]);
+      // Fuentes donut — filtered by period
+      const wbAnn=Object.entries(WB_ING).map(([k,v])=>[k.replace('Fees ',''),_periodSum(v,'wb')]);
       dc('c-wb-pl-pie');
       CH['c-wb-pl-pie']=new Chart(document.getElementById('c-wb-pl-pie'),{type:'doughnut',data:{
         labels:wbAnn.map(x=>x[0]),datasets:[{data:wbAnn.map(x=>x[1]),backgroundColor:['rgba(155,81,224,.7)','rgba(0,115,234,.7)','rgba(0,184,117,.7)','rgba(255,112,67,.7)','rgba(255,160,0,.7)'],borderWidth:0}]
@@ -175,15 +184,24 @@
 
     const ebitdaM=MO.map((_,i)=>ingM[i]-costM[i]-gasM[i]);
 
+    // Filter to only show months in the active period
+    const _ek = keys[0] || 'sal';
+    const _pI = _periodIdxs(_ek);
+    const _fLabels = _pI.map(i=>MO[i]);
+    const _fIng = _pI.map(i=>ingM[i]);
+    const _fCost = _pI.map(i=>costM[i]);
+    const _fGas = _pI.map(i=>gasM[i]);
+    const _fEbitda = _pI.map(i=>ebitdaM[i]);
+
     CH[canvasId]=new Chart(el,{
       type:'bar',
       data:{
-        labels:MO,
+        labels:_fLabels,
         datasets:[
-          {label:'Ingresos',data:ingM,backgroundColor:'rgba(46,184,92,.55)',borderColor:'rgba(46,184,92,.8)',borderWidth:1,borderRadius:3,order:2},
-          {label:'Costes Directos',data:costM,backgroundColor:'rgba(255,152,0,.50)',borderColor:'rgba(255,152,0,.8)',borderWidth:1,borderRadius:3,order:3},
-          {label:'Gastos Admin',data:gasM,backgroundColor:'rgba(239,68,68,.40)',borderColor:'rgba(239,68,68,.7)',borderWidth:1,borderRadius:3,order:4},
-          {type:'line',label:'EBITDA',data:ebitdaM,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6366f1',tension:.3,fill:true,order:1}
+          {label:'Ingresos',data:_fIng,backgroundColor:'rgba(46,184,92,.55)',borderColor:'rgba(46,184,92,.8)',borderWidth:1,borderRadius:3,order:2},
+          {label:'Costes Directos',data:_fCost,backgroundColor:'rgba(255,152,0,.50)',borderColor:'rgba(255,152,0,.8)',borderWidth:1,borderRadius:3,order:3},
+          {label:'Gastos Admin',data:_fGas,backgroundColor:'rgba(239,68,68,.40)',borderColor:'rgba(239,68,68,.7)',borderWidth:1,borderRadius:3,order:4},
+          {type:'line',label:'EBITDA',data:_fEbitda,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6366f1',tension:.3,fill:true,order:1}
         ]
       },
       options:{
@@ -210,13 +228,16 @@
     const smOpts=(noLeg=true)=>({...cOpts(),plugins:{legend:{display:!noLeg,labels:{color:'#444669',font:{size:9},boxWidth:7,padding:5}},tooltip:cOpts().plugins.tooltip},scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}});
 
     if(type==='centum'){
-      // Ingresos por entidad bar (Salem vs Endless vs Dynamo)
+      // Ingresos por entidad bar (Salem vs Endless vs Dynamo) — filtered by period
       dc('c-centum-gas');
       const centumEnts = ['Salem','Endless','Dynamo'];
+      const _cpI = _periodIdxs('centum');
+      const _cpLabels = _cpI.map(i=>MO[i]);
       const centumIngByEnt = centumEnts.map(e => {
-        return MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0));
+        const full = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0));
+        return _cpI.map(i=>full[i]);
       });
-      CH['c-centum-gas']=new Chart(document.getElementById('c-centum-gas'),{type:'bar',data:{labels:MO,
+      CH['c-centum-gas']=new Chart(document.getElementById('c-centum-gas'),{type:'bar',data:{labels:_cpLabels,
         datasets:[
           {label:'Salem',data:centumIngByEnt[0],backgroundColor:'rgba(0,115,234,.5)',borderWidth:0},
           {label:'Endless',data:centumIngByEnt[1],backgroundColor:'rgba(0,184,117,.5)',borderWidth:0},
@@ -241,11 +262,13 @@
     }
 
     if(type==='grupo'){
-      // Ingresos por fuente — all entities
+      // Ingresos por fuente — all entities — filtered by period
       dc('c-grupo-ing');
-      const _grpIng = (ent) => MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0));
+      const _gpI = _periodIdxs('grupo');
+      const _gpLabels = _gpI.map(i=>MO[i]);
+      const _grpIng = (ent) => { const full = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0)); return _gpI.map(i=>full[i]); };
       const salIngM = _grpIng('Salem'), endIngM = _grpIng('Endless'), dynIngM = _grpIng('Dynamo'), wbIngM = _grpIng('Wirebit');
-      CH['c-grupo-ing']=new Chart(document.getElementById('c-grupo-ing'),{type:'bar',data:{labels:MO,
+      CH['c-grupo-ing']=new Chart(document.getElementById('c-grupo-ing'),{type:'bar',data:{labels:_gpLabels,
         datasets:[
           {label:'Salem',data:salIngM,backgroundColor:'rgba(0,115,234,.5)',borderWidth:0},
           {label:'Endless',data:endIngM,backgroundColor:'rgba(0,184,117,.5)',borderWidth:0},

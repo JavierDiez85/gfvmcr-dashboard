@@ -328,12 +328,12 @@
       if(s.type==='total_gas'){  rows.push({...s, _type:'subtotal', _vals:[...totGas],  _cls:'neg'}); continue; }
       if(s.type==='margen_op'){
         const mo = totIng.map((x,i)=>x-totCost[i]);
-        rows.push({...s, _type:'util', _vals:mo, _cls:mo.reduce((a,b)=>a+b,0)>=0?'pos':'neg'});
+        rows.push({...s, _type:'util', _vals:mo, _cls:_periodSum(mo,ent)>=0?'pos':'neg'});
         continue;
       }
       if(s.type==='ebitda'){
         const ebitda = totIng.map((x,i)=>x-totCost[i]-totGas[i]);
-        rows.push({...s, _type:'util', _vals:ebitda, _cls:ebitda.reduce((a,b)=>a+b,0)>=0?'pos':'neg'});
+        rows.push({...s, _type:'util', _vals:ebitda, _cls:_periodSum(ebitda,ent)>=0?'pos':'neg'});
         continue;
       }
     }
@@ -394,9 +394,9 @@
     const kIngEl = document.getElementById(ent+'-k-ing');
     const kCostEl = document.getElementById(ent+'-k-cost');
     const kGasEl = document.getElementById(ent+'-k-gas');
-    const annIng = totIng.reduce((a,b)=>a+b,0);
-    const annCost = totCost.reduce((a,b)=>a+b,0);
-    const annGas = totGas.reduce((a,b)=>a+b,0);
+    const annIng = _periodSum(totIng, ent);
+    const annCost = _periodSum(totCost, ent);
+    const annGas = _periodSum(totGas, ent);
     if(kIngEl) kIngEl.textContent = annIng > 0 ? fmtK(annIng) : '\u2014';
     if(kCostEl){
       kCostEl.textContent = annCost > 0 ? fmtK(annCost) : '\u2014';
@@ -539,8 +539,8 @@
       if(el){ el.textContent = fmtK(centumNom) + '/mes'; el.style.color=''; el.style.fontSize=''; }
       const kIng = document.getElementById('centum-k-ing');
       const kGas = document.getElementById('centum-k-gas');
-      const totI = _rv(centumEnts,'ingreso').reduce((a,b)=>a+b,0);
-      const totG = _rv(centumEnts,'gasto').reduce((a,b)=>a+b,0);
+      const totI = _periodSum(_rv(centumEnts,'ingreso'), 'centum');
+      const totG = _periodSum(_rv(centumEnts,'gasto'), 'centum');
       if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '\u2014';
       if(kGas) kGas.textContent = totG>0 ? fmtK(totG) : '\u2014';
       const allCred = [...END_CREDITS,...DYN_CREDITS].filter(c=>c.st==='Activo'||c.st==='Vencido');
@@ -550,8 +550,8 @@
       if(kCart) kCart.textContent = carteraTotal > 0 ? fmtK(carteraTotal) : '\u2014';
       if(kCartSub) kCartSub.textContent = allCred.length + ' cr\u00e9dito' + (allCred.length!==1?'s':'') + ' (End+Dyn)';
     } else {
-      const totI = _rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'ingreso').reduce((a,b)=>a+b,0);
-      const totG = _rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'gasto').reduce((a,b)=>a+b,0);
+      const totI = _periodSum(_rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'ingreso'), 'grupo');
+      const totG = _periodSum(_rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'gasto'), 'grupo');
       const kIng = document.getElementById('grupo-k-ing');
       const kGas = document.getElementById('grupo-k-gas');
       if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '\u2014';
@@ -578,7 +578,7 @@
 
     const rows=FI_ROWS.filter(r=>r.ent===entName&&r.yr==_year);
     const curMonth=new Date().getMonth();
-    const totalAnual=rows.reduce((s,r)=>s+sum(r.vals),0);
+    const totalAnual=rows.reduce((s,r)=>s+_periodSum(r.vals, entKey),0);
     const totalMes=rows.reduce((s,r)=>s+(r.vals[curMonth]||0),0);
 
     const kT=document.getElementById(entKey+'-ing-kpi-total');
@@ -849,11 +849,11 @@
     const margen = _sub(ing, gas);
     const ebitda = _sub(margen, nom);
 
-    // KPIs
-    const totIng = ing.reduce((a,b)=>a+b,0);
-    const totGas = gas.reduce((a,b)=>a+b,0);
-    const totNom = nom.reduce((a,b)=>a+b,0);
-    const totEbitda = ebitda.reduce((a,b)=>a+b,0);
+    // KPIs — period-filtered
+    const totIng = _periodSum(ing, entKey);
+    const totGas = _periodSum(gas, entKey);
+    const totNom = _periodSum(nom, entKey);
+    const totEbitda = _periodSum(ebitda, entKey);
 
     const qk = id => document.getElementById(id);
     if(qk(pfx+'-k-ing')) qk(pfx+'-k-ing').textContent = totIng>0 ? fmtK(totIng) : '\u2014';
@@ -909,20 +909,21 @@
 
     // Charts
     rEvoChart('c-'+pfx+'-evo', [entKey]);
-    _rEntGrupoIngChart(pfx, eName, ingCats);
+    _rEntGrupoIngChart(pfx, eName, ingCats, entKey);
   }
 
   // Helper chart: income mix donut for entity grupo views
-  function _rEntGrupoIngChart(pfx, eName, ingCats){
+  function _rEntGrupoIngChart(pfx, eName, ingCats, entKey){
     const canvasId = 'c-'+pfx+'-ing';
     const el = document.getElementById(canvasId);
     if(!el) return;
     if(typeof dc === 'function') dc(canvasId);
 
     const colors = ['rgba(0,115,234,.6)','rgba(0,184,117,.6)','rgba(255,112,67,.6)','rgba(155,81,224,.6)','rgba(229,57,53,.6)','rgba(33,150,243,.6)'];
+    const _ek = entKey || (eName==='Wirebit'?'wb':eName==='Stellaris'?'stel':'sal');
     const data = ingCats.map(cat =>
       (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===eName&&r.cat===cat&&r.yr==_year)
-        .reduce((s,r)=>s+r.vals.reduce((a,b)=>a+b,0),0)
+        .reduce((s,r)=>s+_periodSum(r.vals, _ek),0)
     ).filter((_,i)=>ingCats[i]);
 
     const labels = ingCats.map((cat,i) => cat + ' ' + (typeof fmtK==='function'?fmtK(data[i]||0):''));
