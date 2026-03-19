@@ -26,14 +26,30 @@
     return (n >= 0 ? '+$' : '-$') + abs.toLocaleString('es-MX');
   }
 
+  // Mapeo código corto → nombre completo (coincide con flujo-engine y pl-engine)
+  var _ENT_FULL = { sal:'Salem', end:'Endless', dyn:'Dynamo', wb:'Wirebit', stel:'Stellaris' };
+
   function _entData(key, yr) {
     var recs = (typeof S !== 'undefined' && Array.isArray(S.recs)) ? S.recs : [];
     yr = yr || String(new Date().getFullYear());
-    var rows = recs.filter(function(r) { return r.ent === key && String(r.yr) === yr; });
-    var ing = rows.filter(function(r) { return r.type === 'ing'; })
-                  .reduce(function(s, r) { return s + ((r.vals || []).reduce(function(a, b) { return a + (b || 0); }, 0)); }, 0);
-    var gas = rows.filter(function(r) { return r.type === 'gas' || r.type === 'cost'; })
-                  .reduce(function(s, r) { return s + ((r.vals || []).reduce(function(a, b) { return a + (b || 0); }, 0)); }, 0);
+    var full = _ENT_FULL[key] || key; // nombre completo: 'Stellaris', etc.
+
+    // Filtrar por año + entidad (soporta esquema legacy: ent=código corto, type='ing'
+    //   y esquema flujo: ent=nombre completo, tipo='ingreso')
+    var rows = recs.filter(function(r) {
+      if (String(r.yr) !== yr) return false;
+      if (r.isSharedSource) return false;
+      return r.ent === key || r.ent === full;
+    });
+
+    var ing = rows.filter(function(r) {
+      return r.type === 'ing' || r.tipo === 'ingreso';
+    }).reduce(function(s, r) { return s + ((r.vals || []).reduce(function(a, b) { return a + (b || 0); }, 0)); }, 0);
+
+    var gas = rows.filter(function(r) {
+      return r.type === 'gas' || r.type === 'cost' || r.tipo === 'gasto';
+    }).reduce(function(s, r) { return s + ((r.vals || []).reduce(function(a, b) { return a + (b || 0); }, 0)); }, 0);
+
     return { ing: ing, gas: gas, margen: ing - gas };
   }
 
@@ -58,29 +74,29 @@
 
   // ── Render helpers ──
   function _pillStyle(color) {
-    return 'font-size:.72rem;font-weight:600;padding:6px 14px;border-radius:20px;'
+    return 'font-size:.78rem;font-weight:600;padding:8px 18px;border-radius:20px;'
          + 'border:1.5px solid ' + color + ';background:' + color + '18;color:' + color + ';'
          + 'cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap';
   }
 
   function _sectionLabel(txt) {
-    return '<div style="font-size:.63rem;font-weight:700;color:var(--muted);text-transform:uppercase;'
-         + 'letter-spacing:.7px;margin-bottom:8px;text-align:center">' + txt + '</div>';
+    return '<div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;'
+         + 'letter-spacing:.7px;margin-bottom:10px;text-align:center">' + txt + '</div>';
   }
 
   function _kpiCard(label, value, sub, color) {
-    return '<div class="cc" style="padding:14px;border-top:3px solid ' + color + ';text-align:center">'
-         + '<div style="font-size:.62rem;font-weight:700;color:var(--muted);margin-bottom:5px;'
+    return '<div class="cc" style="padding:20px 16px;border-top:3px solid ' + color + ';text-align:center">'
+         + '<div style="font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:6px;'
          + 'text-transform:uppercase;letter-spacing:.3px">' + label + '</div>'
-         + '<div style="font-size:1rem;font-weight:700;color:' + color + ';line-height:1.2">' + value + '</div>'
-         + '<div style="font-size:.62rem;color:var(--muted);margin-top:3px">' + sub + '</div>'
+         + '<div style="font-size:1.3rem;font-weight:700;color:' + color + ';line-height:1.2">' + value + '</div>'
+         + '<div style="font-size:.68rem;color:var(--muted);margin-top:4px">' + sub + '</div>'
          + '</div>';
   }
 
   function _entMini(label, value, color) {
-    return '<div style="background:var(--bg);border-radius:5px;padding:5px 6px">'
-         + '<div style="font-size:.58rem;color:var(--muted);margin-bottom:1px">' + label + '</div>'
-         + '<div style="font-size:.68rem;font-weight:700;color:' + color + '">' + value + '</div>'
+    return '<div style="background:var(--bg);border-radius:6px;padding:8px 10px">'
+         + '<div style="font-size:.63rem;color:var(--muted);margin-bottom:2px">' + label + '</div>'
+         + '<div style="font-size:.8rem;font-weight:700;color:' + color + '">' + value + '</div>'
          + '</div>';
   }
 
@@ -89,15 +105,15 @@
     var roiStr = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '—';
     var roiColor = roi === null ? 'var(--muted)' : (roi >= 0 ? '#00b875' : '#e53935');
     var pendBadge = pend.count > 0
-      ? '<div style="margin-top:8px;font-size:.62rem;color:#ff9500;background:#ff950018;'
-        + 'border-radius:5px;padding:3px 7px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
+      ? '<div style="margin-top:10px;font-size:.68rem;color:#ff9500;background:#ff950018;'
+        + 'border-radius:6px;padding:5px 8px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
         + e.ppNav + '\')">⏳ ' + pend.count + ' CxP · ' + _fmtM(pend.total) + '</div>'
       : '';
-    return '<div class="cc" style="padding:12px;border-top:3px solid ' + e.color + ';cursor:pointer" '
+    return '<div class="cc" style="padding:16px;border-top:3px solid ' + e.color + ';cursor:pointer" '
          + 'onclick="navTo(\'' + e.nav + '\')">'
-         + '<div style="font-size:.75rem;font-weight:700;color:' + e.color + ';margin-bottom:8px">'
+         + '<div style="font-size:.85rem;font-weight:700;color:' + e.color + ';margin-bottom:10px">'
          + e.icon + ' ' + e.name + '</div>'
-         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
          + _entMini('Ingresos', _fmtM(e.ing), '#00b875')
          + _entMini('Gastos',   _fmtM(e.gas), '#e53935')
          + _entMini('Margen',   _fmtMS(e.margen), mc)
@@ -108,11 +124,11 @@
   }
 
   function _pendCard(e, p) {
-    return '<div class="cc" style="padding:10px 16px;min-width:150px;cursor:pointer;border-left:3px solid '
+    return '<div class="cc" style="padding:14px 20px;min-width:180px;cursor:pointer;border-left:3px solid '
          + e.color + '" onclick="navTo(\'' + e.ppNav + '\')">'
-         + '<div style="font-size:.68rem;font-weight:700;color:' + e.color + '">' + e.icon + ' ' + e.name + '</div>'
-         + '<div style="font-size:.9rem;font-weight:700;color:#e53935;margin:3px 0">' + _fmtM(p.total) + '</div>'
-         + '<div style="font-size:.62rem;color:var(--muted)">'
+         + '<div style="font-size:.75rem;font-weight:700;color:' + e.color + '">' + e.icon + ' ' + e.name + '</div>'
+         + '<div style="font-size:1.05rem;font-weight:700;color:#e53935;margin:4px 0">' + _fmtM(p.total) + '</div>'
+         + '<div style="font-size:.68rem;color:var(--muted)">'
          + p.count + ' factura' + (p.count > 1 ? 's' : '') + ' pendiente' + (p.count > 1 ? 's' : '')
          + '</div>'
          + '</div>';
@@ -150,18 +166,17 @@
 
     // ── Build HTML ──
     var h = '';
-    var W = 'max-width:860px;margin:0 auto';
 
     // HEADER
-    h += '<div style="' + W + ';text-align:center;margin-bottom:22px;padding-top:4px">';
-    h += '<div style="font-family:\'Poppins\',sans-serif;font-size:1.15rem;font-weight:700;color:var(--text)">📊 Panel de Control</div>';
-    h += '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">' + fechaStr + '</div>';
+    h += '<div style="text-align:center;margin-bottom:24px;padding-top:4px">';
+    h += '<div style="font-family:\'Poppins\',sans-serif;font-size:1.25rem;font-weight:700;color:var(--text)">📊 Panel de Control</div>';
+    h += '<div style="font-size:.75rem;color:var(--muted);margin-top:4px">' + fechaStr + '</div>';
     h += '</div>';
 
     // QUICK ACCESS PILLS
-    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += '<div style="margin-bottom:24px">';
     h += _sectionLabel('Accesos Rápidos');
-    h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">';
+    h += '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">';
     h += '<button onclick="navTo(\'resumen\')"  style="' + _pillStyle('#0073ea') + '">💹 Grupo</button>';
     _ENTS.forEach(function(e) {
       h += '<button onclick="navTo(\'' + e.nav + '\')" style="' + _pillStyle(e.color) + '">' + e.icon + ' ' + e.name + '</button>';
@@ -172,9 +187,9 @@
     h += '</div>';
 
     // GLOBAL KPIs
-    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += '<div style="margin-bottom:24px">';
     h += _sectionLabel('📈 Finanzas Grupo ' + yr);
-    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">';
+    h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">';
     h += _kpiCard('Ingresos Grupo',  _fmtM(grpIng),    yr,        '#00b875');
     h += _kpiCard('Gastos Grupo',    _fmtM(grpGas),    yr,        '#e53935');
     h += _kpiCard('Margen Neto',     _fmtMS(grpMargen), yr,       grpMargen >= 0 ? '#00b875' : '#e53935');
@@ -183,9 +198,9 @@
     h += '</div>';
 
     // PER-ENTITY CARDS
-    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += '<div style="margin-bottom:24px">';
     h += _sectionLabel('🏢 Rendimiento por Empresa — ' + yr);
-    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px">';
+    h += '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">';
     entDs.forEach(function(e) {
       var inv  = _inversion(e.cxp);
       var roi  = inv > 0 ? ((e.margen - inv) / inv * 100) : null;
@@ -201,20 +216,20 @@
       var p = _cxpPendientes(e.cxp);
       if (p.count > 0) pendItems.push({ e: e, p: p });
     });
-    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += '<div style="margin-bottom:24px">';
     h += _sectionLabel('⏳ Cuentas por Pagar Pendientes');
     if (pendItems.length > 0) {
-      h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">';
+      h += '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">';
       pendItems.forEach(function(x) { h += _pendCard(x.e, x.p); });
       h += '</div>';
     } else {
-      h += '<div style="text-align:center;padding:14px;color:var(--green);font-size:.72rem;'
+      h += '<div style="text-align:center;padding:16px;color:var(--green);font-size:.75rem;'
          + 'background:var(--green-bg);border-radius:10px">✅ Sin cuentas pendientes</div>';
     }
     h += '</div>';
 
     // ALERTAS + TAREAS
-    h += '<div style="' + W + ';display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:14px;margin-bottom:14px">';
 
     // Alertas
     h += '<div class="tw">';
