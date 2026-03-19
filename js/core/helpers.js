@@ -5,6 +5,20 @@
 let S = { recs: [], excelData: null };
 let _year = 2026;
 let _gfPeriod = {}; // {ent: 'año'|'q1'|'q2'|'q3'|'q4'|'mes_0'..'mes_11'}
+
+// Return array of month indices [0..11] for the active period of an entity
+function _periodIdxs(ent) {
+  var mode = (typeof _gfPeriod !== 'undefined' ? _gfPeriod[ent] : null) || 'año';
+  if(mode.startsWith('mes_')) return [parseInt(mode.split('_')[1])];
+  var qMap = { q1:[0,1,2], q2:[3,4,5], q3:[6,7,8], q4:[9,10,11] };
+  if(qMap[mode]) return qMap[mode];
+  return [0,1,2,3,4,5,6,7,8,9,10,11];
+}
+// Sum only the filtered months from a 12-element array
+function _periodSum(vals, ent) {
+  var idxs = _periodIdxs(ent);
+  return idxs.reduce(function(s, i){ return s + (vals[i]||0); }, 0);
+}
 let _currentView = 'inicio';
 const CH = {};
 const dc = id => { if(CH[id]){ CH[id].destroy(); delete CH[id]; } };
