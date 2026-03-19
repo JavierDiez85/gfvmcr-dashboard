@@ -353,9 +353,8 @@ async function initApp() {
 
     // Init existente
     uLoad(); ccLoad(); fiLoad(); fgLoad(); fiInjectTPV(); syncFlujoToRecs();
-    // Re-leer theme de localStorage (pudo cambiar después de pullAll)
-    _theme = DB.get('gf_theme') || 'light';
-    applyTheme(_theme);
+    // Siempre iniciar en modo día al abrir sesión
+    applyTheme('light');
     renderReg();
     sv('inicio', null);
     if (typeof updateToggleBtn === 'function') updateToggleBtn();

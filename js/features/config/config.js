@@ -6,7 +6,7 @@
 
 // APARIENCIA / TEMA
 // ═══════════════════════════════════════
-let _theme = DB.get('gf_theme') || 'light';
+let _theme = 'light'; // Siempre inicia en modo día al abrir sesión
 
 function applyTheme(t){
   _theme = t;

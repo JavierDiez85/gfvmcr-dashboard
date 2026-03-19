@@ -19,7 +19,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       try {
         S.recs = DB.get('gf4') || [];
         uLoad(); ccLoad(); fiLoad(); fgLoad(); syncFlujoToRecs();
-        applyTheme(_theme); renderReg(); sv('inicio', null);
+        applyTheme('light'); renderReg(); sv('inicio', null);
         if (typeof updateToggleBtn === 'function') updateToggleBtn();
       } catch (e2) { console.error('[main] fallback también falló:', e2); }
       const loader = document.getElementById('app-loader');
