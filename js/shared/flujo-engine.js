@@ -21,6 +21,15 @@
   }
   function fgLoad(){
     try{ FG_ROWS = DB.get('gf_fg') || []; }catch(e){FG_ROWS=[];}
+    // Migrate: ensure all rows have tipo field (backward compat)
+    var _costCats = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
+    FG_ROWS.forEach(function(r){
+      if(!r.tipo){
+        if(_costCats.indexOf(r.cat) !== -1) r.tipo = 'costo';
+        else if(r.cat === 'Nómina' && r.concepto && (r.concepto.toLowerCase().indexOf('operativ') !== -1 || r.concepto.toLowerCase().indexOf('directa') !== -1)) r.tipo = 'costo';
+        else r.tipo = 'gasto';
+      }
+    });
   }
 
   // ═══════════════════════════════════════
@@ -251,7 +260,7 @@
         if(gc){
           const dist = [{k:'Salem',p:gc.sal},{k:'Endless',p:gc.end},{k:'Dynamo',p:gc.dyn},{k:'Wirebit',p:gc.wb}].filter(d=>d.p>0);
           dist.forEach(d => {
-            S.recs.push({
+            var rec = {
               id: 'fg_'+r.id+'_'+d.k,
               tipo: 'gasto',
               concepto: r.concepto,
@@ -263,12 +272,14 @@
               shared: true,
               sharedFrom: r.ent,
               sharedPct: Math.round(d.p*100)
-            });
+            };
+            if(r.tipo) rec.tipo = r.tipo;
+            S.recs.push(rec);
           });
           return;
         }
       }
-      S.recs.push({
+      var rec = {
         id: 'fg_'+r.id,
         tipo: 'gasto',
         concepto: r.concepto,
@@ -277,7 +288,9 @@
         yr: r.yr,
         vals: [...r.vals],
         fromFlujo: true
-      });
+      };
+      if(r.tipo) rec.tipo = r.tipo;
+      S.recs.push(rec);
     });
 
     // ── Wirebit upload fees -> S.recs ──

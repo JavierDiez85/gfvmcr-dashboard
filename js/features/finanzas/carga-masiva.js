@@ -27,15 +27,16 @@
     XLSX.utils.book_append_sheet(wb, wsIng, 'Ingresos');
 
     // ─── Hoja 2: Gastos ───
-    var gasHeaders = ['Concepto','Empresa','Categoría','Compartido','Concepto GC'].concat(CM_MO);
+    var gasHeaders = ['Concepto','Empresa','Categoría','Tipo','Compartido','Concepto GC'].concat(CM_MO);
     var gasExamples = [
-      ['Renta Oficina','Salem','Renta','SI','Renta oficina',15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000],
-      ['Software Wirebit','Wirebit','Operaciones','NO','',5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000],
-      ['Material MKT','Salem','Marketing','NO','',3000,0,0,3000,0,0,3000,0,0,3000,0,0],
+      ['Renta Oficina','Salem','Renta','Gasto','SI','Renta oficina',15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000,15000],
+      ['Software Wirebit','Wirebit','Operaciones','Costo','NO','',5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000,5000],
+      ['Nómina Equipo Ops','Stellaris','Nómina','Costo','NO','',25000,25000,25000,25000,25000,25000,25000,25000,25000,25000,25000,25000],
+      ['Material MKT','Salem','Marketing','Gasto','NO','',3000,0,0,3000,0,0,3000,0,0,3000,0,0],
     ];
     var gasData = [gasHeaders].concat(gasExamples);
     var wsGas = XLSX.utils.aoa_to_sheet(gasData);
-    wsGas['!cols'] = [{wch:25},{wch:12},{wch:18},{wch:12},{wch:20}].concat(CM_MO.map(function(){return{wch:10}}));
+    wsGas['!cols'] = [{wch:25},{wch:12},{wch:18},{wch:10},{wch:12},{wch:20}].concat(CM_MO.map(function(){return{wch:10}}));
     XLSX.utils.book_append_sheet(wb, wsGas, 'Gastos');
 
     // ─── Hoja 3: Referencia ───
@@ -54,6 +55,11 @@
     refData.push([]);
     refData.push(['CATEGORÍAS DE GASTO (todas las empresas):']);
     (typeof CATS_GAS !== 'undefined' ? CATS_GAS : []).forEach(function(c){ refData.push([c]); });
+    refData.push([]);
+    refData.push(['TIPO P&L (columna "Tipo" en hoja Gastos):']);
+    refData.push(['Costo', 'Se clasifica como Costo Directo en el P&L (ej: nómina operativa, software core)']);
+    refData.push(['Gasto', 'Se clasifica como Gasto Administrativo en el P&L (ej: renta, marketing)']);
+    refData.push(['(Opcional)', 'Si se omite, se auto-detecta según la categoría']);
     refData.push([]);
     refData.push(['CONCEPTOS GASTOS COMPARTIDOS (para columna "Concepto GC"):']);
     refData.push(['(Solo usar cuando Compartido = SI)']);
@@ -161,6 +167,8 @@
           var concepto = String(r['Concepto'] || r['concepto'] || '').trim();
           var empresa = String(r['Empresa'] || r['empresa'] || '').trim();
           var categoria = String(r['Categoría'] || r['Categoria'] || r['categoría'] || r['categoria'] || '').trim();
+          var tipoRaw = String(r['Tipo'] || r['tipo'] || r['Tipo P&L'] || r['tipo p&l'] || '').trim().toLowerCase();
+          var tipo = (tipoRaw === 'costo' || tipoRaw === 'cost' || tipoRaw === 'directo') ? 'costo' : (tipoRaw === 'gasto' || tipoRaw === 'admin' || tipoRaw === 'administrativo') ? 'gasto' : '';
           var compartido = String(r['Compartido'] || r['compartido'] || 'NO').trim().toUpperCase() === 'SI';
           var conceptoGC = String(r['Concepto GC'] || r['concepto gc'] || r['ConceptoGC'] || '').trim();
 
@@ -188,7 +196,7 @@
 
           if(!vals.some(function(v){ return v > 0; })){ errors.push('Gasto fila '+lineNum+': "'+concepto+'" — todos los meses en $0'); return; }
 
-          parsedGas.push({ concepto: concepto, empresa: empresa, categoria: categoria, compartido: compartido, conceptoGC: conceptoGC, vals: vals, line: lineNum });
+          parsedGas.push({ concepto: concepto, empresa: empresa, categoria: categoria, tipo: tipo, compartido: compartido, conceptoGC: conceptoGC, vals: vals, line: lineNum });
         });
       }
 
@@ -230,12 +238,15 @@
         });
       });
 
+      var _costCats = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
       parsedGas.forEach(function(r, i) {
+        var autoTipo = _costCats.indexOf(r.categoria) !== -1 ? 'costo' : 'gasto';
         FG_ROWS.push({
           id: ts + '_gas_' + i,
           concepto: r.concepto,
           ent: r.empresa,
           cat: r.categoria,
+          tipo: r.tipo || autoTipo,
           yr: String(_year),
           shared: r.compartido,
           gcConcept: r.conceptoGC || '',

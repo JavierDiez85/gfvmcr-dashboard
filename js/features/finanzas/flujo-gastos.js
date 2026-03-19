@@ -36,6 +36,7 @@ function rFlujoGas(filterEnt){
         <div style="font-size:.6rem;color:var(--muted);margin-top:1px">${r.note||''}</div></td>
         <td style="padding:4px 6px"><span style="font-weight:600;font-size:.76rem;color:${entC}">${r.ent}</span></td>
         <td style="padding:4px 6px;font-size:.73rem">${r.cat}</td>
+        <td style="padding:4px 6px;font-size:.68rem;font-weight:600;color:${r.tipo==='gasto'?'#e74c3c':'#00b875'}">${r.tipo==='gasto'?'🏢 Gasto':'📦 Costo'}</td>
         <td style="padding:4px 6px;font-size:.73rem;color:var(--muted);text-align:center">${r.yr}</td>
         <td></td><td></td>
         ${r.vals.map(v=>`<td class="mo" style="font-size:.74rem;color:var(--muted);padding:2px 3px">${v?fmt(v):'—'}</td>`).join('')}
@@ -62,8 +63,15 @@ function rFlujoGas(filterEnt){
       </td>
       <td style="padding:4px 6px">
         <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:2px 4px;background:var(--bg)"
-          onchange="FG_ROWS[${ri}].cat=this.value">
+          onchange="FG_ROWS[${ri}].cat=this.value;fgAutoTipo(${ri})">
           ${selOpts(catsGas(r.ent), r.cat)}
+        </select>
+      </td>
+      <td style="padding:4px 6px">
+        <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.71rem;padding:2px 4px;background:${r.tipo==='costo'?'rgba(0,184,148,.08)':'rgba(231,76,60,.08)'};color:${r.tipo==='costo'?'#00b875':'#e74c3c'};font-weight:600"
+          onchange="FG_ROWS[${ri}].tipo=this.value;rFlujoGas(window._fgFilterEnt)">
+          <option value="costo"${r.tipo==='costo'?' selected':''}>📦 Costo</option>
+          <option value="gasto"${r.tipo!=='costo'?' selected':''}>🏢 Gasto</option>
         </select>
       </td>
       <td style="padding:4px 6px;font-size:.73rem;color:var(--muted);text-align:center">${r.yr}</td>
@@ -90,7 +98,7 @@ function rFlujoGas(filterEnt){
       </td>
     </tr>`;
   }).join('') + `<tr>
-    <td colspan="19" style="padding:8px 12px">
+    <td colspan="20" style="padding:8px 12px">
       <button onclick="fgAddRow()" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:5px 16px;font-size:.75rem;color:var(--muted);cursor:pointer;width:100%;transition:all .12s"
         onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'"
         onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
@@ -103,10 +111,27 @@ function rFlujoGas(filterEnt){
   flUpdateKPIs('fg');
 }
 
+function fgAutoTipo(ri){
+  // Auto-detect tipo based on category
+  var r = FG_ROWS[ri];
+  var costCats = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
+  if(costCats.indexOf(r.cat) !== -1){
+    r.tipo = 'costo';
+  } else if(r.cat === 'Nómina'){
+    // Keep current tipo or default to gasto
+    if(!r.tipo) r.tipo = 'gasto';
+  } else {
+    r.tipo = 'gasto';
+  }
+  rFlujoGas(window._fgFilterEnt);
+}
+
 function fgAddRow(){
   const ent = window._fgFilterEnt || 'Salem';
   const cat = (typeof catsGas==='function' ? catsGas(ent)[0] : 'Administrativo') || 'Administrativo';
-  FG_ROWS.push({id:Date.now(), concepto:'', ent:ent, cat:cat, yr:String(_year), shared:false, gcConcept:'', vals:Array(12).fill(0)});
+  var costCats = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
+  var tipo = costCats.indexOf(cat) !== -1 ? 'costo' : 'gasto';
+  FG_ROWS.push({id:Date.now(), concepto:'', ent:ent, cat:cat, yr:String(_year), shared:false, gcConcept:'', tipo:tipo, vals:Array(12).fill(0)});
   rFlujoGas(window._fgFilterEnt);
   setTimeout(()=>{
     const t=document.getElementById('fg-tbody');
@@ -151,7 +176,7 @@ function fgSave(){
 function fgExport(){
   if(typeof XLSX==='undefined'){toast('❌ XLSX no disponible');return;}
   const data = FG_ROWS.map(r=>({
-    Concepto:r.concepto, 'Empresa que paga':r.ent, Categoría:r.cat, Año:r.yr,
+    Concepto:r.concepto, 'Empresa que paga':r.ent, Categoría:r.cat, 'Tipo P&L':r.tipo==='costo'?'Costo':'Gasto', Año:r.yr,
     '¿Compartido?':r.shared?'SI':'NO', 'Concepto GC':r.gcConcept||'',
     ...Object.fromEntries(['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'].map((m,i)=>[m,r.vals[i]||0])),
     'Total Anual': r.vals.reduce((a,b)=>a+b,0)
@@ -168,6 +193,7 @@ function fgExport(){
   window.fgDelRow = fgDelRow;
   window.fgToggleShared = fgToggleShared;
   window.fgAutoDetect = fgAutoDetect;
+  window.fgAutoTipo = fgAutoTipo;
   window.fgUpdateKPIs = fgUpdateKPIs;
   window.fgSave = fgSave;
   window.fgExport = fgExport;
