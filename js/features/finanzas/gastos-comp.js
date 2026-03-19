@@ -54,7 +54,7 @@ const CAT_OPTIONS=['Administrativo','Renta','Costo Directo','Marketing','Represe
 function gcRenderRow(g,i){
   const tot=g.sal+g.end+g.dyn+g.wb;
   const ok=tot===100;
-  const inS='style="width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;padding:0"';
+  const inS='style="width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;padding:0;color:var(--text)"';
   const catOpts=CAT_OPTIONS.map(c=>`<option${c===g.cat?' selected':''}>${c}</option>`).join('');
   return`<tr id="gc-row-${i}">
     <td><input ${inS} value="${g.c}" onchange="GC_EDIT[${i}].c=this.value;gcUpdateKPIs()"></td>
