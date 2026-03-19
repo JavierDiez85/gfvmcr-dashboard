@@ -16,7 +16,10 @@
   const COST_CATS = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
 
   function _isCostRow(r){
-    // Nomina Operativa = costo directo, Nomina Administrativa = gasto
+    // Explicit tipo field takes precedence (set by user in flujo-gastos UI)
+    if(r.tipo === 'costo') return true;
+    if(r.tipo === 'gasto') return false;
+    // Fallback: auto-detect from category (legacy rows without tipo)
     if(r.cat==='N\u00f3mina') return r.concepto.toLowerCase().includes('operativ') || r.concepto.toLowerCase().includes('directa');
     return COST_CATS.some(c=>r.cat===c);
   }
