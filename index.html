@@ -1684,9 +1684,76 @@
   </table></div></div>
 </div>
 
-<div id="view-stel_ing" class="view"><div id="stel_ing-root"></div></div>
-<div id="view-stel_gas" class="view"><div id="stel_gas-root"></div></div>
-<div id="view-stel_nom" class="view"><div id="stel_nom-root"></div></div>
+<!-- ══════════ STELLARIS INGRESOS ══════════ -->
+<div id="view-stel_ing" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💰 Stellaris — Ingresos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Ingresos casino desde Flujo de Ingresos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <div id="stel-ing-pbar"></div>
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#e53935;color:#e53935" onclick="navTo('stel_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="sv('flujo_ing_stel',null)">📥 Flujo Ingresos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#e53935"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#e5393522;color:#e53935">💰</div></div><div class="kpi-val" id="stel-ing-kpi-total" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="stel-ing-kpi-total-sub">Pendiente de captura</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Mes Actual</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📅</div></div><div class="kpi-val" id="stel-ing-kpi-mes" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="stel-ing-kpi-mes-sub">Pendiente</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl"># Conceptos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📋</div></div><div class="kpi-val" id="stel-ing-kpi-count" style="color:var(--muted);font-size:.85rem">0</div><div class="kpi-d dnu" id="stel-ing-kpi-count-sub">Conceptos de ingreso</div></div>
+  </div>
+  <div class="cc" style="margin-bottom:14px"><div class="cc-h"><div><div class="cc-t">Ingresos Mensuales — Stellaris 2026</div><div class="cc-s">Datos desde Flujo de Ingresos</div></div></div><div class="cc-b"><canvas id="c-stel-ing-bar" height="160"></canvas></div></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Detalle de Ingresos — Stellaris</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="stel-ing-thead"></tr></thead><tbody id="stel-ing-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ STELLARIS COSTES Y GASTOS ══════════ -->
+<div id="view-stel_gas" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">💸 Stellaris — Costes y Gastos 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Costes directos y gastos administrativos</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <div id="stel-gas-pbar"></div>
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#e53935;color:#e53935" onclick="navTo('stel_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="sv('flujo_gas_stel',null)">📤 Flujo Gastos</button>
+    </div>
+  </div>
+  <div class="kpi-row c3">
+    <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Costes Directos</div><div class="kpi-ico" style="background:var(--orange-bg)">⚙️</div></div><div class="kpi-val" id="stel-gas-kpi-cost" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="stel-gas-kpi-cost-d">Sin costes registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--red)"><div class="kpi-top"><div class="kpi-lbl">Gastos Administrativos</div><div class="kpi-ico" style="background:var(--red-bg)">📉</div></div><div class="kpi-val" id="stel-gas-kpi-gas" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu" id="stel-gas-kpi-gas-d">Sin gastos registrados</div></div>
+    <div class="kpi-card" style="--ac:var(--yellow)"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:var(--yellow-bg)">📅</div></div><div class="kpi-val" id="stel-gas-kpi-anual" style="color:var(--muted);font-size:.85rem">Sin datos</div><div class="kpi-d dnu" id="stel-gas-kpi-anual-d">Pendiente de captura</div></div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Costes Directos — Stellaris</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="stel-cost-thead"></tr></thead><tbody id="stel-cost-tbody"></tbody></table></div></div>
+  <div style="height:14px"></div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Gastos Administrativos — Stellaris</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="stel-gas-thead"></tr></thead><tbody id="stel-gas-tbody"></tbody></table></div></div>
+</div>
+
+<!-- ══════════ STELLARIS NÓMINA ══════════ -->
+<div id="view-stel_nom" class="view">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👥 Stellaris — Nómina 2026</div>
+      <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Distribución desde Nómina Compartida</div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <div id="stel-nom-pbar"></div>
+      <button class="btn btn-out" style="font-size:.7rem;border-color:#e53935;color:#e53935" onclick="navTo('stel_res')">📊 P&L</button>
+      <button class="btn btn-out edit-action" style="font-size:.7rem" onclick="navTo('nomina')">👥 Config Nómina</button>
+    </div>
+  </div>
+  <div class="kpi-row c3" style="margin-bottom:14px">
+    <div class="kpi-card" style="--ac:#e53935"><div class="kpi-top"><div class="kpi-lbl">Total Anual</div><div class="kpi-ico" style="background:#e5393522;color:#e53935">💰</div></div><div class="kpi-val" id="stel-nom-kpi-total" style="color:var(--muted);font-size:.85rem">—</div><div class="kpi-d dnu">Desde config nóminas</div></div>
+    <div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Empleados</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🧑‍💼</div></div><div class="kpi-val" id="stel-nom-kpi-count">—</div><div class="kpi-d dnu">Staff asignado</div></div>
+    <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Promedio/Mes</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📊</div></div><div class="kpi-val" id="stel-nom-kpi-avg">—</div><div class="kpi-d dnu">Pago mensual</div></div>
+  </div>
+  <div class="tw"><div class="tw-h"><div class="tw-ht">Nómina Stellaris por Empleado</div></div>
+  <div style="overflow-x:auto"><table class="bt"><thead><tr id="stel-nom-thead"></tr></thead><tbody id="stel-nom-tbody"></tbody></table></div></div>
+</div>
 
 <!-- ══════════ STELLARIS: FACTURACIÓN ══════════ -->
 <div id="view-fact_stellaris" class="view"></div>
