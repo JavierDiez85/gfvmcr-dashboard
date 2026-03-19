@@ -1,56 +1,73 @@
-// GF — Period Filter: universal year + sub-period selector for all data views
+// GF — Period Filter: barra unificada AÑO → PERÍODO → MES para todas las vistas financieras
 (function(window){
   'use strict';
 
   const TODAY_YEAR = new Date().getFullYear();
   const GFP_YEARS = ['2025','2026'];
+  const _MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
   function _isCurrentYear(y){ return parseInt(y) === TODAY_YEAR; }
 
-  // Build the combined year + optional sub-period bar HTML
-  // opts: { ent, color, type:'res'|'sub', years? }
-  //   type='res' → shows year + sub-period (Mensual/Trimestral/Anual) for P&L results
-  //   type='sub' → shows year selector only (Ingresos, Gastos, Nómina, consolidado)
+  // ── Genera el HTML completo de la barra ──
+  // opts: { ent, color, years? }
   function gfpBarHTML(opts){
-    const { ent, color, type } = opts;
+    const { ent, color } = opts;
     const avail = opts.years || GFP_YEARS;
     const curY = String(typeof _year !== 'undefined' ? _year : TODAY_YEAR);
-    const isCur = _isCurrentYear(curY);
     const acColor = color || 'var(--blue)';
+    const curPeriod = (typeof _gfPeriod !== 'undefined' ? _gfPeriod[ent] : null) || 'año';
+    const curMonth = new Date().getMonth();
 
+    // Helper: botón activo vs inactivo
+    const btn = (label, mode, small) => {
+      const isAct = curPeriod === mode;
+      const sty = isAct
+        ? `background:${acColor};color:white;border-color:${acColor};`
+        : '';
+      const fs = small ? '.63rem' : '.68rem';
+      return `<button class="pbtn" style="${sty}font-size:${fs};padding:2px 6px" onclick="_gfSetPeriod('${ent}','${mode}')">${label}</button>`;
+    };
+
+    // Separador vertical
+    const sep = `<span style="display:inline-block;width:1px;height:14px;background:var(--border2);margin:0 5px;vertical-align:middle;opacity:.5"></span>`;
+
+    // ── Botones AÑO ──
     const yBtns = avail.map(y => {
       const isAct = y === curY;
-      const sty = isAct
-        ? 'background:'+acColor+';color:white;border-color:'+acColor+';'
-        : '';
-      const dot = _isCurrentYear(y) ? ' <span style="font-size:.45rem;vertical-align:middle;opacity:.7">●</span>' : '';
-      return `<button class="pbtn" style="${sty}font-size:.68rem" onclick="_gfSetYear(${y},'${ent}','${type}')">${y}${dot}</button>`;
+      const dot = _isCurrentYear(y) ? '<span style="font-size:.4rem;vertical-align:middle;opacity:.6;margin-left:1px">●</span>' : '';
+      const sty = isAct ? `background:${acColor};color:white;border-color:${acColor};` : '';
+      return `<button class="pbtn" style="${sty}font-size:.68rem;padding:2px 6px" onclick="_gfSetYear(${y},'${ent}')">${y}${dot}</button>`;
     }).join('');
 
-    let subHTML = '';
-    if(type === 'res'){
-      const curMode = (typeof _plMode !== 'undefined' ? _plMode[ent] : null) || (isCur ? 'mensual' : 'anual');
-      const subOpts = isCur
-        ? [{l:'Mensual', m:'mensual'}, {l:'Trimestral', m:'trimestral'}, {l:'Anual', m:'anual'}]
-        : [{l:'Anual', m:'anual'}, {l:'Trimestral', m:'trimestral'}];
-      const sBtns = subOpts.map(o => {
-        const isA = o.m === curMode;
-        return `<button class="pbtn${isA?' active':''}" style="font-size:.68rem" onclick="_gfSetSub('${ent}','${o.m}')">${o.l}</button>`;
-      }).join('');
-      subHTML = `<span style="display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle"></span>`
-              + `<span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">PERÍODO</span>`
-              + sBtns;
-    }
+    // ── Botones PERÍODO (Año / Q1-Q4) ──
+    const pBtns = [
+      btn('Año', 'año', false),
+      btn('Q1',  'q1',  false),
+      btn('Q2',  'q2',  false),
+      btn('Q3',  'q3',  false),
+      btn('Q4',  'q4',  false),
+    ].join('');
 
-    return `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px">`
-         + `<span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">AÑO</span>`
+    // ── Botones MES (Ene-Dic) ──
+    const mBtns = _MO.map((m, i) => {
+      const isAct = curPeriod === 'mes_'+i;
+      const isCurM = i === curMonth && _isCurrentYear(curY);
+      const label = m + (isCurM ? '<span style="font-size:.38rem;vertical-align:super;opacity:.7">●</span>' : '');
+      const sty = isAct ? `background:${acColor};color:white;border-color:${acColor};` : '';
+      return `<button class="pbtn" style="${sty}font-size:.63rem;padding:2px 5px" onclick="_gfSetPeriod('${ent}','mes_${i}')">${label}</button>`;
+    }).join('');
+
+    return `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px;row-gap:5px">`
+         + `<span style="font-size:.58rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">AÑO</span>`
          + yBtns
-         + subHTML
+         + sep
+         + pBtns
+         + sep
+         + mBtns
          + `</div>`;
   }
 
-  // Inject/update the period bar into a container element
-  // If the container doesn't exist, create it and insert before the first .tw in the view
+  // ── Inyecta / actualiza la barra en su contenedor ──
   function gfpRender(containerId, opts){
     let el = document.getElementById(containerId);
     if(!el && opts.viewId){
@@ -68,27 +85,28 @@
     el.innerHTML = gfpBarHTML(opts);
   }
 
-  // Change year globally → updates _year, adjusts _plMode default, re-renders current view
-  function _gfSetYear(y, ent, type){
-    _year = parseInt(y); // modifies the global let binding from helpers.js
-    // Reset sub-period to year-appropriate default for P&L res views
-    if(typeof _plMode !== 'undefined' && ent && type === 'res'){
-      _plMode[ent] = _isCurrentYear(y) ? 'mensual' : 'anual';
-    }
+  // ── Cambiar año ──
+  function _gfSetYear(y, ent){
+    _year = parseInt(y);
+    // Resetear período al cambiar año
+    if(typeof _gfPeriod !== 'undefined' && ent) _gfPeriod[ent] = 'año';
     if(typeof _updateYearLabels === 'function') _updateYearLabels();
     if(typeof render === 'function') render(typeof _currentView !== 'undefined' ? _currentView : '');
   }
 
-  // Change sub-period mode for a P&L entity → updates _plMode, re-renders P&L
-  function _gfSetSub(ent, mode){
-    if(typeof _plMode !== 'undefined') _plMode[ent] = mode;
-    if(typeof rPL === 'function') rPL(ent);
-    if(typeof rPLCharts === 'function') rPLCharts(ent);
+  // ── Cambiar período (Año / Q1-Q4 / mes_N) ──
+  function _gfSetPeriod(ent, mode){
+    if(typeof _gfPeriod !== 'undefined') _gfPeriod[ent] = mode;
+    if(typeof render === 'function') render(typeof _currentView !== 'undefined' ? _currentView : '');
   }
 
-  window.gfpBarHTML = gfpBarHTML;
-  window.gfpRender = gfpRender;
-  window._gfSetYear = _gfSetYear;
-  window._gfSetSub = _gfSetSub;
+  // Backward compat: _gfSetSub aliased to _gfSetPeriod
+  function _gfSetSub(ent, mode){ _gfSetPeriod(ent, mode); }
+
+  window.gfpBarHTML   = gfpBarHTML;
+  window.gfpRender    = gfpRender;
+  window._gfSetYear   = _gfSetYear;
+  window._gfSetPeriod = _gfSetPeriod;
+  window._gfSetSub    = _gfSetSub; // backward compat
 
 })(window);

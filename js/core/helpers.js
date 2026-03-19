@@ -4,6 +4,7 @@
 // ═══════════════════════════════════════
 let S = { recs: [], excelData: null };
 let _year = 2026;
+let _gfPeriod = {}; // {ent: 'año'|'q1'|'q2'|'q3'|'q4'|'mes_0'..'mes_11'}
 let _currentView = 'inicio';
 const CH = {};
 const dc = id => { if(CH[id]){ CH[id].destroy(); delete CH[id]; } };
@@ -30,17 +31,32 @@ Chart.defaults.borderColor='#e4e8f4';
 const sum = a=>a.reduce((x,y)=>(x+(+y||0)),0);
 const MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
-/** Period column grouping utility — shared by EDO, P&L, Dashboard charts */
+/** Period column grouping utility — shared by EDO, P&L, sub-views */
 function periodColumns(mode) {
-  if (mode === 'anual') return {
+  const m = mode || 'año';
+  // ── Single month: 'mes_0'..'mes_11' ──
+  if(m.startsWith('mes_')) {
+    const mi = parseInt(m.split('_')[1]);
+    return { cols: [[mi]], colLabels: [MO[mi]] };
+  }
+  // ── Individual quarter: 3 month columns + quarter total ──
+  const qMap = { q1:[0,1,2], q2:[3,4,5], q3:[6,7,8], q4:[9,10,11] };
+  if(qMap[m]) {
+    const qs = qMap[m];
+    return { cols: [...qs.map(i=>[i]), qs], colLabels: [...qs.map(i=>MO[i]), m.toUpperCase()] };
+  }
+  // ── Legacy: single total column ('anual') ──
+  if(m === 'anual') return {
     cols: [Array(12).fill(0).map((_,i)=>i)],
     colLabels: ['Total ' + _year]
   };
-  if (mode === 'trimestral') {
+  // ── Legacy: 4 quarter groups + total ('trimestral') ──
+  if(m === 'trimestral') {
     const qs = [[0,1,2],[3,4,5],[6,7,8],[9,10,11]];
     return { cols: [...qs, Array(12).fill(0).map((_,i)=>i)], colLabels: ['Q1','Q2','Q3','Q4','Total'] };
   }
-  return { cols: Array(12).fill(0).map((_,i)=>[i]), colLabels: [...MO, 'Total'] };
+  // ── Default 'año' / 'mensual': 12 month columns + total ──
+  return { cols: Array(12).fill(0).map((_,i)=>[i]), colLabels: [...MO, 'Total'], addTotal: true };
 }
 const colVal = (arr, idxs) => idxs.reduce((a,i) => a + (arr[i]||0), 0);
 function fmt(n,d=0){
