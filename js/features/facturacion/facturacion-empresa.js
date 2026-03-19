@@ -247,6 +247,7 @@ function feRenderCxpTable(search){
     if(c.pdf_base64){
       actions += ' <button class="btn btn-out" style="font-size:.62rem;padding:3px 8px" onclick="feViewPDF(\''+c.id+'\')">📄</button>';
     }
+    actions += ' <button onclick="cxpEditRow(\''+c.id+'\')" title="Editar factura" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(0,115,234,.1)\';this.style.color=\'#0073ea\'">✏️</button>';
     actions += ' <button onclick="feDeleteCxp(\''+c.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>';
     return '<tr>'
       + '<td>'+_fmtD(c.fecha_factura)+'</td>'
@@ -1006,7 +1007,10 @@ function _emitRenderTable(){
       + '<td class="r mo">'+_fmt(u.iva||0)+'</td>'
       + '<td class="r mo" style="font-weight:700">'+_fmt(u.total||0)+'</td>'
       + '<td style="font-size:.62rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">'+_esc(u.uuid||'—')+'</td>'
-      + '<td style="text-align:center"><button onclick="emitDelete(\''+u.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button></td>'
+      + '<td style="text-align:center;white-space:nowrap">'
+      + '<button onclick="emitEditRow(\''+u.id+'\')" title="Editar" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(0,115,234,.1)\';this.style.color=\'#0073ea\'">✏️</button> '
+      + '<button onclick="emitDelete(\''+u.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>'
+      + '</td>'
       + '</tr>';
   }).join('');
 }
@@ -1352,6 +1356,7 @@ function _recvRenderTable(){
   tb.innerHTML = rows.map(function(c){
     var vencida = _isVencida(c);
     var vencStyle = vencida ? 'color:#b02020;font-weight:600' : '';
+    var editBtn = '<button onclick="cxpEditRow(\''+c.id+'\')" title="Editar" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(0,115,234,.1)\';this.style.color=\'#0073ea\'">✏️</button>';
     return '<tr>'
       + '<td>'+_fmtD(c.fecha_factura)+'</td>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
@@ -1363,6 +1368,7 @@ function _recvRenderTable(){
       + '<td style="'+vencStyle+'">'+(c.fecha_vencimiento ? _fmtD(c.fecha_vencimiento)+(vencida?' ⚠️':'') : '—')+'</td>'
       + '<td>'+_statusPill(c.status)+'</td>'
       + '<td>'+_origenPill(c.origen)+'</td>'
+      + '<td style="text-align:center">'+editBtn+'</td>'
       + '</tr>';
   }).join('');
 }
@@ -1859,6 +1865,130 @@ if(typeof registerView === 'function'){
 }
 
 // ══════════════════════════════════════════════════════════
+// EDIT MODAL — edición inline de facturas (emitidas y recibidas)
+// ══════════════════════════════════════════════════════════
+
+function _emClose(){
+  var m=document.getElementById('gf-edit-modal');
+  if(m){m.style.display='none';m.innerHTML='';}
+}
+function _emOpen(inner){
+  var m=document.getElementById('gf-edit-modal');
+  if(!m){m=document.createElement('div');m.id='gf-edit-modal';document.body.appendChild(m);}
+  m.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
+  m.innerHTML=inner;
+  m.onclick=function(e){if(e.target===m)_emClose();};
+}
+function _emF(id,lbl,val,type,full){
+  return '<div'+(full?' style="grid-column:1/-1"':'')+'><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">'+lbl+'</label>'
+    +'<input type="'+(type||'text')+'" id="em-'+id+'" class="fi" value="'+_esc(val||'')+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+}
+function _emC(id,lbl,val,ro){
+  var fmtd=val>0?_facFmt(val):'';
+  var xtra=ro?'readonly style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700;background:var(--blue-bg);color:var(--blue);cursor:default"'
+              :'onfocus="facFocus(this)" onblur="facBlur(this)" oninput="_emCalc()" style="width:100%;font-size:.78rem;padding:7px 10px"';
+  return '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">'+lbl+'</label>'
+    +'<input type="text" id="em-'+id+'" class="fi" value="'+fmtd+'" '+xtra+'></div>';
+}
+function _emCalc(){
+  var sub=parseFloat(((document.getElementById('em-sub')||{}).value||'').replace(/[$,]/g,''))||0;
+  var iva=parseFloat(((document.getElementById('em-iva')||{}).value||'').replace(/[$,]/g,''))||0;
+  var t=document.getElementById('em-tot');if(t)t.value=_facFmt(sub+iva);
+}
+function _emParse(id){
+  var el=document.getElementById(id);if(!el)return 0;
+  return parseFloat((el.value||'').toString().replace(/[$,\s]/g,''))||0;
+}
+var _emEditBtn = 'width:22px;height:22px;border-radius:50%;background:rgba(0,115,234,.1);border:1.5px solid #0073ea;color:#0073ea;cursor:pointer;font-size:.7rem;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle';
+
+// ── Editar Factura Recibida (CxP) ────────────────────────────────────────────
+function cxpEditRow(id){
+  var c=(_feLoad().cuentas||[]).find(function(x){return x.id===id;});
+  if(!c)return;
+  _emOpen('<div style="background:var(--white);border-radius:var(--rlg);padding:20px;max-width:540px;width:100%;box-shadow:var(--shm);max-height:90vh;overflow-y:auto">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-size:.85rem;font-weight:700">✏️ Editar Factura Recibida</div>'
+    +'<button onclick="_emClose()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px">'
+    +_emF('prov','Proveedor',c.proveedor)
+    +_emF('rfc','RFC Proveedor',c.rfc_proveedor)
+    +_emF('fecha','Fecha Factura',c.fecha_factura,'date')
+    +_emF('folio','Folio',c.folio)
+    +'<div style="grid-column:1/-1"><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Categoría</label>'
+    +'<select id="em-cat" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"><option value="">Sin categoría</option>'+_catOptions(c.categoria)+'</select></div>'
+    +_emF('concepto','Concepto',c.concepto||'',null,true)
+    +_emC('sub','Subtotal',c.subtotal_mxn||0)
+    +_emC('iva','IVA',c.iva_mxn||0)
+    +_emC('tot','Total',c.total_mxn||0,true)
+    +_emF('venc','Fecha Vencimiento',c.fecha_vencimiento,'date')
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
+    +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
+    +'<button class="btn" style="font-size:.72rem" onclick="cxpSaveEdit(\''+id+'\')">💾 Guardar cambios</button>'
+    +'</div></div>');
+}
+function cxpSaveEdit(id){
+  var store=_feLoad();
+  var idx=(store.cuentas||[]).findIndex(function(x){return x.id===id;});
+  if(idx<0)return;
+  var c=store.cuentas[idx];
+  var sub=_emParse('em-sub'),iva=_emParse('em-iva'),tot=_emParse('em-tot')||(sub+iva);
+  c.proveedor       =(document.getElementById('em-prov')||{}).value||c.proveedor;
+  c.rfc_proveedor   =(document.getElementById('em-rfc')||{}).value||'';
+  c.fecha_factura   =(document.getElementById('em-fecha')||{}).value||c.fecha_factura;
+  c.folio           =(document.getElementById('em-folio')||{}).value||'';
+  c.categoria       =(document.getElementById('em-cat')||{}).value||'';
+  c.concepto        =(document.getElementById('em-concepto')||{}).value||'';
+  c.fecha_vencimiento=(document.getElementById('em-venc')||{}).value||'';
+  if(sub){c.subtotal_mxn=sub;c.iva_mxn=iva;c.total_mxn=tot;c.saldo_mxn=tot-(c.monto_pagado_mxn||0);}
+  store.cuentas[idx]=c;_feSaveStore(store);_emClose();
+  if(typeof toast==='function')toast('✅ Factura recibida actualizada');
+  if(typeof feRenderCxpTable==='function')feRenderCxpTable();
+  if(typeof _recvRenderTable==='function')_recvRenderTable();
+}
+
+// ── Editar Factura Emitida ───────────────────────────────────────────────────
+function emitEditRow(id){
+  var u=(_cfdiLoad().uploads||[]).find(function(x){return x.id===id;});
+  if(!u)return;
+  _emOpen('<div style="background:var(--white);border-radius:var(--rlg);padding:20px;max-width:540px;width:100%;box-shadow:var(--shm);max-height:90vh;overflow-y:auto">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-size:.85rem;font-weight:700">✏️ Editar Factura Emitida</div>'
+    +'<button onclick="_emClose()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px">'
+    +_emF('cliente','Cliente',u.receptor_nombre||u.cliente||'')
+    +_emF('rfc','RFC Cliente',u.receptor_rfc||'')
+    +_emF('folio','Folio',u.folio||'')
+    +_emF('fecha','Fecha',u.fecha||'','date')
+    +_emF('concepto','Concepto',u.concepto||'',null,true)
+    +_emC('sub','Subtotal',u.subtotal||0)
+    +_emC('iva','IVA',u.iva||0)
+    +_emC('tot','Total',u.total||0,true)
+    +'</div>'
+    +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
+    +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
+    +'<button class="btn" style="font-size:.72rem" onclick="emitSaveEdit(\''+id+'\')">💾 Guardar cambios</button>'
+    +'</div></div>');
+}
+function emitSaveEdit(id){
+  var store=_cfdiLoad();
+  var idx=(store.uploads||[]).findIndex(function(x){return x.id===id;});
+  if(idx<0)return;
+  var u=store.uploads[idx];
+  var sub=_emParse('em-sub'),iva=_emParse('em-iva'),tot=_emParse('em-tot')||(sub+iva);
+  u.receptor_nombre=(document.getElementById('em-cliente')||{}).value||u.receptor_nombre;
+  u.cliente=u.receptor_nombre;
+  u.receptor_rfc   =(document.getElementById('em-rfc')||{}).value||'';
+  u.folio          =(document.getElementById('em-folio')||{}).value||'';
+  u.fecha          =(document.getElementById('em-fecha')||{}).value||u.fecha;
+  u.concepto       =(document.getElementById('em-concepto')||{}).value||'';
+  if(sub){u.subtotal=sub;u.iva=iva;u.total=tot;}
+  store.uploads[idx]=u;_cfdiSave(store);_emClose();
+  if(typeof toast==='function')toast('✅ Factura emitida actualizada');
+  emitRenderAll();
+}
+
+// ══════════════════════════════════════════════════════════
 // EXPOSE GLOBALS
 // ══════════════════════════════════════════════════════════
 window.rFactEmpresa   = rFactEmpresa;
@@ -1877,6 +2007,10 @@ window.feFilter       = feFilter;
 window.feOpenPago     = feOpenPago;
 window.feSavePago     = feSavePago;
 window.feDeleteCxp    = feDeleteCxp;
+window.cxpEditRow     = cxpEditRow;
+window.cxpSaveEdit    = cxpSaveEdit;
+window._emClose       = _emClose;
+window._emCalc        = _emCalc;
 window.feViewPDF      = feViewPDF;
 // Emitidas globals
 window.emitSetPeriodo = emitSetPeriodo;
@@ -1888,6 +2022,8 @@ window.emitSaveFromPreview = emitSaveFromPreview;
 window.emitSaveManual = emitSaveManual;
 window.emitClearForm  = emitClearForm;
 window.emitDelete     = emitDelete;
+window.emitEditRow    = emitEditRow;
+window.emitSaveEdit   = emitSaveEdit;
 // Recibidas globals
 window.recvSetPeriodo = recvSetPeriodo;
 window.recvRenderAll  = recvRenderAll;
