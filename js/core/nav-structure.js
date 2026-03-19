@@ -28,6 +28,7 @@ const NAV_STRUCTURE = {
           groups:[{ label:null, views:[
             {id:'nomina',label:'Nómina Compartida',icon:'👥'},
             {id:'gastos_comp',label:'Gastos Compartidos',icon:'⚙️'},
+            {id:'carga_inversiones',label:'Inversión por Empresa',icon:'💰'},
           ]}]
         },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes',

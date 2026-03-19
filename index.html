@@ -125,157 +125,7 @@
 
 <!-- ══════════ INICIO ══════════ -->
 <div id="view-inicio" class="view active">
-  <!-- Header -->
-  <div style="margin-bottom:16px">
-    <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700">👋 Bienvenido a tu Panel de Control</div>
-    <div style="font-size:.72rem;color:var(--muted);margin-top:2px" id="inicio-fecha"></div>
-  </div>
-
-  <!-- Accesos Rápidos -->
-  <div style="margin-bottom:16px">
-    <div style="font-size:.72rem;font-weight:600;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px">Accesos Rápidos</div>
-    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:8px" id="inicio-accesos">
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('resumen')">
-        <div style="font-size:1.1rem;margin-bottom:4px">💹</div>
-        <div style="font-size:.75rem;font-weight:600">Dashboard Grupo</div>
-        <div style="font-size:.62rem;color:var(--muted)">Consolidado financiero</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('sal_res')">
-        <div style="font-size:1.1rem;margin-bottom:4px">🏦</div>
-        <div style="font-size:.75rem;font-weight:600">P&L Salem</div>
-        <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('end_res')">
-        <div style="font-size:1.1rem;margin-bottom:4px">📊</div>
-        <div style="font-size:.75rem;font-weight:600">P&L Endless</div>
-        <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('dyn_res')">
-        <div style="font-size:1.1rem;margin-bottom:4px">📈</div>
-        <div style="font-size:.75rem;font-weight:600">P&L Dynamo</div>
-        <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('wb_res')">
-        <div style="font-size:1.1rem;margin-bottom:4px">🌐</div>
-        <div style="font-size:.75rem;font-weight:600">P&L Wirebit</div>
-        <div style="font-size:.62rem;color:var(--muted)">Estado de resultados</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('tpv_general')">
-        <div style="font-size:1.1rem;margin-bottom:4px">🖥️</div>
-        <div style="font-size:.75rem;font-weight:600">TPV Dashboard</div>
-        <div style="font-size:.62rem;color:var(--muted)">Terminales punto de venta</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('tar_dashboard')">
-        <div style="font-size:1.1rem;margin-bottom:4px">💳</div>
-        <div style="font-size:.75rem;font-weight:600">Tarjetas</div>
-        <div style="font-size:.62rem;color:var(--muted)">CENTUM Capital</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('tes_flujo')">
-        <div style="font-size:1.1rem;margin-bottom:4px">🏛️</div>
-        <div style="font-size:.75rem;font-weight:600">Tesorería</div>
-        <div style="font-size:.62rem;color:var(--muted)">Flujo de caja grupo</div>
-      </div>
-      <div class="cc cc-clickable" style="padding:12px;cursor:pointer;border-radius:10px" onclick="navTo('cred_dash')">
-        <div style="font-size:1.1rem;margin-bottom:4px">🏦</div>
-        <div style="font-size:.75rem;font-weight:600">Créditos</div>
-        <div style="font-size:.62rem;color:var(--muted)">Cartera de créditos</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- KPIs: Tesorería -->
-  <div style="margin-bottom:4px;font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">🏛️ Tesorería</div>
-  <div class="kpi-row" style="margin-bottom:14px" id="inicio-tes-kpis">
-    <div class="kpi-card" style="--ac:var(--green)">
-      <div class="kpi-top"><div class="kpi-lbl">Saldo Consolidado</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div>
-      <div class="kpi-val" style="color:var(--green)" id="inicio-tes-saldo">—</div>
-      <div class="kpi-d dnu" id="inicio-tes-saldo-sub">Cargando...</div>
-    </div>
-    <div class="kpi-card" style="--ac:#0073ea">
-      <div class="kpi-top"><div class="kpi-lbl">Flujo Neto del Mes</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">📊</div></div>
-      <div class="kpi-val" style="color:#0073ea" id="inicio-tes-neto">—</div>
-      <div class="kpi-d dnu" id="inicio-tes-neto-sub">Cargando...</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--green)">
-      <div class="kpi-top"><div class="kpi-lbl">Ingresos del Mes</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📈</div></div>
-      <div class="kpi-val" style="color:var(--green)" id="inicio-tes-ing">—</div>
-      <div class="kpi-d dnu" id="inicio-tes-ing-sub">Cargando...</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--red)">
-      <div class="kpi-top"><div class="kpi-lbl">Gastos del Mes</div><div class="kpi-ico" style="background:var(--red-bg);color:var(--red)">📉</div></div>
-      <div class="kpi-val" style="color:var(--red)" id="inicio-tes-gas">—</div>
-      <div class="kpi-d dnu" id="inicio-tes-gas-sub">Cargando...</div>
-    </div>
-  </div>
-
-  <!-- KPIs: TPV -->
-  <div style="margin-bottom:4px;font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">🖥️ Terminales (TPV)</div>
-  <div class="kpi-row" style="margin-bottom:14px" id="inicio-tpv-kpis">
-    <div class="kpi-card" style="--ac:#0073ea">
-      <div class="kpi-top"><div class="kpi-lbl">Total Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💳</div></div>
-      <div class="kpi-val" style="color:#0073ea" id="inicio-tpv-cobrado">—</div>
-      <div class="kpi-d dnu" id="inicio-tpv-cobrado-sub">Cargando...</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--green)">
-      <div class="kpi-top"><div class="kpi-lbl">Total Comisiones</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📈</div></div>
-      <div class="kpi-val" style="color:var(--green)" id="inicio-tpv-com">—</div>
-      <div class="kpi-d dnu" id="inicio-tpv-com-sub">Cargando...</div>
-    </div>
-    <div class="kpi-card" style="--ac:#0073ea">
-      <div class="kpi-top"><div class="kpi-lbl">Comisión Salem</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🏦</div></div>
-      <div class="kpi-val" style="color:#0073ea" id="inicio-tpv-salem">—</div>
-      <div class="kpi-d dnu" id="inicio-tpv-salem-sub">Cargando...</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--purple)">
-      <div class="kpi-top"><div class="kpi-lbl">Clientes Activos</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">🏪</div></div>
-      <div class="kpi-val" style="color:var(--purple)" id="inicio-tpv-clientes">—</div>
-      <div class="kpi-d dnu" id="inicio-tpv-clientes-sub">Cargando...</div>
-    </div>
-  </div>
-
-  <!-- KPIs: Tarjetas -->
-  <div style="margin-bottom:4px;font-size:.72rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.5px">💳 Tarjetas CENTUM</div>
-  <div class="kpi-row c3" style="margin-bottom:14px" id="inicio-tar-kpis">
-    <div class="kpi-card" style="--ac:#0073ea">
-      <div class="kpi-top"><div class="kpi-lbl">Total Procesado</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">💰</div></div>
-      <div class="kpi-val" style="color:#0073ea" id="inicio-tar-monto">—</div>
-      <div class="kpi-d dnu" id="inicio-tar-monto-sub">Dic 2025</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--green)">
-      <div class="kpi-top"><div class="kpi-lbl">Transacciones</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">🔢</div></div>
-      <div class="kpi-val" style="color:var(--green)" id="inicio-tar-txns">—</div>
-      <div class="kpi-d dnu" id="inicio-tar-txns-sub">Total operaciones</div>
-    </div>
-    <div class="kpi-card" style="--ac:var(--purple)">
-      <div class="kpi-top"><div class="kpi-lbl">Tarjetahabientes</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">👥</div></div>
-      <div class="kpi-val" style="color:var(--purple)" id="inicio-tar-th">—</div>
-      <div class="kpi-d dnu" id="inicio-tar-th-sub">Clientes activos</div>
-    </div>
-  </div>
-
-  <!-- Alertas + Tareas (2 columnas) -->
-  <div class="g2" style="margin-bottom:14px">
-    <!-- Alertas automáticas -->
-    <div class="tw">
-      <div class="tw-h"><div class="tw-ht">⚡ Alertas y Notificaciones</div></div>
-      <div style="padding:12px" id="inicio-alertas">
-        <div style="color:var(--muted);font-size:.72rem;text-align:center;padding:10px">Analizando datos...</div>
-      </div>
-    </div>
-    <!-- Tareas del día -->
-    <div class="tw">
-      <div class="tw-h">
-        <div class="tw-ht">📋 Tareas del Día</div>
-      </div>
-      <div style="padding:12px">
-        <div style="display:flex;gap:6px;margin-bottom:10px">
-          <input id="inicio-tarea-input" type="text" placeholder="Nueva tarea..." onkeydown="if(event.key==='Enter')addTarea()" style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">
-          <button class="btn btn-blue edit-action" style="font-size:.7rem;white-space:nowrap" onclick="addTarea()">+ Agregar</button>
-        </div>
-        <div id="inicio-tareas-body"></div>
-      </div>
-    </div>
-  </div>
+  <div id="inicio-root"></div>
 </div>
 
 <!-- ══════════ PANEL DE CONTROL ══════════ -->
@@ -4293,6 +4143,8 @@
 <div id="view-fact_wirebit" class="view"></div>
 
 <!-- ══════════ CARGA DE FACTURAS CFDI ══════════ -->
+<div id="view-carga_inversiones" class="view"></div>
+
 <div id="view-carga_facturas" class="view">
   <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">📤 Carga de Facturas CFDI</div>
   <div style="font-size:.72rem;color:var(--muted);margin-bottom:18px">Sube facturas PDF (CFDI) para extraer datos automáticamente y vincular con el sistema</div>
@@ -4721,6 +4573,7 @@
 
   <!-- ── Scripts: Features ── -->
   <script src="js/features/dashboard/inicio.js?v=5"></script>
+  <script src="js/features/dashboard/inversiones.js?v=1"></script>
   <script src="js/features/dashboard/resumen.js?v=5"></script>
   <script src="js/features/finanzas/nomina.js?v=5"></script>
   <script src="js/features/finanzas/gastos-comp.js?v=5"></script>

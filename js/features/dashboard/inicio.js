@@ -1,278 +1,418 @@
-// GF — Dashboard: Inicio (Pantalla de Bienvenida)
+// GF — Dashboard: Panel de Control
 (function(window) {
   'use strict';
 
-const TAREAS_KEY = 'gf_tareas';
+  const TAREAS_KEY = 'gf_tareas';
 
-async function rInicio() {
-  // 1. Fecha actual
-  const fechaEl = document.getElementById('inicio-fecha');
-  if (fechaEl) {
-    const now = new Date();
-    const opts = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
-    fechaEl.textContent = '📅 ' + now.toLocaleDateString('es-MX', opts).replace(/^\w/, c => c.toUpperCase());
+  // ── Entities config ──
+  var _ENTS = [
+    {key:'sal',  name:'Salem',     color:'#0073ea', nav:'sal_res',  icon:'💙', cxp:'Salem',     ppNav:'pp_salem'},
+    {key:'end',  name:'Endless',   color:'#00b875', nav:'end_res',  icon:'💚', cxp:'Endless',   ppNav:'pp_endless'},
+    {key:'dyn',  name:'Dynamo',    color:'#ff7043', nav:'dyn_res',  icon:'🔶', cxp:'Dynamo',    ppNav:'pp_dynamo'},
+    {key:'wb',   name:'Wirebit',   color:'#9b51e0', nav:'wb_res',   icon:'💜', cxp:'Wirebit',   ppNav:'pp_wirebit'},
+    {key:'stel', name:'Stellaris', color:'#e53935', nav:'stel_res', icon:'🔴', cxp:'Stellaris', ppNav:'pp_stellaris'}
+  ];
+
+  // ── Helpers ──
+  function _fmtM(n) {
+    if (n === null || n === undefined) return '—';
+    var abs = Math.abs(Math.round(n));
+    return (n < 0 ? '-' : '') + '$' + abs.toLocaleString('es-MX');
   }
 
-  // 2. KPIs Tesorería
-  _inicioTesKPIs();
-
-  // 3. KPIs Terminales (async)
-  _inicioTPVKPIs();
-
-  // 4. KPIs Tarjetas (estáticos)
-  _inicioTarKPIs();
-
-  // 5. Alertas automáticas
-  _inicioAlertas();
-
-  // 6. Tareas manuales
-  renderTareas();
-}
-
-function _inicioTesKPIs() {
-  try {
-    const data = typeof tesLoad === 'function' ? tesLoad() : [];
-    const mes = typeof tesCurMonth === 'function' ? tesCurMonth() : '';
-    const totIng = data.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
-    const totGas = data.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
-    const saldo = totIng - totGas;
-    const thisMon = data.filter(m => m.fecha?.substring(0, 7) === mes);
-    const mesIng = thisMon.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
-    const mesGas = thisMon.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
-    const mesNeto = mesIng - mesGas;
-
-    const fmt = n => typeof tesFmt === 'function' ? tesFmt(n) : '$' + Number(n).toLocaleString('es-MX', { minimumFractionDigits: 2 });
-    const fmtS = n => typeof tesFmtSigned === 'function' ? tesFmtSigned(n) : (n >= 0 ? '+' : '-') + '$' + Math.abs(n).toLocaleString('es-MX', { minimumFractionDigits: 2 });
-    const mesLabel = new Date().toLocaleString('es-MX', { month: 'long', year: 'numeric' });
-
-    const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-    const _c = (id, v) => { const el = document.getElementById(id); if (el) el.style.color = v; };
-
-    _s('inicio-tes-saldo', fmt(saldo));
-    _c('inicio-tes-saldo', saldo >= 0 ? 'var(--green)' : 'var(--red)');
-    _s('inicio-tes-saldo-sub', (saldo >= 0 ? 'Superávit' : 'Déficit') + ' · ' + data.length + ' movimientos');
-
-    _s('inicio-tes-neto', fmtS(mesNeto));
-    _c('inicio-tes-neto', mesNeto >= 0 ? 'var(--green)' : 'var(--red)');
-    _s('inicio-tes-neto-sub', mesLabel);
-
-    _s('inicio-tes-ing', fmt(mesIng));
-    _s('inicio-tes-ing-sub', mesLabel);
-    _s('inicio-tes-gas', fmt(mesGas));
-    _s('inicio-tes-gas-sub', mesLabel);
-  } catch (e) { console.warn('[Inicio] Tesorería KPIs error:', e); }
-}
-
-async function _inicioTPVKPIs() {
-  try {
-    const k = await TPV.kpis();
-    if (!k) return;
-    const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-
-    _s('inicio-tpv-cobrado', fmtTPV(k.total_cobrado));
-    _s('inicio-tpv-cobrado-sub', (k.num_transacciones ? parseFloat(k.num_transacciones).toLocaleString() : '0') + ' transacciones');
-
-    const totalCom = parseFloat(k.total_comisiones) || 0;
-    const totalCob = parseFloat(k.total_cobrado) || 1;
-    _s('inicio-tpv-com', fmtTPV(totalCom));
-    _s('inicio-tpv-com-sub', (totalCom / totalCob * 100).toFixed(1) + '% del cobrado');
-
-    const comSalem = parseFloat(k.com_salem) || 0;
-    _s('inicio-tpv-salem', fmtTPV(comSalem));
-    _s('inicio-tpv-salem-sub', totalCom > 0 ? (comSalem / totalCom * 100).toFixed(1) + '% de comisiones' : '—');
-
-    _s('inicio-tpv-clientes', k.num_clientes || '0');
-    _s('inicio-tpv-clientes-sub', 'Clientes con operaciones');
-  } catch (e) { console.warn('[Inicio] TPV KPIs error:', e); }
-}
-
-async function _inicioTarKPIs() {
-  const _s = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
-  try {
-    if (typeof _loadConfig === 'function') await _loadConfig();
-    if (!_sb) { _s('inicio-tar-monto','—'); _s('inicio-tar-txns','—'); _s('inicio-tar-th','—'); return; }
-    const [r1, r2, r3] = await Promise.all([
-      _sb.from('tar_transactions').select('monto', {count:'exact'}).limit(0),
-      _sb.from('tar_transactions').select('monto').limit(100000),
-      _sb.from('tar_cardholders').select('id', {count:'exact', head:true})
-    ]);
-    const txnCount = r1.count || 0;
-    const totalMonto = (r2.data || []).reduce((a, r) => a + (parseFloat(r.monto) || 0), 0);
-    const thCount = r3.count || 0;
-    _s('inicio-tar-monto', txnCount > 0 ? fmtK(totalMonto) : '—');
-    _s('inicio-tar-monto-sub', txnCount > 0 ? 'Total procesado' : 'Sin transacciones');
-    _s('inicio-tar-txns', txnCount > 0 ? txnCount.toLocaleString('es-MX') : '—');
-    _s('inicio-tar-th', thCount > 0 ? thCount.toLocaleString('es-MX') : '—');
-  } catch (e) {
-    console.warn('[Inicio] Tarjetas KPIs error:', e);
-    _s('inicio-tar-monto','—'); _s('inicio-tar-txns','—'); _s('inicio-tar-th','—');
+  function _fmtMS(n) {
+    if (n === null || n === undefined) return '—';
+    var abs = Math.abs(Math.round(n));
+    return (n >= 0 ? '+$' : '-$') + abs.toLocaleString('es-MX');
   }
-}
 
-async function _inicioAlertas() {
-  const container = document.getElementById('inicio-alertas');
-  if (!container) return;
-  const alertas = [];
+  function _entData(key, yr) {
+    var recs = (typeof S !== 'undefined' && Array.isArray(S.recs)) ? S.recs : [];
+    yr = yr || String(new Date().getFullYear());
+    var rows = recs.filter(function(r) { return r.ent === key && String(r.yr) === yr; });
+    var ing = rows.filter(function(r) { return r.type === 'ing'; })
+                  .reduce(function(s, r) { return s + ((r.vals || []).reduce(function(a, b) { return a + (b || 0); }, 0)); }, 0);
+    var gas = rows.filter(function(r) { return r.type === 'gas' || r.type === 'cost'; })
+                  .reduce(function(s, r) { return s + ((r.vals || []).reduce(function(a, b) { return a + (b || 0); }, 0)); }, 0);
+    return { ing: ing, gas: gas, margen: ing - gas };
+  }
 
-  try {
-    // 1. Clientes TPV sin comisiones
-    const clients = await TPV.getClients();
-    const RATE_FIELDS = [
-      'rate_efevoo_tc','rate_efevoo_td','rate_salem_tc','rate_salem_td',
-      'rate_convenia_tc','rate_convenia_td','rate_comisionista_tc','rate_comisionista_td'
-    ];
-    const sinConfig = (clients || []).filter(c => !RATE_FIELDS.some(f => parseFloat(c[f]) > 0)).length;
-    if (sinConfig > 0) alertas.push({ icon: '⚙️', text: `${sinConfig} clientes TPV sin comisiones configuradas`, color: 'var(--orange)', action: "navTo('tpv_comisiones')" });
-
-    // 2. Flujo neto negativo
-    const data = typeof tesLoad === 'function' ? tesLoad() : [];
-    const mes = typeof tesCurMonth === 'function' ? tesCurMonth() : '';
-    const thisMon = data.filter(m => m.fecha?.substring(0, 7) === mes);
-    const mesIng = thisMon.filter(m => m.tipo === 'Ingreso').reduce((s, m) => s + m.monto, 0);
-    const mesGas = thisMon.filter(m => m.tipo === 'Gasto').reduce((s, m) => s + m.monto, 0);
-    if (mesIng - mesGas < 0) alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : ''), color: 'var(--red)', action: "navTo('tes_flujo')" });
-
-    // 3. Créditos vencidos (fix: c.st not c.status)
-    let vencidos = 0;
-    if (typeof END_CREDITS !== 'undefined' && Array.isArray(END_CREDITS))
-      vencidos += END_CREDITS.filter(c => c.st === 'Vencido').length;
-    if (typeof DYN_CREDITS !== 'undefined' && Array.isArray(DYN_CREDITS))
-      vencidos += DYN_CREDITS.filter(c => c.st === 'Vencido').length;
-    if (vencidos > 0) alertas.push({ icon: '⚠️', text: `${vencidos} créditos vencidos en cartera`, color: 'var(--red)', action: "navTo('cred_cobr')" });
-
-    // 4. Sin movimientos de tesorería este mes
-    if (thisMon.length === 0 && data.length > 0)
-      alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', action: "navTo('tes_flujo')" });
-
-    // 5. Cobranza: pagos vencidos y próximos
+  function _cxpPendientes(cxpName) {
     try {
-      const allCred = [
-        ...(Array.isArray(END_CREDITS) ? END_CREDITS.map(c=>({...c,_ent:'end'})) : []),
-        ...(Array.isArray(DYN_CREDITS) ? DYN_CREDITS.map(c=>({...c,_ent:'dyn'})) : [])
-      ].filter(c=>c.st==='Activo'||c.st==='Vencido');
-
-      let pagosProximos=0, pagosVencidos=0, montoVencido=0;
-      const today = new Date(); today.setHours(0,0,0,0);
-      const in7d = new Date(today); in7d.setDate(in7d.getDate()+7);
-
-      allCred.forEach(c=>{
-        if(!c.amort||c.amort.length<=1) return;
-        c.amort.slice(1).forEach(r=>{
-          if(typeof credPeriodStatus!=='function') return;
-          const st = credPeriodStatus(c, r);
-          if(st==='VENCIDO'){ pagosVencidos++; montoVencido+=(r.pago||0); }
-          else if(st==='PENDIENTE'){
-            const f = typeof credParseDate==='function' ? credParseDate(r.fecha) : null;
-            if(f&&f>=today&&f<=in7d) pagosProximos++;
-          }
-        });
+      var store = DB.get('gf_cxp') || { cuentas: [], pagos: [] };
+      var pending = (store.cuentas || []).filter(function(c) {
+        return c.empresa === cxpName && (c.status === 'pendiente' || c.status === 'parcial');
       });
+      var total = pending.reduce(function(s, c) { return s + (parseFloat(c.saldo_mxn) || 0); }, 0);
+      return { count: pending.length, total: total };
+    } catch(e) { return { count: 0, total: 0 }; }
+  }
 
-      if(pagosProximos>0) alertas.push({ icon:'🔔', text:`${pagosProximos} pagos vencen en los próximos 7 días`, color:'var(--orange)', action:"navTo('cred_cobr')" });
-      if(pagosVencidos>0) alertas.push({ icon:'🚨', text:`${pagosVencidos} pagos vencidos por ${typeof fmtK==='function'?fmtK(montoVencido):'$'+montoVencido} total`, color:'var(--red)', action:"navTo('cred_cobr')" });
-    } catch(e){ console.warn('[Inicio] Cobranza alertas error:',e); }
-
-    // 7. Tickets pendientes de lectura
+  function _inversion(cxpName) {
     try {
-      const tkData = DB.get('gf_tickets_pagos_tpv') || [];
-      const tkPend = tkData.filter(t => t.leido === false).length;
-      if(tkPend > 0) alertas.push({ icon:'🎫', text:`${tkPend} ticket${tkPend>1?'s':''} pendiente${tkPend>1?'s':''} de lectura`, color:'#9c27b0', action:"navTo('tk_pagos_tpv')" });
-    } catch(e){ console.warn('[Inicio] Tickets alertas error:',e); }
-
-  } catch (e) { console.warn('[Inicio] Alertas error:', e); }
-
-  // Render alertas
-  if (alertas.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-size:.75rem">✅ Todo en orden — sin alertas pendientes</div>';
-  } else {
-    container.innerHTML = alertas.map(a =>
-      `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;cursor:pointer;background:${a.color}10;border-left:3px solid ${a.color}" onclick="${a.action}">
-        <span style="font-size:1rem">${a.icon}</span>
-        <span style="font-size:.72rem;color:var(--text);flex:1">${a.text}</span>
-        <span style="font-size:.62rem;color:var(--muted)">ver →</span>
-      </div>`
-    ).join('');
-  }
-}
-
-// ═══ TAREAS MANUALES ═══
-
-function _loadTareas() {
-  try { const d = DB.get(TAREAS_KEY); return Array.isArray(d) ? d : []; } catch (e) { return []; }
-}
-
-function _saveTareas(tareas) {
-  DB.set(TAREAS_KEY, tareas);
-}
-
-function addTarea() {
-  const input = document.getElementById('inicio-tarea-input');
-  if (!input) return;
-  const text = input.value.trim();
-  if (!text) return;
-  const tareas = _loadTareas();
-  tareas.push({ id: Date.now(), text, done: false, createdAt: new Date().toISOString() });
-  _saveTareas(tareas);
-  input.value = '';
-  renderTareas();
-}
-
-function toggleTarea(id) {
-  const tareas = _loadTareas();
-  const t = tareas.find(t => t.id === id);
-  if (t) t.done = !t.done;
-  _saveTareas(tareas);
-  renderTareas();
-}
-
-function deleteTarea(id) {
-  let tareas = _loadTareas();
-  tareas = tareas.filter(t => t.id !== id);
-  _saveTareas(tareas);
-  renderTareas();
-}
-
-function renderTareas() {
-  const container = document.getElementById('inicio-tareas-body');
-  if (!container) return;
-  const tareas = _loadTareas();
-
-  // Separate: pending first, done after
-  const pending = tareas.filter(t => !t.done);
-  const done = tareas.filter(t => t.done);
-  const sorted = [...pending, ...done];
-
-  if (sorted.length === 0) {
-    container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:.72rem">Sin tareas pendientes. Agrega una arriba.</div>';
-    return;
+      var inv = DB.get('gf_inversiones') || [];
+      return inv.filter(function(i) { return i.empresa === cxpName; })
+                .reduce(function(s, i) { return s + (parseFloat(i.monto) || 0); }, 0);
+    } catch(e) { return 0; }
   }
 
-  container.innerHTML = sorted.map(t =>
-    `<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);${t.done ? 'opacity:.5' : ''}">
-      <input type="checkbox" ${t.done ? 'checked' : ''} onchange="toggleTarea(${t.id})" style="cursor:pointer;accent-color:var(--green)">
-      <span style="flex:1;font-size:.72rem;${t.done ? 'text-decoration:line-through;color:var(--muted)' : 'color:var(--text)'}">${t.text}</span>
-      ${!isViewer() ? `<button onclick="deleteTarea(${t.id})" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>` : ''}
-    </div>`
-  ).join('');
-}
+  // ── Render helpers ──
+  function _pillStyle(color) {
+    return 'font-size:.72rem;font-weight:600;padding:6px 14px;border-radius:20px;'
+         + 'border:1.5px solid ' + color + ';background:' + color + '18;color:' + color + ';'
+         + 'cursor:pointer;font-family:inherit;transition:all .15s;white-space:nowrap';
+  }
+
+  function _sectionLabel(txt) {
+    return '<div style="font-size:.63rem;font-weight:700;color:var(--muted);text-transform:uppercase;'
+         + 'letter-spacing:.7px;margin-bottom:8px;text-align:center">' + txt + '</div>';
+  }
+
+  function _kpiCard(label, value, sub, color) {
+    return '<div class="cc" style="padding:14px;border-top:3px solid ' + color + ';text-align:center">'
+         + '<div style="font-size:.62rem;font-weight:700;color:var(--muted);margin-bottom:5px;'
+         + 'text-transform:uppercase;letter-spacing:.3px">' + label + '</div>'
+         + '<div style="font-size:1rem;font-weight:700;color:' + color + ';line-height:1.2">' + value + '</div>'
+         + '<div style="font-size:.62rem;color:var(--muted);margin-top:3px">' + sub + '</div>'
+         + '</div>';
+  }
+
+  function _entMini(label, value, color) {
+    return '<div style="background:var(--bg);border-radius:5px;padding:5px 6px">'
+         + '<div style="font-size:.58rem;color:var(--muted);margin-bottom:1px">' + label + '</div>'
+         + '<div style="font-size:.68rem;font-weight:700;color:' + color + '">' + value + '</div>'
+         + '</div>';
+  }
+
+  function _entCard(e, roi, pend) {
+    var mc = e.margen >= 0 ? '#00b875' : '#e53935';
+    var roiStr = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '—';
+    var roiColor = roi === null ? 'var(--muted)' : (roi >= 0 ? '#00b875' : '#e53935');
+    var pendBadge = pend.count > 0
+      ? '<div style="margin-top:8px;font-size:.62rem;color:#ff9500;background:#ff950018;'
+        + 'border-radius:5px;padding:3px 7px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
+        + e.ppNav + '\')">⏳ ' + pend.count + ' CxP · ' + _fmtM(pend.total) + '</div>'
+      : '';
+    return '<div class="cc" style="padding:12px;border-top:3px solid ' + e.color + ';cursor:pointer" '
+         + 'onclick="navTo(\'' + e.nav + '\')">'
+         + '<div style="font-size:.75rem;font-weight:700;color:' + e.color + ';margin-bottom:8px">'
+         + e.icon + ' ' + e.name + '</div>'
+         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px">'
+         + _entMini('Ingresos', _fmtM(e.ing), '#00b875')
+         + _entMini('Gastos',   _fmtM(e.gas), '#e53935')
+         + _entMini('Margen',   _fmtMS(e.margen), mc)
+         + _entMini('ROI',      roiStr, roiColor)
+         + '</div>'
+         + pendBadge
+         + '</div>';
+  }
+
+  function _pendCard(e, p) {
+    return '<div class="cc" style="padding:10px 16px;min-width:150px;cursor:pointer;border-left:3px solid '
+         + e.color + '" onclick="navTo(\'' + e.ppNav + '\')">'
+         + '<div style="font-size:.68rem;font-weight:700;color:' + e.color + '">' + e.icon + ' ' + e.name + '</div>'
+         + '<div style="font-size:.9rem;font-weight:700;color:#e53935;margin:3px 0">' + _fmtM(p.total) + '</div>'
+         + '<div style="font-size:.62rem;color:var(--muted)">'
+         + p.count + ' factura' + (p.count > 1 ? 's' : '') + ' pendiente' + (p.count > 1 ? 's' : '')
+         + '</div>'
+         + '</div>';
+  }
+
+  // ── Main render ──
+  async function rInicio() {
+    var root = document.getElementById('inicio-root');
+    if (!root) return;
+
+    var yr = String(new Date().getFullYear());
+    var now = new Date();
+    var fechaStr = '📅 ' + now.toLocaleDateString('es-MX', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+    }).replace(/^\w/, function(c) { return c.toUpperCase(); });
+
+    // Treasury global
+    var tesData = (typeof tesLoad === 'function') ? tesLoad() : [];
+    var tesTotIng = tesData.filter(function(m) { return m.tipo === 'Ingreso'; })
+                           .reduce(function(s, m) { return s + (m.monto || 0); }, 0);
+    var tesTotGas = tesData.filter(function(m) { return m.tipo === 'Gasto'; })
+                           .reduce(function(s, m) { return s + (m.monto || 0); }, 0);
+    var tesSaldo = tesTotIng - tesTotGas;
+
+    // Per-entity P&L
+    var entDs = _ENTS.map(function(e) {
+      var d = _entData(e.key, yr);
+      return Object.assign({}, e, d);
+    });
+
+    // Group totals
+    var grpIng    = entDs.reduce(function(s, e) { return s + e.ing; }, 0);
+    var grpGas    = entDs.reduce(function(s, e) { return s + e.gas; }, 0);
+    var grpMargen = grpIng - grpGas;
+
+    // ── Build HTML ──
+    var h = '';
+    var W = 'max-width:860px;margin:0 auto';
+
+    // HEADER
+    h += '<div style="' + W + ';text-align:center;margin-bottom:22px;padding-top:4px">';
+    h += '<div style="font-family:\'Poppins\',sans-serif;font-size:1.15rem;font-weight:700;color:var(--text)">📊 Panel de Control</div>';
+    h += '<div style="font-size:.72rem;color:var(--muted);margin-top:3px">' + fechaStr + '</div>';
+    h += '</div>';
+
+    // QUICK ACCESS PILLS
+    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += _sectionLabel('Accesos Rápidos');
+    h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">';
+    h += '<button onclick="navTo(\'resumen\')"  style="' + _pillStyle('#0073ea') + '">💹 Grupo</button>';
+    _ENTS.forEach(function(e) {
+      h += '<button onclick="navTo(\'' + e.nav + '\')" style="' + _pillStyle(e.color) + '">' + e.icon + ' ' + e.name + '</button>';
+    });
+    h += '<button onclick="navTo(\'tes_flujo\')" style="' + _pillStyle('#00b875') + '">🏛️ Tesorería</button>';
+    h += '<button onclick="navTo(\'cred_dash\')" style="' + _pillStyle('#ff9500') + '">🏦 Créditos</button>';
+    h += '</div>';
+    h += '</div>';
+
+    // GLOBAL KPIs
+    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += _sectionLabel('📈 Finanzas Grupo ' + yr);
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px">';
+    h += _kpiCard('Ingresos Grupo',  _fmtM(grpIng),    yr,        '#00b875');
+    h += _kpiCard('Gastos Grupo',    _fmtM(grpGas),    yr,        '#e53935');
+    h += _kpiCard('Margen Neto',     _fmtMS(grpMargen), yr,       grpMargen >= 0 ? '#00b875' : '#e53935');
+    h += _kpiCard('Saldo Tesorería', _fmtM(tesSaldo),  'Acumulado', tesSaldo >= 0 ? '#00b875' : '#e53935');
+    h += '</div>';
+    h += '</div>';
+
+    // PER-ENTITY CARDS
+    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += _sectionLabel('🏢 Rendimiento por Empresa — ' + yr);
+    h += '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(155px,1fr));gap:10px">';
+    entDs.forEach(function(e) {
+      var inv  = _inversion(e.cxp);
+      var roi  = inv > 0 ? ((e.margen - inv) / inv * 100) : null;
+      var pend = _cxpPendientes(e.cxp);
+      h += _entCard(e, roi, pend);
+    });
+    h += '</div>';
+    h += '</div>';
+
+    // PENDING PAYMENTS
+    var pendItems = [];
+    _ENTS.forEach(function(e) {
+      var p = _cxpPendientes(e.cxp);
+      if (p.count > 0) pendItems.push({ e: e, p: p });
+    });
+    h += '<div style="' + W + ';margin-bottom:22px">';
+    h += _sectionLabel('⏳ Cuentas por Pagar Pendientes');
+    if (pendItems.length > 0) {
+      h += '<div style="display:flex;flex-wrap:wrap;gap:8px;justify-content:center">';
+      pendItems.forEach(function(x) { h += _pendCard(x.e, x.p); });
+      h += '</div>';
+    } else {
+      h += '<div style="text-align:center;padding:14px;color:var(--green);font-size:.72rem;'
+         + 'background:var(--green-bg);border-radius:10px">✅ Sin cuentas pendientes</div>';
+    }
+    h += '</div>';
+
+    // ALERTAS + TAREAS
+    h += '<div style="' + W + ';display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
+
+    // Alertas
+    h += '<div class="tw">';
+    h += '<div class="tw-h"><div class="tw-ht">⚡ Alertas</div></div>';
+    h += '<div style="padding:12px" id="inicio-alertas">'
+       + '<div style="color:var(--muted);font-size:.72rem;text-align:center;padding:10px">Analizando datos...</div>'
+       + '</div>';
+    h += '</div>';
+
+    // Tareas
+    h += '<div class="tw">';
+    h += '<div class="tw-h"><div class="tw-ht">📋 Tareas del Día</div></div>';
+    h += '<div style="padding:12px">';
+    h += '<div style="display:flex;gap:6px;margin-bottom:10px">';
+    h += '<input id="inicio-tarea-input" type="text" placeholder="Nueva tarea..." '
+       + 'onkeydown="if(event.key===\'Enter\')addTarea()" '
+       + 'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">';
+    h += '<button class="btn btn-blue edit-action" style="font-size:.7rem;white-space:nowrap" onclick="addTarea()">+ Agregar</button>';
+    h += '</div>';
+    h += '<div id="inicio-tareas-body"></div>';
+    h += '</div>';
+    h += '</div>';
+
+    h += '</div>'; // end alertas+tareas grid
+
+    root.innerHTML = h;
+
+    // Post-render callbacks
+    renderTareas();
+    _inicioAlertas();
+  }
+
+  // ══ ALERTAS ══
+
+  async function _inicioAlertas() {
+    var container = document.getElementById('inicio-alertas');
+    if (!container) return;
+    var alertas = [];
+
+    try {
+      // 1. Flujo neto negativo (tesorería)
+      var data = typeof tesLoad === 'function' ? tesLoad() : [];
+      var mes  = typeof tesCurMonth === 'function' ? tesCurMonth() : '';
+      var thisMon = data.filter(function(m) { return (m.fecha || '').substring(0, 7) === mes; });
+      var mesIng  = thisMon.filter(function(m) { return m.tipo === 'Ingreso'; }).reduce(function(s, m) { return s + m.monto; }, 0);
+      var mesGas  = thisMon.filter(function(m) { return m.tipo === 'Gasto';   }).reduce(function(s, m) { return s + m.monto; }, 0);
+      if (mesIng - mesGas < 0)
+        alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : _fmtMS(mesIng - mesGas)), color: 'var(--red)', action: "navTo('tes_flujo')" });
+
+      // 2. Sin movimientos de tesorería este mes
+      if (thisMon.length === 0 && data.length > 0)
+        alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', action: "navTo('tes_flujo')" });
+
+      // 3. Créditos vencidos
+      var vencidos = 0;
+      if (typeof END_CREDITS !== 'undefined' && Array.isArray(END_CREDITS))
+        vencidos += END_CREDITS.filter(function(c) { return c.st === 'Vencido'; }).length;
+      if (typeof DYN_CREDITS !== 'undefined' && Array.isArray(DYN_CREDITS))
+        vencidos += DYN_CREDITS.filter(function(c) { return c.st === 'Vencido'; }).length;
+      if (vencidos > 0)
+        alertas.push({ icon: '⚠️', text: vencidos + ' créditos vencidos en cartera', color: 'var(--red)', action: "navTo('cred_cobr')" });
+
+      // 4. Cobranza: pagos vencidos y próximos
+      try {
+        var allCred = [
+          ...(Array.isArray(END_CREDITS) ? END_CREDITS.map(function(c) { return Object.assign({}, c, {_ent:'end'}); }) : []),
+          ...(Array.isArray(DYN_CREDITS) ? DYN_CREDITS.map(function(c) { return Object.assign({}, c, {_ent:'dyn'}); }) : [])
+        ].filter(function(c) { return c.st === 'Activo' || c.st === 'Vencido'; });
+
+        var pagosProximos = 0, pagosVencidos = 0, montoVencido = 0;
+        var today = new Date(); today.setHours(0, 0, 0, 0);
+        var in7d  = new Date(today); in7d.setDate(in7d.getDate() + 7);
+
+        allCred.forEach(function(c) {
+          if (!c.amort || c.amort.length <= 1) return;
+          c.amort.slice(1).forEach(function(r) {
+            if (typeof credPeriodStatus !== 'function') return;
+            var st = credPeriodStatus(c, r);
+            if (st === 'VENCIDO') { pagosVencidos++; montoVencido += (r.pago || 0); }
+            else if (st === 'PENDIENTE') {
+              var f = typeof credParseDate === 'function' ? credParseDate(r.fecha) : null;
+              if (f && f >= today && f <= in7d) pagosProximos++;
+            }
+          });
+        });
+
+        if (pagosProximos > 0)
+          alertas.push({ icon: '🔔', text: pagosProximos + ' pagos vencen en los próximos 7 días', color: 'var(--orange)', action: "navTo('cred_cobr')" });
+        if (pagosVencidos > 0)
+          alertas.push({ icon: '🚨', text: pagosVencidos + ' pagos vencidos por ' + (typeof fmtK === 'function' ? fmtK(montoVencido) : _fmtM(montoVencido)) + ' total', color: 'var(--red)', action: "navTo('cred_cobr')" });
+      } catch(e) { console.warn('[Inicio] Cobranza alertas error:', e); }
+
+      // 5. CxP pendientes globales
+      var totalCxP = 0, countCxP = 0;
+      _ENTS.forEach(function(e) {
+        var p = _cxpPendientes(e.cxp);
+        totalCxP += p.total;
+        countCxP += p.count;
+      });
+      if (countCxP > 0)
+        alertas.push({ icon: '🧾', text: countCxP + ' facturas por pagar · ' + _fmtM(totalCxP) + ' total pendiente', color: '#ff9500', action: "navTo('pp_salem')" });
+
+      // 6. Tickets pendientes de lectura
+      try {
+        var tkData = DB.get('gf_tickets_pagos_tpv') || [];
+        var tkPend = tkData.filter(function(t) { return t.leido === false; }).length;
+        if (tkPend > 0)
+          alertas.push({ icon: '🎫', text: tkPend + ' ticket' + (tkPend > 1 ? 's' : '') + ' pendiente' + (tkPend > 1 ? 's' : '') + ' de lectura', color: '#9c27b0', action: "navTo('tk_pagos_tpv')" });
+      } catch(e) { console.warn('[Inicio] Tickets alertas error:', e); }
+
+    } catch(e) { console.warn('[Inicio] Alertas error:', e); }
+
+    if (alertas.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-size:.75rem">✅ Todo en orden — sin alertas pendientes</div>';
+    } else {
+      container.innerHTML = alertas.map(function(a) {
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;cursor:pointer;'
+             + 'background:' + a.color + '12;border-left:3px solid ' + a.color + '" onclick="' + a.action + '">'
+             + '<span style="font-size:1rem">' + a.icon + '</span>'
+             + '<span style="font-size:.72rem;color:var(--text);flex:1">' + a.text + '</span>'
+             + '<span style="font-size:.62rem;color:var(--muted)">ver →</span>'
+             + '</div>';
+      }).join('');
+    }
+  }
+
+  // ══ TAREAS MANUALES ══
+
+  function _loadTareas() {
+    try { var d = DB.get(TAREAS_KEY); return Array.isArray(d) ? d : []; } catch(e) { return []; }
+  }
+
+  function _saveTareas(tareas) {
+    DB.set(TAREAS_KEY, tareas);
+  }
+
+  function addTarea() {
+    var input = document.getElementById('inicio-tarea-input');
+    if (!input) return;
+    var text = input.value.trim();
+    if (!text) return;
+    var tareas = _loadTareas();
+    tareas.push({ id: Date.now(), text: text, done: false, createdAt: new Date().toISOString() });
+    _saveTareas(tareas);
+    input.value = '';
+    renderTareas();
+  }
+
+  function toggleTarea(id) {
+    var tareas = _loadTareas();
+    var t = tareas.find(function(t) { return t.id === id; });
+    if (t) t.done = !t.done;
+    _saveTareas(tareas);
+    renderTareas();
+  }
+
+  function deleteTarea(id) {
+    var tareas = _loadTareas().filter(function(t) { return t.id !== id; });
+    _saveTareas(tareas);
+    renderTareas();
+  }
+
+  function renderTareas() {
+    var container = document.getElementById('inicio-tareas-body');
+    if (!container) return;
+    var tareas  = _loadTareas();
+    var pending = tareas.filter(function(t) { return !t.done; });
+    var done    = tareas.filter(function(t) { return  t.done; });
+    var sorted  = pending.concat(done);
+
+    if (sorted.length === 0) {
+      container.innerHTML = '<div style="text-align:center;padding:12px;color:var(--muted);font-size:.72rem">Sin tareas pendientes. Agrega una arriba.</div>';
+      return;
+    }
+
+    container.innerHTML = sorted.map(function(t) {
+      return '<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);' + (t.done ? 'opacity:.5' : '') + '">'
+           + '<input type="checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleTarea(' + t.id + ')" style="cursor:pointer;accent-color:var(--green)">'
+           + '<span style="flex:1;font-size:.72rem;' + (t.done ? 'text-decoration:line-through;color:var(--muted)' : 'color:var(--text)') + '">' + t.text + '</span>'
+           + (!isViewer() ? '<button onclick="deleteTarea(' + t.id + ')" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>' : '')
+           + '</div>';
+    }).join('');
+  }
 
   // Expose globals
-  window.TAREAS_KEY = TAREAS_KEY;
-  window.rInicio = rInicio;
-  window._inicioTesKPIs = _inicioTesKPIs;
-  window._inicioTPVKPIs = _inicioTPVKPIs;
-  window._inicioTarKPIs = _inicioTarKPIs;
-  window._inicioAlertas = _inicioAlertas;
-  window._loadTareas = _loadTareas;
-  window._saveTareas = _saveTareas;
-  window.addTarea = addTarea;
-  window.toggleTarea = toggleTarea;
-  window.deleteTarea = deleteTarea;
-  window.renderTareas = renderTareas;
+  window.TAREAS_KEY       = TAREAS_KEY;
+  window.rInicio          = rInicio;
+  window._inicioAlertas   = _inicioAlertas;
+  window._loadTareas      = _loadTareas;
+  window._saveTareas      = _saveTareas;
+  window.addTarea         = addTarea;
+  window.toggleTarea      = toggleTarea;
+  window.deleteTarea      = deleteTarea;
+  window.renderTareas     = renderTareas;
 
-  // Register views
-  if(typeof registerView === 'function'){
-    registerView('inicio', function(){ return rInicio(); });
+  // Register view
+  if (typeof registerView === 'function') {
+    registerView('inicio', function() { return rInicio(); });
   }
 
 })(window);
