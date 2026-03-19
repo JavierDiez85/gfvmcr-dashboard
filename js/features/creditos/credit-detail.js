@@ -5,10 +5,9 @@
   // ── Modal de detalle con tabla de amortizacion ──
   function credOpenDetail(entKey, nombre, idx){
     const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
-    // Find by name (safer than index after sort)
-    const realIdx = credits.findIndex(c => c.cl === nombre);
-    const c = realIdx >= 0 ? credits[realIdx] : credits[idx];
-    const resolvedIdx = realIdx >= 0 ? realIdx : idx;
+    // Use direct index (reliable now that _origIdx is passed from dashboard/cobranza)
+    const resolvedIdx = (typeof idx === 'number' && idx >= 0 && idx < credits.length) ? idx : credits.findIndex(c => c.cl === nombre);
+    const c = credits[resolvedIdx];
     if(!c) return;
 
     const col    = entKey==='end' ? '#00b875' : '#ff7043';
@@ -143,7 +142,7 @@
         </button>
       </div>`;
 
-    openModal(null, `🏦 Detalle — ${c.cl}`, html);
+    openModal(null, `🏦 Detalle — ${c.cl} · ${fmtK(c.monto)}`, html);
   }
 
   // ── Registro de pagos ──
@@ -519,8 +518,9 @@
       disbDate = p[2]+'/'+p[1]+'/'+p[0];
     }
 
+    var creditId = cl.replace(/[^a-zA-Z0-9]/g,'_').toLowerCase() + '_' + monto + '_' + plazo;
     const credit = {
-      cl, monto, plazo, tasa, com, iva, tipo, st,
+      creditId, cl, monto, plazo, tasa, com, iva, tipo, st,
       garantia, destino, producto, disbDate,
       amort: _amortDraft.length > 1 ? _amortDraft : [],
       pagos: []

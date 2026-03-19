@@ -20,8 +20,8 @@
     try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
 
     let all = [];
-    if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map(c=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875'})));
-    if(!entFilter || entFilter==='dyn') all.push(...DYN_CREDITS.map(c=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043'})));
+    if(!entFilter || entFilter==='end') all.push(...END_CREDITS.map((c,i)=>({...c, _ent:'end', _entLabel:'Endless Money', _col:'#00b875', _origIdx:i})));
+    if(!entFilter || entFilter==='dyn') all.push(...DYN_CREDITS.map((c,i)=>({...c, _ent:'dyn', _entLabel:'Dynamo Finance', _col:'#ff7043', _origIdx:i})));
     all = all.filter(c=>c.st==='Activo'||c.st==='Vencido');
 
     // Aggregate
@@ -165,8 +165,7 @@
     const stCol = {'Vencido':'var(--red)','Parcial':'var(--orange)','Al dia':'var(--green)','Pagado':'var(--purple)'};
 
     listEl.innerHTML = sorted.map(c=>{
-      const credits = c._ent==='end' ? END_CREDITS : DYN_CREDITS;
-      const origIdx = credits.findIndex(x=>x.cl===c.cl);
+      const origIdx = c._origIdx;
       const proxFecha = c._prox ? c._prox.fecha : '—';
       const proxMonto = c._prox ? fmtFull(c._prox.pago) : '—';
       const sl = c._statusLabel;
