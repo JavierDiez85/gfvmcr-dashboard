@@ -15,6 +15,7 @@
 }
 /* ── DARK MODE ── */
 body.dark {
+  color-scheme: dark;
   --sb: #0f1018; --sb-h: #1a1d2e; --sb-a: #252840; --sb-t: #c5c7e0; --sb-m: #5558a0;
   --bg: #13151f; --white: #1c1f2e; --border: #272a3a; --border2: #32364a;
   --blue-lt: #1a3a5c; --blue-bg: #0f2035;
