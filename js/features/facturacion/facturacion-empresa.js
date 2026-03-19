@@ -247,7 +247,7 @@ function feRenderCxpTable(search){
     if(c.pdf_base64){
       actions += ' <button class="btn btn-out" style="font-size:.62rem;padding:3px 8px" onclick="feViewPDF(\''+c.id+'\')">📄</button>';
     }
-    actions += ' <button class="btn btn-out" style="font-size:.62rem;padding:3px 6px;color:#b02020" onclick="feDeleteCxp(\''+c.id+'\')">✕</button>';
+    actions += ' <button onclick="feDeleteCxp(\''+c.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>';
     return '<tr>'
       + '<td>'+_fmtD(c.fecha_factura)+'</td>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
@@ -1006,7 +1006,7 @@ function _emitRenderTable(){
       + '<td class="r mo">'+_fmt(u.iva||0)+'</td>'
       + '<td class="r mo" style="font-weight:700">'+_fmt(u.total||0)+'</td>'
       + '<td style="font-size:.62rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">'+_esc(u.uuid||'—')+'</td>'
-      + '<td><button class="btn btn-out" style="font-size:.62rem;padding:3px 6px;color:#b02020" onclick="emitDelete(\''+u.id+'\')">✕</button></td>'
+      + '<td style="text-align:center"><button onclick="emitDelete(\''+u.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button></td>'
       + '</tr>';
   }).join('');
 }
