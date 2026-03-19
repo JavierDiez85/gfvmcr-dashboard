@@ -220,7 +220,11 @@
       stel: { id:'stel-res', entName:'Stellaris', acColor:'#e53935',
         sections:[
           { type:'header', label:'\u25b6 INGRESOS' },
-          { type:'ing', label:'  Otros Ingresos',           cats:['Otros Ingresos'] },
+          { type:'ing', label:'  M\u00e1quinas (% Net Win)',    cats:['M\u00e1quinas Net Win'] },
+          { type:'ing', label:'  Juego en Vivo',              cats:['Juego en Vivo'] },
+          { type:'ing', label:'  Mesas de Juego',             cats:['Mesas de Juego'] },
+          { type:'ing', label:'  Restaurante',                cats:['Restaurante'] },
+          { type:'ing', label:'  Otros Ingresos',             cats:['Otros Ingresos'] },
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
