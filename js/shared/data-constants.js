@@ -129,7 +129,7 @@
     'Endless': ['Cr\u00e9dito Simple','Otros Ingresos'],
     'Dynamo':  ['Cr\u00e9dito Simple','Cr\u00e9dito Automotriz','Otros Ingresos'],
     'Wirebit': ['Exchange','OTC','Retiro Blockchain','Retiro FIAT','Tarjeta Wirebit','Otros Ingresos'],
-    'Stellaris': ['Otros Ingresos'],
+    'Stellaris': ['M\u00e1quinas Net Win','Juego en Vivo','Mesas de Juego','Restaurante','Otros Ingresos'],
   };
   const ENT_CATS_GAS = {
     'Salem':   ['N\u00f3mina','Costo Directo','Renta','Marketing','Operaciones','Regulatorio','Administrativo','Representaci\u00f3n','Com. Bancarias','Varios'],
