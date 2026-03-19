@@ -1116,11 +1116,11 @@ function emitSetManual(){
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha</label>';
   html += '<input type="date" id="emit-f-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
-  html += '<input type="number" id="emit-f-subtotal" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
-  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA</label>';
-  html += '<input type="number" id="emit-f-iva" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="emit-f-subtotal" class="fi" placeholder="$0.00" oninput="facSubInput(\'emit\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA <span style="font-weight:400;color:var(--muted)">(auto 16%)</span></label>';
+  html += '<input type="text" id="emit-f-iva" class="fi" placeholder="$0.00" oninput="facIvaInput(\'emit\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
-  html += '<input type="number" id="emit-f-total" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="emit-f-total" class="fi" placeholder="$0.00" readonly style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700;background:var(--blue-bg);color:var(--blue);cursor:default"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
   html += '<input type="text" id="emit-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '</div>';
@@ -1161,7 +1161,7 @@ function emitSaveFromPreview(){
 
 function emitSaveManual(){
   var cliente = (document.getElementById('emit-f-cliente')||{}).value || '';
-  var total = Number((document.getElementById('emit-f-total')||{}).value || 0);
+  var total = _facParse('emit-f-total');
   if(!cliente && !total){ if(typeof toast==='function') toast('⚠️ Completa al menos cliente y total'); return; }
   var empKey = CF_EMP_KEY[_emitEmpresa];
   var store = _cfdiLoad();
@@ -1172,8 +1172,8 @@ function emitSaveManual(){
     folio: (document.getElementById('emit-f-folio')||{}).value || '',
     receptor_nombre: cliente,
     receptor_rfc: (document.getElementById('emit-f-rfc')||{}).value || '',
-    subtotal: Number((document.getElementById('emit-f-subtotal')||{}).value || 0),
-    iva: Number((document.getElementById('emit-f-iva')||{}).value || 0),
+    subtotal: _facParse('emit-f-subtotal'),
+    iva: _facParse('emit-f-iva'),
     total: total,
     concepto: (document.getElementById('emit-f-concepto')||{}).value || '',
     created_at: _now()
@@ -1480,11 +1480,11 @@ function recvSetManual(){
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
   html += '<input type="text" id="recv-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
-  html += '<input type="number" id="recv-f-subtotal" class="fi" step="0.01" placeholder="0.00" oninput="recvCalcTotal()" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
-  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA</label>';
-  html += '<input type="number" id="recv-f-iva" class="fi" step="0.01" placeholder="0.00" oninput="recvCalcTotal()" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="recv-f-subtotal" class="fi" placeholder="$0.00" oninput="facSubInput(\'recv\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA <span style="font-weight:400;color:var(--muted)">(auto 16%)</span></label>';
+  html += '<input type="text" id="recv-f-iva" class="fi" placeholder="$0.00" oninput="facIvaInput(\'recv\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
-  html += '<input type="number" id="recv-f-total" class="fi" step="0.01" placeholder="0.00" style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700"></div>';
+  html += '<input type="text" id="recv-f-total" class="fi" placeholder="$0.00" readonly style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700;background:var(--blue-bg);color:var(--blue);cursor:default"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha Vencimiento</label>';
   html += '<input type="date" id="recv-f-venc" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '</div>';
@@ -1495,12 +1495,44 @@ function recvSetManual(){
   fa.innerHTML = html;
 }
 
-function recvCalcTotal(){
-  var sub = Number((document.getElementById('recv-f-subtotal')||{}).value || 0);
-  var iva = Number((document.getElementById('recv-f-iva')||{}).value || 0);
-  var totalEl = document.getElementById('recv-f-total');
-  if(totalEl) totalEl.value = (sub + iva).toFixed(2);
+// ── Helpers de formato moneda para formularios ──────────────────────────────
+function _facFmt(n){
+  return '$'+(+n||0).toLocaleString('es-MX',{minimumFractionDigits:2,maximumFractionDigits:2});
 }
+function _facParse(id){
+  var el=document.getElementById(id); if(!el) return 0;
+  return parseFloat((el.value||'').toString().replace(/[$,\s]/g,''))||0;
+}
+function facFocus(el){
+  var n=parseFloat((el.value||'').replace(/[$,\s]/g,''));
+  el.value=(!isNaN(n)&&n!==0)?n.toString():'';
+  el.select();
+}
+function facBlur(el){
+  var n=parseFloat((el.value||'').replace(/[$,\s]/g,''))||0;
+  el.value=n>0?_facFmt(n):'';
+}
+function facSubInput(pfx){
+  var sub=parseFloat(((document.getElementById(pfx+'-f-subtotal')||{}).value||'').replace(/[$,]/g,''))||0;
+  var ivaEl=document.getElementById(pfx+'-f-iva');
+  if(ivaEl&&!ivaEl.dataset.manualIva){
+    var autoIva=Math.round(sub*0.16*100)/100;
+    ivaEl.value=autoIva>0?_facFmt(autoIva):'';
+  }
+  var iva=parseFloat(((ivaEl&&ivaEl.value)||'').replace(/[$,]/g,''))||0;
+  var totEl=document.getElementById(pfx+'-f-total');
+  if(totEl) totEl.value=_facFmt(sub+iva);
+}
+function facIvaInput(pfx){
+  var ivaEl=document.getElementById(pfx+'-f-iva');
+  if(ivaEl) ivaEl.dataset.manualIva='1';
+  var sub=parseFloat(((document.getElementById(pfx+'-f-subtotal')||{}).value||'').replace(/[$,]/g,''))||0;
+  var iva=parseFloat(((ivaEl&&ivaEl.value)||'').replace(/[$,]/g,''))||0;
+  var totEl=document.getElementById(pfx+'-f-total');
+  if(totEl) totEl.value=_facFmt(sub+iva);
+}
+// ── (alias legacy) ───────────────────────────────────────────────────────────
+function recvCalcTotal(){ facSubInput('recv'); }
 
 function recvSaveFromPreview(){
   if(!_recvPdfData) return;
@@ -1539,7 +1571,7 @@ function recvSaveFromPreview(){
 
 function recvSaveManual(){
   var prov = (document.getElementById('recv-f-prov')||{}).value || '';
-  var total = Number((document.getElementById('recv-f-total')||{}).value || 0);
+  var total = _facParse('recv-f-total');
   if(!prov && !total){ if(typeof toast==='function') toast('⚠️ Completa al menos proveedor y total'); return; }
   var store = _feLoad();
   store.cuentas.push({
@@ -1553,8 +1585,8 @@ function recvSaveManual(){
     fecha_factura: (document.getElementById('recv-f-fecha')||{}).value || _today(),
     fecha_vencimiento: (document.getElementById('recv-f-venc')||{}).value || '',
     moneda: 'MXN',
-    subtotal_mxn: Number((document.getElementById('recv-f-subtotal')||{}).value || 0),
-    iva_mxn: Number((document.getElementById('recv-f-iva')||{}).value || 0),
+    subtotal_mxn: _facParse('recv-f-subtotal'),
+    iva_mxn: _facParse('recv-f-iva'),
     total_mxn: total,
     monto_pagado_mxn: 0,
     saldo_mxn: total,
@@ -1866,6 +1898,10 @@ window.recvSaveFromPreview = recvSaveFromPreview;
 window.recvSaveManual = recvSaveManual;
 window.recvClearForm  = recvClearForm;
 window.recvCalcTotal  = recvCalcTotal;
+window.facFocus       = facFocus;
+window.facBlur        = facBlur;
+window.facSubInput    = facSubInput;
+window.facIvaInput    = facIvaInput;
 // Pagos Pendientes globals
 window.ppSetPeriodo   = ppSetPeriodo;
 window.ppRenderAll    = ppRenderAll;
