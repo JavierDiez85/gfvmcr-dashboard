@@ -363,8 +363,11 @@
           <div style="font-size:.62rem;color:var(--muted)">Vencido</div>
         </div>
 
-        <!-- Arrow -->
-        <div style="color:var(--muted);font-size:1rem;flex-shrink:0">›</div>
+        <!-- Actions -->
+        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
+          <button onclick="credOpenDetail('${entKey}','${c.cl.replace(/'/g,"\\'")}',${credits.indexOf(c)})" style="font-size:.62rem;padding:4px 10px;border:1px solid ${col};color:${col};background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap" onmouseover="this.style.background='${col}';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='${col}'">📋 Ver tabla</button>
+          <button onclick="credDeleteFromList('${entKey}',${credits.indexOf(c)})" style="font-size:.62rem;padding:4px 10px;border:1px solid var(--border2);color:var(--red);background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap" onmouseover="this.style.background='var(--red)';this.style.color='white';this.style.borderColor='var(--red)'" onmouseout="this.style.background='transparent';this.style.color='var(--red)';this.style.borderColor='var(--border2)'">🗑 Eliminar</button>
+        </div>
       </div>`;
     }).join('');
   }
@@ -399,7 +402,22 @@
     if(q('dyn-kpi-pipeline-sub'))q('dyn-kpi-pipeline-sub').textContent= prospectos.length+' prospecto'+(prospectos.length!==1?'s':'');
   }
 
+  // ── Delete credit from list (without opening detail modal) ──
+  function credDeleteFromList(entKey, idx){
+    const credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
+    const name = (credits[idx] && credits[idx].cl) ? credits[idx].cl : 'este crédito';
+    customConfirm('¿Eliminar "' + name + '"?', 'Eliminar', function(ok){
+      if(!ok) return;
+      credits.splice(idx, 1);
+      DB.set('gf_cred_' + entKey, credits);
+      if(entKey==='end') rEndCred(); else rDynCred();
+      fiInjectTPV(); fiInjectCredits(); syncFlujoToRecs();
+      toast('🗑 ' + name + ' eliminado');
+    });
+  }
+
   // Expose globals
+  window.credDeleteFromList  = credDeleteFromList;
   window.rCredDash           = rCredDash;
   window._credDashEntitySummary = _credDashEntitySummary;
   window._credDashRenderAllList = _credDashRenderAllList;
