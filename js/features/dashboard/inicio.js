@@ -80,23 +80,23 @@
   }
 
   function _sectionLabel(txt) {
-    return '<div style="font-size:.68rem;font-weight:700;color:var(--muted);text-transform:uppercase;'
+    return '<div style="font-size:.72rem;font-weight:700;color:var(--text);text-transform:uppercase;'
          + 'letter-spacing:.7px;margin-bottom:10px;text-align:center">' + txt + '</div>';
   }
 
   function _kpiCard(label, value, sub, color) {
     return '<div class="cc" style="padding:20px 16px;border-top:3px solid ' + color + ';text-align:center">'
-         + '<div style="font-size:.68rem;font-weight:700;color:var(--muted);margin-bottom:6px;'
+         + '<div style="font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:6px;'
          + 'text-transform:uppercase;letter-spacing:.3px">' + label + '</div>'
          + '<div style="font-size:1.3rem;font-weight:700;color:' + color + ';line-height:1.2">' + value + '</div>'
-         + '<div style="font-size:.68rem;color:var(--muted);margin-top:4px">' + sub + '</div>'
+         + '<div style="font-size:.7rem;color:var(--text2);margin-top:4px">' + sub + '</div>'
          + '</div>';
   }
 
   function _entMini(label, value, color) {
     return '<div style="background:var(--bg);border-radius:6px;padding:8px 10px">'
-         + '<div style="font-size:.63rem;color:var(--muted);margin-bottom:2px">' + label + '</div>'
-         + '<div style="font-size:.8rem;font-weight:700;color:' + color + '">' + value + '</div>'
+         + '<div style="font-size:.67rem;font-weight:600;color:var(--text2);margin-bottom:2px">' + label + '</div>'
+         + '<div style="font-size:.82rem;font-weight:700;color:' + color + '">' + value + '</div>'
          + '</div>';
   }
 
@@ -128,7 +128,7 @@
          + e.color + '" onclick="navTo(\'' + e.ppNav + '\')">'
          + '<div style="font-size:.75rem;font-weight:700;color:' + e.color + '">' + e.icon + ' ' + e.name + '</div>'
          + '<div style="font-size:1.05rem;font-weight:700;color:#e53935;margin:4px 0">' + _fmtM(p.total) + '</div>'
-         + '<div style="font-size:.68rem;color:var(--muted)">'
+         + '<div style="font-size:.7rem;color:var(--text2)">'
          + p.count + ' factura' + (p.count > 1 ? 's' : '') + ' pendiente' + (p.count > 1 ? 's' : '')
          + '</div>'
          + '</div>';
