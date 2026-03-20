@@ -427,7 +427,7 @@
 
   // Register view
   if (typeof registerView === 'function') {
-    registerView('inicio', function() { return rInicio(); });
+    registerView('inicio', function() { return _syncAll().then(function(){ return rInicio(); }); });
   }
 
 })(window);
