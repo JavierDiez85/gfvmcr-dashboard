@@ -1124,18 +1124,20 @@
     </div>
   </div>
   <div class="kpi-row c4" style="margin-bottom:10px">
-    <div class="kpi-card kpi-clickable" style="--ac:#00b875" onclick="navTo('end_cred')">
-      <div class="kpi-hint">ver cartera →</div>
+    <div class="kpi-card kpi-clickable" style="--ac:#00b875" onclick="_credKpiPopup('end','cartera')">
+      <div class="kpi-hint">ver detalle →</div>
       <div class="kpi-top"><div class="kpi-lbl">Cartera Total</div><div class="kpi-ico" style="background:var(--green-bg);color:#00b875">💵</div></div>
       <div class="kpi-val" id="end-kpi-cartera" style="color:#00b875">—</div>
       <div class="kpi-d" id="end-kpi-cartera-sub">Cargando...</div>
     </div>
-    <div class="kpi-card" style="--ac:var(--blue)">
+    <div class="kpi-card kpi-clickable" style="--ac:var(--blue)" onclick="_credKpiPopup('end','cobrado')">
+      <div class="kpi-hint">ver detalle →</div>
       <div class="kpi-top"><div class="kpi-lbl">Ingreso Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📈</div></div>
       <div class="kpi-val" id="end-k-ing" style="color:var(--blue)">—</div>
       <div class="kpi-d" id="end-kpi-ing-sub">Pendiente datos</div>
     </div>
-    <div class="kpi-card" style="--ac:var(--orange)">
+    <div class="kpi-card kpi-clickable" style="--ac:var(--orange)" onclick="_credKpiPopup('end','pendiente')">
+      <div class="kpi-hint">ver detalle →</div>
       <div class="kpi-top"><div class="kpi-lbl">Ingreso por Cobrar</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🔮</div></div>
       <div class="kpi-val" id="end-kpi-ing-pend" style="color:var(--orange)">—</div>
       <div class="kpi-d" id="end-kpi-ing-pend-sub">Todos los créditos</div>
@@ -1384,18 +1386,20 @@
     </div>
   </div>
   <div class="kpi-row c4" style="margin-bottom:10px">
-    <div class="kpi-card kpi-clickable" style="--ac:#ff7043" onclick="navTo('dyn_cred')">
-      <div class="kpi-hint">ver cartera →</div>
+    <div class="kpi-card kpi-clickable" style="--ac:#ff7043" onclick="_credKpiPopup('dyn','cartera')">
+      <div class="kpi-hint">ver detalle →</div>
       <div class="kpi-top"><div class="kpi-lbl">Cartera Total</div><div class="kpi-ico" style="background:var(--orange-bg);color:#ff7043">💵</div></div>
       <div class="kpi-val" id="dyn-kpi-cartera" style="color:#ff7043">—</div>
       <div class="kpi-d" id="dyn-kpi-cartera-sub">Cargando...</div>
     </div>
-    <div class="kpi-card" style="--ac:var(--blue)">
+    <div class="kpi-card kpi-clickable" style="--ac:var(--blue)" onclick="_credKpiPopup('dyn','cobrado')">
+      <div class="kpi-hint">ver detalle →</div>
       <div class="kpi-top"><div class="kpi-lbl">Ingreso Cobrado</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📈</div></div>
       <div class="kpi-val" id="dyn-k-ing" style="color:var(--blue)">—</div>
       <div class="kpi-d" id="dyn-kpi-ing-sub">Pendiente datos</div>
     </div>
-    <div class="kpi-card" style="--ac:var(--orange)">
+    <div class="kpi-card kpi-clickable" style="--ac:var(--orange)" onclick="_credKpiPopup('dyn','pendiente')">
+      <div class="kpi-hint">ver detalle →</div>
       <div class="kpi-top"><div class="kpi-lbl">Ingreso por Cobrar</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🔮</div></div>
       <div class="kpi-val" id="dyn-kpi-ing-pend" style="color:var(--orange)">—</div>
       <div class="kpi-d" id="dyn-kpi-ing-pend-sub">Todos los créditos</div>

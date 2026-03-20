@@ -960,7 +960,106 @@
     });
   }
 
+  // ═══════════════════════════════════════
+  // Popups detalle por cliente (KPI cards)
+  // ═══════════════════════════════════════
+  function _credKpiPopup(entKey, type){
+    var credits = entKey==='end' ? END_CREDITS : DYN_CREDITS;
+    var activos = credits.filter(function(c){ return c.st==='Activo'; });
+    var label = entKey==='end' ? 'Endless Money' : 'Dynamo Finance';
+    var col = entKey==='end' ? '#00b875' : '#ff7043';
+    var title, rows = [];
+
+    if(type==='cartera'){
+      title = 'Cartera por Cliente — ' + label;
+      activos.forEach(function(c){
+        var saldo = credSaldoActual(c);
+        var pct = c.monto > 0 ? Math.round(saldo / c.monto * 100) : 0;
+        rows.push({ cl: c.cl, val: saldo, sub: fmtK(c.monto) + ' original · ' + pct + '% pendiente', monto: c.monto });
+      });
+      rows.sort(function(a,b){ return b.val - a.val; });
+    }
+    else if(type==='cobrado'){
+      title = 'Ingreso Cobrado por Cliente — ' + label;
+      activos.forEach(function(c){
+        if(!c.amort || c.amort.length<=1) return;
+        var cobrado = 0, periodos = 0;
+        c.amort.slice(1).forEach(function(row){
+          var st = credPeriodStatus(c, row);
+          if(st==='PAGADO'){
+            cobrado += (row.int||0);
+            periodos++;
+          } else if(st==='PARCIAL'){
+            var _pgs = c.pagos||[];
+            var _pg = _pgs.find(function(p){ return p.periodo===row.periodo; });
+            var _pct = (_pg && row.pago>0) ? _pg.monto/row.pago : 0;
+            cobrado += Math.round((row.int||0) * _pct);
+            periodos++;
+          }
+        });
+        rows.push({ cl: c.cl, val: cobrado, sub: periodos + ' periodo'+(periodos!==1?'s':'')+' cobrado'+(periodos!==1?'s':'') + ' · ' + c.tasa+'% anual' });
+      });
+      rows.sort(function(a,b){ return b.val - a.val; });
+    }
+    else if(type==='pendiente'){
+      title = 'Ingreso por Cobrar por Cliente — ' + label;
+      activos.forEach(function(c){
+        if(!c.amort || c.amort.length<=1) return;
+        var pend = 0, periodos = 0, vencido = 0;
+        c.amort.slice(1).forEach(function(row){
+          var st = credPeriodStatus(c, row);
+          if(st==='VENCIDO'){
+            pend += (row.int||0) + (row.ivaInt||0);
+            vencido += (row.int||0) + (row.ivaInt||0);
+            periodos++;
+          } else if(st==='PENDIENTE'){
+            pend += (row.int||0) + (row.ivaInt||0);
+            periodos++;
+          } else if(st==='PARCIAL'){
+            var _pgs = c.pagos||[];
+            var _pg = _pgs.find(function(p){ return p.periodo===row.periodo; });
+            var _pct = (_pg && row.pago>0) ? _pg.monto/row.pago : 0;
+            var resto = Math.round(((row.int||0) + (row.ivaInt||0)) * (1 - _pct));
+            pend += resto;
+            periodos++;
+          }
+        });
+        if(pend > 0) rows.push({ cl: c.cl, val: pend, sub: periodos + ' periodo'+(periodos!==1?'s':'') + (vencido>0 ? ' · <span style="color:var(--red)">' + fmtK(vencido) + ' vencido</span>' : ' · al corriente'), vencido: vencido });
+      });
+      rows.sort(function(a,b){ return b.val - a.val; });
+    }
+
+    var total = rows.reduce(function(s,r){ return s + r.val; }, 0);
+    var html = '<div style="margin-bottom:12px;display:flex;justify-content:space-between;align-items:baseline">'
+      + '<span style="font-size:.78rem;color:var(--muted)">' + rows.length + ' cliente'+(rows.length!==1?'s':'')+'</span>'
+      + '<span style="font-family:\'Poppins\',sans-serif;font-weight:700;font-size:1.1rem;color:'+col+'">' + fmtK(total) + '</span>'
+      + '</div>';
+
+    html += '<div style="display:flex;flex-direction:column;gap:8px;max-height:400px;overflow-y:auto">';
+    rows.forEach(function(r){
+      var pct = total > 0 ? (r.val / total * 100) : 0;
+      html += '<div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid var(--border)">'
+        + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
+        + '<span style="font-weight:700;font-size:.82rem">' + r.cl + '</span>'
+        + '<span style="font-family:\'Poppins\',sans-serif;font-weight:700;font-size:.88rem;color:'+col+'">' + fmtK(r.val) + '</span>'
+        + '</div>'
+        + '<div style="display:flex;justify-content:space-between;align-items:center">'
+        + '<span style="font-size:.68rem;color:var(--muted)">' + r.sub + '</span>'
+        + '<span style="font-size:.65rem;color:var(--muted)">' + pct.toFixed(1) + '%</span>'
+        + '</div>'
+        + '<div style="height:4px;background:var(--border);border-radius:2px;margin-top:6px;overflow:hidden">'
+        + '<div style="height:100%;width:'+pct+'%;background:'+col+';border-radius:2px"></div>'
+        + '</div>'
+        + '</div>';
+    });
+    if(rows.length===0) html += '<div style="text-align:center;padding:30px;color:var(--muted);font-size:.82rem">Sin datos</div>';
+    html += '</div>';
+
+    openModal(null, title, html);
+  }
+
   // Expose globals
+  window._credKpiPopup = _credKpiPopup;
   window.fmtK = fmtK;
   window._isCostRow = _isCostRow;
   window.COST_CATS = COST_CATS;
