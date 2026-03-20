@@ -425,6 +425,28 @@
       if(elCartSub) elCartSub.textContent = activos.length + ' cr\u00e9dito' + (activos.length!==1?'s':'') + ' activo' + (activos.length!==1?'s':'');
       const elIngSub = document.getElementById(ent+'-kpi-ing-sub');
       if(elIngSub) elIngSub.textContent = annIng > 0 ? 'Intereses + comisiones' : 'Pendiente datos';
+      // Ingreso por cobrar: intereses de periodos NO pagados de todos los creditos activos (sin filtro de año)
+      var ingPend = 0, periPend = 0;
+      activos.forEach(function(c){
+        if(!c.amort || c.amort.length<=1) return;
+        c.amort.slice(1).forEach(function(row){
+          var st = (typeof credPeriodStatus==='function') ? credPeriodStatus(c, row) : null;
+          if(st==='VENCIDO'||st==='PENDIENTE'){
+            ingPend += (row.int||0) + (row.ivaInt||0);
+            periPend++;
+          } else if(st==='PARCIAL'){
+            var _pgs = c.pagos||[];
+            var _pg = _pgs.find(function(p){ return p.periodo===row.periodo; });
+            var _pct = (_pg && row.pago>0) ? _pg.monto/row.pago : 0;
+            ingPend += Math.round(((row.int||0) + (row.ivaInt||0)) * (1 - _pct));
+            periPend++;
+          }
+        });
+      });
+      var elIngPend = document.getElementById(ent+'-kpi-ing-pend');
+      var elIngPendSub = document.getElementById(ent+'-kpi-ing-pend-sub');
+      if(elIngPend) elIngPend.textContent = ingPend > 0 ? fmtK(ingPend) : '$0';
+      if(elIngPendSub) elIngPendSub.textContent = periPend > 0 ? periPend + ' periodo'+(periPend!==1?'s':'')+' pendiente'+(periPend!==1?'s':'') : 'Todo cobrado';
       const pipeline = prospectos.reduce((s,c)=>s+(c.monto||0),0);
       const elPipe = document.getElementById(ent+'-kpi-pipeline');
       const elPipeSub = document.getElementById(ent+'-kpi-pipeline-sub');
