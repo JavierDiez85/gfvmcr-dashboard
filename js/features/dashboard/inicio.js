@@ -102,23 +102,32 @@
 
   function _entCard(e, roi, pend) {
     var mc = e.margen >= 0 ? '#00b875' : '#e53935';
-    var roiStr = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : 'Sin inv.';
+    var roiStr   = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '—';
     var roiColor = roi === null ? 'var(--text2)' : (roi >= 0 ? '#00b875' : '#e53935');
+    var roiBg    = roi === null ? 'var(--bg)' : (roi >= 0 ? '#00b87514' : '#e5393514');
     var pendBadge = pend.count > 0
       ? '<div style="margin-top:10px;font-size:.68rem;color:#ff9500;background:#ff950018;'
         + 'border-radius:6px;padding:5px 8px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
         + e.ppNav + '\')">⏳ ' + pend.count + ' CxP · ' + _fmtM(pend.total) + '</div>'
       : '';
+    // ROI badge — full-width, prominent
+    var roiBadge = '<div style="margin-top:10px;background:' + roiBg + ';border:1.5px solid '
+      + roiColor + '30;border-radius:8px;padding:8px 10px;text-align:center">'
+      + '<div style="font-size:.6rem;font-weight:700;color:' + roiColor + ';text-transform:uppercase;'
+      + 'letter-spacing:.5px;margin-bottom:2px">ROI</div>'
+      + '<div style="font-size:1.25rem;font-weight:700;color:' + roiColor + ';line-height:1">' + roiStr + '</div>'
+      + (roi === null ? '<div style="font-size:.6rem;color:var(--muted);margin-top:2px">Sin inversión registrada</div>' : '')
+      + '</div>';
     return '<div class="cc" style="padding:16px;border-top:3px solid ' + e.color + ';cursor:pointer" '
          + 'onclick="navTo(\'' + e.nav + '\')">'
          + '<div style="font-size:.9rem;font-weight:700;color:' + e.color + ';margin-bottom:10px;letter-spacing:.1px">'
          + e.icon + ' ' + e.name + '</div>'
-         + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
-         + _entMini('Ingresos', _fmtM(e.ing), '#00b875')
-         + _entMini('Gastos',   _fmtM(e.gas), '#e53935')
+         + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
+         + _entMini('Ingresos', _fmtM(e.ing),     '#00b875')
+         + _entMini('Gastos',   _fmtM(e.gas),     '#e53935')
          + _entMini('Margen',   _fmtMS(e.margen), mc)
-         + _entMini('ROI',      roiStr, roiColor)
          + '</div>'
+         + roiBadge
          + pendBadge
          + '</div>';
   }
@@ -145,14 +154,6 @@
       weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
     }).replace(/^\w/, function(c) { return c.toUpperCase(); });
 
-    // Treasury global
-    var tesData = (typeof tesLoad === 'function') ? tesLoad() : [];
-    var tesTotIng = tesData.filter(function(m) { return m.tipo === 'Ingreso'; })
-                           .reduce(function(s, m) { return s + (m.monto || 0); }, 0);
-    var tesTotGas = tesData.filter(function(m) { return m.tipo === 'Gasto'; })
-                           .reduce(function(s, m) { return s + (m.monto || 0); }, 0);
-    var tesSaldo = tesTotIng - tesTotGas;
-
     // Per-entity P&L
     var entDs = _ENTS.map(function(e) {
       var d = _entData(e.key, yr);
@@ -163,6 +164,15 @@
     var grpIng    = entDs.reduce(function(s, e) { return s + e.ing; }, 0);
     var grpGas    = entDs.reduce(function(s, e) { return s + e.gas; }, 0);
     var grpMargen = grpIng - grpGas;
+
+    // Group ROI (suma de inversiones registradas vs margen neto)
+    var grpInv = _ENTS.reduce(function(s, e) { return s + _inversion(e.cxp); }, 0);
+    var grpROI = grpInv > 0
+      ? ((grpMargen - grpInv) / grpInv * 100)
+      : (grpIng > 0 ? (grpMargen / grpIng * 100) : null);
+    var grpROIStr   = grpROI !== null ? (grpROI >= 0 ? '+' : '') + grpROI.toFixed(1) + '%' : '—';
+    var grpROIColor = grpROI === null ? 'var(--text2)' : (grpROI >= 0 ? '#00b875' : '#e53935');
+    var grpROISub   = grpInv > 0 ? 'vs inversión total' : 'margen / ingresos';
 
     // ── Build HTML ──
     var h = '';
@@ -190,10 +200,10 @@
     h += '<div style="margin-bottom:24px">';
     h += _sectionLabel('📈 Finanzas Grupo ' + yr);
     h += '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px">';
-    h += _kpiCard('Ingresos Grupo',  _fmtM(grpIng),    yr,        '#00b875');
-    h += _kpiCard('Gastos Grupo',    _fmtM(grpGas),    yr,        '#e53935');
-    h += _kpiCard('Margen Neto',     _fmtMS(grpMargen), yr,       grpMargen >= 0 ? '#00b875' : '#e53935');
-    h += _kpiCard('Saldo Tesorería', _fmtM(tesSaldo),  'Acumulado', tesSaldo >= 0 ? '#00b875' : '#e53935');
+    h += _kpiCard('Ingresos Grupo', _fmtM(grpIng),     yr,          '#00b875');
+    h += _kpiCard('Gastos Grupo',   _fmtM(grpGas),     yr,          '#e53935');
+    h += _kpiCard('Margen Neto',    _fmtMS(grpMargen), yr,          grpMargen >= 0 ? '#00b875' : '#e53935');
+    h += _kpiCard('ROI Grupo',      grpROIStr,         grpROISub,   grpROIColor);
     h += '</div>';
     h += '</div>';
 
