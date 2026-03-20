@@ -52,7 +52,17 @@
         cr.amort.slice(1).forEach(row => {
           const fecha = (typeof credParseDate==='function') ? credParseDate(row.fecha) : null;
           if(!fecha || fecha.getFullYear() !== _year) return;
-          vals[fecha.getMonth()] += Math.round(row.int || 0);
+          // Cash basis: solo inyectar ingreso de periodos efectivamente cobrados
+          var st = (typeof credPeriodStatus==='function') ? credPeriodStatus(cr, row) : null;
+          if(st === 'PAGADO'){
+            vals[fecha.getMonth()] += Math.round(row.int || 0);
+          } else if(st === 'PARCIAL'){
+            var _pagos = cr.pagos || [];
+            var _pg = _pagos.find(function(p){ return p.periodo === row.periodo; });
+            var _pct = (_pg && row.pago > 0) ? _pg.monto / row.pago : 0;
+            vals[fecha.getMonth()] += Math.round((row.int || 0) * _pct);
+          }
+          // VENCIDO / PENDIENTE → $0 (no cobrado, no es ingreso)
         });
       }
 
