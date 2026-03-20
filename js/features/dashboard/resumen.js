@@ -58,8 +58,27 @@ function rResumen(){
   const gasGrupo      = Object.values(gasTot).reduce((a,b)=>a+b,0);   // con nómina (para margen)
   const margenGrupo   = ingGrupo - gasGrupo;
 
+  // ── Comparison data (previous year) ──
+  let _ingPrev = 0, _gasPrev = 0, _gasOnlyPrev = 0, _margenPrev = 0;
+  if(typeof cmpActive === 'function' && cmpActive()){
+    const py = cmpPrevYear();
+    const _ingPByE = {}, _gasPByE = {};
+    entKeys.forEach(e=>{ _ingPByE[e]=0; _gasPByE[e]=0; });
+    (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.yr==py).forEach(r=>{
+      if(_ingPByE.hasOwnProperty(r.ent)) _ingPByE[r.ent] += sum(r.vals);
+    });
+    (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.yr==py).forEach(r=>{
+      if(_gasPByE.hasOwnProperty(r.ent)) _gasPByE[r.ent] += sum(r.vals);
+    });
+    _ingPrev = Object.values(_ingPByE).reduce((a,b)=>a+b,0);
+    _gasOnlyPrev = Object.values(_gasPByE).reduce((a,b)=>a+b,0);
+    _gasPrev = _gasOnlyPrev + nomTotal*12; // nómina constante
+    _margenPrev = _ingPrev - _gasPrev;
+  }
+
   // ── KPI cards ──
   const q = id => document.getElementById(id);
+  const _cmpOn = typeof cmpActive === 'function' && cmpActive();
 
   // Ingresos
   const elIng = q('dash-kpi-ing');
@@ -67,8 +86,10 @@ function rResumen(){
     elIng.textContent = fmtK(ingGrupo);
     elIng.style.color = 'var(--green)';
     const sub = entKeys.filter(e=>ingTot[e]>0).map(e=>e.slice(0,3)+' '+fmtK(ingTot[e])).join('  ');
-    if(q('dash-kpi-ing-sub')) q('dash-kpi-ing-sub').textContent = sub || 'Sin ingresos registrados';
-    if(q('dash-kpi-ing-sub')) q('dash-kpi-ing-sub').className = 'kpi-d dnu';
+    if(q('dash-kpi-ing-sub')){
+      q('dash-kpi-ing-sub').innerHTML = (sub || 'Sin ingresos registrados') + (_cmpOn ? cmpBadge(ingGrupo, _ingPrev) : '');
+      q('dash-kpi-ing-sub').className = 'kpi-d dnu';
+    }
     if(q('dash-bar-ing')) q('dash-bar-ing').style.width = Math.min(100, Math.round(ingGrupo/Math.max(ingGrupo,gasGrupo,1)*100))+'%';
   }
 
@@ -77,8 +98,11 @@ function rResumen(){
   if(elGas){
     elGas.textContent = fmtK(gasOnlyGrupo);
     elGas.style.color = 'var(--orange)';
-    if(q('dash-kpi-gas-sub')) q('dash-kpi-gas-sub').textContent = gasOnlyGrupo > 0 ? 'Sin nómina · ver detalle →' : 'Sin gastos capturados';
-    if(q('dash-kpi-gas-sub')) q('dash-kpi-gas-sub').className = 'kpi-d dnu';
+    if(q('dash-kpi-gas-sub')){
+      const gSub = gasOnlyGrupo > 0 ? 'Sin nómina · ver detalle →' : 'Sin gastos capturados';
+      q('dash-kpi-gas-sub').innerHTML = gSub + (_cmpOn ? cmpBadge(gasOnlyGrupo, _gasOnlyPrev, true) : '');
+      q('dash-kpi-gas-sub').className = 'kpi-d dnu';
+    }
     if(q('dash-bar-gas')) q('dash-bar-gas').style.width = Math.min(100, Math.round(gasGrupo/Math.max(ingGrupo,gasGrupo,1)*100))+'%';
   }
 
@@ -91,8 +115,10 @@ function rResumen(){
     elM.textContent = fmtK(margenGrupo);
     elM.style.color = margenGrupo >= 0 ? 'var(--green)' : 'var(--red)';
     const pct = ingGrupo > 0 ? (margenGrupo/ingGrupo*100).toFixed(1)+'% margen' : 'Ing − Gastos';
-    if(q('dash-kpi-margen-sub')) q('dash-kpi-margen-sub').textContent = pct;
-    if(q('dash-kpi-margen-sub')) q('dash-kpi-margen-sub').className = margenGrupo>=0 ? 'kpi-d dnu' : 'kpi-d ddn';
+    if(q('dash-kpi-margen-sub')){
+      q('dash-kpi-margen-sub').innerHTML = pct + (_cmpOn ? cmpBadge(margenGrupo, _margenPrev) : '');
+      q('dash-kpi-margen-sub').className = margenGrupo>=0 ? 'kpi-d dnu' : 'kpi-d ddn';
+    }
     if(q('dash-bar-margen')){ q('dash-bar-margen').style.width = Math.min(100,Math.abs(margenGrupo)/Math.max(ingGrupo,1)*100)+'%'; q('dash-bar-margen').style.background = margenGrupo>=0?'var(--green)':'var(--red)'; }
   }
 
@@ -133,11 +159,23 @@ function rResumen(){
       entKeys.filter(e=>ingTot[e]>0).forEach(e=>{
         ingAgg[e] = chartCols.map(idxs=>colVal(ingByEnt[e],idxs));
       });
+      // Compare: previous year as dashed grouped line overlay
+      var _dPrevDs = [];
+      if(_cmpOn){
+        const _py = cmpPrevYear();
+        const _pIngByEnt = {};
+        entKeys.forEach(e=>_pIngByEnt[e]=Array(12).fill(0));
+        (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.yr==_py).forEach(r=>{
+          if(_pIngByEnt[r.ent]) r.vals.forEach((v,i)=>_pIngByEnt[r.ent][i]+=(v||0));
+        });
+        const _pTotal = chartCols.map(idxs=>entKeys.reduce((s,e)=>s+colVal(_pIngByEnt[e],idxs),0));
+        _dPrevDs = [{type:'line',label:'Total '+_py,data:_pTotal,borderColor:'var(--orange)',borderWidth:2,borderDash:[5,5],pointRadius:2,pointBackgroundColor:'var(--orange)',tension:.3,fill:false,order:0}];
+      }
       CH['cdashi'] = new Chart(c1,{type:'bar',data:{labels:chartLabels,
-        datasets:Object.keys(ingAgg).map(e=>({label:e,data:ingAgg[e],backgroundColor:entCBg[e],borderColor:entC[e],borderWidth:1.5}))
+        datasets:[...Object.keys(ingAgg).map(e=>({label:e,data:ingAgg[e],backgroundColor:entCBg[e],borderColor:entC[e],borderWidth:1.5})), ..._dPrevDs]
       },options:cOpts({scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:tK}}}})});
       const modeLabel = _dashMode==='trimestral'?'Trimestral':_dashMode==='anual'?'Anual':'Mensual';
-      if(q('dash-c1-sub')) q('dash-c1-sub').textContent=modeLabel+' · por empresa';
+      if(q('dash-c1-sub')) q('dash-c1-sub').textContent=modeLabel+' · por empresa' + (_cmpOn ? ' (línea: '+cmpPrevYear()+')' : '');
     } else {
       const ann = entKeys.map(e=>({e,v:ingTot[e]}));
       CH['cdashi'] = new Chart(c1,{type:'doughnut',data:{
@@ -173,13 +211,24 @@ function rResumen(){
     dc('cdashm');
     const c4 = q('c-dash-margen'); if(!c4) return;
     const margenVals = entKeys.map(e => ingTot[e] - gasTot[e]);
+    var _dMPrev = [];
+    if(_cmpOn){
+      const _py = cmpPrevYear();
+      const _pMargen = entKeys.map(e=>{
+        const pI=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_py).reduce((a,r)=>a+sum(r.vals),0);
+        const pG=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===e&&r.yr==_py).reduce((a,r)=>a+sum(r.vals),0);
+        const pN=NOM_EDIT.reduce((a,n)=>a+n.s*((e==='Salem'?n.sal:e==='Endless'?n.end:e==='Dynamo'?n.dyn:e==='Stellaris'?n.stel:n.wb)||0)/100,0)*12;
+        return pI-pG-pN;
+      });
+      _dMPrev = [{label:String(_py),data:_pMargen,backgroundColor:'rgba(255,112,67,.15)',borderColor:'var(--orange)',borderWidth:1.5,borderRadius:4,borderDash:[4,4]}];
+    }
     CH['cdashm'] = new Chart(c4,{type:'bar',data:{
       labels:entKeys,
-      datasets:[{data:margenVals,
+      datasets:[{label:String(_year),data:margenVals,
         backgroundColor:margenVals.map(v=>v>=0?'rgba(0,184,117,.25)':'rgba(229,57,53,.2)'),
         borderColor:margenVals.map(v=>v>=0?'#00b875':'#e53935'),
-        borderWidth:1.5,borderRadius:4}]
-    },options:cOpts({indexAxis:'y',plugins:{legend:{display:false}},scales:{
+        borderWidth:1.5,borderRadius:4}, ..._dMPrev]
+    },options:cOpts({indexAxis:'y',plugins:{legend:{display:_cmpOn,position:'top',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8}}},scales:{
       x:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:tK}},
       y:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}}
     }})});
@@ -243,6 +292,9 @@ function rEntSummary(){
   const entIco = {Salem:'💳', Endless:'🏦', Dynamo:'🏦', Wirebit:'⛓', Stellaris:'🔴'};
   const entNav = {Salem:"navTo('sal_res')", Endless:"navTo('end_res')", Dynamo:"navTo('dyn_res')", Wirebit:"navTo('wb_res')", Stellaris:"navTo('stel_res')"};
 
+  const _sCmpOn = typeof cmpActive === 'function' && cmpActive();
+  const _sPy = _sCmpOn ? cmpPrevYear() : 0;
+
   const cards = ['Salem','Endless','Dynamo','Wirebit','Stellaris'].map(e => {
     const ing  = (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+sum(r.vals),0);
     const gas  = (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===e&&r.yr==_year).reduce((a,r)=>a+sum(r.vals),0);
@@ -251,6 +303,14 @@ function rEntSummary(){
     const gasD = gas || nom;
     const mg   = ingD - gasD;
     const mgPct = ingD ? Math.round(mg/ingD*100) : null;
+
+    // Previous year comparison
+    let _pIng=0, _pGas=0, _pMg=0;
+    if(_sCmpOn){
+      _pIng = (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_sPy).reduce((a,r)=>a+sum(r.vals),0);
+      _pGas = (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===e&&r.yr==_sPy).reduce((a,r)=>a+sum(r.vals),0) + nom;
+      _pMg = (_pIng||0) - _pGas;
+    }
 
     // Credit info for SOFOMs
     let extra = '';
@@ -274,11 +334,11 @@ function rEntSummary(){
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px 10px">
         <div>
-          <div style="font-size:.6rem;color:var(--muted);margin-bottom:1px">Ingresos</div>
+          <div style="font-size:.6rem;color:var(--muted);margin-bottom:1px">Ingresos${_sCmpOn ? cmpBadgeSm(ingD, _pIng) : ''}</div>
           <div style="font-size:.82rem;font-weight:700;color:var(--green)">${ingD ? fmtK(ingD) : '<span style="color:var(--muted)">—</span>'}</div>
         </div>
         <div>
-          <div style="font-size:.6rem;color:var(--muted);margin-bottom:1px">Gastos</div>
+          <div style="font-size:.6rem;color:var(--muted);margin-bottom:1px">Gastos${_sCmpOn ? cmpBadgeSm(gasD, _pGas, true) : ''}</div>
           <div style="font-size:.82rem;font-weight:700;color:var(--orange)">${fmtK(gasD)}</div>
         </div>
         <div>
@@ -286,7 +346,7 @@ function rEntSummary(){
           <div style="font-size:.82rem;font-weight:700;color:var(--purple)">${fmtK(nom/12)}</div>
         </div>
         <div>
-          <div style="font-size:.6rem;color:var(--muted);margin-bottom:1px">Margen</div>
+          <div style="font-size:.6rem;color:var(--muted);margin-bottom:1px">Margen${_sCmpOn ? cmpBadgeSm(mg, _pMg) : ''}</div>
           <div style="font-size:.82rem;font-weight:700;color:${mg>=0?'var(--green)':'var(--red)'}">${ingD ? (mgPct+'%') : '<span style="color:var(--muted)">—</span>'}</div>
         </div>
       </div>
@@ -334,6 +394,22 @@ function rEDO(){
   const GAS_TOT = Array(12).fill(0).map((_,i)=>GAS.Salem[i]+GAS.Endless[i]+GAS.Dynamo[i]+GAS.Wirebit[i]);
   const MARGEN  = ING_TOT.map((v,i)=>v-GAS_TOT[i]);
 
+  // ── Compare: previous year EDO data ──
+  const _edoCmp = typeof cmpActive === 'function' && cmpActive();
+  let PING={}, PGAS={}, PING_TOT, PGAS_TOT, PMARGEN;
+  if(_edoCmp){
+    const py = cmpPrevYear();
+    const getPV = (ent, tipo) => {
+      const recs = (S.recs||[]).filter(r=>!r.isSharedSource&&r.yr==py&&r.tipo===tipo&&(ent==='ALL'||r.ent===ent));
+      return Array(12).fill(0).map((_,i) => recs.reduce((a,r)=>a+(r.vals[i]||0),0));
+    };
+    PING = { Salem:getPV('Salem','ingreso'), Endless:getPV('Endless','ingreso'), Dynamo:getPV('Dynamo','ingreso'), Wirebit:getPV('Wirebit','ingreso') };
+    PGAS = { Salem:getPV('Salem','gasto').map(v=>v+nomMes('Salem')), Endless:getPV('Endless','gasto').map(v=>v+nomMes('Endless')), Dynamo:getPV('Dynamo','gasto').map(v=>v+nomMes('Dynamo')), Wirebit:getPV('Wirebit','gasto').map(v=>v+nomMes('Wirebit')) };
+    PING_TOT = Array(12).fill(0).map((_,i)=>PING.Salem[i]+PING.Endless[i]+PING.Dynamo[i]+PING.Wirebit[i]);
+    PGAS_TOT = Array(12).fill(0).map((_,i)=>PGAS.Salem[i]+PGAS.Endless[i]+PGAS.Dynamo[i]+PGAS.Wirebit[i]);
+    PMARGEN  = PING_TOT.map((v,i)=>v-PGAS_TOT[i]);
+  }
+
   // Collapse months based on mode (shared utility)
   const {cols, colLabels} = periodColumns(_edoMode);
 
@@ -349,19 +425,31 @@ function rEDO(){
     sep: 'height:6px;background:var(--bg)',
   }[type]||'');
 
-  const cell = (v, type, isTot=false) => {
-    const cls = type==='util'?(v>=0?'pos':'neg'):type==='ing'?'pos':type==='gas'?'neg':'';
-    const bold = (type==='total'||type==='util'||isTot) ? 'font-weight:700;' : '';
-    return `<td class="mo ${cls}" style="${bold}">${v ? fmtFull(v) : '—'}</td>`;
+  const _edoSubLine = (cur, prev, invert) => {
+    if(!_edoCmp || prev==null) return '';
+    const d = cmpDelta(cur, prev);
+    if(!d) return '';
+    const cls = d.dir==='neutral'?'dnu':(d.dir==='up'?(invert?'ddn':'dup'):(invert?'dup':'ddn'));
+    return `<div class="cmp-prev">${fmtFull(prev)} <span class="${cls}" style="font-size:.55rem;padding:0 3px;border-radius:6px">${d.label}</span></div>`;
   };
 
-  const row = (label, arr, type, color='') => {
+  const cell = (v, type, isTot=false, pv=null) => {
+    const cls = type==='util'?(v>=0?'pos':'neg'):type==='ing'?'pos':type==='gas'?'neg':'';
+    const bold = (type==='total'||type==='util'||isTot) ? 'font-weight:700;' : '';
+    const invert = type==='gas' || type==='total';
+    return `<td class="mo ${cls}" style="${bold}">${v ? fmtFull(v) : '—'}${pv!=null ? _edoSubLine(v, pv, invert) : ''}</td>`;
+  };
+
+  const row = (label, arr, type, color='', prevArr=null) => {
     const vals = cols.map(idxs => colVal(arr, idxs));
     const tot  = arr.reduce((a,b)=>a+b,0);
+    const pVals = prevArr ? cols.map(idxs => colVal(prevArr, idxs)) : null;
+    const pTot = prevArr ? prevArr.reduce((a,b)=>a+b,0) : null;
     const allCols = _edoMode==='trimestral' ? vals : (_edoMode==='mensual' ? [...vals,[tot]] : vals);
+    const allPCols = pVals ? (_edoMode==='trimestral' ? pVals : (_edoMode==='mensual' ? [...pVals,[pTot]] : pVals)) : null;
     return `<tr style="${rowStyle(type)}">
       <td style="font-size:.75rem;padding:5px 10px;color:${color||'var(--text)'}">${label}</td>
-      ${allCols.map((v,i)=>cell(v, type, i===allCols.length-1)).join('')}
+      ${allCols.map((v,i)=>cell(v, type, i===allCols.length-1, allPCols?allPCols[i]:null)).join('')}
     </tr>`;
   };
 
@@ -370,20 +458,20 @@ function rEDO(){
 
   tbody.innerHTML = [
     hdr('💰 INGRESOS'),
-    row('Salem Internacional', ING.Salem, 'ing', entC.Salem),
-    row('Endless Money', ING.Endless, 'ing', entC.Endless),
-    row('Dynamo Finance', ING.Dynamo, 'ing', entC.Dynamo),
-    row('Wirebit', ING.Wirebit, 'ing', entC.Wirebit),
-    row('▸ TOTAL INGRESOS GRUPO', ING_TOT, 'total'),
+    row('Salem Internacional', ING.Salem, 'ing', entC.Salem, _edoCmp?PING.Salem:null),
+    row('Endless Money', ING.Endless, 'ing', entC.Endless, _edoCmp?PING.Endless:null),
+    row('Dynamo Finance', ING.Dynamo, 'ing', entC.Dynamo, _edoCmp?PING.Dynamo:null),
+    row('Wirebit', ING.Wirebit, 'ing', entC.Wirebit, _edoCmp?PING.Wirebit:null),
+    row('▸ TOTAL INGRESOS GRUPO', ING_TOT, 'total', '', _edoCmp?PING_TOT:null),
     sep(),
     hdr('💸 COSTOS Y GASTOS OPERATIVOS'),
-    row('Salem Internacional', GAS.Salem, 'gas', entC.Salem),
-    row('Endless Money', GAS.Endless, 'gas', entC.Endless),
-    row('Dynamo Finance', GAS.Dynamo, 'gas', entC.Dynamo),
-    row('Wirebit', GAS.Wirebit, 'gas', entC.Wirebit),
-    row('▸ TOTAL GASTOS GRUPO', GAS_TOT, 'total'),
+    row('Salem Internacional', GAS.Salem, 'gas', entC.Salem, _edoCmp?PGAS.Salem:null),
+    row('Endless Money', GAS.Endless, 'gas', entC.Endless, _edoCmp?PGAS.Endless:null),
+    row('Dynamo Finance', GAS.Dynamo, 'gas', entC.Dynamo, _edoCmp?PGAS.Dynamo:null),
+    row('Wirebit', GAS.Wirebit, 'gas', entC.Wirebit, _edoCmp?PGAS.Wirebit:null),
+    row('▸ TOTAL GASTOS GRUPO', GAS_TOT, 'total', '', _edoCmp?PGAS_TOT:null),
     sep(),
-    row('▸▸ MARGEN BRUTO GRUPO', MARGEN, 'util'),
+    row('▸▸ MARGEN BRUTO GRUPO', MARGEN, 'util', '', _edoCmp?PMARGEN:null),
   ].join('');
 }
 

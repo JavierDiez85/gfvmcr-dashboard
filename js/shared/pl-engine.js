@@ -271,10 +271,31 @@
     }
     function hasRecs(tipo){ return S.recs.some(r=>!r.isSharedSource&&r.yr==_year&&r.tipo===tipo&&r.ent===entName); }
 
+    // ── Compare: previous year recsVals ──
+    const _tblCmp = typeof cmpActive === 'function' && cmpActive();
+    const _prevYr = _tblCmp ? cmpPrevYear() : null;
+    function recsValsPrev(tipo, cats, concepts){
+      if(!_tblCmp) return null;
+      const matches = S.recs.filter(r => {
+        if(r.isSharedSource) return false;
+        if(r.yr!=_prevYr) return false;
+        if(r.tipo !== tipo) return false;
+        if(r.ent !== entName) return false;
+        if(cats && !cats.some(c => r.cat.toLowerCase().includes(c.toLowerCase()))) return false;
+        if(concepts && !concepts.some(c => r.concepto.toLowerCase().includes(c.toLowerCase()))) return false;
+        return true;
+      });
+      if(!matches.length) return null;
+      return MO.map((_,i) => matches.reduce((a,r) => a+(r.vals[i]||0), 0));
+    }
+
     // ── Acumuladores ──
     let totIng  = MO.map(()=>0);
     let totCost = MO.map(()=>0);
     let totGas  = MO.map(()=>0);
+    let pTotIng  = MO.map(()=>0);
+    let pTotCost = MO.map(()=>0);
+    let pTotGas  = MO.map(()=>0);
     let section = 'none';
 
     // ── Resolver cada seccion ──
@@ -294,7 +315,12 @@
         const v = s.vals;
         if(s.type==='ing')  totIng  = totIng.map((x,i)=>x+v[i]);
         if(s.type==='gasto'){ if(section==='cost') totCost=totCost.map((x,i)=>x+v[i]); else totGas=totGas.map((x,i)=>x+v[i]); }
-        rows.push({...s, _type:'data', _vals:v, _real:false});
+        // Prev: hardcoded vals are same for prev year (presupuesto)
+        if(_tblCmp){
+          if(s.type==='ing') pTotIng=pTotIng.map((x,i)=>x+v[i]);
+          if(s.type==='gasto'){ if(section==='cost') pTotCost=pTotCost.map((x,i)=>x+v[i]); else pTotGas=pTotGas.map((x,i)=>x+v[i]); }
+        }
+        rows.push({...s, _type:'data', _vals:v, _valsPrev:_tblCmp?v:null, _real:false});
         continue;
       }
 
@@ -302,7 +328,8 @@
       if(s.type === 'ing_ppto'){
         if(!hasRecs('ingreso')){
           totIng = totIng.map((x,i)=>x+s.vals[i]);
-          rows.push({...s, _type:'data', _vals:s.vals, _real:false, _ppto:true});
+          if(_tblCmp) pTotIng=pTotIng.map((x,i)=>x+s.vals[i]);
+          rows.push({...s, _type:'data', _vals:s.vals, _valsPrev:_tblCmp?s.vals:null, _real:false, _ppto:true});
         }
         continue;
       }
@@ -318,22 +345,33 @@
         const vals = v || MO.map(()=>0);
         if(s.type==='ing')  totIng  = totIng.map((x,i)=>x+vals[i]);
         if(s.type==='gasto'){ if(section==='cost') totCost=totCost.map((x,i)=>x+vals[i]); else totGas=totGas.map((x,i)=>x+vals[i]); }
-        rows.push({...s, _type:'data', _vals:vals, _real:isReal});
+        // Prev year
+        let vPrev = null;
+        if(_tblCmp){
+          vPrev = recsValsPrev(s.type==='ing'?'ingreso':'gasto', s.cats||null, s.concepts||null);
+          if(!vPrev && s.ppto && s.type==='gasto') vPrev = MO.map((_,i)=>Math.round(s.ppto(i, +_prevYr)));
+          const valsPrev = vPrev || MO.map(()=>0);
+          if(s.type==='ing') pTotIng=pTotIng.map((x,i)=>x+valsPrev[i]);
+          if(s.type==='gasto'){ if(section==='cost') pTotCost=pTotCost.map((x,i)=>x+valsPrev[i]); else pTotGas=pTotGas.map((x,i)=>x+valsPrev[i]); }
+        }
+        rows.push({...s, _type:'data', _vals:vals, _valsPrev:vPrev, _real:isReal});
         continue;
       }
 
       // Totales calculados
-      if(s.type==='total_ing'){  rows.push({...s, _type:'subtotal', _vals:[...totIng],  _cls:'pos'}); continue; }
-      if(s.type==='total_cost'){ rows.push({...s, _type:'subtotal', _vals:[...totCost], _cls:'neg'}); continue; }
-      if(s.type==='total_gas'){  rows.push({...s, _type:'subtotal', _vals:[...totGas],  _cls:'neg'}); continue; }
+      if(s.type==='total_ing'){  rows.push({...s, _type:'subtotal', _vals:[...totIng],  _valsPrev:_tblCmp?[...pTotIng]:null, _cls:'pos'}); continue; }
+      if(s.type==='total_cost'){ rows.push({...s, _type:'subtotal', _vals:[...totCost], _valsPrev:_tblCmp?[...pTotCost]:null, _cls:'neg'}); continue; }
+      if(s.type==='total_gas'){  rows.push({...s, _type:'subtotal', _vals:[...totGas],  _valsPrev:_tblCmp?[...pTotGas]:null, _cls:'neg'}); continue; }
       if(s.type==='margen_op'){
         const mo = totIng.map((x,i)=>x-totCost[i]);
-        rows.push({...s, _type:'util', _vals:mo, _cls:_periodSum(mo,ent)>=0?'pos':'neg'});
+        const pMo = _tblCmp ? pTotIng.map((x,i)=>x-pTotCost[i]) : null;
+        rows.push({...s, _type:'util', _vals:mo, _valsPrev:pMo, _cls:_periodSum(mo,ent)>=0?'pos':'neg'});
         continue;
       }
       if(s.type==='ebitda'){
         const ebitda = totIng.map((x,i)=>x-totCost[i]-totGas[i]);
-        rows.push({...s, _type:'util', _vals:ebitda, _cls:_periodSum(ebitda,ent)>=0?'pos':'neg'});
+        const pEbitda = _tblCmp ? pTotIng.map((x,i)=>x-pTotCost[i]-pTotGas[i]) : null;
+        rows.push({...s, _type:'util', _vals:ebitda, _valsPrev:pEbitda, _cls:_periodSum(ebitda,ent)>=0?'pos':'neg'});
         continue;
       }
     }
@@ -356,6 +394,15 @@
 
     const acC = cfg.acColor;
 
+    // Helper: comparison sub-line for a cell
+    const _cmpSub = (cur, prev, invert) => {
+      if(!_tblCmp || prev==null) return '';
+      const d = cmpDelta(cur, prev);
+      if(!d) return '';
+      const cls = d.dir==='neutral'?'dnu':(d.dir==='up'?(invert?'ddn':'dup'):(invert?'dup':'ddn'));
+      return `<div class="cmp-prev">${fmtFull(prev)} <span class="${cls}" style="font-size:.55rem;padding:0 3px;border-radius:6px">${d.label}</span></div>`;
+    };
+
     tbody.innerHTML = rows.map(r => {
       if(r._type === 'hdr'){
         const note = r.note ? ` <span style="font-size:.62rem;font-weight:400;opacity:.75">${r.note}</span>` : '';
@@ -367,6 +414,8 @@
       const agg   = _pAgg(v12);
       const tot   = sum(v12);
       const hasData = v12.some(x=>x!==0);
+      const p12   = r._valsPrev || null;
+      const pAgg  = p12 ? _pAgg(p12) : null;
 
       if(r._type === 'util' || r._type === 'subtotal'){
         const bg = r._type==='util'
@@ -375,18 +424,20 @@
         const color = r._type==='util'
           ? (tot>=0 ? '#1b5e20' : '#b71c1c')
           : (r._cls==='pos' ? '#1565c0' : '#444');
+        const isGas = r._cls==='neg';
         return `<tr style="background:${bg}">
           <td style="padding:7px 12px;font-weight:800;font-size:.82rem;color:${color};border-left:3px solid ${acC}">${r.label}</td>
-          ${agg.map((x,i)=>`<td class="mo" style="font-weight:${i===agg.length-1?800:700};color:${color}${i===agg.length-1?';font-size:.9rem':''}">${x?fmtFull(x):'\u2014'}</td>`).join('')}
+          ${agg.map((x,i)=>`<td class="mo" style="font-weight:${i===agg.length-1?800:700};color:${color}${i===agg.length-1?';font-size:.9rem':''}">${x?fmtFull(x):'\u2014'}${pAgg?_cmpSub(x,pAgg[i],isGas):''}</td>`).join('')}
         </tr>`;
       }
 
       // Data row normal
       const isIng = r.type==='ing' || r.type==='ing_ppto';
       const valColor = isIng ? '#1b5e20' : '#555';
+      const isGasRow = r.type==='gasto';
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:6px 12px 6px 20px;font-size:.8rem;color:var(--text)">${r.label}</td>
-        ${agg.map((x,i)=>`<td class="mo" style="color:${x?valColor:'var(--muted)'};font-size:.78rem${i===agg.length-1?';font-weight:600':''}">${x?fmtFull(x):'\u2014'}</td>`).join('')}
+        ${agg.map((x,i)=>`<td class="mo" style="color:${x?valColor:'var(--muted)'};font-size:.78rem${i===agg.length-1?';font-weight:600':''}">${x?fmtFull(x):'\u2014'}${pAgg?_cmpSub(x,pAgg[i],isGasRow):''}</td>`).join('')}
       </tr>`;
     }).join('');
 
@@ -397,16 +448,30 @@
     const annIng = _periodSum(totIng, ent);
     const annCost = _periodSum(totCost, ent);
     const annGas = _periodSum(totGas, ent);
-    if(kIngEl) kIngEl.textContent = annIng > 0 ? fmtK(annIng) : '\u2014';
+
+    // ── Compare vs previous year ──
+    const _plCmp = typeof cmpActive === 'function' && cmpActive();
+    let _pAnnIng=0, _pAnnCost=0, _pAnnGas=0;
+    if(_plCmp){
+      const _pEntName = ENT_MAP[ent] ? ENT_MAP[ent].name : ent;
+      const _pIngV = cmpPrevVals('ingreso', _pEntName);
+      const _pCostV = cmpPrevVals('gasto', _pEntName, ['Costes Directos','Costos Directos','Costo de Ventas','Comisiones']);
+      const _pGasV = cmpPrevVals('gasto', _pEntName, ['Gastos Administrativos','Gastos Operativos','Gastos Admin']);
+      _pAnnIng = _periodSum(_pIngV, ent);
+      _pAnnCost = _periodSum(_pCostV, ent);
+      _pAnnGas = _periodSum(_pGasV, ent);
+    }
+
+    if(kIngEl) kIngEl.innerHTML = (annIng > 0 ? fmtK(annIng) : '\u2014') + (_plCmp ? cmpBadge(annIng, _pAnnIng) : '');
     if(kCostEl){
-      kCostEl.textContent = annCost > 0 ? fmtK(annCost) : '\u2014';
+      kCostEl.innerHTML = (annCost > 0 ? fmtK(annCost) : '\u2014') + (_plCmp ? cmpBadge(annCost, _pAnnCost, true) : '');
       kCostEl.style.color = annCost > 0 ? 'var(--red)' : 'var(--muted)';
       kCostEl.style.fontSize = annCost > 0 ? '' : '.85rem';
     }
     const kCostD = document.getElementById(ent+'-k-cost-d');
     if(kCostD) kCostD.textContent = annCost > 0 ? 'N\u00f3mina + comisiones' : 'Pendiente de captura';
     if(kGasEl){
-      kGasEl.textContent = annGas > 0 ? fmtK(annGas) : '\u2014';
+      kGasEl.innerHTML = (annGas > 0 ? fmtK(annGas) : '\u2014') + (_plCmp ? cmpBadge(annGas, _pAnnGas, true) : '');
       kGasEl.style.color = annGas > 0 ? 'var(--purple)' : 'var(--muted)';
       kGasEl.style.fontSize = annGas > 0 ? '' : '.85rem';
     }
@@ -500,6 +565,7 @@
     const _sub=(a,b)=>a.map((v,i)=>v-(b[i]||0));
 
     const centumEnts=['Salem','Endless','Dynamo'];
+    const _coCmp = typeof cmpActive === 'function' && cmpActive();
     let rows;
 
     if(isCentum){
@@ -509,16 +575,23 @@
       const nom=_nom(centumEnts);
       const margen=_sub(totIng,totGas);
       const ebitda=_sub(margen,nom);
+      // Prev year
+      let pSalIng,pEndIng,pDynIng,pTotIng,pTotGas,pNom,pMargen,pEbitda;
+      if(_coCmp){
+        pSalIng=_rvPrev('Salem','ingreso');pEndIng=_rvPrev('Endless','ingreso');pDynIng=_rvPrev('Dynamo','ingreso');
+        pTotIng=_add(_add(pSalIng,pEndIng),pDynIng);pTotGas=_rvPrev(centumEnts,'gasto');pNom=nom;
+        pMargen=_sub(pTotIng,pTotGas);pEbitda=_sub(pMargen,pNom);
+      }
       rows=[
         {l:'\u25b8 CENTUM CAPITAL \u2014 Ingresos',hdr:true},
-        {l:'  \u00b7 Salem',vals:salIng,t:'ing'},
-        {l:'  \u00b7 Endless',vals:endIng,t:'ing'},
-        {l:'  \u00b7 Dynamo',vals:dynIng,t:'ing'},
-        {l:'TOTAL INGRESOS CENTUM',vals:totIng,t:'total',bold:true},
-        {l:'COSTOS + GASTOS OPERATIVOS',vals:totGas,t:'gasto',bold:true},
-        {l:'MARGEN BRUTO',vals:margen,t:'util',bold:true},
-        {l:'N\u00d3MINA CENTUM',vals:nom,t:'gasto',bold:true},
-        {l:'EBITDA CENTUM CAPITAL',vals:ebitda,t:'util',bold:true},
+        {l:'  \u00b7 Salem',vals:salIng,pv:_coCmp?pSalIng:null,t:'ing'},
+        {l:'  \u00b7 Endless',vals:endIng,pv:_coCmp?pEndIng:null,t:'ing'},
+        {l:'  \u00b7 Dynamo',vals:dynIng,pv:_coCmp?pDynIng:null,t:'ing'},
+        {l:'TOTAL INGRESOS CENTUM',vals:totIng,pv:_coCmp?pTotIng:null,t:'total',bold:true},
+        {l:'COSTOS + GASTOS OPERATIVOS',vals:totGas,pv:_coCmp?pTotGas:null,t:'gasto',bold:true},
+        {l:'MARGEN BRUTO',vals:margen,pv:_coCmp?pMargen:null,t:'util',bold:true},
+        {l:'N\u00d3MINA CENTUM',vals:nom,pv:_coCmp?pNom:null,t:'gasto',bold:true},
+        {l:'EBITDA CENTUM CAPITAL',vals:ebitda,pv:_coCmp?pEbitda:null,t:'util',bold:true},
       ];
     } else {
       const cIng=_rv(centumEnts,'ingreso'), wIng=_rv('Wirebit','ingreso'), stIng=_rv('Stellaris','ingreso');
@@ -529,32 +602,61 @@
       const cNom=_nom(centumEnts), wNom=_nom('Wirebit'), stNom=_nom('Stellaris');
       const totNom=_add(_add(cNom,wNom),stNom);
       const ebitda=_sub(margen,totNom);
+      // Prev year
+      let pcIng,pwIng,pstIng,pTotIng,pcGas,pwGas,pstGas,pTotGas,pMargen,pTotNom,pEbitda;
+      if(_coCmp){
+        pcIng=_rvPrev(centumEnts,'ingreso');pwIng=_rvPrev('Wirebit','ingreso');pstIng=_rvPrev('Stellaris','ingreso');
+        pTotIng=_add(_add(pcIng,pwIng),pstIng);
+        pcGas=_rvPrev(centumEnts,'gasto');pwGas=_rvPrev('Wirebit','gasto');pstGas=_rvPrev('Stellaris','gasto');
+        pTotGas=_add(_add(pcGas,pwGas),pstGas);
+        pMargen=_sub(pTotIng,pTotGas);pTotNom=totNom;pEbitda=_sub(pMargen,pTotNom);
+      }
       rows=[
-        {l:'\u25b8 CENTUM CAPITAL \u2014 Ingresos',vals:cIng,t:'ing'},
-        {l:'\u25b8 WIREBIT \u2014 Ingresos',vals:wIng,t:'ing'},
-        {l:'\u25b8 STELLARIS \u2014 Ingresos',vals:stIng,t:'ing'},
-        {l:'TOTAL INGRESOS GRUPO',vals:totIng,t:'total',bold:true},
-        {l:'\u25b8 CENTUM CAPITAL \u2014 Gastos',vals:cGas,t:'gasto'},
-        {l:'\u25b8 WIREBIT \u2014 Gastos',vals:wGas,t:'gasto'},
-        {l:'\u25b8 STELLARIS \u2014 Gastos',vals:stGas,t:'gasto'},
-        {l:'TOTAL GASTOS',vals:totGas,t:'total',bold:true},
-        {l:'MARGEN BRUTO GRUPO',vals:margen,t:'util',bold:true},
-        {l:'\u25b8 CENTUM CAPITAL \u2014 N\u00f3mina',vals:cNom,t:'gasto'},
-        {l:'\u25b8 WIREBIT \u2014 N\u00f3mina',vals:wNom,t:'gasto'},
-        {l:'\u25b8 STELLARIS \u2014 N\u00f3mina',vals:stNom,t:'gasto'},
-        {l:'TOTAL N\u00d3MINA GRUPO',vals:totNom,t:'total',bold:true},
-        {l:'EBITDA GRUPO',vals:ebitda,t:'util',bold:true},
+        {l:'\u25b8 CENTUM CAPITAL \u2014 Ingresos',vals:cIng,pv:_coCmp?pcIng:null,t:'ing'},
+        {l:'\u25b8 WIREBIT \u2014 Ingresos',vals:wIng,pv:_coCmp?pwIng:null,t:'ing'},
+        {l:'\u25b8 STELLARIS \u2014 Ingresos',vals:stIng,pv:_coCmp?pstIng:null,t:'ing'},
+        {l:'TOTAL INGRESOS GRUPO',vals:totIng,pv:_coCmp?pTotIng:null,t:'total',bold:true},
+        {l:'\u25b8 CENTUM CAPITAL \u2014 Gastos',vals:cGas,pv:_coCmp?pcGas:null,t:'gasto'},
+        {l:'\u25b8 WIREBIT \u2014 Gastos',vals:wGas,pv:_coCmp?pwGas:null,t:'gasto'},
+        {l:'\u25b8 STELLARIS \u2014 Gastos',vals:stGas,pv:_coCmp?pstGas:null,t:'gasto'},
+        {l:'TOTAL GASTOS',vals:totGas,pv:_coCmp?pTotGas:null,t:'total',bold:true},
+        {l:'MARGEN BRUTO GRUPO',vals:margen,pv:_coCmp?pMargen:null,t:'util',bold:true},
+        {l:'\u25b8 CENTUM CAPITAL \u2014 N\u00f3mina',vals:cNom,pv:_coCmp?cNom:null,t:'gasto'},
+        {l:'\u25b8 WIREBIT \u2014 N\u00f3mina',vals:wNom,pv:_coCmp?wNom:null,t:'gasto'},
+        {l:'\u25b8 STELLARIS \u2014 N\u00f3mina',vals:stNom,pv:_coCmp?stNom:null,t:'gasto'},
+        {l:'TOTAL N\u00d3MINA GRUPO',vals:totNom,pv:_coCmp?pTotNom:null,t:'total',bold:true},
+        {l:'EBITDA GRUPO',vals:ebitda,pv:_coCmp?pEbitda:null,t:'util',bold:true},
       ];
     }
+
+    // Cell comparison sub-line helper
+    const _coSub = (cur, prev, invert) => {
+      if(!_coCmp || prev==null) return '';
+      const d = cmpDelta(cur, prev);
+      if(!d) return '';
+      const cls = d.dir==='neutral'?'dnu':(d.dir==='up'?(invert?'ddn':'dup'):(invert?'dup':'ddn'));
+      return `<div class="cmp-prev">${fmtFull(prev)} <span class="${cls}" style="font-size:.55rem;padding:0 3px;border-radius:6px">${d.label}</span></div>`;
+    };
 
     tbody.innerHTML=rows.map(r=>{
       if(r.hdr) return`<tr class="grp"><td colspan="${MO.length+2}">${r.l}</td></tr>`;
       const tot=sum(r.vals);
+      const pTot=r.pv?sum(r.pv):null;
       const cls=r.t==='util'?(tot>=0?'pos':'neg'):'';
-      return`<tr><td${r.bold?' class="bld"':''}>${r.l}</td>${r.vals.map(v=>`<td class="mo ${v<0?'neg':v>0&&r.t==='ing'?'pos':''}">${v?fmtFull(v):'\u2014'}</td>`).join('')}<td class="mo bld ${cls}">${fmtFull(tot)}</td></tr>`;
+      const isGas=r.t==='gasto';
+      return`<tr><td${r.bold?' class="bld"':''}>${r.l}</td>${r.vals.map((v,i)=>`<td class="mo ${v<0?'neg':v>0&&r.t==='ing'?'pos':''}">${v?fmtFull(v):'\u2014'}${r.pv?_coSub(v,r.pv[i],isGas):''}</td>`).join('')}<td class="mo bld ${cls}">${fmtFull(tot)}${r.pv?_coSub(tot,pTot,isGas):''}</td></tr>`;
     }).join('');
 
     // ── KPIs ──
+    const _conCmp = typeof cmpActive === 'function' && cmpActive();
+    function _rvPrev(ents, tipo){
+      const ea = Array.isArray(ents)?ents:[ents];
+      const py = typeof cmpPrevYear === 'function' ? cmpPrevYear() : _year-1;
+      return MO.map((_,i)=>
+        (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo===tipo&&ea.includes(r.ent)&&r.yr==py)
+          .reduce((s,r)=>s+(r.vals[i]||0),0)
+      );
+    }
     if(isCentum){
       const centumNom = nomMesTotal('Salem') + nomMesTotal('Endless') + nomMesTotal('Dynamo');
       const el = document.getElementById('centum-kpi-nomina');
@@ -563,8 +665,8 @@
       const kGas = document.getElementById('centum-k-gas');
       const totI = _periodSum(_rv(centumEnts,'ingreso'), 'centum');
       const totG = _periodSum(_rv(centumEnts,'gasto'), 'centum');
-      if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '\u2014';
-      if(kGas) kGas.textContent = totG>0 ? fmtK(totG) : '\u2014';
+      if(kIng){ kIng.innerHTML = (totI>0 ? fmtK(totI) : '\u2014') + (_conCmp ? cmpBadge(totI, _periodSum(_rvPrev(centumEnts,'ingreso'),'centum')) : ''); }
+      if(kGas){ kGas.innerHTML = (totG>0 ? fmtK(totG) : '\u2014') + (_conCmp ? cmpBadge(totG, _periodSum(_rvPrev(centumEnts,'gasto'),'centum'), true) : ''); }
       const allCred = [...END_CREDITS,...DYN_CREDITS].filter(c=>c.st==='Activo'||c.st==='Vencido');
       const carteraTotal = allCred.reduce((s,c)=>s+credSaldoActual(c),0);
       const kCart = document.getElementById('centum-kpi-cartera');
@@ -572,12 +674,13 @@
       if(kCart) kCart.textContent = carteraTotal > 0 ? fmtK(carteraTotal) : '\u2014';
       if(kCartSub) kCartSub.textContent = allCred.length + ' cr\u00e9dito' + (allCred.length!==1?'s':'') + ' (End+Dyn)';
     } else {
-      const totI = _periodSum(_rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'ingreso'), 'grupo');
-      const totG = _periodSum(_rv(['Salem','Endless','Dynamo','Wirebit','Stellaris'],'gasto'), 'grupo');
+      const allEnts = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+      const totI = _periodSum(_rv(allEnts,'ingreso'), 'grupo');
+      const totG = _periodSum(_rv(allEnts,'gasto'), 'grupo');
       const kIng = document.getElementById('grupo-k-ing');
       const kGas = document.getElementById('grupo-k-gas');
-      if(kIng) kIng.textContent = totI>0 ? fmtK(totI) : '\u2014';
-      if(kGas) kGas.textContent = totG>0 ? fmtK(totG) : '\u2014';
+      if(kIng){ kIng.innerHTML = (totI>0 ? fmtK(totI) : '\u2014') + (_conCmp ? cmpBadge(totI, _periodSum(_rvPrev(allEnts,'ingreso'),'grupo')) : ''); }
+      if(kGas){ kGas.innerHTML = (totG>0 ? fmtK(totG) : '\u2014') + (_conCmp ? cmpBadge(totG, _periodSum(_rvPrev(allEnts,'gasto'),'grupo'), true) : ''); }
     }
   }
 
@@ -610,15 +713,24 @@
     const kC=document.getElementById(entKey+'-ing-kpi-count');
     const kCs=document.getElementById(entKey+'-ing-kpi-count-sub');
 
+    // ── Compare: previous year totals for Income ──
+    const _iCmp = typeof cmpActive === 'function' && cmpActive();
+    let _iPrevTot=0, _iPrevMes=0;
+    if(_iCmp){
+      const prevRows=FI_ROWS.filter(r=>r.ent===entName&&r.yr==cmpPrevYear());
+      _iPrevTot=prevRows.reduce((s,r)=>s+_periodSum(r.vals, entKey),0);
+      _iPrevMes=prevRows.reduce((s,r)=>s+(r.vals[curMonth]||0),0);
+    }
+
     if(totalAnual>0){
-      if(kT){kT.textContent=fmtK(totalAnual);kT.style.color=color;kT.style.fontSize='';}
+      if(kT){kT.innerHTML=fmtK(totalAnual)+(_iCmp?cmpBadge(totalAnual,_iPrevTot):'');kT.style.color=color;kT.style.fontSize='';}
       if(kTs){kTs.textContent='Ingresos acumulados '+_year;kTs.className='kpi-d';}
     } else {
       if(kT){kT.textContent='Sin datos';kT.style.color='var(--muted)';kT.style.fontSize='.85rem';}
       if(kTs){kTs.textContent='Pendiente de captura';kTs.className='kpi-d dnu';}
     }
     if(totalMes>0){
-      if(kM){kM.textContent=fmtK(totalMes);kM.style.color='var(--blue)';kM.style.fontSize='';}
+      if(kM){kM.innerHTML=fmtK(totalMes)+(_iCmp?cmpBadge(totalMes,_iPrevMes):'');kM.style.color='var(--blue)';kM.style.fontSize='';}
       if(kMs){kMs.textContent=MO[curMonth]+' '+_year;kMs.className='kpi-d';}
     } else {
       if(kM){kM.textContent='\u2014';kM.style.color='var(--muted)';kM.style.fontSize='.85rem';}
@@ -630,13 +742,19 @@
     const ck='c'+entKey+'ingbar';
     dc(ck);
     const mTotals=MO.map((_,i)=>rows.reduce((s,r)=>s+(r.vals[i]||0),0));
+    const _ingDs=[{label:'Ingresos '+cfg.name,data:mTotals,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:4}];
+    if(_iCmp){
+      const prevRows=FI_ROWS.filter(r=>r.ent===entName&&r.yr==cmpPrevYear());
+      const _pMT=MO.map((_,i)=>prevRows.reduce((s,r)=>s+(r.vals[i]||0),0));
+      _ingDs.push({label:'Ingresos '+cmpPrevYear(),data:_pMT,backgroundColor:color+'10',borderColor:color+'55',borderWidth:1.5,borderRadius:4,borderDash:[4,4]});
+    }
     const cv=document.getElementById('c-'+entKey+'-ing-bar');
     if(cv){
       CH[ck]=new Chart(cv,{
         type:'bar',
-        data:{labels:MO,datasets:[{label:'Ingresos '+cfg.name,data:mTotals,backgroundColor:color+'44',borderColor:color,borderWidth:1.5,borderRadius:4}]},
+        data:{labels:MO,datasets:_ingDs},
         options:{...cOpts(),
-          plugins:{legend:{display:false},tooltip:cOpts().plugins?.tooltip},
+          plugins:{legend:{display:_iCmp,position:'top',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8,padding:6}},tooltip:cOpts().plugins?.tooltip},
           scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}
         }
       });
@@ -649,13 +767,29 @@
       return;
     }
     const totCols=_ipc.colLabels.map(()=>0);
+    // Prev year rows for comparison
+    const _iPrevRows = _iCmp ? FI_ROWS.filter(r=>r.ent===entName&&r.yr==cmpPrevYear()) : [];
+    const _iPrevTotCols = _ipc.colLabels.map(()=>0);
+    const _iSubLine = (cur, prev) => {
+      if(!_iCmp) return '';
+      const d = cmpDelta(cur, prev);
+      if(!d) return '';
+      const cls = d.dir==='neutral'?'dnu':(d.dir==='up'?'dup':'ddn');
+      return '<div class="cmp-prev">'+fmtFull(prev)+' <span class="'+cls+'" style="font-size:.55rem;padding:0 3px;border-radius:6px">'+d.label+'</span></div>';
+    };
     tbody.innerHTML=rows.map(r=>{
       const cv=_ipCV(r.vals);
       cv.forEach((v,i)=>totCols[i]+=v);
+      // Find matching prev year row
+      let pCv = null;
+      if(_iCmp){
+        const pRow = _iPrevRows.find(pr=>pr.concepto===r.concepto && pr.cat===r.cat);
+        if(pRow){ pCv = _ipCV(pRow.vals); pCv.forEach((v,i)=>_iPrevTotCols[i]+=v); }
+      }
       const badge=r.auto?' <span style="font-size:.55rem;background:#e8f5e9;color:#2e7d32;border:1px solid #c8e6c9;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto</span>':(r.autoTPV?' <span style="font-size:.55rem;background:#e3f2fd;color:#1565c0;border:1px solid #bbdefb;padding:1px 5px;border-radius:9px;font-weight:700;margin-left:4px">auto TPV</span>':'');
-      return '<tr><td class="bld">'+r.concepto+badge+'</td><td><span class="pill" style="background:'+color+'18;color:'+color+';font-size:.62rem">'+r.cat+'</span></td>'+cv.map(v=>'<td class="mo'+(v?' pos':'')+'">'+( v?fmtFull(v):'\u2014')+'</td>').join('')+'</tr>';
+      return '<tr><td class="bld">'+r.concepto+badge+'</td><td><span class="pill" style="background:'+color+'18;color:'+color+';font-size:.62rem">'+r.cat+'</span></td>'+cv.map((v,i)=>'<td class="mo'+(v?' pos':'')+'">'+(v?fmtFull(v):'\u2014')+(pCv?_iSubLine(v,pCv[i]):'')+'</td>').join('')+'</tr>';
     }).join('');
-    tbody.innerHTML+='<tr class="grp"><td colspan="2">TOTAL INGRESOS '+entName.toUpperCase()+'</td>'+totCols.map(v=>'<td class="mo pos bld">'+(v?fmtFull(v):'\u2014')+'</td>').join('')+'</tr>';
+    tbody.innerHTML+='<tr class="grp"><td colspan="2">TOTAL INGRESOS '+entName.toUpperCase()+'</td>'+totCols.map((v,i)=>'<td class="mo pos bld">'+(v?fmtFull(v):'\u2014')+(_iCmp?_iSubLine(v,_iPrevTotCols[i]):'')+'</td>').join('')+'</tr>';
   }
 
   // ═══════════════════════════════════════
@@ -714,20 +848,45 @@
     const gasRows=all.filter(r=>!_isCostRow(r)).sort((a,b)=>sum(b.vals)-sum(a.vals));
 
     const pillBg=color+'18';
+    // Prev year gastos for table comparison
+    const _gTblCmp = typeof cmpActive === 'function' && cmpActive();
+    const _gPrevMap = new Map();
+    if(_gTblCmp){
+      const prevGR=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName&&r.yr==cmpPrevYear());
+      prevGR.forEach(r=>{
+        const key=r.concepto;
+        if(_gPrevMap.has(key)){const e=_gPrevMap.get(key);r.vals.forEach((v,i)=>e.vals[i]+=v);}
+        else _gPrevMap.set(key,{concepto:r.concepto,cat:r.cat,vals:[...r.vals]});
+      });
+    }
+    const _gSubLine = (cur, prev) => {
+      if(!_gTblCmp) return '';
+      const d = cmpDelta(cur, prev);
+      if(!d) return '';
+      // invert=true for expenses (lower is better)
+      const cls = d.dir==='neutral'?'dnu':(d.dir==='up'?'ddn':'dup');
+      return '<div class="cmp-prev">'+fmtFull(prev)+' <span class="'+cls+'" style="font-size:.55rem;padding:0 3px;border-radius:6px">'+d.label+'</span></div>';
+    };
     function renderTable(rows, tbody, label){
       if(rows.length===0){
         tbody.innerHTML='<tr><td colspan="'+(_gnC+2)+'" style="text-align:center;padding:20px;color:var(--muted);font-size:.82rem">Sin registros</td></tr>';
         return {total:0};
       }
       const totCols=_gpc.colLabels.map(()=>0);
+      const pTotCols=_gpc.colLabels.map(()=>0);
       tbody.innerHTML=rows.map(g=>{
         const cv=_gpCV(g.vals);
         cv.forEach((v,i)=>totCols[i]+=v);
+        let pCv=null;
+        if(_gTblCmp){
+          const pRow=_gPrevMap.get(g.concepto);
+          if(pRow){ pCv=_gpCV(pRow.vals); pCv.forEach((v,i)=>pTotCols[i]+=v); }
+        }
         const pptoTag=g.ppto?' <span style="font-size:.55rem;color:var(--muted);font-weight:400">(ppto)</span>':'';
-        return '<tr><td class="bld">'+g.concepto+pptoTag+'</td><td><span class="pill" style="background:'+pillBg+';color:'+color+';font-size:.62rem">'+g.cat+'</span></td>'+cv.map(v=>'<td class="mo'+(v?' neg':'')+'"'+(g.ppto?' style="opacity:.65"':'')+'>'+(v?fmtFull(v):'\u2014')+'</td>').join('')+'</tr>';
+        return '<tr><td class="bld">'+g.concepto+pptoTag+'</td><td><span class="pill" style="background:'+pillBg+';color:'+color+';font-size:.62rem">'+g.cat+'</span></td>'+cv.map((v,i)=>'<td class="mo'+(v?' neg':'')+'"'+(g.ppto?' style="opacity:.65"':'')+'>'+(v?fmtFull(v):'\u2014')+(pCv?_gSubLine(v,pCv[i]):'')+'</td>').join('')+'</tr>';
       }).join('');
       const gt=sum(totCols);
-      tbody.innerHTML+='<tr class="grp"><td colspan="2">'+label+'</td>'+totCols.map(v=>'<td class="mo neg bld">'+(v?fmtFull(v):'\u2014')+'</td>').join('')+'</tr>';
+      tbody.innerHTML+='<tr class="grp"><td colspan="2">'+label+'</td>'+totCols.map((v,i)=>'<td class="mo neg bld">'+(v?fmtFull(v):'\u2014')+(_gTblCmp?_gSubLine(v,pTotCols[i]):'')+'</td>').join('')+'</tr>';
       return {total:gt};
     }
 
@@ -746,13 +905,30 @@
     const kAnu=document.getElementById(entKey+'-gas-kpi-anual');
     const kAnuD=document.getElementById(entKey+'-gas-kpi-anual-d');
 
-    if(kCost){kCost.textContent=costTotal>0?fmtK(costTotal):'\u2014';kCost.style.color=costTotal>0?'var(--orange)':'var(--muted)';kCost.style.fontSize=costTotal>0?'':'.85rem';}
+    // ── Compare: previous year cost/expense totals ──
+    const _gCmp = typeof cmpActive === 'function' && cmpActive();
+    let _gPrevCost=0, _gPrevGas=0;
+    if(_gCmp){
+      const prevGastos=(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName&&r.yr==cmpPrevYear());
+      const prevAll=new Map();
+      prevGastos.forEach(r=>{
+        const key=r.concepto;
+        if(prevAll.has(key)){const e=prevAll.get(key);r.vals.forEach((v,i)=>e.vals[i]+=v);}
+        else prevAll.set(key,{concepto:r.concepto,cat:r.cat,vals:[...r.vals]});
+      });
+      [...prevAll.values()].forEach(g=>{
+        if(_isCostRow(g)) _gPrevCost+=sum(g.vals); else _gPrevGas+=sum(g.vals);
+      });
+    }
+
+    if(kCost){kCost.innerHTML=(costTotal>0?fmtK(costTotal):'\u2014')+(_gCmp?cmpBadge(costTotal,_gPrevCost,true):'');kCost.style.color=costTotal>0?'var(--orange)':'var(--muted)';kCost.style.fontSize=costTotal>0?'':'.85rem';}
     if(kCostD){kCostD.textContent=costTotal>0?costRows.length+' concepto'+(costRows.length!==1?'s':''):'Sin costes registrados';kCostD.className=costTotal>0?'kpi-d':'kpi-d dnu';}
 
-    if(kGas){kGas.textContent=gasTotal>0?fmtK(gasTotal):'\u2014';kGas.style.color=gasTotal>0?'var(--red)':'var(--muted)';kGas.style.fontSize=gasTotal>0?'':'.85rem';}
+    if(kGas){kGas.innerHTML=(gasTotal>0?fmtK(gasTotal):'\u2014')+(_gCmp?cmpBadge(gasTotal,_gPrevGas,true):'');kGas.style.color=gasTotal>0?'var(--red)':'var(--muted)';kGas.style.fontSize=gasTotal>0?'':'.85rem';}
     if(kGasD){kGasD.textContent=gasTotal>0?gasRows.length+' concepto'+(gasRows.length!==1?'s':''):'Sin gastos registrados';kGasD.className=gasTotal>0?'kpi-d':'kpi-d dnu';}
 
-    if(kAnu){kAnu.textContent=grandTotal>0?fmtK(grandTotal):'Sin datos';kAnu.style.color=grandTotal>0?'var(--yellow)':'var(--muted)';kAnu.style.fontSize=grandTotal>0?'':'.85rem';}
+    const _gPrevGrand = _gPrevCost + _gPrevGas;
+    if(kAnu){kAnu.innerHTML=(grandTotal>0?fmtK(grandTotal):'Sin datos')+(_gCmp?cmpBadge(grandTotal,_gPrevGrand,true):'');kAnu.style.color=grandTotal>0?'var(--yellow)':'var(--muted)';kAnu.style.fontSize=grandTotal>0?'':'.85rem';}
     if(kAnuD){kAnuD.textContent=grandTotal>0?'Acumulado '+_year:'Pendiente de captura';kAnuD.className=grandTotal>0?'kpi-d':'kpi-d dnu';}
   }
 
@@ -877,12 +1053,25 @@
     const totNom = _periodSum(nom, entKey);
     const totEbitda = _periodSum(ebitda, entKey);
 
+    // ── Compare: previous year for EntGrupo ──
+    const _egCmp = typeof cmpActive === 'function' && cmpActive();
+    let _egPI=0, _egPG=0, _egPN=0, _egPE=0;
+    if(_egCmp){
+      const py = cmpPrevYear();
+      const pIng = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===eName&&r.yr==py).reduce((s,r)=>s+(r.vals[i]||0),0));
+      const pGas = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===eName&&r.yr==py).reduce((s,r)=>s+(r.vals[i]||0),0));
+      _egPI = _periodSum(pIng, entKey);
+      _egPG = _periodSum(pGas, entKey);
+      _egPN = _periodSum(nom, entKey); // nómina assumed constant
+      _egPE = _egPI - _egPG - _egPN;
+    }
+
     const qk = id => document.getElementById(id);
-    if(qk(pfx+'-k-ing')) qk(pfx+'-k-ing').textContent = totIng>0 ? fmtK(totIng) : '\u2014';
-    if(qk(pfx+'-k-gas')) qk(pfx+'-k-gas').textContent = totGas>0 ? fmtK(totGas) : '\u2014';
+    if(qk(pfx+'-k-ing')) qk(pfx+'-k-ing').innerHTML = (totIng>0 ? fmtK(totIng) : '\u2014') + (_egCmp ? cmpBadge(totIng, _egPI) : '');
+    if(qk(pfx+'-k-gas')) qk(pfx+'-k-gas').innerHTML = (totGas>0 ? fmtK(totGas) : '\u2014') + (_egCmp ? cmpBadge(totGas, _egPG, true) : '');
     if(qk(pfx+'-k-nom')) qk(pfx+'-k-nom').textContent = totNom>0 ? fmtK(totNom) : '\u2014';
     if(qk(pfx+'-k-ebitda')){
-      qk(pfx+'-k-ebitda').textContent = fmtK(totEbitda);
+      qk(pfx+'-k-ebitda').innerHTML = fmtK(totEbitda) + (_egCmp ? cmpBadge(totEbitda, _egPE) : '');
       qk(pfx+'-k-ebitda').style.color = totEbitda>=0 ? 'var(--green)' : 'var(--red)';
     }
 

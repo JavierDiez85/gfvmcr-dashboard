@@ -5,6 +5,7 @@
 let S = { recs: [], excelData: null };
 let _year = 2026;
 let _gfPeriod = {}; // {ent: 'año'|'q1'|'q2'|'q3'|'q4'|'mes_0'..'mes_11'}
+let _gfCompare = false; // true cuando "vs Año Anterior" está activo
 
 // Return array of month indices [0..11] for the active period of an entity
 function _periodIdxs(ent) {

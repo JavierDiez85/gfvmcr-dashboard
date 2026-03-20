@@ -11,11 +11,20 @@ function rWBIng(){
   const kStart = document.getElementById('wb-ing-kpi-start');
   const kEnd = document.getElementById('wb-ing-kpi-end');
   const kGrowth = document.getElementById('wb-ing-kpi-growth');
+  // Compare KPI for total
+  const _wbiKCmp = typeof cmpActive === 'function' && cmpActive();
+  let _wbiPrevTotal = 0;
+  if(_wbiKCmp){
+    const py = cmpPrevYear();
+    const pRecs = (S.recs||[]).filter(r=>r.tipo==='ingreso'&&r.ent==='Wirebit'&&r.yr==py);
+    _wbiPrevTotal = pRecs.reduce((s,r)=>s+sum(r.vals),0);
+  }
+
   if (totalAnual > 0) {
-    kTotal.textContent = fmt(totalAnual);
+    kTotal.innerHTML = fmt(totalAnual) + (_wbiKCmp ? cmpBadge(totalAnual, _wbiPrevTotal) : '');
     kTotal.style.color = 'var(--purple)';
     kTotal.style.fontSize = '';
-    document.getElementById('wb-ing-kpi-total-sub').textContent = 'Ingresos acumulados 2026';
+    document.getElementById('wb-ing-kpi-total-sub').textContent = 'Ingresos acumulados '+_year;
 
     const ene = WB_ING_TOTAL[0];
     kStart.textContent = ene ? fmt(ene) : '—';
@@ -67,21 +76,52 @@ function rWBIng(){
   const tbody=document.getElementById('wb-ing-tbody');
   thead.innerHTML=`<th>Fuente de Ingreso</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total 2026</th>`;
 
+  // ── Compare: build prev year WB income/cost data ──
+  const _wbiCmp = typeof cmpActive === 'function' && cmpActive();
+  let _pWBI=null, _pWBIT=null, _pWBC=null, _pWBCT=null, _pWBM=null, _pWBNT=null;
+  if(_wbiCmp){
+    // Prev year income/cost from S.recs
+    const py = cmpPrevYear();
+    _pWBI = {};
+    Object.keys(WB_ING).forEach(k => {
+      const recs = (S.recs||[]).filter(r=>r.tipo==='ingreso'&&r.ent==='Wirebit'&&r.yr==py&&r.cat===k.replace('Fees ',''));
+      _pWBI[k] = MO.map((_,i)=>recs.reduce((s,r)=>s+(r.vals[i]||0),0));
+    });
+    _pWBIT = MO.map((_,i)=>Object.values(_pWBI).reduce((s,v)=>s+(v[i]||0),0));
+    _pWBC = {};
+    Object.keys(WB_COSTOS).forEach(k => {
+      const recs = (S.recs||[]).filter(r=>r.tipo==='gasto'&&r.ent==='Wirebit'&&r.yr==py&&r.cat.includes('Costo'));
+      _pWBC[k] = MO.map((_,i)=>recs.reduce((s,r)=>s+(r.vals[i]||0),0));
+    });
+    _pWBCT = MO.map((_,i)=>Object.values(_pWBC).reduce((s,v)=>s+(v[i]||0),0));
+    _pWBM = _pWBIT.map((v,i)=>v-_pWBCT[i]);
+    _pWBNT = WB_NOM_TOTAL; // nomina is same config
+  }
+  const _wbiSub = (cur, prev, invert) => {
+    if(!_wbiCmp || prev==null) return '';
+    const d = cmpDelta(cur, prev);
+    if(!d) return '';
+    const cls = d.dir==='neutral'?'dnu':(d.dir==='up'?(invert?'ddn':'dup'):(invert?'dup':'ddn'));
+    return `<div class="cmp-prev">${fmtFull(prev)} <span class="${cls}" style="font-size:.55rem;padding:0 3px;border-radius:6px">${d.label}</span></div>`;
+  };
+
   const rows=[
-    ...Object.entries(WB_ING).map(([k,v])=>({l:k,vals:v,t:'ing'})),
-    {l:'TOTAL INGRESOS',vals:WB_ING_TOTAL,t:'total',bold:true},
+    ...Object.entries(WB_ING).map(([k,v])=>({l:k,vals:v,pv:_wbiCmp&&_pWBI?_pWBI[k]:null,t:'ing'})),
+    {l:'TOTAL INGRESOS',vals:WB_ING_TOTAL,pv:_pWBIT,t:'total',bold:true},
     {l:'— COSTOS DIRECTOS —',hdr:true},
-    ...Object.entries(WB_COSTOS).map(([k,v])=>({l:k,vals:v,t:'gasto'})),
-    {l:'TOTAL COSTOS DIRECTOS',vals:WB_COSTO_TOTAL,t:'total',bold:true},
-    {l:'MARGEN BRUTO',vals:WB_MARGEN,t:'util',bold:true},
-    {l:'Nómina',vals:WB_NOM_TOTAL,t:'gasto'},
-    {l:'RESULTADO OPERATIVO',vals:WB_MARGEN.map((v,i)=>v-WB_NOM_TOTAL[i]),t:'util',bold:true},
+    ...Object.entries(WB_COSTOS).map(([k,v])=>({l:k,vals:v,pv:_wbiCmp&&_pWBC?_pWBC[k]:null,t:'gasto'})),
+    {l:'TOTAL COSTOS DIRECTOS',vals:WB_COSTO_TOTAL,pv:_pWBCT,t:'total',bold:true},
+    {l:'MARGEN BRUTO',vals:WB_MARGEN,pv:_pWBM,t:'util',bold:true},
+    {l:'Nómina',vals:WB_NOM_TOTAL,pv:_pWBNT,t:'gasto'},
+    {l:'RESULTADO OPERATIVO',vals:WB_MARGEN.map((v,i)=>v-WB_NOM_TOTAL[i]),pv:_pWBM?_pWBM.map((v,i)=>v-(_pWBNT?_pWBNT[i]:0)):null,t:'util',bold:true},
   ];
   tbody.innerHTML=rows.map(r=>{
     if(r.hdr) return`<tr class="grp"><td colspan="${MO.length+2}">${r.l}</td></tr>`;
     const tot=sum(r.vals);
+    const pTot=r.pv?sum(r.pv):null;
     const cls=r.t==='util'?(tot>=0?'pos':'neg'):'';
-    return`<tr><td${r.bold?' class="bld"':''}>${r.l}</td>${r.vals.map(v=>`<td class="mo ${v<0?'neg':v>0&&r.t==='ing'?'pos':''}">${v?fmtFull(v):'—'}</td>`).join('')}<td class="mo bld ${cls}">${fmtFull(tot)}</td></tr>`;
+    const isGas=r.t==='gasto';
+    return`<tr><td${r.bold?' class="bld"':''}>${r.l}</td>${r.vals.map((v,i)=>`<td class="mo ${v<0?'neg':v>0&&r.t==='ing'?'pos':''}">${v?fmtFull(v):'—'}${r.pv?_wbiSub(v,r.pv[i],isGas):''}</td>`).join('')}<td class="mo bld ${cls}">${fmtFull(tot)}${r.pv?_wbiSub(tot,pTot,isGas):''}</td></tr>`;
   }).join('');
 }
 
