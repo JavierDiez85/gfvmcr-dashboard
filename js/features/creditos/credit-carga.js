@@ -88,21 +88,30 @@
   function ccParseCentumPDF(text, filename){
     const t = text.replace(/\s+/g,' ');
     const get = (re) => { const m=t.match(re); return m?m[1].trim():null; };
+    const parseMXN = s => s ? parseFloat(s.replace(/,/g,'')) : 0;
 
-    const nombre   = get(/Solicitante\s*:\s*([A-Za-záéíóúÁÉÍÓÚüÜñÑ ]+?)(?:\s{2,}|Crédito|$)/i);
-    const monto    = get(/Crédito solicitado[^$]*\$\s*([\d,]+\.?\d*)/i);
+    // ── Try Format A (old): "Solicitante:" layout ──
+    let nombre   = get(/Solicitante\s*:\s*([A-Za-záéíóúÁÉÍÓÚüÜñÑ ]+?)(?:\s{2,}|Crédito|$)/i);
+    let monto    = get(/Crédito solicitado[^$]*\$\s*([\d,]+\.?\d*)/i);
+    let producto = get(/Producto financiero\s*:\s*([^\n]+?)(?:\s{2,}|Vencimiento)/i);
+    let venc     = get(/Vencimiento:\s*([^\s]+(?:\s+[^\s]+)??)(?=\s{2,}|\s*Plazo)/i);
+    let tasa     = get(/Tasa:\s*([\d.]+)\s*%/i);
+    let cat      = get(/CAT\s*:\s*([\d.]+)\s*%/i);
+    let fechaElab= get(/Fecha de elaboraci[oó]n:\s*([^\n]+?)(?:\s{2,}|Solicitante|$)/i);
+
+    // ── Try Format B (new): "Nombre del Cliente:" layout ──
+    if(!nombre) nombre = get(/Nombre del Cliente:\s*(.+?)(?=\s{2,}Producto\s*:|$)/i);
+    if(!monto)  monto  = get(/Monto del Cr[eé]dito[^$]*\$\s*([\d,]+\.?\d*)/i);
+    if(!producto) producto = get(/Producto:\s*(.+?)(?=\s{2,}N[°o]\s*de\s*Cr[eé]dito|$)/i);
+    if(!venc) venc = get(/Fecha de Vencimiento:\s*(.+?)(?=\s{2,}IVA\s*Comisi[oó]n|Plazo|$)/i);
+    if(!fechaElab) fechaElab = get(/Fecha de elaboraci[oó]n:\s*(.+?)(?=\s{2,}|$)/i);
+
+    // Shared fields (work in both formats)
     const pagoFijoM = t.match(/Pago fijo[\s\S]*?\$[\s\d,.]+?\$\s*([\d,]+\.?\d*)/i);
     const pagoFijo = pagoFijoM ? pagoFijoM[1] : null;
-    const producto = get(/Producto financiero\s*:\s*([^\n]+?)(?:\s{2,}|Vencimiento)/i);
-    const venc     = get(/Vencimiento:\s*([^\s]+(?:\s+[^\s]+)??)(?=\s{2,}|\s*Plazo)/i);
     const plazo    = get(/Plazo:\s*(\d+)/i);
-    const tasa     = get(/Tasa:\s*([\d.]+)\s*%/i);
     const iva      = get(/IVA\s*:\s*([\d.]+)\s*%/i);
-    const com      = get(/Comisión\s*:\s*([\d.]+)\s*%/i);
-    const cat      = get(/CAT\s*:\s*([\d.]+)\s*%/i);
-    const fechaElab= get(/Fecha de elaboración:\s*([^\n]+?)(?:\s{2,}|Solicitante)/i);
-
-    const parseMXN = s => s ? parseFloat(s.replace(/,/g,'')) : 0;
+    const com      = get(/Comisi[oó]n\s*:\s*([\d.]+)\s*%/i);
 
     // Split into rows by detecting "N  DD/..." pattern, extract $ amounts per row
     const amort = [];
@@ -125,9 +134,30 @@
       });
     }
 
-    console.log('PDF parsed - nombre:', nombre, 'amort rows:', amort.length, amort);
+    // ── Derive tasa from amortization if not explicitly found ──
+    // Use first payment row (periodo 1) where interest / previous balance ≈ monthly rate
+    if(!tasa && amort.length >= 2){
+      const row1 = amort.find(r => r.periodo === 1);
+      const row0 = amort.find(r => r.periodo === 0);
+      if(row1 && row1.int > 0){
+        const prevBalance = row0 ? row0.saldo : parseMXN(monto);
+        if(prevBalance > 0){
+          const monthlyRate = row1.int / prevBalance;
+          tasa = (monthlyRate * 12 * 100).toFixed(2);
+        }
+      }
+    }
+
+    console.log('PDF parsed - nombre:', nombre, 'monto:', monto, 'plazo:', plazo, 'tasa:', tasa, 'amort rows:', amort.length, amort);
 
     if(!nombre || amort.length < 1) return null;
+
+    // ── Get pagoFijo from first real payment if not found via regex ──
+    var pagoFijoVal = parseMXN(pagoFijo);
+    if(!pagoFijoVal && amort.length > 0){
+      const firstPay = amort.find(r => r.pago > 0);
+      if(firstPay) pagoFijoVal = firstPay.pago;
+    }
 
     var montoVal = parseMXN(monto);
     var creditId = (nombre||'').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase() + '_' + montoVal + '_' + (parseInt(plazo)||0);
@@ -137,14 +167,14 @@
       cl:         nombre,
       monto:      montoVal,
       plazo:      parseInt(plazo)||0,
-      vencimiento:venc||'Años',
+      vencimiento:venc||'',
       tasa:       parseFloat(tasa)||0,
       iva:        parseFloat(iva)||16,
       com:        parseFloat(com)||0,
       cat:        parseFloat(cat)||0,
       tipo:       'Simple',
-      producto:   producto||'Centum Simple',
-      pagoFijo:   parseMXN(pagoFijo),
+      producto:   producto||'Crédito Simple',
+      pagoFijo:   pagoFijoVal,
       st:         'Activo',
       disbDate:   amort.length>0 ? amort[0].fecha : '',
       fechaElab:  fechaElab||'',
