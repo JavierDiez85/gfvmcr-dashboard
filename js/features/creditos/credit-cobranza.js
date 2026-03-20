@@ -8,13 +8,6 @@
   function rCredCobr(entFilter, elPrefix){
     if(!elPrefix) elPrefix = 'cobr';
 
-    // Period filter bar
-    if(typeof gfpRender === 'function'){
-      const viewId = entFilter==='dyn' ? 'dyn_cobr' : 'cred_cobr';
-      const color = entFilter==='dyn' ? '#ff7043' : '#00b875';
-      gfpRender(elPrefix+'-pbar', {ent: entFilter||'end', color, type:'sub', years:['2025','2026'], viewId});
-    }
-
     // Reload data
     try{const s=DB.get('gf_cred_end');if(s&&s.length>=END_CREDITS.length){END_CREDITS.length=0;s.forEach(c=>END_CREDITS.push(c));}}catch(e){}
     try{const s=DB.get('gf_cred_dyn');if(s&&s.length>=DYN_CREDITS.length){DYN_CREDITS.length=0;s.forEach(c=>DYN_CREDITS.push(c));}}catch(e){}
