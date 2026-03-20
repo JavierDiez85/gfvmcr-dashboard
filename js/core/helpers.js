@@ -23,6 +23,26 @@ let _currentView = 'inicio';
 const CH = {};
 const dc = id => { if(CH[id]){ CH[id].destroy(); delete CH[id]; } };
 
+// ── Cleanup: destruir TODOS los charts al cambiar de vista ──
+function destroyAllCharts(){
+  // 1. CH — P&L, chart-helpers, cobranza, pl-engine
+  Object.keys(CH).forEach(k => { try{ CH[k].destroy(); }catch(e){} delete CH[k]; });
+  // 2. TPV_CHARTS
+  if(typeof TPV_CHARTS !== 'undefined' && TPV_CHARTS){
+    Object.keys(TPV_CHARTS).forEach(k => { try{ TPV_CHARTS[k].destroy(); }catch(e){} delete TPV_CHARTS[k]; });
+  }
+  // 3. TAR_CHARTS
+  if(typeof TAR_CHARTS !== 'undefined' && TAR_CHARTS){
+    Object.keys(TAR_CHARTS).forEach(k => { try{ TAR_CHARTS[k].destroy(); }catch(e){} delete TAR_CHARTS[k]; });
+  }
+  // 4. TES_CHARTS
+  if(typeof TES_CHARTS !== 'undefined' && TES_CHARTS){
+    Object.keys(TES_CHARTS).forEach(k => { try{ TES_CHARTS[k].destroy(); }catch(e){} delete TES_CHARTS[k]; });
+  }
+  // 5. Sueltos
+  if(window._dashTesChart){ try{ window._dashTesChart.destroy(); }catch(e){} window._dashTesChart = null; }
+}
+
 // ── Seguridad: Escape HTML para prevenir XSS ──
 function escapeHtml(str) {
   if (str == null) return '';

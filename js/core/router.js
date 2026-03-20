@@ -96,6 +96,8 @@ function navTo(id){
 }
 
 function sv(id, navEl){
+  // Destruir charts de la vista anterior para liberar memoria
+  if(typeof destroyAllCharts === 'function') destroyAllCharts();
   _currentView = id;
   document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
   const divId = VIEW_ALIAS[id] || id;
