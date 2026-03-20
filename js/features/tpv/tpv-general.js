@@ -87,7 +87,7 @@ async function filterTerminalesByCliente() {
 
   // Update subtitle
   const sub = document.getElementById('tpv-term-subtitle');
-  if (sub) sub.innerHTML = `<b>${clienteFilter}</b> · ${numTerm} terminales · <span style="color:var(--green);font-weight:600">${activas} activas</span> · <span style="color:var(--red)">${inactivas} inactivas</span>`;
+  if (sub) sub.innerHTML = `<b>${_esc(clienteFilter)}</b> · ${numTerm} terminales · <span style="color:var(--green);font-weight:600">${activas} activas</span> · <span style="color:var(--red)">${inactivas} inactivas</span>`;
 
   // Render terminal rows
   tbody.innerHTML = filtered.map(t => {

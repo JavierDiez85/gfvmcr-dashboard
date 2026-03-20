@@ -253,7 +253,7 @@ const TPV = {
           totalCorr += corr;
           corrCount++;
 
-          console.log(`[TPV] Rate correction: ${row.cliente} ${ch.campo}: vol=$${volBefore.toFixed(0)}, Δ=${(deltaRate*100).toFixed(4)}%, corr=$${corr.toFixed(2)}`);
+          // Rate correction applied
         }
 
         // Update monto_neto with total correction for this client

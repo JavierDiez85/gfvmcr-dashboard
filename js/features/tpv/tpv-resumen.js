@@ -61,14 +61,14 @@ async function rTPVResumen() {
   if (type === 'cliente') {
     _resumenClients.forEach(c => {
       _resumenAllOptions.push({ value: c.client_id, label: c.cliente });
-      filterValue.innerHTML += `<option value="${c.client_id}">${c.cliente}</option>`;
+      filterValue.innerHTML += `<option value="${_esc(c.client_id)}">${_esc(c.cliente)}</option>`;
     });
   } else {
     const { data: clients } = await _sb.from('tpv_clients').select('id, promotor').not('promotor', 'is', null);
     const promotors = [...new Set((clients || []).map(c => c.promotor).filter(Boolean))].sort();
     promotors.forEach(p => {
       _resumenAllOptions.push({ value: p, label: p });
-      filterValue.innerHTML += `<option value="${p}">${p}</option>`;
+      filterValue.innerHTML += `<option value="${_esc(p)}">${_esc(p)}</option>`;
     });
   }
 }
@@ -80,7 +80,7 @@ function filterResumenOptions(query) {
   const q = (query || '').toLowerCase().trim();
   filterValue.innerHTML = '<option value="">— Seleccionar —</option>';
   const filtered = q ? _resumenAllOptions.filter(o => o.label.toLowerCase().includes(q)) : _resumenAllOptions;
-  filtered.forEach(o => { filterValue.innerHTML += `<option value="${o.value}">${o.label}</option>`; });
+  filtered.forEach(o => { filterValue.innerHTML += `<option value="${_esc(o.value)}">${_esc(o.label)}</option>`; });
   // Auto-select if only one match
   if (filtered.length === 1) { filterValue.value = filtered[0].value; rTPVResumenDetail(); }
 }

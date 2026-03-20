@@ -394,7 +394,6 @@ const TPV_UPLOAD = {
         const withEfevoo = clients.filter(c => c.rate_efevoo_tc > 0).length;
         const withSalem = clients.filter(c => c.rate_salem_tc > 0 || c.rate_salem_tc < 0).length;
         console.log(`[Upload] Client summary: ${clients.length} total, ${withEfevoo} with Efevoo_TC, ${withSalem} with Salem_TC`);
-        console.log('[Upload] Sample (first 3):', clients.slice(0, 3).map(c => ({ n: c.nombre, e_tc: c.rate_efevoo_tc, s_tc: c.rate_salem_tc })));
 
         // Delete stale clients not in the new file
         const newNames = new Set(clients.map(c => c.nombre));
@@ -420,7 +419,7 @@ const TPV_UPLOAD = {
               const batch = staleIds.slice(i, i + 100);
               await _sb.from('tpv_transactions').update({ cliente_id: null }).in('cliente_id', batch);
             }
-            console.log(`[Upload] Removed ${staleIds.length} stale clients:`, existingClients.filter(c => !newNames.has(c.nombre)).map(c => c.nombre));
+            console.log(`[Upload] Removed ${staleIds.length} stale clients`);
           }
         }
 

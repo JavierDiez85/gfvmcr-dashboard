@@ -15,7 +15,17 @@ const DB = {
       console.warn('[DB.set] bloqueado — modo solo lectura');
       return;
     }
-    localStorage.setItem(key, JSON.stringify(val));
+    try {
+      localStorage.setItem(key, JSON.stringify(val));
+    } catch(e) {
+      if (e.name === 'QuotaExceededError' || e.code === 22) {
+        console.error('[DB.set] Almacenamiento lleno — key:', key);
+        if (typeof toast === 'function') toast('⚠️ Almacenamiento local lleno. Algunos datos no se guardaron.');
+      } else {
+        console.error('[DB.set] Error:', e.message);
+      }
+      return;
+    }
     // Write-through: empujar a Supabase en background
     if (typeof SB !== 'undefined' && SB.pushKey) {
       SB.pushKey(key).catch(e => console.warn('[DB.set] push falló:', e.message));

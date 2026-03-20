@@ -33,6 +33,7 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
 }
+var _esc = escapeHtml;
 
 Chart.defaults.font.family="'Figtree',sans-serif";
 Chart.defaults.font.size=11;
