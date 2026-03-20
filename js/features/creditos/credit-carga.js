@@ -57,6 +57,18 @@
     reader.readAsDataURL(file);
   }
 
+  // ── Lazy-load Tesseract.js for OCR when needed ──
+  function _loadTesseract(){
+    if(window.Tesseract) return Promise.resolve();
+    return new Promise(function(resolve, reject){
+      var s = document.createElement('script');
+      s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+      s.onload = resolve;
+      s.onerror = function(){ reject(new Error('No se pudo cargar Tesseract.js para OCR')); };
+      document.head.appendChild(s);
+    });
+  }
+
   async function ccAnalyzeWithClaude(base64pdf, filename){
     const empresa = document.getElementById('cc-empresa').value;
     ccSetStatus('loading', '📖 Extrayendo texto del PDF…');
@@ -75,13 +87,46 @@
       fullText += tc.items.map(i=>i.str).join(' ') + '\n';
     }
 
-    ccSetStatus('loading', '🔍 Analizando tabla de amortizacion…');
+    ccSetStatus('loading', '🔍 Analizando tabla de amortización…');
 
-    const credito = ccParseCentumPDF(fullText, filename);
-    if(!credito) throw new Error('No se pudo leer la tabla. Verifica que sea un PDF de Centum Capital en formato estandar.');
+    // Try text-based parsing first (Format A: system-generated PDFs)
+    let credito = ccParseCentumPDF(fullText, filename);
+
+    // If text parsing failed (table is likely an image), fall back to OCR
+    if(!credito){
+      ccSetStatus('loading', '🖼️ Tabla es imagen — cargando OCR…');
+      await _loadTesseract();
+
+      ccSetStatus('loading', '🔍 Procesando OCR (puede tardar 10-20s)…');
+
+      // Render each page to canvas and OCR
+      let ocrText = '';
+      for(let p=1; p<=pdfDoc.numPages; p++){
+        const page = await pdfDoc.getPage(p);
+        const viewport = page.getViewport({scale: 2.5}); // high res for better OCR
+        const canvas = document.createElement('canvas');
+        canvas.width = viewport.width;
+        canvas.height = viewport.height;
+        const ctx = canvas.getContext('2d');
+        await page.render({canvasContext: ctx, viewport: viewport}).promise;
+
+        const result = await Tesseract.recognize(canvas, 'eng', {
+          logger: function(info){ if(info.status==='recognizing text') ccSetStatus('loading', '🔍 OCR: ' + Math.round((info.progress||0)*100) + '%…'); }
+        });
+        ocrText += result.data.text + '\n';
+      }
+
+      console.log('OCR text:', ocrText);
+
+      // Combine header text (from PDF.js) + OCR text (from image)
+      const combinedText = fullText + ' ' + ocrText;
+      credito = ccParseCentumPDF(combinedText, filename);
+    }
+
+    if(!credito) throw new Error('No se pudo leer la tabla. Verifica que sea un PDF de Centum Capital en formato estándar.');
 
     CC_PREVIEW = [credito];
-    ccSetStatus('ok', `✅ Credito de <strong>${credito.cl}</strong> extraido de "${filename}"`);
+    ccSetStatus('ok', `✅ Crédito de <strong>${credito.cl}</strong> extraído de "${filename}"`);
     try { ccRenderPreview(empresa, null); } catch(e){ console.error('Preview error:',e); }
   }
 
@@ -115,7 +160,7 @@
 
     // Split into rows by detecting "N  DD/..." pattern, extract $ amounts per row
     const amort = [];
-    const rowSplitRe = /\b(\d{1,3})\s+([\d]{1,2}\/[\d]{2,4}\/?\d{0,4}|[\d]{1,2}\/[A-Za-z]+\/\d{4})([\s\S]*?)(?=\b\d{1,3}\s+[\d]{1,2}\/|Total:|La presente|$)/g;
+    const rowSplitRe = /\b(\d{1,3})\s+([\d]{1,2}\/[\dA-Za-z]{2,4}\/?\d{0,4}|[\d]{1,2}\/[A-Za-z0-9]+\/\d{4})([\s\S]*?)(?=\b\d{1,3}\s+[\d]{1,2}\/|Total:|La presente|$)/g;
     let m;
     while((m=rowSplitRe.exec(t))!==null){
       const periodo = parseInt(m[1]);
