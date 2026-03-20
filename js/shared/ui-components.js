@@ -72,7 +72,7 @@
           }).filter(r=>r.vals.some(v=>v>0));
           if(!rows.length) return;
           dc('m-chart1');
-          new Chart(document.getElementById('m-chart1'),{type:'bar',data:{labels:MO,datasets:rows.map(r=>({label:r.e,data:r.vals,backgroundColor:entCBg[r.e],borderColor:entC[r.e],borderWidth:1.5}))},
+          CH['m-chart1']=new Chart(document.getElementById('m-chart1'),{type:'bar',data:{labels:MO,datasets:rows.map(r=>({label:r.e,data:r.vals,backgroundColor:entCBg[r.e],borderColor:entC[r.e],borderWidth:1.5}))},
             options:cOpts({scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#b0b4d0',font:{size:10}}},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:10},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}})});
         }
       },
@@ -109,7 +109,7 @@
             return {e, v:nom+gas};
           });
           dc('m-chart1');
-          new Chart(document.getElementById('m-chart1'),{type:'doughnut',data:{labels:rows.map(r=>r.e),datasets:[{data:rows.map(r=>r.v),backgroundColor:rows.map(r=>entCBg[r.e]),borderColor:rows.map(r=>entC[r.e]),borderWidth:1.5}]},
+          CH['m-chart1']=new Chart(document.getElementById('m-chart1'),{type:'doughnut',data:{labels:rows.map(r=>r.e),datasets:[{data:rows.map(r=>r.v),backgroundColor:rows.map(r=>entCBg[r.e]),borderColor:rows.map(r=>entC[r.e]),borderWidth:1.5}]},
             options:{...cOpts(),plugins:{legend:{position:'right',labels:{color:'#444669',font:{size:11},boxWidth:10}},tooltip:{...cOpts().plugins.tooltip,callbacks:{label:ctx=>` ${fmt(ctx.raw)}`}}},cutout:'55%',scales:{x:{display:false},y:{display:false}}}});
         }
       },
@@ -150,7 +150,7 @@
             return {e, v:ing-(nom+gas)};
           });
           dc('m-chart1');
-          new Chart(document.getElementById('m-chart1'),{type:'bar',data:{labels:rows.map(r=>r.e),datasets:[{data:rows.map(r=>r.v),
+          CH['m-chart1']=new Chart(document.getElementById('m-chart1'),{type:'bar',data:{labels:rows.map(r=>r.e),datasets:[{data:rows.map(r=>r.v),
             backgroundColor:rows.map(r=>r.v>=0?'rgba(0,184,117,.25)':'rgba(229,57,53,.2)'),
             borderColor:rows.map(r=>r.v>=0?'#00b875':'#e53935'),borderWidth:1.5,borderRadius:6}]},
             options:cOpts({indexAxis:'y',scales:{x:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:11},callback:v=>'$'+(Math.abs(v)/1000).toFixed(0)+'K'}},y:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:11}}}},plugins:{legend:{display:false}}})});
