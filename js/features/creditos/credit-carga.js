@@ -148,7 +148,7 @@
       }
     }
 
-    console.log('PDF parsed - nombre:', nombre, 'monto:', monto, 'plazo:', plazo, 'tasa:', tasa, 'amort rows:', amort.length, amort);
+    console.log('[CC] PDF parsed OK —', amort.length, 'periodos');
 
     if(!nombre || amort.length < 1) return null;
 
@@ -197,7 +197,7 @@
     const stColor = {Activo:'var(--green)',Prospecto:'var(--yellow)',Vencido:'var(--red)',Pagado:'var(--purple)'};
     tbody.innerHTML = CC_PREVIEW.map((c,i) => `
       <tr>
-        <td style="font-weight:600">${c.cl||'—'}</td>
+        <td style="font-weight:600">${_esc(c.cl||'—')}</td>
         <td class="mo pos">${fmtFull(c.monto)}</td>
         <td class="r">${c.plazo} meses</td>
         <td class="r">${c.tasa}%</td>
@@ -208,7 +208,7 @@
         <td class="r" style="font-size:.72rem;color:var(--muted)">${c.disbDate||'—'}</td>
       </tr>`).join('');
 
-    if(notas) notesEl.innerHTML = `<strong>Notas del analisis:</strong> ${notas}`;
+    if(notas) notesEl.innerHTML = `<strong>Notas del analisis:</strong> ${_esc(notas)}`;
     else notesEl.innerHTML = '';
 
     wrap.style.display = 'block';

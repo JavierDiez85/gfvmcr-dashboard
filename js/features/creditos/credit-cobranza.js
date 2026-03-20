@@ -163,15 +163,15 @@
       const proxMonto = c._prox ? fmtFull(c._prox.pago) : '—';
       const sl = c._statusLabel;
 
-      return `<div class="cobr-row" data-name="${(c.cl||'').toLowerCase()}"
-        onclick="credOpenDetail('${c._ent}','${(c.cl||'').replace(/'/g,"\\'")}',${origIdx})"
+      return `<div class="cobr-row" data-name="${_esc((c.cl||'').toLowerCase())}"
+        onclick="credOpenDetail('${_esc(c._ent)}','${_esc((c.cl||'').replace(/'/g,"\\'"))}',${origIdx})"
         style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
         onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:10px;background:${stBg[sl]||'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${stIco[sl]||'📋'}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-            <span style="font-weight:700;font-size:.82rem">${c.cl}</span>
-            <span style="font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${c._col}18;color:${c._col};border:1px solid ${c._col}35">${c._entLabel}</span>
+            <span style="font-weight:700;font-size:.82rem">${_esc(c.cl)}</span>
+            <span style="font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${c._col}18;color:${c._col};border:1px solid ${c._col}35">${_esc(c._entLabel)}</span>
           </div>
           <div style="font-size:.68rem;color:var(--muted)">${c._resumen.pagado}/${c._resumen.total} periodos pagados</div>
         </div>

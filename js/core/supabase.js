@@ -8,18 +8,11 @@ let SUPABASE_URL = '';
 let SUPABASE_KEY = '';
 let _sb = null;
 
-// Supabase anon key (público por diseño — seguridad vía RLS policies)
-// El servidor Node.js (/api/config) es preferido pero este fallback
-// permite que la app funcione en hosting estático (GitHub Pages, etc.)
-const _SB_FALLBACK_URL = 'https://ofuzwfiqjvlronulhwbw.supabase.co';
-const _SB_FALLBACK_KEY = '***REDACTED_SUPABASE_ANON_KEY***';
-
-// Cargar config: intenta /api/config (Node.js server), fallback a valores embebidos
+// Cargar config desde el servidor Node.js (/api/config)
+// Sin fallback embebido — las credenciales solo viven en el servidor
 async function _loadConfig() {
-  // Si ya está inicializado, no recargar
   if (_sb) return;
 
-  // Intentar cargar desde el servidor Node.js
   try {
     const r = await fetch('/api/config');
     if (r.ok) {
@@ -31,12 +24,10 @@ async function _loadConfig() {
         return;
       }
     }
-  } catch (e) { /* servidor no disponible — usar fallback */ }
+  } catch (e) { /* servidor no disponible */ }
 
-  // Fallback: usar credenciales embebidas (hosting estático)
-  SUPABASE_URL = _SB_FALLBACK_URL;
-  SUPABASE_KEY = _SB_FALLBACK_KEY;
-  _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+  // Sin servidor: app funciona en modo offline (solo localStorage)
+  console.warn('[SB] No se pudo conectar al servidor. Modo offline.');
 }
 
 // Client identity (para tracking de sync)

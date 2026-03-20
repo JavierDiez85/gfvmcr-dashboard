@@ -799,7 +799,7 @@
       const cv=_npCV(e.vals);
       cv.forEach((v,i)=>totNomCols[i]+=v);
       const tc=e.tipo==='Operativo'?'#0073ea':'#9b51e0';
-      return '<tr><td class="bld">'+e.n+'</td><td style="color:var(--muted);font-size:.76rem">'+e.r+'</td><td style="text-align:right"><span style="font-size:.66rem;font-weight:600;color:'+tc+'">'+e.tipo+'</span></td><td class="mo" style="color:'+cfg.color+';font-weight:600">'+e.pct+'%</td>'+cv.map(v=>'<td class="mo'+(v?' neg':'')+'">'+(v?fmt(v):'\u2014')+'</td>').join('')+'</tr>';
+      return '<tr><td class="bld">'+_esc(e.n)+'</td><td style="color:var(--muted);font-size:.76rem">'+_esc(e.r)+'</td><td style="text-align:right"><span style="font-size:.66rem;font-weight:600;color:'+tc+'">'+_esc(e.tipo)+'</span></td><td class="mo" style="color:'+cfg.color+';font-weight:600">'+e.pct+'%</td>'+cv.map(v=>'<td class="mo'+(v?' neg':'')+'">'+(v?fmt(v):'\u2014')+'</td>').join('')+'</tr>';
     }).join('');
     tbody.innerHTML+='<tr class="grp"><td colspan="4">TOTAL N\u00d3MINA '+cfg.fullName.toUpperCase()+'</td>'+totNomCols.map(v=>'<td class="mo neg bld">'+fmt(v)+'</td>').join('')+'</tr>';
   }
@@ -811,7 +811,7 @@
     const thead=document.getElementById('wb-nom-thead');
     const tbody=document.getElementById('wb-nom-tbody');
     thead.innerHTML=`<th>Empleado</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th>`;
-    tbody.innerHTML=WB_NOM_DETAIL.map(e=>`<tr><td class="bld">${e.n}</td>${e.vals.map(v=>`<td class="mo ${v>0?'neg':''}">${v?fmt(v):'\u2014'}</td>`).join('')}<td class="mo bld neg">${fmt(e.total)}</td></tr>`).join('');
+    tbody.innerHTML=WB_NOM_DETAIL.map(e=>`<tr><td class="bld">${_esc(e.n)}</td>${e.vals.map(v=>`<td class="mo ${v>0?'neg':''}">${v?fmt(v):'\u2014'}</td>`).join('')}<td class="mo bld neg">${fmt(e.total)}</td></tr>`).join('');
     tbody.innerHTML+=`<tr class="grp"><td>TOTAL N\u00d3MINA WIREBIT</td>${WB_NOM_TOTAL.map(v=>`<td class="mo neg bld">${fmt(v)}</td>`).join('')}<td class="mo neg bld">${fmt(sum(WB_NOM_TOTAL))}</td></tr>`;
   }
 
@@ -823,7 +823,7 @@
     const tbody=document.getElementById('sal-tpv-tbody');
     thead.innerHTML=`<th>Cliente</th>`+MO.map(m=>`<th class="r">${m}</th>`).join('')+`<th class="r">Total</th><th class="r">Ppto ${_year}</th>`;
     tbody.innerHTML=SAL_TPV_CLIENTES.map(c=>`<tr>
-      <td class="bld">${c}</td>${MO.map(()=>'<td class="mo" style="color:var(--muted)">\u2014</td>').join('')}
+      <td class="bld">${_esc(c)}</td>${MO.map(()=>'<td class="mo" style="color:var(--muted)">\u2014</td>').join('')}
       <td class="mo bld" style="color:var(--muted)">\u2014</td>
       <td class="mo" style="color:var(--muted)">\u2014</td>
     </tr>`).join('');
@@ -1040,7 +1040,7 @@
       var pct = total > 0 ? (r.val / total * 100) : 0;
       html += '<div style="background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid var(--border)">'
         + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'
-        + '<span style="font-weight:700;font-size:.82rem">' + r.cl + '</span>'
+        + '<span style="font-weight:700;font-size:.82rem">' + _esc(r.cl) + '</span>'
         + '<span style="font-family:\'Poppins\',sans-serif;font-weight:700;font-size:.88rem;color:'+col+'">' + fmtK(r.val) + '</span>'
         + '</div>'
         + '<div style="display:flex;justify-content:space-between;align-items:center">'

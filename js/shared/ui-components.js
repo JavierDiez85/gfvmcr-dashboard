@@ -27,7 +27,6 @@
           delBtn.onclick = function(){
             const ent = this.dataset.ent;
             const idx = parseInt(this.dataset.idx);
-            console.log('Delete clicked: ent='+ent+' idx='+idx);
             credDelete(ent, idx);
           };
         } else {

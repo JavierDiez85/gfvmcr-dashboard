@@ -108,7 +108,7 @@ async function rTPVPromotoresDetail(){
 
   // Subtitle
   const sub=document.getElementById('prom-subtitle');
-  if(sub)sub.innerHTML=`<b>${selName}</b> — ${rows.length} clientes — ${periodText}`;
+  if(sub)sub.innerHTML=`<b>${_esc(selName)}</b> — ${rows.length} clientes — ${periodText}`;
 
   // KPIs
   const kEl=document.getElementById('prom-kpis');
@@ -132,7 +132,7 @@ async function rTPVPromotoresDetail(){
         :'<span class="pill" style="background:var(--red-lt);color:#b02020">Pendiente</span>';
       const histBadge=p._nPagos>0?`<span style="font-size:.6rem;background:var(--blue-bg);color:var(--blue);border-radius:10px;padding:1px 6px;font-weight:700">${p._nPagos}</span>`:'';
       return `<tr>
-        <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}</td>
+        <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${_esc(p.cliente)}</td>
         <td class="mo r">${fmtTPVFull(p.total_cobrado,2)}</td>
         <td class="mo r" style="color:var(--orange)">${fmtTPVFull(p.total_comisiones,2)}</td>
         <td class="mo r bld" style="color:var(--green)">${fmtTPVFull(p.a_pagar,2)}</td>

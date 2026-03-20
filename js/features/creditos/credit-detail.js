@@ -142,7 +142,7 @@
         </button>
       </div>`;
 
-    openModal(null, `🏦 Detalle — ${c.cl} · ${fmtK(c.monto)}`, html);
+    openModal(null, `🏦 Detalle — ${_esc(c.cl)} · ${fmtK(c.monto)}`, html);
   }
 
   // ── Registro de pagos ──
