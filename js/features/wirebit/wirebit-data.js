@@ -8,170 +8,93 @@
 // ══════════════════════════════════════
 
 // ─── Period filter state ───────────────────────────────────────────────────
-let _wbtPeriodo = 'mes';   // Tarjetas WB: mes | trimestre | anual | 2025 | 2026
-let _wbcYear    = 'ambos'; // Cripto WB:   ambos | 2025 | 2026
+// Now uses the unified _gfPeriod system from period-filter.js
+// _gfPeriod['wb_tar'] and _gfPeriod['wb_cri'] store 'año'|'q1'-'q4'|'mes_0'-'mes_11'
+// _year (global) controls the active year for both views
 
-/** Render the universal-style year bar for wb_cripto */
+/** Render the unified period filter bar for wb_cripto */
 function _wbcRenderBar(){
-  const el = document.getElementById('wbc-year-bar');
-  if(!el) return;
-  const color = '#9b51e0';
-  const curY = String(new Date().getFullYear());
-
-  const opts = [
-    { key:'ambos', label:'Ambos años', isCurrent:false },
-    { key:'2025',  label:'2025',       isCurrent:'2025'===curY },
-    { key:'2026',  label:'2026',       isCurrent:'2026'===curY },
-  ];
-
-  const yBtns = opts.map(o=>{
-    const isAct = o.key === _wbcYear;
-    const sty = isAct ? `background:${color};color:white;border-color:${color};` : '';
-    const dot = o.isCurrent ? ' <span style="font-size:.45rem;vertical-align:middle;opacity:.7">●</span>' : '';
-    return `<button class="pbtn" style="${sty}font-size:.68rem" onclick="wbcSetYear('${o.key}')">${o.label}${dot}</button>`;
-  }).join('');
-
-  el.innerHTML = `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px">
-    <span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">AÑO</span>
-    ${yBtns}
-  </div>`;
+  gfpRender('wbc-year-bar', { ent:'wb_cri', color:'#9b51e0', viewId:'wb_cripto' });
 }
 
-/** Render the universal-style period bar for wb_tarjetas */
+/** Render the unified period filter bar for wb_tarjetas */
 function _wbtRenderBar(){
-  const el = document.getElementById('wbt-periodo-bar');
-  if(!el) return;
-  const color = '#9b51e0';
-  const curY = String(new Date().getFullYear());
-
-  // Active year: '2025' if periodo is '2025', else curY
-  const activeYear = _wbtPeriodo === '2025' ? '2025' : curY;
-
-  const yBtns = ['2025','2026'].map(y=>{
-    const isAct = y === activeYear;
-    const sty = isAct ? `background:${color};color:white;border-color:${color};` : '';
-    const dot = y === curY ? ' <span style="font-size:.45rem;vertical-align:middle;opacity:.7">●</span>' : '';
-    return `<button class="pbtn" style="${sty}font-size:.68rem" onclick="wbtSetYear('${y}')">${y}${dot}</button>`;
-  }).join('');
-
-  // Sub-period buttons only for current year
-  let subHTML = '';
-  if(activeYear === curY){
-    const subOpts = [
-      {k:'mes',       l:'Mes actual'},
-      {k:'trimestre', l:'Trimestre'},
-      {k:'anual',     l:'Año completo'},
-    ];
-    const curSub = (_wbtPeriodo === '2025') ? 'anual' : _wbtPeriodo;
-    const sBtns = subOpts.map(o=>{
-      const isA = o.k === curSub;
-      return `<button class="pbtn${isA?' active':''}" style="font-size:.68rem" onclick="wbtSetPeriodo('${o.k}')">${o.l}</button>`;
-    }).join('');
-    subHTML = `<span style="display:inline-block;width:1px;height:16px;background:var(--border2);margin:0 5px;vertical-align:middle"></span>`
-            + `<span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">PERÍODO</span>`
-            + sBtns;
-  }
-
-  el.innerHTML = `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px">
-    <span style="font-size:.6rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em;margin-right:3px">AÑO</span>
-    ${yBtns}${subHTML}
-  </div>`;
+  gfpRender('wbt-periodo-bar', { ent:'wb_tar', color:'#9b51e0', viewId:'wb_tarjetas' });
 }
 
-/** Returns {from, to, label, groupBy} for a given period key */
-function _wbtRange(p){
-  const now = new Date(), y = now.getFullYear(), m = now.getMonth();
-  if(p === 'mes'){
-    return { from: new Date(y,m,1).toISOString().slice(0,10),
-             to:   new Date(y,m+1,0).toISOString().slice(0,10),
-             label: (typeof MNF!=='undefined'?MNF[m]:'')+' '+y, groupBy:'day' };
+/** Returns {from, to, label, groupBy} for active period of Tarjetas WB.
+ *  Reads from _gfPeriod['wb_tar'] and _year. */
+function _wbtRange(){
+  const y = typeof _year !== 'undefined' ? _year : new Date().getFullYear();
+  const p = (typeof _gfPeriod !== 'undefined' ? _gfPeriod['wb_tar'] : null) || 'año';
+
+  if(p.startsWith('mes_')){
+    const mi = parseInt(p.split('_')[1]);
+    return { from: new Date(y,mi,1).toISOString().slice(0,10),
+             to:   new Date(y,mi+1,0).toISOString().slice(0,10),
+             label: MO[mi]+' '+y, groupBy:'day' };
   }
-  if(p === 'trimestre'){
-    const qs = m-(m%3);
+  const qMap = { q1:[0,2], q2:[3,5], q3:[6,8], q4:[9,11] };
+  if(qMap[p]){
+    const [qs,qe] = qMap[p];
     return { from: new Date(y,qs,1).toISOString().slice(0,10),
-             to:   new Date(y,qs+3,0).toISOString().slice(0,10),
-             label: 'Q'+(Math.floor(qs/3)+1)+' '+y, groupBy:'month' };
+             to:   new Date(y,qe+1,0).toISOString().slice(0,10),
+             label: p.toUpperCase()+' '+y, groupBy:'month' };
   }
-  if(p === 'anual') return { from:y+'-01-01', to:y+'-12-31', label:'Año '+y, groupBy:'month' };
-  if(p === '2025')  return { from:'2025-01-01', to:'2025-12-31', label:'2025', groupBy:'month' };
-  if(p === '2026')  return { from:'2026-01-01', to:'2026-12-31', label:'2026', groupBy:'month' };
-  return { from:'2000-01-01', to:'2099-12-31', label:'Todo', groupBy:'month' };
+  // 'año' (default)
+  return { from:y+'-01-01', to:y+'-12-31', label:'Año '+y, groupBy:'month' };
 }
 
-/** Toggle active button style for a filter group */
-function _setFilterBtns(prefix, active, opts, activeStyle){
-  opts.forEach(k=>{
-    const btn = document.getElementById(prefix+k);
-    if(!btn) return;
-    if(k === active){
-      btn.className = 'btn';
-      Object.assign(btn.style, activeStyle || {background:'#9b51e0',color:'white',border:'none'});
-    } else {
-      btn.className = 'btn btn-out';
-      btn.style.background = '';
-      btn.style.color      = '';
-      btn.style.border     = '';
-    }
-  });
+/** Returns month indices [0..11] for the active wb_cri period */
+function _wbcPeriodIdxs(){
+  return _periodIdxs('wb_cri');
 }
 
-/** Public: set period for Tarjetas WB */
-function wbtSetPeriodo(p){
-  _wbtPeriodo = p;
-  _wbtRenderBar();
-  rWBTarjetas();
-}
+/** Merge cripto fees data for the active year and period filter.
+ *  Uses _year (global) and _gfPeriod['wb_cri'] to filter months. */
+function _mergeWBCripto(){
+  const y = String(typeof _year !== 'undefined' ? _year : new Date().getFullYear());
+  const monthIdxs = _wbcPeriodIdxs(); // e.g. [0..11] for 'año', [0,1,2] for 'q1', [5] for 'mes_5'
 
-/** Public: set year for Tarjetas WB (from AÑO buttons) */
-function wbtSetYear(y){
-  if(y === '2025'){
-    _wbtPeriodo = '2025';
-  } else {
-    // Switch to current year: keep sub-period if already set, else default to 'mes'
-    if(_wbtPeriodo === '2025') _wbtPeriodo = 'mes';
-  }
-  _wbtRenderBar();
-  rWBTarjetas();
-}
-
-/** Public: set year filter for Cripto WB */
-function wbcSetYear(y){
-  _wbcYear = y;
-  _wbcRenderBar();
-  rWBCripto();
-}
-
-/** Merge cripto fees data from selected year(s) */
-function _mergeWBCripto(year){
-  const years = year === 'ambos' ? ['2025','2026'] : [year];
   const mergedConcepto = {}; // { concepto: { 'YYYY-MM': value } }
   const mergedClients  = {}; // { client: {total_usd, total_mxn, txn_count} }
   let totalUSD = 0, totalMXN = 0, txnCount = 0, updated = null;
 
-  for(const y of years){
-    const d = DB.get('gf_wb_fees_'+y);
-    if(!d) continue;
-    totalUSD  += d.total_usd  || 0;
-    totalMXN  += d.total_mxn  || 0;
-    txnCount  += d.txn_count  || d.txnCount || 0;
-    if(!updated || (d.updated && d.updated > updated)) updated = d.updated;
+  const d = DB.get('gf_wb_fees_'+y);
+  if(!d) return null;
 
-    // monthly by concepto: array of 12 values indexed by month (0-based)
-    for(const [concepto, vals] of Object.entries(d.monthly || {})){
-      if(!mergedConcepto[concepto]) mergedConcepto[concepto] = {};
-      (vals||[]).forEach((v,i)=>{
-        const ym = y+'-'+String(i+1).padStart(2,'0');
-        mergedConcepto[concepto][ym] = (mergedConcepto[concepto][ym]||0)+v;
-      });
-    }
+  // We need the full-year totals for client table proportions, but only show filtered data
+  if(!updated || (d.updated && d.updated > updated)) updated = d.updated;
 
-    // clients
-    for(const c of (d.byClient||[])){
-      if(!mergedClients[c.client]) mergedClients[c.client]={total_usd:0,total_mxn:0,txn_count:0};
-      mergedClients[c.client].total_usd  += c.total_usd  || 0;
-      mergedClients[c.client].total_mxn  += c.total_mxn  || 0;
-      mergedClients[c.client].txn_count  += c.txn_count  || 0;
-    }
+  // monthly by concepto: array of 12 values indexed by month (0-based)
+  // Only include months in the active period
+  for(const [concepto, vals] of Object.entries(d.monthly || {})){
+    if(!mergedConcepto[concepto]) mergedConcepto[concepto] = {};
+    (vals||[]).forEach((v,i)=>{
+      if(monthIdxs.indexOf(i) === -1) return; // skip months outside filter
+      const ym = y+'-'+String(i+1).padStart(2,'0');
+      mergedConcepto[concepto][ym] = (mergedConcepto[concepto][ym]||0)+v;
+    });
+  }
+
+  // Sum filtered totals
+  Object.values(mergedConcepto).forEach(byPeriod=>{
+    Object.values(byPeriod).forEach(v=>{ totalMXN += v; });
+  });
+
+  // For USD and txnCount, scale proportionally if we have full-year data
+  // (since we only have monthly MXN breakdowns, estimate from ratio)
+  const fullYearMXN = (d.total_mxn || 0);
+  const ratio = fullYearMXN > 0 ? totalMXN / fullYearMXN : 0;
+  totalUSD = Math.round((d.total_usd || 0) * ratio);
+  txnCount = Math.round(((d.txn_count || d.txnCount || 0)) * ratio);
+
+  // clients — scale proportionally too
+  for(const c of (d.byClient||[])){
+    if(!mergedClients[c.client]) mergedClients[c.client]={total_usd:0,total_mxn:0,txn_count:0};
+    mergedClients[c.client].total_usd  += Math.round((c.total_usd || 0) * ratio);
+    mergedClients[c.client].total_mxn  += Math.round((c.total_mxn || 0) * ratio);
+    mergedClients[c.client].txn_count  += Math.round((c.txn_count || 0) * ratio);
   }
 
   if(!totalUSD && !totalMXN) return null;
@@ -196,7 +119,7 @@ function _mergeWBCripto(year){
 // ── 1. Crypto Transaction Analysis (wb_cripto) ──
 function rWBCripto(){
   _wbcRenderBar();
-  const merged = _mergeWBCripto(_wbcYear);
+  const merged = _mergeWBCripto();
 
   const kTxns = document.getElementById('wbc-kpi-txns');
   const kUSD  = document.getElementById('wbc-kpi-usd');
@@ -213,7 +136,11 @@ function rWBCripto(){
     return;
   }
 
-  const yearLabel = _wbcYear === 'ambos' ? '2025–2026' : _wbcYear;
+  const _cPer = (typeof _gfPeriod !== 'undefined' ? _gfPeriod['wb_cri'] : null) || 'año';
+  const _cY = typeof _year !== 'undefined' ? _year : new Date().getFullYear();
+  let yearLabel = String(_cY);
+  if(_cPer.startsWith('q')) yearLabel = _cPer.toUpperCase()+' '+_cY;
+  else if(_cPer.startsWith('mes_')){ const _mi = parseInt(_cPer.split('_')[1]); yearLabel = MO[_mi]+' '+_cY; }
 
   // ── KPIs ──
   kTxns.textContent = (merged.txnCount||0).toLocaleString();
@@ -242,14 +169,15 @@ function rWBCripto(){
   var _wbcCS = document.getElementById('wbc-chart-sub');
   var _wbcTT = document.getElementById('wbc-type-title');
   var _wbcTS = document.getElementById('wbc-type-sub');
-  if(_wbcCT) _wbcCT.textContent = 'Volumen Mensual (MXN) — '+yearLabel;
-  if(_wbcCS) _wbcCS.textContent = 'Fees convertidos por mes · '+yearLabel;
+  const _cGroupLabel = _cPer.startsWith('mes_') ? 'Diario' : 'Mensual';
+  if(_wbcCT) _wbcCT.textContent = 'Volumen '+_cGroupLabel+' (MXN) — '+yearLabel;
+  if(_wbcCS) _wbcCS.textContent = _cPer.startsWith('mes_') ? 'Fees por concepto · '+yearLabel : 'Fees convertidos por mes · '+yearLabel;
   if(_wbcTT) _wbcTT.textContent = 'Por Tipo de Transaccion';
   if(_wbcTS) _wbcTS.textContent = 'Distribucion de fees · '+yearLabel;
 
   // ── Chart 1: Monthly fees MXN ──
   dc('cwbcm');
-  const multiYear = _wbcYear === 'ambos';
+  const multiYear = false; // now always single year via _year
   const periods = merged.monthlySummary;
   const chartLabels = periods.map(r=>{
     const [yr,mo] = r.period.split('-');
@@ -383,7 +311,7 @@ function rWBTarjetas(){
   if(contentDiv) contentDiv.style.display = 'block';
 
   // ── Apply period filter ──
-  const range  = _wbtRange(_wbtPeriodo);
+  const range  = _wbtRange();
   const txns   = data.transactions.filter(t => t.date >= range.from && t.date <= range.to);
   const totalMonto = txns.reduce((s,t)=>s+(t.monto||0),0);
 
@@ -750,9 +678,6 @@ function clearWBTarData(){
   window.startWBTarUpload = startWBTarUpload;
   window.clearWBTarData = clearWBTarData;
   window._getWBTarData = _getWBTarData;
-  window.wbtSetPeriodo = wbtSetPeriodo;
-  window.wbtSetYear    = wbtSetYear;
-  window.wbcSetYear    = wbcSetYear;
   window._wbcRenderBar = _wbcRenderBar;
   window._wbtRenderBar = _wbtRenderBar;
   window._mergeWBCripto = _mergeWBCripto;
