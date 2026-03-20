@@ -30,14 +30,16 @@ function _chatInjectDOM() {
   style.textContent = `
     #ai-chat-fab{
       position:fixed;bottom:24px;right:24px;z-index:9000;
-      width:52px;height:52px;border-radius:50%;
+      width:46px;height:46px;border-radius:50%;
       background:var(--blue);color:#fff;border:none;
-      cursor:pointer;font-size:1.5rem;line-height:1;
+      cursor:pointer;font-size:1.3rem;line-height:1;
       box-shadow:var(--shm);
-      transition:transform .18s,background .15s;
+      opacity:0.35;
+      transition:transform .18s,background .15s,opacity .2s;
       display:flex;align-items:center;justify-content:center;
     }
-    #ai-chat-fab:hover{transform:scale(1.08);filter:brightness(1.1)}
+    #ai-chat-fab:hover{transform:scale(1.08);filter:brightness(1.1);opacity:1}
+    #ai-chat-fab.chat-active{opacity:1}
 
     #ai-chat-panel{
       position:fixed;bottom:88px;right:24px;z-index:9001;
@@ -173,9 +175,11 @@ function _chatToggle() {
 
 function _chatOpenPanel() {
   const panel = document.getElementById('ai-chat-panel');
+  const fab   = document.getElementById('ai-chat-fab');
   if (!panel) return;
   panel.style.display = 'flex';
   setTimeout(() => panel.classList.add('open'), 10);
+  if (fab) fab.classList.add('chat-active');
   _chatOpen = true;
   setTimeout(() => {
     const inp = document.getElementById('ai-chat-input');
@@ -185,8 +189,10 @@ function _chatOpenPanel() {
 
 function _chatClose() {
   const panel = document.getElementById('ai-chat-panel');
+  const fab   = document.getElementById('ai-chat-fab');
   if (!panel) return;
   panel.classList.remove('open');
+  if (fab) fab.classList.remove('chat-active');
   _chatOpen = false;
   setTimeout(() => { panel.style.display = 'none'; }, 220);
 }
