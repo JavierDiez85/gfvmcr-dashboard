@@ -195,9 +195,9 @@
         style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
         onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
         <div style="width:36px;height:36px;border-radius:10px;background:${stBg[c.st]||stBg.Activo};border:1px solid ${stBor[c.st]||stBor.Activo};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${stIco[c.st]||'📋'}</div>
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
-            <span style="font-weight:700;font-size:.82rem">${c.cl}</span>
+            <span style="font-weight:700;font-size:.82rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:240px;display:inline-block">${c.cl}</span>
             <span style="font-size:.58rem;font-weight:700;padding:1px 6px;border-radius:8px;background:${stBg[c.st]};color:${stCol[c.st]};border:1px solid ${stBor[c.st]}">${c.st}</span>
             <span style="font-size:.56rem;font-weight:700;padding:1px 5px;border-radius:6px;background:${c._col}18;color:${c._col};border:1px solid ${c._col}35">${c._entLabel}</span>
           </div>
@@ -330,9 +330,9 @@
         </div>
 
         <!-- Info principal -->
-        <div style="flex:1;min-width:0">
+        <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
-            <span style="font-weight:700;font-size:.86rem">${c.cl}</span>
+            <span style="font-weight:700;font-size:.86rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:280px;display:inline-block">${c.cl}</span>
             <span style="font-size:.62rem;font-weight:700;padding:2px 7px;border-radius:10px;background:${st.bg};color:${st.color};border:1px solid ${st.border}">${c.st}</span>
           </div>
           <div style="font-size:.7rem;color:var(--muted)">${c.tipo||'Simple'} · ${periodos} ${c.plazo<=24?'meses':'periodos'} · ${c.tasa}% anual${c.iva?` · IVA ${c.iva}%`:''}</div>
