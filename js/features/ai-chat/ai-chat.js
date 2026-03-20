@@ -29,20 +29,17 @@ function _chatInjectDOM() {
   const style = document.createElement('style');
   style.textContent = `
     #ai-chat-fab{
-      position:fixed;bottom:24px;right:24px;z-index:9000;
-      width:46px;height:46px;border-radius:50%;
-      background:var(--blue);color:#fff;border:none;
-      cursor:pointer;font-size:1.3rem;line-height:1;
-      box-shadow:var(--shm);
-      opacity:0.35;
-      transition:transform .18s,background .15s,opacity .2s;
-      display:flex;align-items:center;justify-content:center;
+      display:inline-flex;align-items:center;gap:5px;
+      padding:5px 10px;border-radius:7px;
+      background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-lt,#b3d4f7);
+      cursor:pointer;font-size:.72rem;font-weight:600;font-family:'Figtree',sans-serif;
+      transition:background .15s,box-shadow .15s;white-space:nowrap;flex-shrink:0;
     }
-    #ai-chat-fab:hover{transform:scale(1.08);filter:brightness(1.1);opacity:1}
-    #ai-chat-fab.chat-active{opacity:1}
+    #ai-chat-fab:hover{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(0,115,234,.3)}
+    #ai-chat-fab.chat-active{background:var(--blue);color:#fff}
 
     #ai-chat-panel{
-      position:fixed;bottom:88px;right:24px;z-index:9001;
+      position:fixed;top:56px;right:16px;z-index:9001;
       width:380px;max-height:520px;
       background:var(--white);border:1px solid var(--border);
       border-radius:var(--rlg);box-shadow:var(--shm);
@@ -128,19 +125,25 @@ function _chatInjectDOM() {
     #ai-chat-send:disabled{opacity:.4;cursor:not-allowed}
 
     @media(max-width:480px){
-      #ai-chat-panel{width:calc(100vw - 20px);right:10px;bottom:80px;max-height:65vh}
-      #ai-chat-fab{width:46px;height:46px;bottom:16px;right:16px;font-size:1.3rem}
+      #ai-chat-panel{width:calc(100vw - 20px);right:10px;top:56px;max-height:65vh}
     }
   `;
   document.head.appendChild(style);
 
-  // FAB
+  // FAB — inyectar en el topbar (antes del botón de logout)
   const fab = document.createElement('button');
   fab.id = 'ai-chat-fab';
-  fab.title = 'Asistente AI';
-  fab.innerHTML = '🤖';
+  fab.title = 'Asistente IA';
+  fab.innerHTML = '🤖 IA';
   fab.onclick = _chatToggle;
-  document.body.appendChild(fab);
+  const tbR = document.querySelector('.tb-r');
+  if (tbR) {
+    // Insertar antes del botón de logout (último elemento)
+    const logoutBtn = tbR.querySelector('button[onclick*="doLogout"]');
+    tbR.insertBefore(fab, logoutBtn || null);
+  } else {
+    document.body.appendChild(fab);
+  }
 
   // Panel
   const panel = document.createElement('div');

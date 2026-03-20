@@ -65,11 +65,13 @@ function _savePending(){
 function _syncStatus(state, msg){
   var el = document.getElementById('sync-indicator');
   if(!el) return;
-  var icons = { syncing:'\u2B6E', ok:'\u2713', error:'\u26A0', offline:'\u2299' };
-  var colors = { syncing:'var(--blue)', ok:'var(--green)', error:'var(--orange)', offline:'var(--muted)' };
-  el.style.color = colors[state] || 'var(--muted)';
-  el.innerHTML = '<span style="font-size:.7rem;font-weight:600">' + (icons[state]||'') + '</span> <span style="font-size:.6rem">' + (msg||'') + '</span>';
-  if(state==='ok') setTimeout(function(){ if(el.style.color===colors.ok) el.innerHTML='<span style="font-size:.6rem;color:var(--muted)">\u2713</span>'; }, 3000);
+  var icons = { syncing:'\u2B6E', ok:'\u2713', error:'\u26A0', offline:'\u26A0' };
+  var colors = { syncing:'var(--blue)', ok:'var(--green)', error:'var(--red)', offline:'var(--orange)' };
+  var c = colors[state] || 'var(--muted)';
+  el.style.color = c;
+  el.innerHTML = '<span style="font-size:.75rem;font-weight:700;color:'+c+'">' + (icons[state]||'') + '</span>'
+               + ' <span style="font-size:.68rem;font-weight:600;color:'+c+'">' + (msg||'') + '</span>';
+  if(state==='ok') setTimeout(function(){ if(el.style.color===colors.ok) el.innerHTML='<span style="font-size:.68rem;color:var(--muted)">\u2713</span>'; }, 3000);
 }
 
 // ── Retry con backoff exponencial ──
