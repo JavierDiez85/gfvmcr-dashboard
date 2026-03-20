@@ -227,12 +227,24 @@
     rows.forEach(r => r.vals.forEach(v => { kpis[r.ent]=(kpis[r.ent]||0)+v; kpis.total+=v; }));
     const pfx = type;
     const qk = id => document.getElementById(id);
-    if(qk(`${pfx}-kpi-total`)) qk(`${pfx}-kpi-total`).textContent = fmtK(kpis.total);
+
+    // ── Compare: previous year flujo KPIs ──
+    const _flCmp = typeof cmpActive === 'function' && cmpActive();
+    let pKpis = null;
+    if(_flCmp){
+      const py = cmpPrevYear();
+      const pRows = (filt ? allRows.filter(r=>r.ent===filt) : allRows).filter(r=>r.yr==py);
+      pKpis = {total:0, Salem:0, Endless:0, Dynamo:0, Wirebit:0, Stellaris:0};
+      pRows.forEach(r => r.vals.forEach(v => { pKpis[r.ent]=(pKpis[r.ent]||0)+v; pKpis.total+=v; }));
+    }
+    const _flInv = type==='fg'; // gastos: invert badge
+
+    if(qk(`${pfx}-kpi-total`)){ qk(`${pfx}-kpi-total`).innerHTML = fmtK(kpis.total) + (_flCmp ? cmpBadge(kpis.total, pKpis.total, _flInv) : ''); }
     if(qk(`${pfx}-kpi-n`))     qk(`${pfx}-kpi-n`).textContent = rows.length+(type==='fi'?' conceptos':' conceptos');
-    if(qk(`${pfx}-kpi-sal`))   qk(`${pfx}-kpi-sal`).textContent = fmtK(kpis.Salem||0);
-    if(qk(`${pfx}-kpi-end`))   qk(`${pfx}-kpi-end`).textContent = fmtK(kpis.Endless||0);
-    if(qk(`${pfx}-kpi-dyn`))   qk(`${pfx}-kpi-dyn`).textContent = fmtK(kpis.Dynamo||0);
-    if(qk(`${pfx}-kpi-wb`))    qk(`${pfx}-kpi-wb`).textContent  = fmtK(kpis.Wirebit||0);
+    if(qk(`${pfx}-kpi-sal`)){ qk(`${pfx}-kpi-sal`).innerHTML = fmtK(kpis.Salem||0) + (_flCmp ? cmpBadge(kpis.Salem, pKpis.Salem, _flInv) : ''); }
+    if(qk(`${pfx}-kpi-end`)){ qk(`${pfx}-kpi-end`).innerHTML = fmtK(kpis.Endless||0) + (_flCmp ? cmpBadge(kpis.Endless, pKpis.Endless, _flInv) : ''); }
+    if(qk(`${pfx}-kpi-dyn`)){ qk(`${pfx}-kpi-dyn`).innerHTML = fmtK(kpis.Dynamo||0) + (_flCmp ? cmpBadge(kpis.Dynamo, pKpis.Dynamo, _flInv) : ''); }
+    if(qk(`${pfx}-kpi-wb`)){ qk(`${pfx}-kpi-wb`).innerHTML  = fmtK(kpis.Wirebit||0) + (_flCmp ? cmpBadge(kpis.Wirebit, pKpis.Wirebit, _flInv) : ''); }
     // row count badge
     const rc = document.getElementById(`${pfx}-row-count`);
     if(rc) rc.textContent = rows.length+' filas';

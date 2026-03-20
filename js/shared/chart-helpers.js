@@ -104,10 +104,20 @@
       const _wbLabels = _wbPI.map(i=>MO[i]);
       const _wbIngF = _wbPI.map(i=>WB_ING_TOTAL[i]||0);
       const _wbCosF = _wbPI.map(i=>WB_COSTO_TOTAL[i]||0);
-      CH['c-wb-pl']=new Chart(document.getElementById('c-wb-pl'),{type:'line',data:{labels:_wbLabels,datasets:[
+      const _wbPlDs=[
         {label:'Ingresos',data:_wbIngF,borderColor:'#9b51e0',backgroundColor:'rgba(155,81,224,.08)',fill:true,tension:.4,pointRadius:2,borderWidth:2},
         {label:'Costos',data:_wbCosF,borderColor:'#ff7043',fill:false,tension:.4,pointRadius:2,borderWidth:1.5},
-      ]},options:{...cOpts(),plugins:{legend:{labels:{color:'#8b8fb5',font:{size:9},boxWidth:7,padding:7}},tooltip:cOpts().plugins.tooltip},scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
+      ];
+      if(typeof cmpActive==='function' && cmpActive()){
+        const _py=cmpPrevYear();
+        const _pIngV=cmpPrevVals('ingreso','Wirebit');
+        const _pCosV=cmpPrevVals('gasto','Wirebit',['Costo Directo']);
+        _wbPlDs.push(
+          {label:'Ing '+_py,data:_wbPI.map(i=>_pIngV[i]||0),borderColor:'rgba(155,81,224,.35)',borderDash:[5,5],fill:false,tension:.4,pointRadius:1,borderWidth:1.5},
+          {label:'Cost '+_py,data:_wbPI.map(i=>_pCosV[i]||0),borderColor:'rgba(255,112,67,.30)',borderDash:[5,5],fill:false,tension:.4,pointRadius:1,borderWidth:1.5}
+        );
+      }
+      CH['c-wb-pl']=new Chart(document.getElementById('c-wb-pl'),{type:'line',data:{labels:_wbLabels,datasets:_wbPlDs},options:{...cOpts(),plugins:{legend:{labels:{color:'#8b8fb5',font:{size:9},boxWidth:7,padding:7}},tooltip:cOpts().plugins.tooltip},scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},y:{grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
       // Fuentes donut — filtered by period
       const wbAnn=Object.entries(WB_ING).map(([k,v])=>[k.replace('Fees ',''),_periodSum(v,'wb')]);
       dc('c-wb-pl-pie');
@@ -210,6 +220,33 @@
     const _fGas = _pI.map(i=>gasM[i]);
     const _fEbitda = _pI.map(i=>ebitdaM[i]);
 
+    // ── Compare: previous year datasets ──
+    const _evCmp = typeof cmpActive === 'function' && cmpActive();
+    var _prevDs = [];
+    if(_evCmp){
+      const _py = cmpPrevYear();
+      const _pIngM=MO.map(()=>0), _pCostM=MO.map(()=>0), _pGasM=MO.map(()=>0);
+      keys.forEach(ek=>{
+        const cfg=ENT_MAP[ek]; if(!cfg) return;
+        const entName=cfg.fullName;
+        (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===entName&&r.yr==_py)
+          .forEach(r=>r.vals.forEach((v,i)=>_pIngM[i]+=v));
+        (S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='gasto'&&r.ent===entName&&r.yr==_py)
+          .forEach(r=>{
+            if(_isCostRow(r)) r.vals.forEach((v,i)=>_pCostM[i]+=v);
+            else r.vals.forEach((v,i)=>_pGasM[i]+=v);
+          });
+      });
+      const _pEbitdaM=MO.map((_,i)=>_pIngM[i]-_pCostM[i]-_pGasM[i]);
+      const _fpIng=_pI.map(i=>_pIngM[i]), _fpCost=_pI.map(i=>_pCostM[i]), _fpGas=_pI.map(i=>_pGasM[i]), _fpEb=_pI.map(i=>_pEbitdaM[i]);
+      _prevDs = [
+        {label:'Ing '+_py,data:_fpIng,backgroundColor:'rgba(46,184,92,.12)',borderColor:'rgba(46,184,92,.35)',borderWidth:1,borderRadius:3,borderDash:[4,4],order:6},
+        {label:'Cost '+_py,data:_fpCost,backgroundColor:'rgba(255,152,0,.10)',borderColor:'rgba(255,152,0,.30)',borderWidth:1,borderRadius:3,borderDash:[4,4],order:7},
+        {label:'Gas '+_py,data:_fpGas,backgroundColor:'rgba(239,68,68,.08)',borderColor:'rgba(239,68,68,.25)',borderWidth:1,borderRadius:3,borderDash:[4,4],order:8},
+        {type:'line',label:'EBITDA '+_py,data:_fpEb,borderColor:'rgba(99,102,241,.35)',backgroundColor:'transparent',borderWidth:1.5,borderDash:[5,5],pointRadius:2,pointBackgroundColor:'rgba(99,102,241,.35)',tension:.3,fill:false,order:5}
+      ];
+    }
+
     CH[canvasId]=new Chart(el,{
       type:'bar',
       data:{
@@ -218,7 +255,8 @@
           {label:'Ingresos',data:_fIng,backgroundColor:'rgba(46,184,92,.55)',borderColor:'rgba(46,184,92,.8)',borderWidth:1,borderRadius:3,order:2},
           {label:'Costes Directos',data:_fCost,backgroundColor:'rgba(255,152,0,.50)',borderColor:'rgba(255,152,0,.8)',borderWidth:1,borderRadius:3,order:3},
           {label:'Gastos Admin',data:_fGas,backgroundColor:'rgba(239,68,68,.40)',borderColor:'rgba(239,68,68,.7)',borderWidth:1,borderRadius:3,order:4},
-          {type:'line',label:'EBITDA',data:_fEbitda,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6366f1',tension:.3,fill:true,order:1}
+          {type:'line',label:'EBITDA',data:_fEbitda,borderColor:'#6366f1',backgroundColor:'rgba(99,102,241,.08)',borderWidth:2.5,pointRadius:3,pointBackgroundColor:'#6366f1',tension:.3,fill:true,order:1},
+          ..._prevDs
         ]
       },
       options:{
@@ -254,12 +292,25 @@
         const full = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0));
         return _cpI.map(i=>full[i]);
       });
+      const _centDs=[
+        {label:'Salem',data:centumIngByEnt[0],backgroundColor:'rgba(0,115,234,.5)',borderWidth:0,stack:'cur'},
+        {label:'Endless',data:centumIngByEnt[1],backgroundColor:'rgba(0,184,117,.5)',borderWidth:0,stack:'cur'},
+        {label:'Dynamo',data:centumIngByEnt[2],backgroundColor:'rgba(255,112,67,.5)',borderWidth:0,stack:'cur'},
+      ];
+      if(typeof cmpActive==='function' && cmpActive()){
+        const _py=cmpPrevYear();
+        const _cPrevIng=centumEnts.map(e=>{
+          const full=MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===e&&r.yr==_py).reduce((s,r)=>s+(r.vals[i]||0),0));
+          return _cpI.map(i=>full[i]);
+        });
+        _centDs.push(
+          {label:'Salem '+_py,data:_cPrevIng[0],backgroundColor:'rgba(0,115,234,.15)',borderWidth:1,borderColor:'rgba(0,115,234,.25)',borderDash:[3,3],stack:'prev'},
+          {label:'Endless '+_py,data:_cPrevIng[1],backgroundColor:'rgba(0,184,117,.15)',borderWidth:1,borderColor:'rgba(0,184,117,.25)',borderDash:[3,3],stack:'prev'},
+          {label:'Dynamo '+_py,data:_cPrevIng[2],backgroundColor:'rgba(255,112,67,.15)',borderWidth:1,borderColor:'rgba(255,112,67,.25)',borderDash:[3,3],stack:'prev'}
+        );
+      }
       CH['c-centum-gas']=new Chart(document.getElementById('c-centum-gas'),{type:'bar',data:{labels:_cpLabels,
-        datasets:[
-          {label:'Salem',data:centumIngByEnt[0],backgroundColor:'rgba(0,115,234,.5)',borderWidth:0},
-          {label:'Endless',data:centumIngByEnt[1],backgroundColor:'rgba(0,184,117,.5)',borderWidth:0},
-          {label:'Dynamo',data:centumIngByEnt[2],backgroundColor:'rgba(255,112,67,.5)',borderWidth:0},
-        ]
+        datasets:_centDs
       },options:{...smOpts(false),scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}},stacked:true},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
 
       // Cartera donut from END_CREDITS + DYN_CREDITS
@@ -285,13 +336,24 @@
       const _gpLabels = _gpI.map(i=>MO[i]);
       const _grpIng = (ent) => { const full = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent&&r.yr==_year).reduce((s,r)=>s+(r.vals[i]||0),0)); return _gpI.map(i=>full[i]); };
       const salIngM = _grpIng('Salem'), endIngM = _grpIng('Endless'), dynIngM = _grpIng('Dynamo'), wbIngM = _grpIng('Wirebit');
+      const _grpDs=[
+        {label:'Salem',data:salIngM,backgroundColor:'rgba(0,115,234,.5)',borderWidth:0,stack:'cur'},
+        {label:'Endless',data:endIngM,backgroundColor:'rgba(0,184,117,.5)',borderWidth:0,stack:'cur'},
+        {label:'Dynamo',data:dynIngM,backgroundColor:'rgba(255,112,67,.5)',borderWidth:0,stack:'cur'},
+        {label:'Wirebit',data:wbIngM,backgroundColor:'rgba(155,81,224,.5)',borderWidth:0,stack:'cur'},
+      ];
+      if(typeof cmpActive==='function' && cmpActive()){
+        const _py=cmpPrevYear();
+        const _grpPrev = (ent) => { const full = MO.map((_,i)=>(S.recs||[]).filter(r=>!r.isSharedSource&&r.tipo==='ingreso'&&r.ent===ent&&r.yr==_py).reduce((s,r)=>s+(r.vals[i]||0),0)); return _gpI.map(i=>full[i]); };
+        _grpDs.push(
+          {label:'Salem '+_py,data:_grpPrev('Salem'),backgroundColor:'rgba(0,115,234,.15)',borderWidth:1,borderColor:'rgba(0,115,234,.25)',borderDash:[3,3],stack:'prev'},
+          {label:'Endless '+_py,data:_grpPrev('Endless'),backgroundColor:'rgba(0,184,117,.15)',borderWidth:1,borderColor:'rgba(0,184,117,.25)',borderDash:[3,3],stack:'prev'},
+          {label:'Dynamo '+_py,data:_grpPrev('Dynamo'),backgroundColor:'rgba(255,112,67,.15)',borderWidth:1,borderColor:'rgba(255,112,67,.25)',borderDash:[3,3],stack:'prev'},
+          {label:'Wirebit '+_py,data:_grpPrev('Wirebit'),backgroundColor:'rgba(155,81,224,.15)',borderWidth:1,borderColor:'rgba(155,81,224,.25)',borderDash:[3,3],stack:'prev'}
+        );
+      }
       CH['c-grupo-ing']=new Chart(document.getElementById('c-grupo-ing'),{type:'bar',data:{labels:_gpLabels,
-        datasets:[
-          {label:'Salem',data:salIngM,backgroundColor:'rgba(0,115,234,.5)',borderWidth:0},
-          {label:'Endless',data:endIngM,backgroundColor:'rgba(0,184,117,.5)',borderWidth:0},
-          {label:'Dynamo',data:dynIngM,backgroundColor:'rgba(255,112,67,.5)',borderWidth:0},
-          {label:'Wirebit',data:wbIngM,backgroundColor:'rgba(155,81,224,.5)',borderWidth:0},
-        ]
+        datasets:_grpDs
       },options:{...smOpts(false),scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}},stacked:true},y:{stacked:true,grid:{color:'rgba(228,232,244,.6)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+(v/1000).toFixed(0)+'K'}}}}});
       // Nomina por empresa donut
       dc('c-grupo-nom');

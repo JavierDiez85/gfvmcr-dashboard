@@ -142,18 +142,37 @@ function rWBCripto(){
   if(_cPer.startsWith('q')) yearLabel = _cPer.toUpperCase()+' '+_cY;
   else if(_cPer.startsWith('mes_')){ const _mi = parseInt(_cPer.split('_')[1]); yearLabel = MO[_mi]+' '+_cY; }
 
+  // ── Compare: previous year Cripto data ──
+  const _wccCmp = typeof cmpActive === 'function' && cmpActive();
+  let _wccPrevMXN=0, _wccPrevUSD=0, _wccPrevTxn=0;
+  if(_wccCmp){
+    const pD = typeof cmpPrevWBData === 'function' ? cmpPrevWBData('gf_wb_fees_') : null;
+    if(pD){
+      const pIdxs = _wbcPeriodIdxs();
+      let pMXN=0;
+      for(const [,vals] of Object.entries(pD.monthly||{})){
+        (vals||[]).forEach((v,i)=>{ if(pIdxs.indexOf(i)!==-1) pMXN+=v; });
+      }
+      const pFullMXN = pD.total_mxn||0;
+      const pRatio = pFullMXN>0 ? pMXN/pFullMXN : 0;
+      _wccPrevMXN = pMXN;
+      _wccPrevUSD = Math.round((pD.total_usd||0)*pRatio);
+      _wccPrevTxn = Math.round((pD.txn_count||pD.txnCount||0)*pRatio);
+    }
+  }
+
   // ── KPIs ──
   kTxns.textContent = (merged.txnCount||0).toLocaleString();
   kTxns.style.color = '#0073ea';
-  document.getElementById('wbc-kpi-txns-sub').textContent = 'Fees válidos · '+yearLabel;
+  document.getElementById('wbc-kpi-txns-sub').innerHTML = 'Fees válidos · '+yearLabel + (_wccCmp ? cmpBadge(merged.txnCount, _wccPrevTxn) : '');
 
   kUSD.textContent = '$'+Math.round(merged.totalUSD).toLocaleString()+' USD';
   kUSD.style.color = 'var(--green)';
-  document.getElementById('wbc-kpi-usd-sub').textContent = 'Fees acumulados '+yearLabel;
+  document.getElementById('wbc-kpi-usd-sub').innerHTML = 'Fees acumulados '+yearLabel + (_wccCmp ? cmpBadge(merged.totalUSD, _wccPrevUSD) : '');
 
   kMXN.textContent = '$'+Math.round(merged.totalMXN).toLocaleString()+' MXN';
   kMXN.style.color = 'var(--purple)';
-  document.getElementById('wbc-kpi-mxn-sub').textContent = 'Conversión diaria USD→MXN';
+  document.getElementById('wbc-kpi-mxn-sub').innerHTML = 'Conversión diaria USD→MXN' + (_wccCmp ? cmpBadge(merged.totalMXN, _wccPrevMXN) : '');
 
   const avgFX = merged.totalMXN / (merged.totalUSD || 1);
   kFX.textContent = '$'+avgFX.toFixed(2);
@@ -185,16 +204,37 @@ function rWBCripto(){
   });
   const mxnValues = periods.map(r=>Math.round(r.mxn));
 
+  const _cwbcDs = [
+    { label:'Fees MXN', data:mxnValues, backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4 }
+  ];
+  // Compare: add previous year bars
+  if(_wccCmp){
+    const _pD = typeof cmpPrevWBData === 'function' ? cmpPrevWBData('gf_wb_fees_') : null;
+    if(_pD && _pD.monthly){
+      const _pIdxs = _wbcPeriodIdxs();
+      // Build prev MXN values per period matching current labels
+      const _pVals = _pIdxs.map(i=>{
+        let s=0;
+        for(const [,vals] of Object.entries(_pD.monthly||{})){
+          s += (vals && vals[i]) || 0;
+        }
+        return Math.round(s);
+      });
+      _cwbcDs.push({
+        label:'Fees '+cmpPrevYear(), data:_pVals,
+        backgroundColor:'rgba(155,81,224,.08)', borderColor:'rgba(155,81,224,.30)',
+        borderWidth:1.5, borderRadius:4, borderDash:[4,4]
+      });
+    }
+  }
   CH['cwbcm'] = new Chart(document.getElementById('c-wbc-monthly'),{
     type:'bar',
     data:{
       labels: chartLabels,
-      datasets:[
-        { label:'Fees MXN', data:mxnValues, backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4 }
-      ]
+      datasets: _cwbcDs
     },
     options:{...cOpts(),
-      plugins:{legend:{display:false},
+      plugins:{legend:{display:_wccCmp,position:'top',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8,padding:6}},
         tooltip:{callbacks:{label:ctx=>' $'+Math.round(ctx.raw).toLocaleString()+' MXN'}}},
       scales:{
         x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10}}},
@@ -319,27 +359,46 @@ function rWBTarjetas(){
   const lblEl = document.getElementById('wbt-period-label');
   if(lblEl) lblEl.textContent = range.label;
 
+  // ── Compare: previous year Tarjetas data ──
+  const _wbtCmp = typeof cmpActive === 'function' && cmpActive();
+  let _wbtPrevMonto=0, _wbtPrevTxns=0, _wbtPrevClients=0;
+  if(_wbtCmp){
+    const prevY = cmpPrevYear();
+    // Build prev year range: same period but previous year
+    const pFrom = range.from.replace(/^\d{4}/, String(prevY));
+    const pTo = range.to.replace(/^\d{4}/, String(prevY));
+    const pD = DB.get('gf_wb_tarjetas_'+prevY);
+    if(pD && pD.transactions){
+      const pTxns = pD.transactions.filter(t => t.date >= pFrom && t.date <= pTo);
+      _wbtPrevMonto = pTxns.reduce((s,t)=>s+(t.monto||0),0);
+      _wbtPrevTxns = pTxns.length;
+      _wbtPrevClients = [...new Set(pTxns.map(t=>t.cliente).filter(Boolean))].length;
+    }
+  }
+
   // ── KPIs ──
   const kTxns = document.getElementById('wbt-kpi-txns');
   kTxns.textContent = txns.length.toLocaleString();
   kTxns.style.color = '#0073ea';
-  document.getElementById('wbt-kpi-txns-sub').textContent = range.label;
+  document.getElementById('wbt-kpi-txns-sub').innerHTML = range.label + (_wbtCmp ? cmpBadge(txns.length, _wbtPrevTxns) : '');
 
   const kMonto = document.getElementById('wbt-kpi-monto');
   kMonto.textContent = '$'+Math.round(totalMonto).toLocaleString();
   kMonto.style.color = 'var(--green)';
-  document.getElementById('wbt-kpi-monto-sub').textContent = 'Volumen operado';
+  document.getElementById('wbt-kpi-monto-sub').innerHTML = 'Volumen operado' + (_wbtCmp ? cmpBadge(totalMonto, _wbtPrevMonto) : '');
 
   const kAvg = document.getElementById('wbt-kpi-avg');
-  kAvg.textContent = txns.length ? '$'+Math.round(totalMonto/txns.length).toLocaleString() : '—';
+  const avgCur = txns.length ? totalMonto/txns.length : 0;
+  const avgPrev = _wbtPrevTxns ? _wbtPrevMonto/_wbtPrevTxns : 0;
+  kAvg.textContent = txns.length ? '$'+Math.round(avgCur).toLocaleString() : '—';
   kAvg.style.color = 'var(--purple)';
-  document.getElementById('wbt-kpi-avg-sub').textContent = 'Ticket promedio';
+  document.getElementById('wbt-kpi-avg-sub').innerHTML = 'Ticket promedio' + (_wbtCmp ? cmpBadge(avgCur, avgPrev) : '');
 
   const clients = [...new Set(txns.map(t=>t.cliente).filter(Boolean))];
   const kClients = document.getElementById('wbt-kpi-clients');
   kClients.textContent = clients.length;
   kClients.style.color = 'var(--orange)';
-  document.getElementById('wbt-kpi-clients-sub').textContent = 'Clientes únicos';
+  document.getElementById('wbt-kpi-clients-sub').innerHTML = 'Clientes únicos' + (_wbtCmp ? cmpBadge(clients.length, _wbtPrevClients) : '');
 
   if(!txns.length){
     dc('cwbtm'); dc('cwbtt');
@@ -378,18 +437,51 @@ function rWBTarjetas(){
     return MO[parseInt(mo)-1]+(multiYear?' '+yr.slice(2):'');
   });
 
+  const _cwbtDs = [
+    { label:'Monto', data:periods.map(p=>Math.round(byPeriod[p].monto)), backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4, yAxisID:'y', order:1 },
+    { label:'Transacciones', data:periods.map(p=>byPeriod[p].count), type:'line', borderColor:'#0073ea', borderWidth:2, pointRadius:3, yAxisID:'y1', tension:.3, order:0 }
+  ];
+  // Compare: add previous year datasets
+  if(_wbtCmp){
+    const prevY = cmpPrevYear();
+    const pFrom = range.from.replace(/^\d{4}/, String(prevY));
+    const pTo = range.to.replace(/^\d{4}/, String(prevY));
+    const pD = DB.get('gf_wb_tarjetas_'+prevY);
+    if(pD && pD.transactions){
+      const pTxns = pD.transactions.filter(t => t.date >= pFrom && t.date <= pTo);
+      // Build prev byPeriod keyed by CURRENT year period keys (so bars align)
+      const pByPeriod = {};
+      periods.forEach(p=>{ pByPeriod[p]={monto:0,count:0}; });
+      pTxns.forEach(t=>{
+        // Map prev year date to current year key
+        const origKey = range.groupBy === 'day' ? t.date : t.date.slice(0,7);
+        const curKey = origKey.replace(/^\d{4}/, String(_year));
+        if(pByPeriod[curKey]){ pByPeriod[curKey].monto += (t.monto||0); pByPeriod[curKey].count++; }
+      });
+      _cwbtDs.push({
+        label:'Monto '+prevY, data:periods.map(p=>Math.round(pByPeriod[p].monto)),
+        backgroundColor:'rgba(155,81,224,.08)', borderColor:'rgba(155,81,224,.30)',
+        borderWidth:1.5, borderRadius:4, borderDash:[4,4], yAxisID:'y', order:2
+      });
+      _cwbtDs.push({
+        label:'Txns '+prevY, data:periods.map(p=>pByPeriod[p].count),
+        type:'line', borderColor:'rgba(0,115,234,.30)', borderWidth:1.5,
+        pointRadius:2, yAxisID:'y1', tension:.3, borderDash:[5,5], order:3
+      });
+    }
+  }
   CH['cwbtm'] = new Chart(document.getElementById('c-wbt-monthly'),{
     type:'bar',
     data:{
       labels: chartLabels,
-      datasets:[
-        { label:'Monto', data:periods.map(p=>Math.round(byPeriod[p].monto)), backgroundColor:'rgba(155,81,224,.25)', borderColor:'#9b51e0', borderWidth:1.5, borderRadius:4, yAxisID:'y' },
-        { label:'Transacciones', data:periods.map(p=>byPeriod[p].count), type:'line', borderColor:'#0073ea', borderWidth:2, pointRadius:3, yAxisID:'y1', tension:.3 }
-      ]
+      datasets: _cwbtDs
     },
     options:{...cOpts(),
       plugins:{legend:{display:true,position:'top',labels:{color:'#8b8fb5',font:{size:10},boxWidth:8,padding:8}},
-        tooltip:{callbacks:{label:ctx=>ctx.datasetIndex===0?' $'+Math.round(ctx.raw).toLocaleString():' '+ctx.raw+' txns'}}},
+        tooltip:{callbacks:{label:ctx=>{
+          const di=ctx.datasetIndex;
+          return (di===0||di===2)?' $'+Math.round(ctx.raw).toLocaleString():' '+ctx.raw+' txns';
+        }}}},
       scales:{
         x:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:10},maxRotation:0}},
         y:{position:'left',grid:{color:'rgba(228,232,244,.5)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>'$'+Math.abs(Math.round(v)).toLocaleString('es-MX')}},

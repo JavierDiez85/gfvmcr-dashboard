@@ -57,6 +57,21 @@
       return `<button class="pbtn" style="${sty}font-size:.63rem;padding:2px 5px" onclick="_gfSetPeriod('${ent}','mes_${i}')">${label}</button>`;
     }).join('');
 
+    // ── Botón COMPARAR vs año anterior ──
+    const prevY = parseInt(curY) - 1;
+    const hasPrev = avail.indexOf(String(prevY)) !== -1;
+    let cmpBtn = '';
+    if(hasPrev){
+      const isOn = typeof _gfCompare !== 'undefined' && _gfCompare;
+      const cmpSty = isOn
+        ? 'background:var(--orange);color:white;border-color:var(--orange);'
+        : 'border:1.5px solid var(--orange);color:var(--orange);background:transparent;';
+      cmpBtn = sep
+        + `<button class="pbtn" style="${cmpSty}font-size:.63rem;padding:2px 8px;font-weight:700" onclick="_gfToggleCompare()">`
+        + (isOn ? '&#10003; ' : '') + 'vs ' + prevY
+        + `</button>`;
+    }
+
     return `<div style="display:inline-flex;align-items:center;flex-wrap:wrap;gap:3px;row-gap:5px">`
          + `<span style="font-size:.58rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em">AÑO</span>`
          + yBtns
@@ -64,6 +79,7 @@
          + pBtns
          + sep
          + mBtns
+         + cmpBtn
          + `</div>`;
   }
 
@@ -88,9 +104,16 @@
   // ── Cambiar año ──
   function _gfSetYear(y, ent){
     _year = parseInt(y);
-    // Resetear período al cambiar año
+    // Resetear período y comparación al cambiar año
     if(typeof _gfPeriod !== 'undefined' && ent) _gfPeriod[ent] = 'año';
+    if(typeof _gfCompare !== 'undefined') _gfCompare = false;
     if(typeof _updateYearLabels === 'function') _updateYearLabels();
+    if(typeof render === 'function') render(typeof _currentView !== 'undefined' ? _currentView : '');
+  }
+
+  // ── Toggle modo comparativo vs año anterior ──
+  function _gfToggleCompare(){
+    _gfCompare = !_gfCompare;
     if(typeof render === 'function') render(typeof _currentView !== 'undefined' ? _currentView : '');
   }
 
@@ -103,10 +126,11 @@
   // Backward compat: _gfSetSub aliased to _gfSetPeriod
   function _gfSetSub(ent, mode){ _gfSetPeriod(ent, mode); }
 
-  window.gfpBarHTML   = gfpBarHTML;
-  window.gfpRender    = gfpRender;
-  window._gfSetYear   = _gfSetYear;
-  window._gfSetPeriod = _gfSetPeriod;
-  window._gfSetSub    = _gfSetSub; // backward compat
+  window.gfpBarHTML       = gfpBarHTML;
+  window.gfpRender        = gfpRender;
+  window._gfSetYear       = _gfSetYear;
+  window._gfSetPeriod     = _gfSetPeriod;
+  window._gfSetSub        = _gfSetSub; // backward compat
+  window._gfToggleCompare = _gfToggleCompare;
 
 })(window);
