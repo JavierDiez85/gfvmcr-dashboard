@@ -140,6 +140,23 @@
     dc(canvasId);
 
     const keys=Array.isArray(entKeys)?entKeys:[entKeys];
+
+    // Actualizar título/subtítulo del chart card según periodo activo
+    var _ccCard = el.closest('.cc');
+    if(_ccCard){
+      var _ccT = _ccCard.querySelector('.cc-t');
+      var _ccS = _ccCard.querySelector('.cc-s');
+      var _ek0 = keys[0]||'sal';
+      var _per = typeof _gfPeriod!=='undefined' ? _gfPeriod[_ek0] : null;
+      var _pLbl = 'Mensual';
+      if(_per && _per.startsWith('q')) _pLbl = _per.toUpperCase();
+      else if(_per && _per.startsWith('mes_')) { var _mi = parseInt(_per.split('_')[1]); _pLbl = MO[_mi]||'Mes'; }
+      else if(_per === 'año' || !_per) _pLbl = 'Mensual';
+      // Derive entity name
+      var _eName = keys.length>1 ? (keys.length<=3?'Centum Capital':'Grupo Financiero') : (typeof ENT_MAP!=='undefined'&&ENT_MAP[_ek0]?ENT_MAP[_ek0].name:_ek0);
+      if(_ccT) _ccT.textContent = 'Evolución '+_pLbl+' — '+_eName;
+      if(_ccS) _ccS.textContent = 'Ingresos, costes, gastos y EBITDA';
+    }
     const ingM=MO.map(()=>0), costM=MO.map(()=>0), gasM=MO.map(()=>0);
 
     keys.forEach(ek=>{

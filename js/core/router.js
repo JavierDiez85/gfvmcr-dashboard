@@ -179,4 +179,19 @@ function render(id){
   }
 }
 
+// Error boundary global — captura errores no controlados
+window.addEventListener('error', function(e){
+  if(_currentView && _currentView !== 'inicio'){
+    console.error('[Global Error]', e.message, e.filename, e.lineno);
+    _viewError(_currentView, {message: e.message || 'Error inesperado'});
+  }
+});
+window.addEventListener('unhandledrejection', function(e){
+  if(_currentView && _currentView !== 'inicio'){
+    var msg = (e.reason && e.reason.message) ? e.reason.message : String(e.reason || 'Promise rechazada');
+    console.error('[Unhandled Rejection]', msg);
+    _viewError(_currentView, {message: msg});
+  }
+});
+
 // ═══════════════════════════════════════

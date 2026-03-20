@@ -237,6 +237,16 @@ function rWBCripto(){
   const titleEl = document.getElementById('wbc-title');
   if(titleEl) titleEl.textContent = 'Wirebit — Transacciones Cripto '+yearLabel;
 
+  // Actualizar títulos de gráficas según periodo
+  var _wbcCT = document.getElementById('wbc-chart-title');
+  var _wbcCS = document.getElementById('wbc-chart-sub');
+  var _wbcTT = document.getElementById('wbc-type-title');
+  var _wbcTS = document.getElementById('wbc-type-sub');
+  if(_wbcCT) _wbcCT.textContent = 'Volumen Mensual (MXN) — '+yearLabel;
+  if(_wbcCS) _wbcCS.textContent = 'Fees convertidos por mes · '+yearLabel;
+  if(_wbcTT) _wbcTT.textContent = 'Por Tipo de Transaccion';
+  if(_wbcTS) _wbcTS.textContent = 'Distribucion de fees · '+yearLabel;
+
   // ── Chart 1: Monthly fees MXN ──
   dc('cwbcm');
   const multiYear = _wbcYear === 'ambos';
@@ -412,6 +422,16 @@ function rWBTarjetas(){
 
   // ── Chart 1: Volumen por período ──
   dc('cwbtm');
+  // Actualizar título y subtítulo del chart según periodo
+  var _cht = document.getElementById('wbt-chart-title');
+  var _chs = document.getElementById('wbt-chart-sub');
+  var _tyt = document.getElementById('wbt-type-title');
+  var _tys = document.getElementById('wbt-type-sub');
+  if(_cht) _cht.textContent = range.groupBy === 'day' ? 'Volumen Diario — Tarjetas WB' : 'Volumen Mensual — Tarjetas WB';
+  if(_chs) _chs.textContent = range.groupBy === 'day' ? 'Monto operado por dia · '+range.label : 'Monto operado por mes';
+  if(_tyt) _tyt.textContent = 'Por Tipo de Transaccion';
+  if(_tys) _tys.textContent = 'Distribucion · '+range.label;
+
   const byPeriod = {};
   txns.forEach(t=>{
     const key = range.groupBy === 'day' ? t.date : t.date.slice(0,7);
@@ -423,7 +443,8 @@ function rWBTarjetas(){
   const multiYear = periods.some(p=>p.startsWith('2025')) && periods.some(p=>p.startsWith('2026'));
   const chartLabels = periods.map(p=>{
     if(range.groupBy === 'day'){
-      return p.slice(8); // day number
+      const d = parseInt(p.slice(8));
+      return d; // día como número (1, 2, 3...)
     }
     const [yr,mo] = p.split('-');
     return MO[parseInt(mo)-1]+(multiYear?' '+yr.slice(2):'');

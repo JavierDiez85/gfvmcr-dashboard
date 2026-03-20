@@ -109,6 +109,18 @@ function rResumen(){
     const chartCols   = _allCols.filter((_,i)=>!isTotal(_allLabels[i]));
     const chartLabels = _allLabels.filter(l=>!isTotal(l));
 
+    // Actualizar títulos y subtítulos de gráficas según periodo
+    const _mLbl = _dashMode==='trimestral'?'Trimestral':_dashMode==='anual'?'Anual':'Mensual';
+    if(q('dash-c1-title')) q('dash-c1-title').textContent = 'Ingresos Grupo — por Empresa';
+    if(q('dash-c2-title')) q('dash-c2-title').textContent = 'Gastos por Empresa';
+    if(q('dash-c2-sub'))   q('dash-c2-sub').textContent = 'Sin nómina · '+_mLbl.toLowerCase();
+    if(q('dash-c3-title')) q('dash-c3-title').textContent = 'Nómina x Empresa';
+    if(q('dash-c3-sub'))   q('dash-c3-sub').textContent = _mLbl;
+    if(q('dash-c4-title')) q('dash-c4-title').textContent = 'Margen Operativo';
+    if(q('dash-c4-sub'))   q('dash-c4-sub').textContent = 'Ing − Costos · '+_mLbl.toLowerCase();
+    if(q('dash-tes-title')) q('dash-tes-title').textContent = 'Flujo Mensual del Grupo';
+    if(q('dash-tes-sub'))   q('dash-tes-sub').textContent = 'Ingresos vs Gastos · últimos 8 meses';
+
     // Gráfica 1 — Ingresos por empresa
     dc('cdashi');
     const ingMoTotal = Array(12).fill(0);
