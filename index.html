@@ -262,7 +262,7 @@
       <!-- Mini chart flujo mensual -->
       <div class="cc cc-clickable" onclick="navTo('tes_grupo')" style="padding:0">
         <div class="cc-h">
-          <div><div class="cc-t">Flujo Mensual del Grupo</div><div class="cc-s">Ingresos vs Gastos</div></div>
+          <div><div class="cc-t" id="dash-tes-title">Flujo Mensual del Grupo</div><div class="cc-s" id="dash-tes-sub">Ingresos vs Gastos</div></div>
           <span class="cc-expand">detalle →</span>
         </div>
         <div class="cc-b" style="padding:8px 12px"><canvas id="c-dash-tes-flujo" height="90"></canvas></div>
@@ -276,7 +276,7 @@
     <!-- Gráfica 1: Ingresos mensuales por empresa — barras apiladas -->
     <div class="cc cc-clickable" onclick="openModal('resumen_ingresos')">
       <div class="cc-h">
-        <div><div class="cc-t">Ingresos Grupo — por Empresa</div><div class="cc-s" id="dash-c1-sub">Datos reales capturados</div></div>
+        <div><div class="cc-t" id="dash-c1-title">Ingresos Grupo — por Empresa</div><div class="cc-s" id="dash-c1-sub">Datos reales capturados</div></div>
         <span class="cc-expand">detalle →</span>
       </div>
       <div class="cc-b" style="padding:10px 12px"><canvas id="c-dash-ing" height="120"></canvas></div>
@@ -285,7 +285,7 @@
     <!-- Gráfica 2: Ingresos vs Gastos (donut) -->
     <div class="cc cc-clickable" onclick="openTopGastos()">
       <div class="cc-h">
-        <div><div class="cc-t">Gastos por Empresa</div><div class="cc-s">Sin nómina · clic para detalle</div></div>
+        <div><div class="cc-t" id="dash-c2-title">Gastos por Empresa</div><div class="cc-s" id="dash-c2-sub">Sin nómina · clic para detalle</div></div>
         <span class="cc-expand">detalle →</span>
       </div>
       <div class="cc-b" style="padding:10px 12px"><canvas id="c-dash-gas" height="120"></canvas></div>
@@ -294,7 +294,7 @@
     <!-- Gráfica 3: Nómina por empresa -->
     <div class="cc cc-clickable" onclick="openModal('nomina')">
       <div class="cc-h">
-        <div><div class="cc-t">Nómina x Empresa</div><div class="cc-s">Mensual</div></div>
+        <div><div class="cc-t" id="dash-c3-title">Nómina x Empresa</div><div class="cc-s" id="dash-c3-sub">Mensual</div></div>
         <span class="cc-expand">detalle →</span>
       </div>
       <div class="cc-b" style="padding:10px 12px"><canvas id="c-dash-nom" height="120"></canvas></div>
@@ -303,7 +303,7 @@
     <!-- Gráfica 4: Margen por empresa (barras horizontales) -->
     <div class="cc cc-clickable" onclick="openModal('resumen_margen')">
       <div class="cc-h">
-        <div><div class="cc-t">Margen Operativo</div><div class="cc-s">Ing − Costos directos</div></div>
+        <div><div class="cc-t" id="dash-c4-title">Margen Operativo</div><div class="cc-s" id="dash-c4-sub">Ing − Costos directos</div></div>
         <span class="cc-expand">detalle →</span>
       </div>
       <div class="cc-b" style="padding:10px 12px"><canvas id="c-dash-margen" height="120"></canvas></div>
@@ -1307,7 +1307,7 @@
   <div class="tw">
     <div class="tw-h" style="display:flex;align-items:center;justify-content:space-between">
       <div class="tw-ht">Todos los Créditos <span id="cobr-count" style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(0,115,234,.12);color:#0073ea;margin-left:6px">0</span></div>
-      <input id="cobr-search" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="cobrFilter(this.value)">
+      <input id="cobr-search" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="_dCobrFilter(this.value)">
     </div>
     <div id="cobr-list"></div>
   </div>
@@ -1368,7 +1368,7 @@
   <div class="tw">
     <div class="tw-h" style="display:flex;align-items:center;justify-content:space-between">
       <div class="tw-ht">Créditos Dynamo <span id="dyn-cobr-count" style="font-size:.65rem;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(255,112,67,.12);color:#ff7043;margin-left:6px">0</span></div>
-      <input id="dyn-cobr-search" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="dynCobrFilter(this.value)">
+      <input id="dyn-cobr-search" style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="_dDynCobrFilter(this.value)">
     </div>
     <div id="dyn-cobr-list"></div>
   </div>
@@ -1985,8 +1985,8 @@
   </div>
   <!-- Charts -->
   <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px">
-    <div class="cc"><div class="cc-h"><div><div class="cc-t">Volumen Mensual (MXN)</div><div class="cc-s">Fees convertidos por mes + transacciones</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbc-monthly" height="160"></canvas></div></div>
-    <div class="cc"><div class="cc-h"><div><div class="cc-t">Por Tipo de Transaccion</div><div class="cc-s">Distribucion anual de fees</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbc-types" height="160"></canvas></div></div>
+    <div class="cc"><div class="cc-h"><div><div class="cc-t" id="wbc-chart-title">Volumen Mensual (MXN)</div><div class="cc-s" id="wbc-chart-sub">Fees convertidos por mes + transacciones</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbc-monthly" height="160"></canvas></div></div>
+    <div class="cc"><div class="cc-h"><div><div class="cc-t" id="wbc-type-title">Por Tipo de Transaccion</div><div class="cc-s" id="wbc-type-sub">Distribucion anual de fees</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbc-types" height="160"></canvas></div></div>
   </div>
   <!-- Client Table -->
   <div class="tw">
@@ -2026,8 +2026,8 @@
       <div class="kpi-card" style="--ac:var(--orange)"><div class="kpi-top"><div class="kpi-lbl">Clientes</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">👥</div></div><div class="kpi-val" id="wbt-kpi-clients">—</div><div class="kpi-d dnu" id="wbt-kpi-clients-sub">Unicos</div></div>
     </div>
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:14px">
-      <div class="cc"><div class="cc-h"><div><div class="cc-t">Volumen Mensual — Tarjetas WB</div><div class="cc-s">Monto operado por mes</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbt-monthly" height="160"></canvas></div></div>
-      <div class="cc"><div class="cc-h"><div><div class="cc-t">Por Tipo de Transaccion</div><div class="cc-s">Distribucion anual</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbt-types" height="160"></canvas></div></div>
+      <div class="cc"><div class="cc-h"><div><div class="cc-t" id="wbt-chart-title">Volumen Mensual — Tarjetas WB</div><div class="cc-s" id="wbt-chart-sub">Monto operado por mes</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbt-monthly" height="160"></canvas></div></div>
+      <div class="cc"><div class="cc-h"><div><div class="cc-t" id="wbt-type-title">Por Tipo de Transaccion</div><div class="cc-s" id="wbt-type-sub">Distribucion anual</div></div></div><div class="cc-b" style="padding:10px 12px"><canvas id="c-wbt-types" height="160"></canvas></div></div>
     </div>
     <div class="tw"><div class="tw-h"><div class="tw-ht">👥 Clientes — Tarjetas WB</div></div>
     <div style="overflow-x:auto"><table class="bt"><thead><tr><th>#</th><th>Cliente</th><th class="r">Transacciones</th><th class="r">Monto Total</th><th class="r">Ticket Prom.</th><th class="r">% del Total</th></tr></thead>
@@ -2571,7 +2571,7 @@
   </div>
   <div class="tw"><div class="tw-h">
     <div class="tw-ht">Todos los Clientes</div>
-    <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="filterTPVTable('dg-tbody',this.value)">
+    <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="_dFilterTPV('dg-tbody',this.value)">
   </div>
   <div style="overflow-x:auto"><table class="bt">
     <thead><tr><th>#</th><th>Cliente</th><th class="r">Crédito TC</th><th class="r">Débito TD</th><th class="r">Amex</th><th class="r">Total</th></tr></thead>
@@ -2649,7 +2649,7 @@
   </div>
   <div class="tw"><div class="tw-h">
     <div class="tw-ht" id="dd-table-title">Clientes — Cargando...</div>
-    <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar..." oninput="filterTPVTable('dd-tbody',this.value)">
+    <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar..." oninput="_dFilterTPV('dd-tbody',this.value)">
   </div>
   <div style="overflow-x:auto"><table class="bt">
     <thead><tr><th>#</th><th>Cliente</th><th class="r">Crédito TC</th><th class="r">Débito TD</th><th class="r">Amex</th><th class="r">Total</th></tr></thead>
@@ -2691,7 +2691,7 @@
   <div class="tw">
     <div class="tw-h">
       <div class="tw-ht">Detalle por Cliente</div>
-      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="filterTPVTable('pagos-tbody',this.value)">
+      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="_dFilterTPV('pagos-tbody',this.value)">
     </div>
     <div style="overflow-x:auto"><table class="bt">
       <thead><tr>
@@ -3059,7 +3059,7 @@
   </div>
   <div class="tw"><div class="tw-h">
     <div class="tw-ht">Detalle por Terminal</div>
-    <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="filterTPVTable('term-tbody',this.value)">
+    <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="_dFilterTPV('term-tbody',this.value)">
   </div>
   <div style="overflow-x:auto"><table class="bt">
     <thead><tr><th>Cliente</th><th class="r"># Term.</th><th>Terminal ID</th><th>Último Uso</th><th class="r">Ingresos</th><th class="r">Txns</th><th class="r">Prom/Txn</th><th class="r">Días Sin Uso</th><th>Estado</th></tr></thead>
@@ -3081,7 +3081,7 @@
     </div>
     <div class="tw"><div class="tw-h">
       <div class="tw-ht">Detalle de Cambios</div>
-      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar..." oninput="filterTPVTable('cambios-tbody',this.value)">
+      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar..." oninput="_dFilterTPV('cambios-tbody',this.value)">
     </div>
     <div style="overflow-x:auto"><table class="bt">
       <thead><tr><th>#</th><th>Terminal ID</th><th>Cliente Anterior</th><th>Inicio</th><th>Fin</th><th class="r">Txns</th><th class="r">Monto</th><th>Tipo</th><th>Cliente Actual</th><th>Inicio</th><th>Fin</th><th class="r">Txns</th></tr></thead>
@@ -3131,7 +3131,7 @@
   <div class="tw" style="margin-bottom:14px">
     <div class="tw-h">
       <div class="tw-ht" id="prom-clients-title">Clientes del Promotor</div>
-      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="filterTPVTable('prom-clients-tbody',this.value)">
+      <input style="padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px" placeholder="🔍 Buscar cliente..." oninput="_dFilterTPV('prom-clients-tbody',this.value)">
     </div>
     <div style="overflow-x:auto"><table class="bt">
       <thead><tr>
@@ -4054,7 +4054,7 @@
       <button class="btn btn-out" style="font-size:.68rem;height:28px" onclick="setFactMes('this_month')">Este Mes</button>
       <button class="btn btn-out" style="font-size:.68rem;height:28px" onclick="setFactMes('last_month')">Mes Anterior</button>
       <div style="flex:1"></div>
-      <input type="text" placeholder="Buscar cliente..." oninput="filterTPVTable('fact-tbody',this.value)" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:200px;background:var(--white);color:var(--text)">
+      <input type="text" placeholder="Buscar cliente..." oninput="_dFilterTPV('fact-tbody',this.value)" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:200px;background:var(--white);color:var(--text)">
     </div>
   </div>
 

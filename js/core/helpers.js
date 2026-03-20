@@ -55,6 +55,20 @@ function escapeHtml(str) {
 }
 var _esc = escapeHtml;
 
+// ── Debounce: evita ejecución excesiva en inputs de búsqueda ──
+function _debounce(fn, ms){
+  var timer;
+  return function(){
+    var ctx = this, args = arguments;
+    clearTimeout(timer);
+    timer = setTimeout(function(){ fn.apply(ctx, args); }, ms);
+  };
+}
+// Wrappers debounced para filtros de búsqueda (150ms)
+var _dFilterTPV = _debounce(function(tbodyId, q){ if(typeof filterTPVTable==='function') filterTPVTable(tbodyId, q); }, 150);
+var _dCobrFilter = _debounce(function(q){ if(typeof cobrFilter==='function') cobrFilter(q); }, 150);
+var _dDynCobrFilter = _debounce(function(q){ if(typeof dynCobrFilter==='function') dynCobrFilter(q); }, 150);
+
 Chart.defaults.font.family="'Figtree',sans-serif";
 Chart.defaults.font.size=11;
 Chart.defaults.color='#8b8fb5';

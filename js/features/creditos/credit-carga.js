@@ -223,9 +223,52 @@
     return (c.cl||'').replace(/[^a-zA-Z0-9]/g,'_').toLowerCase() + '_' + (c.monto||0) + '_' + (c.plazo||0);
   }
 
+  // ── Validación de datos antes de importar ──
+  function ccValidate(credits){
+    const errors = [];
+    credits.forEach(function(c, i){
+      const lbl = c.cl || ('Crédito #'+(i+1));
+      // Monto
+      if(!c.monto || c.monto <= 0) errors.push(lbl+': monto inválido ($'+c.monto+')');
+      if(c.monto > 500000000) errors.push(lbl+': monto excesivo ($'+fmtFull(c.monto)+') — verificar');
+      // Tasa
+      if(c.tasa < 0) errors.push(lbl+': tasa negativa ('+c.tasa+'%)');
+      if(c.tasa > 200) errors.push(lbl+': tasa excesiva ('+c.tasa+'%) — verificar');
+      // Plazo
+      if(!c.plazo || c.plazo <= 0) errors.push(lbl+': plazo inválido ('+c.plazo+')');
+      if(c.plazo > 360) errors.push(lbl+': plazo excesivo ('+c.plazo+' meses) — verificar');
+      // Comisión
+      if(c.com < 0) errors.push(lbl+': comisión negativa ('+c.com+'%)');
+      if(c.com > 25) errors.push(lbl+': comisión excesiva ('+c.com+'%) — verificar');
+      // Tabla de amortización
+      if(!c.amort || c.amort.length < 2) errors.push(lbl+': tabla de amortización vacía o incompleta');
+      // Saldos decrecientes
+      if(c.amort && c.amort.length > 2){
+        var lastSaldo = c.amort[0].saldo || c.monto;
+        for(var j=1; j<c.amort.length; j++){
+          if(c.amort[j].saldo > lastSaldo * 1.01){ // 1% tolerance
+            errors.push(lbl+': saldo crece en periodo '+c.amort[j].periodo+' ($'+fmtFull(c.amort[j].saldo)+' > $'+fmtFull(lastSaldo)+')');
+            break;
+          }
+          lastSaldo = c.amort[j].saldo;
+        }
+      }
+      // Cliente no vacío
+      if(!c.cl || c.cl.trim().length < 2) errors.push('Crédito #'+(i+1)+': nombre de cliente vacío o muy corto');
+    });
+    return errors;
+  }
+
   function ccImport(){
     if(!CC_PREVIEW.length){ toast('⚠️ No hay creditos para importar'); return; }
     const empresa = document.getElementById('cc-empresa').value;
+
+    // Validar antes de importar
+    var validationErrors = ccValidate(CC_PREVIEW);
+    if(validationErrors.length > 0){
+      var msg = '⚠️ Se encontraron '+validationErrors.length+' problema'+(validationErrors.length!==1?'s':'')+':\n\n• '+validationErrors.join('\n• ')+'\n\n¿Deseas importar de todas formas?';
+      if(!confirm(msg)) return;
+    }
 
     // Ensure all preview credits have creditId
     CC_PREVIEW.forEach(c => { if(!c.creditId) c.creditId = _getCreditId(c); });

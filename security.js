@@ -15,7 +15,19 @@ const SECURITY_HEADERS = {
   'Cross-Origin-Resource-Policy': 'same-origin',
   'X-DNS-Prefetch-Control': 'off',
   'X-Permitted-Cross-Domain-Policies': 'none',
-  'X-Download-Options': 'noopen'
+  'X-Download-Options': 'noopen',
+  // CSP — bloquea scripts inyectados, solo permite origenes conocidos
+  'Content-Security-Policy': [
+    "default-src 'self'",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "font-src 'self' https://fonts.gstatic.com",
+    "img-src 'self' data: blob:",
+    "connect-src 'self' https://*.supabase.co https://cdnjs.cloudflare.com",
+    "frame-src 'none'",
+    "object-src 'none'",
+    "base-uri 'self'"
+  ].join('; ')
 };
 
 // ── Archivos/rutas bloqueadas (nunca servir via HTTP) ──

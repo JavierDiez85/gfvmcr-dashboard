@@ -72,8 +72,25 @@ function _syncStatus(state, msg){
   if(state==='ok') setTimeout(function(){ if(el.style.color===colors.ok) el.innerHTML='<span style="font-size:.6rem;color:var(--muted)">\u2713</span>'; }, 3000);
 }
 
-window.addEventListener('online',  () => { _online = true; _syncStatus('syncing','Reconectando...'); SB.flushPending(); });
-window.addEventListener('offline', () => { _online = false; _syncStatus('offline','Sin conexión'); });
+// ── Retry con backoff exponencial ──
+var _retryTimer = null;
+var _retryDelay = 1000; // empieza en 1s
+var _RETRY_MAX  = 30000; // máximo 30s
+function _scheduleRetry(){
+  if(_retryTimer) return; // ya hay uno programado
+  _retryTimer = setTimeout(function(){
+    _retryTimer = null;
+    if(!_online || _pendingPush.size === 0){ _retryDelay = 1000; return; }
+    _syncStatus('syncing','Reintentando...');
+    SB.flushPending().then(function(){
+      if(_pendingPush.size === 0){ _retryDelay = 1000; }
+      else { _retryDelay = Math.min(_retryDelay * 2, _RETRY_MAX); _scheduleRetry(); }
+    });
+  }, _retryDelay);
+}
+
+window.addEventListener('online',  () => { _online = true; _retryDelay = 1000; _syncStatus('syncing','Reconectando...'); SB.flushPending(); });
+window.addEventListener('offline', () => { _online = false; if(_retryTimer){ clearTimeout(_retryTimer); _retryTimer=null; } _syncStatus('offline','Sin conexión'); });
 
 // ══════════════════════════════════════
 // SB — Objeto de sincronización
@@ -130,6 +147,7 @@ const SB = {
       _pendingPush.add(key);
       _savePending();
       _syncStatus('error','Error al guardar');
+      _scheduleRetry();
     }
   },
 
