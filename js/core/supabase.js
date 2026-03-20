@@ -53,10 +53,27 @@ const APP_KEYS = [
 let _lastSync = null;
 let _syncInProgress = false;
 let _online = navigator.onLine;
-const _pendingPush = new Set();
+// Persistir pendientes en localStorage para sobrevivir cierres de tab
+const _pendingPush = new Set(
+  (function(){ try { return JSON.parse(localStorage.getItem('_gf_pending_sync')) || []; } catch(e){ return []; }})()
+);
+function _savePending(){
+  try { localStorage.setItem('_gf_pending_sync', JSON.stringify([..._pendingPush])); } catch(e){}
+}
 
-window.addEventListener('online',  () => { _online = true;  SB.flushPending(); });
-window.addEventListener('offline', () => { _online = false; });
+// Indicador visual de sync
+function _syncStatus(state, msg){
+  var el = document.getElementById('sync-indicator');
+  if(!el) return;
+  var icons = { syncing:'\u2B6E', ok:'\u2713', error:'\u26A0', offline:'\u2299' };
+  var colors = { syncing:'var(--blue)', ok:'var(--green)', error:'var(--orange)', offline:'var(--muted)' };
+  el.style.color = colors[state] || 'var(--muted)';
+  el.innerHTML = '<span style="font-size:.7rem;font-weight:600">' + (icons[state]||'') + '</span> <span style="font-size:.6rem">' + (msg||'') + '</span>';
+  if(state==='ok') setTimeout(function(){ if(el.style.color===colors.ok) el.innerHTML='<span style="font-size:.6rem;color:var(--muted)">\u2713</span>'; }, 3000);
+}
+
+window.addEventListener('online',  () => { _online = true; _syncStatus('syncing','Reconectando...'); SB.flushPending(); });
+window.addEventListener('offline', () => { _online = false; _syncStatus('offline','Sin conexión'); });
 
 // ══════════════════════════════════════
 // SB — Objeto de sincronización
@@ -91,9 +108,9 @@ const SB = {
 
   // Empujar una key de localStorage → Supabase
   async pushKey(key) {
-    if (!_online) { _pendingPush.add(key); return; }
+    if (!_online || !_sb) { _pendingPush.add(key); _savePending(); _syncStatus('offline','Pendiente'); return; }
+    _syncStatus('syncing','Guardando...');
     try {
-      if (!_sb) await _loadConfig();
       const raw = localStorage.getItem(key);
       const value = raw ? JSON.parse(raw) : null;
       const { error } = await _sb
@@ -106,18 +123,26 @@ const SB = {
         });
       if (error) throw error;
       _pendingPush.delete(key);
+      _savePending();
+      if(_pendingPush.size === 0) _syncStatus('ok','Guardado');
     } catch (e) {
       console.warn(`[SB] pushKey(${key}) falló:`, e.message);
       _pendingPush.add(key);
+      _savePending();
+      _syncStatus('error','Error al guardar');
     }
   },
 
   // Empujar todas las keys pendientes (cuando vuelve la conexión)
   async flushPending() {
     const keys = [..._pendingPush];
+    if(!keys.length) return;
+    _syncStatus('syncing', keys.length + ' pendiente' + (keys.length!==1?'s':''));
     for (const key of keys) {
       await SB.pushKey(key);
     }
+    if(_pendingPush.size === 0) _syncStatus('ok','Todo sincronizado');
+    else _syncStatus('error', _pendingPush.size + ' sin guardar');
   },
 
   // Sync en background: jalar cambios desde Supabase periódicamente
