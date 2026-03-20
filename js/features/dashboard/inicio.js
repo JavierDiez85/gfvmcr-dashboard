@@ -86,24 +86,24 @@
 
   function _kpiCard(label, value, sub, color) {
     return '<div class="cc" style="padding:20px 16px;border-top:3px solid ' + color + ';text-align:center">'
-         + '<div style="font-size:.72rem;font-weight:700;color:var(--text);margin-bottom:6px;'
-         + 'text-transform:uppercase;letter-spacing:.3px">' + label + '</div>'
-         + '<div style="font-size:1.3rem;font-weight:700;color:' + color + ';line-height:1.2">' + value + '</div>'
-         + '<div style="font-size:.7rem;color:var(--text2);margin-top:4px">' + sub + '</div>'
+         + '<div style="font-size:.74rem;font-weight:700;color:var(--text);margin-bottom:6px;'
+         + 'text-transform:uppercase;letter-spacing:.4px">' + label + '</div>'
+         + '<div style="font-size:1.35rem;font-weight:700;color:' + color + ';line-height:1.2">' + value + '</div>'
+         + '<div style="font-size:.72rem;font-weight:600;color:var(--text2);margin-top:5px">' + sub + '</div>'
          + '</div>';
   }
 
   function _entMini(label, value, color) {
-    return '<div style="background:var(--bg);border-radius:6px;padding:8px 10px">'
-         + '<div style="font-size:.67rem;font-weight:600;color:var(--text2);margin-bottom:2px">' + label + '</div>'
-         + '<div style="font-size:.82rem;font-weight:700;color:' + color + '">' + value + '</div>'
+    return '<div style="background:var(--bg);border-radius:6px;padding:9px 10px">'
+         + '<div style="font-size:.68rem;font-weight:700;color:var(--text);margin-bottom:3px;text-transform:uppercase;letter-spacing:.2px">' + label + '</div>'
+         + '<div style="font-size:.88rem;font-weight:700;color:' + color + '">' + value + '</div>'
          + '</div>';
   }
 
   function _entCard(e, roi, pend) {
     var mc = e.margen >= 0 ? '#00b875' : '#e53935';
-    var roiStr = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : '—';
-    var roiColor = roi === null ? 'var(--muted)' : (roi >= 0 ? '#00b875' : '#e53935');
+    var roiStr = roi !== null ? (roi >= 0 ? '+' : '') + roi.toFixed(1) + '%' : 'Sin inv.';
+    var roiColor = roi === null ? 'var(--text2)' : (roi >= 0 ? '#00b875' : '#e53935');
     var pendBadge = pend.count > 0
       ? '<div style="margin-top:10px;font-size:.68rem;color:#ff9500;background:#ff950018;'
         + 'border-radius:6px;padding:5px 8px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
@@ -111,7 +111,7 @@
       : '';
     return '<div class="cc" style="padding:16px;border-top:3px solid ' + e.color + ';cursor:pointer" '
          + 'onclick="navTo(\'' + e.nav + '\')">'
-         + '<div style="font-size:.85rem;font-weight:700;color:' + e.color + ';margin-bottom:10px">'
+         + '<div style="font-size:.9rem;font-weight:700;color:' + e.color + ';margin-bottom:10px;letter-spacing:.1px">'
          + e.icon + ' ' + e.name + '</div>'
          + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">'
          + _entMini('Ingresos', _fmtM(e.ing), '#00b875')
@@ -128,7 +128,7 @@
          + e.color + '" onclick="navTo(\'' + e.ppNav + '\')">'
          + '<div style="font-size:.75rem;font-weight:700;color:' + e.color + '">' + e.icon + ' ' + e.name + '</div>'
          + '<div style="font-size:1.05rem;font-weight:700;color:#e53935;margin:4px 0">' + _fmtM(p.total) + '</div>'
-         + '<div style="font-size:.7rem;color:var(--text2)">'
+         + '<div style="font-size:.72rem;font-weight:600;color:var(--text2)">'
          + p.count + ' factura' + (p.count > 1 ? 's' : '') + ' pendiente' + (p.count > 1 ? 's' : '')
          + '</div>'
          + '</div>';

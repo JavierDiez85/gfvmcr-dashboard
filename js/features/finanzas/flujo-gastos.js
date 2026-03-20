@@ -19,11 +19,10 @@ function rFlujoGas(filterEnt){
     filterBanner.innerHTML = `<span style="font-size:.75rem;font-weight:600;color:${ec}">Mostrando solo: ${window._fgFilterEnt}</span><span style="font-size:.65rem;color:var(--muted);margin-left:8px">(${FG_ROWS.filter(r=>r.ent===window._fgFilterEnt).length} filas de ${FG_ROWS.length})</span>`;
   }
 
-  // Show TPV auto notice only if visible (filtered) rows include autoTPV
+  // Show TPV auto notice ONLY when filtering by Salem (autoTPV rows are Salem-exclusive)
   const fgTpvNotice = document.getElementById('fg-tpv-notice');
-  const _hasVisibleTPV = window._fgFilterEnt
-    ? FG_ROWS.some(r=>r.autoTPV && r.ent===window._fgFilterEnt)
-    : FG_ROWS.some(r=>r.autoTPV);
+  const _hasVisibleTPV = window._fgFilterEnt === 'Salem'
+    && FG_ROWS.some(r => r.autoTPV && r.ent === 'Salem');
   if(fgTpvNotice) fgTpvNotice.style.display = _hasVisibleTPV ? 'flex' : 'none';
 
   // Apply filter
