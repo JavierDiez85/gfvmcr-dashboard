@@ -54,13 +54,10 @@
     const el = document.getElementById(elPrefix+'-kpis');
     if(!el) return;
     const _c = k => `
-      <div style="background:var(--white);border:1px solid var(--border);border-radius:var(--rlg);padding:14px 16px;border-top:3px solid ${k.color}">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
-          <div style="font-size:.7rem;font-weight:600;color:var(--text2)">${k.lbl}</div>
-          <div style="width:28px;height:28px;border-radius:8px;background:${k.bg};display:flex;align-items:center;justify-content:center;font-size:.85rem">${k.ico}</div>
-        </div>
-        <div style="font-family:'Poppins',sans-serif;font-weight:700;font-size:1.1rem;color:${k.color}">${k.val}</div>
-        <div style="font-size:.67rem;color:var(--muted);margin-top:3px">${k.sub}</div>
+      <div class="kpi-card" style="--ac:${k.color}">
+        <div class="kpi-top"><div class="kpi-lbl">${_esc(k.lbl)}</div><div class="kpi-ico" style="background:${k.bg};color:${k.color}">${k.ico}</div></div>
+        <div class="kpi-val" style="color:${k.color}">${k.val}</div>
+        <div class="kpi-d">${k.sub}</div>
       </div>`;
     const pct = parseFloat(cumplimiento);
     el.innerHTML = [
