@@ -10,6 +10,8 @@ const TPV = {
   _cache: {},
   _cacheTime: {},
   CACHE_TTL: 5 * 60 * 1000, // 5 minutos
+  _lastError: null,      // último error de RPC (null = sin error)
+  _usingCache: false,    // true si la última lectura vino de localStorage
 
   // Mapping: db_field suffix → tpv_transactions.card_type_key
   _CARD_TYPE_MAP: { tc: 'TC', td: 'TD', amex: 'Amex', ti: 'TI' },
@@ -39,10 +41,13 @@ const TPV = {
       await this._ensureSb();
       const { data, error } = await _sb.rpc(fnName, params || {});
       if (error) throw error;
+      this._lastError = null;
+      this._usingCache = false;
       this._setCache(cacheKey, data, lsKey);
       return data;
     } catch (e) {
       console.warn(`[TPV] RPC ${fnName} failed:`, e.message);
+      this._lastError = e.message || 'Error de conexión con Supabase';
       // Fallback to localStorage cache
       try {
         const cached = localStorage.getItem(lsKey);
@@ -50,9 +55,11 @@ const TPV = {
           console.log(`[TPV] using localStorage fallback for ${cacheKey}`);
           const parsed = JSON.parse(cached);
           this._cache[cacheKey] = parsed;
+          this._usingCache = true;
           return parsed;
         }
       } catch (e2) { /* ignore parse errors */ }
+      this._usingCache = false;
       return [];
     }
   },

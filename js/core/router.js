@@ -138,7 +138,16 @@ async function _syncAll(){
   fiLoad(); fgLoad();
   // Pre-fetch TPV commission data from Supabase into cache
   if(typeof TPV !== 'undefined' && TPV.calcMonthlyPL){
-    try { await TPV.calcMonthlyPL(String(_year)); } catch(e){ console.warn('[_syncAll] TPV fetch:', e.message); }
+    try {
+      await TPV.calcMonthlyPL(String(_year));
+    } catch(e){
+      console.warn('[_syncAll] TPV fetch:', e.message);
+      // Avisar visualmente que los datos TPV en Finanzas pueden estar desactualizados
+      if (typeof _syncStatus === 'function') {
+        _syncStatus('error', 'TPV sin datos actuales');
+        setTimeout(function(){ _syncStatus('offline','Pendiente'); }, 6000);
+      }
+    }
   }
   fiInjectTPV(); fiInjectCredits();
   if(typeof ceInjectGastos === 'function') ceInjectGastos();
