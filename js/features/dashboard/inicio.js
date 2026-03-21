@@ -26,6 +26,21 @@
     return (n >= 0 ? '+$' : '-$') + abs.toLocaleString('es-MX');
   }
 
+  // Formato compacto para espacios reducidos: $1.2M, $693K, $450
+  function _fmtK(n) {
+    if (n === null || n === undefined) return '—';
+    var sign = n < 0 ? '-' : '';
+    var abs  = Math.abs(n);
+    if (abs >= 1e6)  return sign + '$' + (abs / 1e6).toFixed(abs >= 10e6 ? 1 : 2).replace(/\.?0+$/, '') + 'M';
+    if (abs >= 1e3)  return sign + '$' + (abs / 1e3).toFixed(abs >= 100e3 ? 0 : 1).replace(/\.?0+$/, '') + 'K';
+    return sign + '$' + Math.round(abs).toLocaleString('es-MX');
+  }
+
+  function _fmtKS(n) {
+    if (n === null || n === undefined) return '—';
+    return (n >= 0 ? '+' : '') + _fmtK(n);
+  }
+
   // Mapeo código corto → nombre completo (coincide con flujo-engine y pl-engine)
   var _ENT_FULL = { sal:'Salem', end:'Endless', dyn:'Dynamo', wb:'Wirebit', stel:'Stellaris' };
 
@@ -108,7 +123,7 @@
     var pendBadge = pend.count > 0
       ? '<div style="margin-top:10px;font-size:.68rem;color:#ff9500;background:#ff950018;'
         + 'border-radius:6px;padding:5px 8px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
-        + e.ppNav + '\')">⏳ ' + pend.count + ' CxP · ' + _fmtM(pend.total) + '</div>'
+        + e.ppNav + '\')">⏳ ' + pend.count + ' CxP · ' + _fmtK(pend.total) + '</div>'
       : '';
     // ROI badge — full-width, prominent
     var roiBadge = '<div style="margin-top:10px;background:' + roiBg + ';border:1.5px solid '
@@ -123,9 +138,9 @@
          + '<div style="font-size:.9rem;font-weight:700;color:' + e.color + ';margin-bottom:10px;letter-spacing:.1px">'
          + e.icon + ' ' + e.name + '</div>'
          + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
-         + _entMini('Ingresos', _fmtM(e.ing),     '#00b875')
-         + _entMini('Gastos',   _fmtM(e.gas),     '#e53935')
-         + _entMini('Margen',   _fmtMS(e.margen), mc)
+         + _entMini('Ingresos', _fmtK(e.ing),     '#00b875')
+         + _entMini('Gastos',   _fmtK(e.gas),     '#e53935')
+         + _entMini('Margen',   _fmtKS(e.margen), mc)
          + '</div>'
          + roiBadge
          + pendBadge
