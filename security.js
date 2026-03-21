@@ -112,7 +112,12 @@ function checkCors(req, res, port) {
   if (!origin) return false;
 
   const allowed = _buildOrigins(port);
-  if (!allowed.includes(origin)) {
+
+  // Permitir same-host: cubre IPs de red local, IPv6 (::1), hostnames de red, etc.
+  const reqHost = req.headers.host || '';
+  const isSameHost = origin === `http://${reqHost}` || origin === `https://${reqHost}`;
+
+  if (!isSameHost && !allowed.includes(origin)) {
     sendError(res, 403, 'Origin not allowed');
     return true;
   }
