@@ -13,8 +13,42 @@ async function rTPVTerminalesView(){
 
 async function rTPVTerminales(){
   const tbody=document.getElementById('term-tbody');if(!tbody)return;
+
+  // Limpiar banner previo si existe
+  const existingBanner = document.getElementById('tpv-conn-banner');
+  if (existingBanner) existingBanner.remove();
+
   const terms = await TPV.terminalStatus() || [];
   _termAllData = terms; // store for filtering
+
+  // Banner de error de conexión
+  const kEl = document.getElementById('tpv-term-kpis');
+  if (TPV._lastError && terms.length === 0) {
+    const banner = document.createElement('div');
+    banner.id = 'tpv-conn-banner';
+    banner.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:14px 18px;'
+      + 'border-radius:10px;margin-bottom:16px;font-size:.82rem;display:flex;align-items:center;justify-content:space-between;gap:12px';
+    banner.innerHTML = '<span>⚠️ <b>No se pudieron cargar los datos de terminales.</b> Error de conexión con Supabase.<br>'
+      + '<small style="color:#9b1c1c;margin-top:4px;display:block">Detalle: ' + TPV._lastError + '</small></span>'
+      + '<button onclick="rTPVTerminalesView()" style="background:#b91c1c;color:#fff;border:none;border-radius:6px;'
+      + 'padding:7px 14px;cursor:pointer;font-weight:600;font-size:.78rem;white-space:nowrap;font-family:inherit">🔄 Reintentar</button>';
+    if (kEl && kEl.parentNode) kEl.parentNode.insertBefore(banner, kEl);
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-size:.82rem">'
+      + '⚠️ Sin datos — revisa la conexión y reintenta</td></tr>';
+    return;
+  }
+
+  // Aviso suave si datos vienen de caché local
+  if (TPV._usingCache && terms.length > 0) {
+    const banner = document.createElement('div');
+    banner.id = 'tpv-conn-banner';
+    banner.style.cssText = 'background:#fff8e1;border:1px solid #ffe082;color:#856404;padding:10px 16px;'
+      + 'border-radius:8px;margin-bottom:14px;font-size:.78rem;display:flex;align-items:center;justify-content:space-between;gap:12px';
+    banner.innerHTML = '<span>⚡ Mostrando datos en caché — no se pudo conectar con Supabase. Los datos pueden estar desactualizados.</span>'
+      + '<button onclick="TPV.invalidateAll();rTPVTerminalesView()" style="background:#856404;color:#fff;border:none;border-radius:6px;'
+      + 'padding:5px 12px;cursor:pointer;font-weight:600;font-size:.75rem;font-family:inherit">🔄 Actualizar</button>';
+    if (kEl && kEl.parentNode) kEl.parentNode.insertBefore(banner, kEl);
+  }
   // Populate client dropdown + search cache
   const clientes = [...new Set(terms.map(t => t.cliente))].sort();
   _termClienteOptions = clientes.map(c => ({ value: c, label: c }));
