@@ -124,6 +124,69 @@ async function supabaseQuery(table, select = '*', filters = '') {
 }
 
 // ══════════════════════════════════════
+// PERMISSION SYSTEM — Tool access by user role/perms
+// ══════════════════════════════════════
+
+/** Map: tool name → array of menu IDs that grant access (null = admin only) */
+const TOOL_PERMS = {
+  'get_credit_portfolio':   ['cred_dash', 'cred_cobranza', 'cred_carga'],
+  'get_tpv_kpis':           ['tpv_general', 'tpv_dashboard', 'tpv_resumen'],
+  'get_tpv_clients_volume': ['tpv_general', 'tpv_dashboard'],
+  'get_tpv_commissions':    ['tpv_comisiones'],
+  'get_tpv_agent_summary':  ['tpv_agentes', 'tpv_promotores'],
+  'get_tpv_terminal_status':['tpv_terminales', 'tpv_general'],
+  'get_tarjetas_kpis':      ['tarjetas_dash'],
+  'get_pl_summary':         ['resumen', 'grupo', 'sal_res', 'end_res', 'dyn_res', 'wb_res', 'stel_res'],
+  'get_treasury_and_banks': ['tes_flujo', 'tes_grupo', 'tes_individual'],
+  'get_tickets':            ['tpv_general', 'tpv_pagos'],
+  'get_cash_flows':         ['sal_ing', 'sal_gas', 'end_ing', 'dyn_ing', 'fg', 'nomina'],
+  'get_users':              null  // admin only
+};
+
+/** Check if a user can use a specific tool */
+function isToolAllowed(toolName, user) {
+  if (!user) return false;
+  const rol   = user.rol   || 'viewer';
+  const perms = user.perms || {};
+  const hasCustomPerms = Object.keys(perms).length > 0;
+
+  // Admin without custom perms → full access
+  if (rol === 'admin' && !hasCustomPerms) return true;
+
+  const required = TOOL_PERMS[toolName];
+  if (required === null) return rol === 'admin';           // admin-only
+  if (!required)         return true;                      // unrestricted
+
+  if (rol === 'admin') {
+    // Admin with custom perms: access unless explicitly denied
+    return !required.every(p => perms[p] === false);
+  }
+  // Editor/viewer: must have at least one required perm explicitly granted
+  return required.some(p => perms[p] === true || perms[p] === 'menu');
+}
+
+/** Build list of restricted module names for the system prompt */
+function _restrictedModules(user) {
+  const names = {
+    'get_credit_portfolio':   'Portafolio de Créditos',
+    'get_tpv_kpis':           'TPV / Terminales',
+    'get_tpv_clients_volume': 'Volumen TPV por Cliente',
+    'get_tpv_commissions':    'Comisiones TPV',
+    'get_tpv_agent_summary':  'Agentes y Promotores',
+    'get_tpv_terminal_status':'Estado de Terminales',
+    'get_tarjetas_kpis':      'Tarjetas',
+    'get_pl_summary':         'Estado de Resultados (P&L)',
+    'get_treasury_and_banks': 'Tesorería y Bancos',
+    'get_tickets':            'Tickets de Pago',
+    'get_cash_flows':         'Flujos de Caja (Ingresos/Gastos)',
+    'get_users':              'Gestión de Usuarios'
+  };
+  return Object.keys(TOOL_PERMS)
+    .filter(t => !isToolAllowed(t, user))
+    .map(t => names[t] || t);
+}
+
+// ══════════════════════════════════════
 // TOOL DEFINITIONS — 12 herramientas para Claude
 // ══════════════════════════════════════
 const TOOLS = [
@@ -245,7 +308,11 @@ function truncateResult(data, maxItems = 80) {
   };
 }
 
-async function executeTool(name, input) {
+async function executeTool(name, input, user = {}) {
+  // Server-side permission guard
+  if (!isToolAllowed(name, user)) {
+    return { _access_denied: true, message: 'Tu perfil no tiene acceso a este módulo. Contacta al administrador para solicitar acceso.' };
+  }
   try {
     switch (name) {
       case 'get_tpv_kpis': {
@@ -266,9 +333,12 @@ async function executeTool(name, input) {
       }
       case 'get_credit_portfolio': {
         const key = input.company === 'dynamo' ? 'gf_cred_dyn' : 'gf_cred_end';
+        const empresa = input.company === 'dynamo' ? 'Dynamo Finance' : 'Endless Money';
         const data = await getAppData(key);
-        if (!data) return { message: 'No hay datos de créditos para ' + input.company };
-        // Summarize if array is large
+        if (!data) return {
+          _no_data: true,
+          message: `No hay datos de créditos de ${empresa} disponibles en el servidor. Los datos podrían estar pendientes de sincronización. El usuario debe abrir el módulo de Créditos en el dashboard para que los datos se sincronicen con el servidor.`
+        };
         if (Array.isArray(data) && data.length > 30) {
           return { total_creditos: data.length, data: data.slice(0, 30), _truncated: true };
         }
@@ -307,48 +377,69 @@ async function executeTool(name, input) {
         return { error: 'Tool no reconocida: ' + name };
     }
   } catch (e) {
-    console.error('[Tool] Execution error');
-    return { error: 'Error ejecutando herramienta' };
+    console.error('[Tool] Execution error in', name, ':', e.message);
+    return { error: 'Error ejecutando herramienta: ' + e.message };
   }
 }
 
 // ══════════════════════════════════════
 // ANTHROPIC API — Call with tool loop
 // ══════════════════════════════════════
-const SYSTEM_PROMPT = [
-  'Eres el asistente financiero experto del dashboard de Grupo Financiero.',
+const BASE_SYSTEM_PROMPT = [
+  'Eres el asistente financiero experto del dashboard de Grupo Financiero VMCR.',
   'Responde SIEMPRE en español. Sé directo, preciso y útil.',
   '',
-  'HERRAMIENTAS DISPONIBLES:',
-  'Tienes acceso a herramientas que consultan datos en tiempo real del ERP.',
-  'SIEMPRE usa las herramientas para obtener datos actualizados antes de responder.',
-  'NO inventes datos ni cifras. Si una herramienta falla, informa al usuario.',
-  'Puedes llamar varias herramientas en paralelo si necesitas datos de múltiples fuentes.',
+  'CAPACIDADES ANALÍTICAS:',
+  'Tienes acceso a herramientas de datos en tiempo real. SIEMPRE úsalas antes de responder.',
+  'Puedes llamar varias herramientas EN PARALELO para respuestas más rápidas.',
+  'NO inventes datos. Si una herramienta falla o no hay datos, dilo claramente.',
   '',
-  'REGLAS DE RESPUESTA:',
-  '• Cuando te pregunten cifras, DA EL NÚMERO EXACTO de los datos obtenidos.',
-  '• Cuando muestres montos usa formato $X,XXX.XX MXN.',
-  '• Usa negritas (**texto**) para destacar cifras clave.',
-  '• Si te piden comparaciones, calcula las diferencias y porcentajes de cambio.',
-  '• Si te piden resúmenes, organiza la info con viñetas claras.',
-  '• Si los datos permiten calcular algo (sumas, promedios, porcentajes, tendencias), HAZLO sin que te lo pidan.',
-  '• Responde en 2-4 párrafos máximo. No seas excesivamente largo.',
+  'ANÁLISIS QUE DEBES HACER PROACTIVAMENTE (sin que te lo pidan):',
+  '• Al mostrar créditos vencidos: calcula días de atraso promedio, monto total en riesgo, % del portafolio.',
+  '• Al mostrar TPV: identifica clientes top, terminales inactivas, tendencia vs período anterior.',
+  '• Al mostrar P&L: calcula margen %, variación mensual, identifica la entidad más/menos rentable.',
+  '• Al mostrar tesorería: señala saldo neto, flujo positivo/negativo, alertas de liquidez.',
+  '• SIEMPRE termina con 1-2 observaciones clave o acciones recomendadas.',
+  '',
+  'FORMATO DE RESPUESTA:',
+  '• Cifras exactas con formato $X,XXX MXN (usa K para miles, M para millones en resúmenes).',
+  '• **Negritas** para cifras clave y conclusiones importantes.',
+  '• Viñetas para listas, tablas cuando sea relevante.',
+  '• Máximo 4 párrafos. Conciso pero completo.',
+  '• Si hay más de 5 items, muestra los top 5 y el total.',
   '',
   'CONOCIMIENTO DEL NEGOCIO:',
-  '• Grupo Financiero con 5 entidades: Salem, Endless, Dynamo, Wirebit y Centum Capital.',
-  '• Endless y Dynamo otorgan créditos. Cada crédito tiene tabla de amortización (capital, interés, IVA, saldo) y pagos recibidos.',
-  '• Las terminales TPV procesan transacciones de clientes. Cada transacción tiene monto, fecha, cliente y terminal.',
-  '• Los agentes/promotores ganan comisión sobre el volumen de TPV que manejan.',
-  '• P&L = estado de resultados (ingresos vs gastos por entidad).',
-  '• Tesorería = movimientos de efectivo entre cuentas y entidades.',
-  '• Tickets = solicitudes internas (pagos a proveedores, comisiones, etc.) con estados: abierto, aprobado, pagado, rechazado.',
+  '• Grupo Financiero VMCR: 5 entidades bajo Centum Capital.',
+  '• Salem: opera terminales TPV, comisiones a agentes/promotores.',
+  '• Endless Money y Dynamo Finance: cartera de créditos con amortización mensual.',
+  '• Wirebit: fintech, ingresos por fees de transacción.',
+  '• Stellaris: empresa de inversión.',
+  '• Los créditos tienen estado: Activo, Vencido, Liquidado. Vencido = cobranza pendiente.',
+  '• ROI = (margen - inversión) / inversión × 100.',
+  '• CxP = Cuentas por Pagar (facturas pendientes de pago a proveedores).',
   '',
-  'CÁLCULOS QUE PUEDES HACER:',
-  '• Créditos: interés total generado, pagos recibidos vs esperados, saldo por cobrar, morosidad, rendimiento por crédito.',
-  '• TPV: volumen diario/mensual, tendencias, ticket promedio, ranking de clientes.',
-  '• P&L: utilidad por entidad, margen, variaciones mensuales.',
-  '• General: totales, promedios, comparativas, proyecciones simples.'
+  'PERMISOS Y RESTRICCIONES — MUY IMPORTANTE:',
+  'Cada usuario tiene un perfil con acceso limitado a ciertos módulos.',
+  'Si intentas usar una herramienta bloqueada por permisos, recibirás un error de acceso.',
+  'En ese caso responde: "Tu perfil actual no tiene acceso a [módulo]. Contacta al administrador."',
+  'NUNCA intentes sortear o ignorar restricciones de acceso.',
+  'NUNCA respondas con datos de un módulo restringido aunque los "recuerdes" de contexto previo.'
 ].join('\n');
+
+/** Build dynamic system prompt per user */
+function buildSystemPrompt(context, user) {
+  const rol    = user?.rol    || 'viewer';
+  const perms  = user?.perms  || {};
+  const nombre = user?.nombre || 'Usuario';
+  const isAdmin = rol === 'admin' && Object.keys(perms).length === 0;
+
+  const restricted = _restrictedModules(user);
+  const permSection = isAdmin
+    ? `\nPERFIL DE SESIÓN:\nUsuario: ${nombre} | Rol: Administrador | Acceso: COMPLETO a todos los módulos.`
+    : `\nPERFIL DE SESIÓN:\nUsuario: ${nombre} | Rol: ${rol}\nMódulos SIN acceso (responde con aviso de restricción si preguntan): ${restricted.length > 0 ? restricted.join(', ') : 'ninguno'}\nMódulos con acceso: todos los demás.`;
+
+  return BASE_SYSTEM_PROMPT + permSection + '\n\nCONTEXTO DE SESIÓN:\n' + (context || 'Sin contexto');
+}
 
 /** Call Anthropic Messages API */
 function callAnthropic(apiKey, payload) {
@@ -384,8 +475,11 @@ function callAnthropic(apiKey, payload) {
 }
 
 /** Main chat handler with tool loop */
-async function handleChat(apiKey, messages, context) {
-  const systemContent = SYSTEM_PROMPT + '\n\nCONTEXTO DE SESIÓN:\n' + (context || 'Sin contexto adicional');
+async function handleChat(apiKey, messages, context, user) {
+  const systemContent = buildSystemPrompt(context, user);
+
+  // Only expose tools the user is allowed to use
+  const allowedTools = TOOLS.filter(t => isToolAllowed(t.name, user));
 
   let currentMessages = [...messages];
   const MAX_ROUNDS = 8;
@@ -395,28 +489,21 @@ async function handleChat(apiKey, messages, context) {
       model: 'claude-sonnet-4-20250514',
       max_tokens: 4096,
       system: systemContent,
-      tools: TOOLS,
+      tools: allowedTools,
       messages: currentMessages
     };
 
     const response = await callAnthropic(apiKey, payload);
 
-    // If Claude is done (end_turn), return final response
     if (response.stop_reason === 'end_turn' || response.stop_reason === 'max_tokens') {
-      // Chat completado
       return response;
     }
 
-    // If Claude wants to use tools
     if (response.stop_reason === 'tool_use') {
       const toolUseBlocks = (response.content || []).filter(b => b.type === 'tool_use');
-      // Tool calls en progreso
 
-      // Execute all tool calls in parallel
       const toolResults = await Promise.all(toolUseBlocks.map(async block => {
-        const start = Date.now();
-        const result = await executeTool(block.name, block.input || {});
-        // Tool ejecutada
+        const result = await executeTool(block.name, block.input || {}, user);
         return {
           type: 'tool_result',
           tool_use_id: block.id,
@@ -479,7 +566,14 @@ http.createServer(async (req, res) => {
       const messages = (body.messages || []).map(m => ({ role: m.role, content: m.content }));
       const context = body.context || '';
 
-      const response = await handleChat(API_KEY, messages, context);
+      // Extract user session for permission checking
+      let chatUser = {};
+      try {
+        const decoded = Buffer.from(req.headers.authorization.slice(7), 'base64').toString('utf8');
+        chatUser = JSON.parse(decoded);
+      } catch (e) { chatUser = {}; }
+
+      const response = await handleChat(API_KEY, messages, context, chatUser);
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(response));
