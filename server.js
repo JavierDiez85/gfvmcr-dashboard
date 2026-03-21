@@ -68,10 +68,18 @@ function httpsRequest(options, body) {
   });
 }
 
+/** Resolve Supabase credentials (constants or live env fallback) */
+function _sbCreds() {
+  const url = SB_URL || process.env.SUPABASE_URL || '';
+  const key = SB_KEY || process.env.SUPABASE_KEY || '';
+  validateSbConfig(url, key);
+  return { url, key };
+}
+
 /** Call a Supabase RPC function */
 async function supabaseRpc(fnName, params = {}) {
-  validateSbConfig(SB_URL, SB_KEY);
-  const parsed = new URL(SB_URL);
+  const { url: sbUrl, key: sbKey } = _sbCreds();
+  const parsed = new URL(sbUrl);
   const body = JSON.stringify(params);
   const result = await httpsRequest({
     hostname: parsed.hostname,
@@ -79,8 +87,8 @@ async function supabaseRpc(fnName, params = {}) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'apikey': SB_KEY,
-      'Authorization': `Bearer ${SB_KEY}`,
+      'apikey': sbKey,
+      'Authorization': `Bearer ${sbKey}`,
       'Content-Length': Buffer.byteLength(body)
     }
   }, body);
@@ -89,15 +97,15 @@ async function supabaseRpc(fnName, params = {}) {
 
 /** Read a key from app_data table (key-value store) */
 async function getAppData(key) {
-  validateSbConfig(SB_URL, SB_KEY);
-  const parsed = new URL(SB_URL);
+  const { url: sbUrl, key: sbKey } = _sbCreds();
+  const parsed = new URL(sbUrl);
   const result = await httpsRequest({
     hostname: parsed.hostname,
     path: `/rest/v1/app_data?key=eq.${encodeURIComponent(key)}&select=value`,
     method: 'GET',
     headers: {
-      'apikey': SB_KEY,
-      'Authorization': `Bearer ${SB_KEY}`,
+      'apikey': sbKey,
+      'Authorization': `Bearer ${sbKey}`,
       'Accept': 'application/json'
     }
   });
@@ -107,16 +115,16 @@ async function getAppData(key) {
 
 /** Query a Supabase table with filters */
 async function supabaseQuery(table, select = '*', filters = '') {
-  validateSbConfig(SB_URL, SB_KEY);
-  const parsed = new URL(SB_URL);
+  const { url: sbUrl, key: sbKey } = _sbCreds();
+  const parsed = new URL(sbUrl);
   const qs = `select=${encodeURIComponent(select)}${filters ? '&' + filters : ''}`;
   const result = await httpsRequest({
     hostname: parsed.hostname,
     path: `/rest/v1/${table}?${qs}`,
     method: 'GET',
     headers: {
-      'apikey': SB_KEY,
-      'Authorization': `Bearer ${SB_KEY}`,
+      'apikey': sbKey,
+      'Authorization': `Bearer ${sbKey}`,
       'Accept': 'application/json'
     }
   });
