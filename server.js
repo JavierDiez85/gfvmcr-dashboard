@@ -319,6 +319,109 @@ function truncateResult(data, maxItems = 80) {
   };
 }
 
+// ── Credit pre-processing (replicate credit-engine.js logic server-side) ──
+const _MESES_MAP = {ene:0,feb:1,mar:2,abr:3,apr:3,may:4,jun:5,jul:6,ago:7,aug:7,sep:8,oct:9,nov:10,dic:11,dec:11};
+function _credParseDate(str) {
+  if (!str) return null;
+  const p = str.split('/');
+  if (p.length !== 3) return null;
+  let mes = parseInt(p[1]);
+  if (isNaN(mes)) {
+    mes = _MESES_MAP[(p[1]||'').toLowerCase().substring(0,3)];
+    if (mes === undefined) return null;
+  } else { mes--; }
+  return new Date(parseInt(p[2]), mes, parseInt(p[0]));
+}
+
+function _credPeriodStatus(credit, row) {
+  if (!row || row.periodo === 0) return null;
+  const pagos = credit.pagos || [];
+  const totalPagado = pagos.filter(p => p.periodo === row.periodo).reduce((s,p) => s + (p.monto||0), 0);
+  const fechaVenc = _credParseDate(row.fecha);
+  const today = new Date(); today.setHours(0,0,0,0);
+  if (totalPagado > 0) {
+    return totalPagado >= (row.pago||0) - 0.05 ? 'PAGADO' : 'PARCIAL';
+  }
+  if (!fechaVenc) return 'PENDIENTE';
+  return fechaVenc < today ? 'VENCIDO' : 'PENDIENTE';
+}
+
+function _processCredits(credits) {
+  if (!Array.isArray(credits)) return credits;
+  const today = new Date(); today.setHours(0,0,0,0);
+
+  return credits.map(c => {
+    const amort = c.amort || [];
+    const rows = amort.slice(1); // skip period 0
+    const pagos = c.pagos || [];
+
+    let pagado=0, parcial=0, vencido=0, pendiente=0;
+    let montoVencido=0, montoPagado=0, montoPendiente=0, maxAtraso=0;
+    const periodosVencidos = [];
+    const periodosPagados = [];
+
+    rows.forEach(r => {
+      const st = _credPeriodStatus(c, r);
+      const totalPag = pagos.filter(p => p.periodo === r.periodo).reduce((s,p) => s + (p.monto||0), 0);
+      if (st === 'PAGADO')   { pagado++; montoPagado += totalPag; periodosPagados.push(r.periodo); }
+      else if (st === 'PARCIAL') { parcial++; montoPagado += totalPag; montoVencido += (r.pago||0) - totalPag; }
+      else if (st === 'VENCIDO') {
+        vencido++;
+        montoVencido += (r.pago||0);
+        const f = _credParseDate(r.fecha);
+        const dias = f ? Math.floor((today - f)/(86400000)) : 0;
+        if (dias > maxAtraso) maxAtraso = dias;
+        periodosVencidos.push({ periodo: r.periodo, fecha: r.fecha, monto: r.pago, diasAtraso: dias });
+      }
+      else { pendiente++; montoPendiente += (r.pago||0); }
+    });
+
+    // Saldo actual = saldo del último periodo pagado
+    let saldoActual = c.monto || 0;
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (_credPeriodStatus(c, rows[i]) === 'PAGADO') { saldoActual = rows[i].saldo || 0; break; }
+    }
+
+    // Próximo pago
+    let proximoPago = null;
+    for (let i = 0; i < rows.length; i++) {
+      const st = _credPeriodStatus(c, rows[i]);
+      if (st === 'VENCIDO' || st === 'PENDIENTE' || st === 'PARCIAL') {
+        proximoPago = { periodo: rows[i].periodo, fecha: rows[i].fecha, monto: rows[i].pago };
+        break;
+      }
+    }
+
+    return {
+      cliente: c.cl,
+      estado: c.st,
+      monto: c.monto,
+      tasa: c.tasa,
+      plazo: c.plazo,
+      cat: c.cat,
+      fechaDesembolso: c.disbDate,
+      pagoFijo: rows.length > 0 ? rows[0].pago : 0,
+      saldoActual: +saldoActual.toFixed(2),
+      totalPeriodos: rows.length,
+      cobranza: {
+        pagados: pagado,
+        parciales: parcial,
+        vencidos: vencido,
+        pendientes: pendiente,
+        montoPagado: +montoPagado.toFixed(2),
+        montoVencido: +montoVencido.toFixed(2),
+        montoPendiente: +montoPendiente.toFixed(2),
+        maxDiasAtraso: maxAtraso,
+        periodosVencidos,
+        periodosPagados
+      },
+      proximoPago,
+      totalPagosRegistrados: pagos.length,
+      pagosDetalle: pagos.map(p => ({ periodo: p.periodo, monto: p.monto, fecha: p.fecha }))
+    };
+  });
+}
+
 async function executeTool(name, input, user = {}) {
   // Server-side permission guard
   if (!isToolAllowed(name, user)) {
@@ -350,10 +453,12 @@ async function executeTool(name, input, user = {}) {
           _no_data: true,
           message: `No hay datos de créditos de ${empresa} disponibles en el servidor. Los datos podrían estar pendientes de sincronización. El usuario debe abrir el módulo de Créditos en el dashboard para que los datos se sincronicen con el servidor.`
         };
-        if (Array.isArray(data) && data.length > 30) {
-          return { total_creditos: data.length, data: data.slice(0, 30), _truncated: true };
+        // Pre-process: compute payment status, overdue periods, balances server-side
+        const processed = _processCredits(Array.isArray(data) ? data : []);
+        if (processed.length > 30) {
+          return { empresa, total_creditos: processed.length, creditos: processed.slice(0, 30), _truncated: true };
         }
-        return data;
+        return { empresa, fecha_analisis: new Date().toISOString().slice(0,10), total_creditos: processed.length, creditos: processed };
       }
       case 'get_pl_summary': {
         return await getAppData('gf4') || { message: 'No hay datos de P&L' };
@@ -423,6 +528,12 @@ const BASE_SYSTEM_PROMPT = [
   '• Grupo Financiero VMCR: 5 entidades bajo Centum Capital.',
   '• Salem: opera terminales TPV, comisiones a agentes/promotores.',
   '• Endless Money y Dynamo Finance: cartera de créditos con amortización mensual.',
+  '• IMPORTANTE CRÉDITOS: Los datos de créditos YA vienen pre-procesados con el estado correcto de cada periodo.',
+  '  - cobranza.vencidos = periodos con fecha PASADA y SIN pago. NUNCA reportes periodos futuros como vencidos.',
+  '  - cobranza.pagados = periodos con pago completo registrado.',
+  '  - cobranza.pendientes = periodos con fecha FUTURA (aún no vencen).',
+  '  - Usa SOLO los campos pre-calculados (cobranza, saldoActual, proximoPago). NO reinterpretes datos crudos.',
+  '  - Si cobranza.vencidos = 0, el crédito está AL DÍA, sin importar cuántos periodos pendientes tenga.',
   '• Wirebit: fintech, ingresos por fees de transacción.',
   '• Stellaris: empresa de inversión.',
   '• Los créditos tienen estado: Activo, Vencido, Liquidado. Vencido = cobranza pendiente.',
