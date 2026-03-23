@@ -65,15 +65,22 @@
   function credPeriodStatus(credit, row){
     if(!row || row.periodo===0) return null;
     const pagos = credit.pagos || [];
-    const pago = pagos.find(p => p.periodo === row.periodo);
+    // Suma TODOS los pagos del mismo periodo (soporta pagos complementarios)
+    const totalPagado = pagos.filter(p => p.periodo === row.periodo).reduce((s,p) => s + (p.monto||0), 0);
     const fechaVenc = credParseDate(row.fecha);
     const today = new Date(); today.setHours(0,0,0,0);
 
-    if(pago){
-      return pago.monto >= (row.pago||0) ? 'PAGADO' : 'PARCIAL';
+    if(totalPagado > 0){
+      // Tolerancia de $0.05 para diferencias de redondeo
+      return totalPagado >= (row.pago||0) - 0.05 ? 'PAGADO' : 'PARCIAL';
     }
     if(!fechaVenc) return 'PENDIENTE';
     return fechaVenc < today ? 'VENCIDO' : 'PENDIENTE';
+  }
+
+  // Suma todos los pagos registrados para un periodo (para mostrar en UI)
+  function credTotalPagadoPeriodo(credit, periodo){
+    return (credit.pagos||[]).filter(p => p.periodo === periodo).reduce((s,p) => s + (p.monto||0), 0);
   }
 
   function credDiasAtraso(row){
@@ -93,9 +100,9 @@
 
     rows.forEach(r=>{
       const st = credPeriodStatus(credit, r);
-      const pr = pagos.find(p=>p.periodo===r.periodo);
-      if(st==='PAGADO')   { pagado++;  montoPagado += pr ? pr.monto : 0; }
-      else if(st==='PARCIAL'){ parcial++; montoPagado += pr ? pr.monto : 0; montoVencido += (r.pago||0) - (pr?pr.monto:0); }
+      const totalPagR = credTotalPagadoPeriodo(credit, r.periodo);
+      if(st==='PAGADO')   { pagado++;  montoPagado += totalPagR; }
+      else if(st==='PARCIAL'){ parcial++; montoPagado += totalPagR; montoVencido += (r.pago||0) - totalPagR; }
       else if(st==='VENCIDO'){ vencido++; montoVencido += (r.pago||0); maxAtraso = Math.max(maxAtraso, credDiasAtraso(r)); }
       else { pendiente++; montoPendiente += (r.pago||0); }
     });
@@ -124,6 +131,7 @@
   window.credParseDate   = credParseDate;
   window.credFormatDate  = credFormatDate;
   window.credPeriodStatus = credPeriodStatus;
+  window.credTotalPagadoPeriodo = credTotalPagadoPeriodo;
   window.credDiasAtraso  = credDiasAtraso;
   window.credCobranzaResumen = credCobranzaResumen;
   window.credProximoPago = credProximoPago;

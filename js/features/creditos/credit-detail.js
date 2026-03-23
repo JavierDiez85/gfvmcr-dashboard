@@ -28,12 +28,13 @@
         </tr>`;
         const isPaid = r.saldo <= 0.01;
         const st = credPeriodStatus(c, r);
-        const pr = (c.pagos||[]).find(p=>p.periodo===r.periodo);
+        const totalPagR = credTotalPagadoPeriodo(c, r.periodo);
+        const pr = (c.pagos||[]).filter(p=>p.periodo===r.periodo).sort((a,b)=>(b.fecha||'')>(a.fecha||'')?1:-1)[0];
         let cobrCell = '';
         if(st==='PAGADO'){
-          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);font-weight:700">Pagado</span><br><span style="font-size:.58rem;color:var(--muted)">${pr.fecha} · ${fmtFull(pr.monto)}</span></td>`;
+          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);font-weight:700">Pagado</span><br><span style="font-size:.58rem;color:var(--muted)">${pr?pr.fecha:''} · ${fmtFull(totalPagR)}</span></td>`;
         } else if(st==='PARCIAL'){
-          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(pr.monto)} de ${fmtFull(r.pago)}</span><br>${!isViewer() ? `<button class="btn btn-out" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">+ Completar</button>` : ''}</td>`;
+          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(totalPagR)} de ${fmtFull(r.pago)}</span><br>${!isViewer() ? `<button class="btn btn-out" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">+ Completar</button>` : ''}</td>`;
         } else if(st==='VENCIDO'){
           const dias = credDiasAtraso(r);
           cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700">Vencido ${dias}d</span><br>${!isViewer() ? `<button style="font-size:.58rem;margin-top:2px;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;border:none;cursor:pointer" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button>` : ''}</td>`;
@@ -161,13 +162,17 @@
     document.querySelectorAll('[id^="cobr-form-"]').forEach(el=>el.remove());
 
     const defaultFecha = new Date().toISOString().split('T')[0];
-    const existingPago = (c.pagos||[]).find(p=>p.periodo===periodo);
-    const defaultMonto = existingPago ? existingPago.monto : (amortRow.pago||0);
+    const totalYaPagado = typeof credTotalPagadoPeriodo === 'function' ? credTotalPagadoPeriodo(c, periodo) : ((c.pagos||[]).find(p=>p.periodo===periodo)||{}).monto||0;
+    const isParcial = totalYaPagado > 0 && totalYaPagado < (amortRow.pago||0) - 0.01;
+    const faltante = Math.max(0, (amortRow.pago||0) - totalYaPagado);
+    // Para periodo parcial: sugerir el faltante. Para periodo sin pago: sugerir el monto completo.
+    const defaultMonto = isParcial ? +faltante.toFixed(2) : (amortRow.pago||0);
 
     const formHtml = `
       <div id="${formId}" style="background:var(--blue-bg);border:1px solid var(--blue);border-radius:10px;padding:14px 18px;margin:12px 0;animation:fadeIn .2s">
         <div style="font-size:.75rem;font-weight:700;color:var(--blue);margin-bottom:10px">
-          💰 Registrar Pago — Periodo ${periodo} · Vence: ${amortRow.fecha||'—'} · Monto esperado: ${fmtFull(amortRow.pago)}
+          💰 ${isParcial ? 'Complementar Pago' : 'Registrar Pago'} — Periodo ${periodo} · Vence: ${amortRow.fecha||'—'} · Pago fijo: ${fmtFull(amortRow.pago)}
+          ${isParcial ? `<span style="color:var(--orange);font-size:.68rem;font-weight:600;margin-left:6px">Ya pagado: ${fmtFull(totalYaPagado)} · Faltante: ${fmtFull(faltante)}</span>` : ''}
         </div>
         <div style="display:flex;gap:12px;align-items:end;flex-wrap:wrap">
           <div style="flex:1;min-width:140px">
@@ -176,7 +181,7 @@
               style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-family:'Figtree',sans-serif;background:var(--white);color:var(--text)">
           </div>
           <div style="flex:1;min-width:140px">
-            <label style="font-size:.65rem;color:var(--muted);display:block;margin-bottom:3px">Monto pagado</label>
+            <label style="font-size:.65rem;color:var(--muted);display:block;margin-bottom:3px">${isParcial ? 'Monto complementario' : 'Monto pagado'}</label>
             <input id="cobr-monto-${periodo}" type="number" step="0.01" value="${defaultMonto}"
               style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-family:'Figtree',sans-serif;background:var(--white);color:var(--text)">
           </div>
@@ -189,7 +194,7 @@
             Cancelar
           </button>
         </div>
-        ${existingPago ? `<div style="font-size:.62rem;color:var(--muted);margin-top:6px">⚠️ Pago existente: ${existingPago.fecha} por ${fmtFull(existingPago.monto)} — se reemplazara</div>` : ''}
+        ${isParcial ? `<div style="font-size:.62rem;color:var(--green);margin-top:6px">✅ El monto ingresado se sumará al pago existente (${fmtFull(totalYaPagado)})</div>` : ''}
       </div>`;
 
     const container = document.getElementById('cobr-form-container');
@@ -218,13 +223,26 @@
     const fechaDDMMYYYY = `${d}/${m}/${y}`;
 
     if(!c.pagos) c.pagos = [];
-    const idx = c.pagos.findIndex(p=>p.periodo===periodo);
-    if(idx>=0) c.pagos[idx] = { periodo, fecha:fechaDDMMYYYY, monto };
-    else c.pagos.push({ periodo, fecha:fechaDDMMYYYY, monto });
+    const totalYaPagado = c.pagos.filter(p=>p.periodo===periodo).reduce((s,p)=>s+(p.monto||0),0);
+    const isParcial = totalYaPagado > 0 && totalYaPagado < (amortRow.pago||0) - 0.01;
+
+    if(isParcial){
+      // Complemento: sumar al pago existente y consolidar en un solo registro
+      const newTotal = +(totalYaPagado + monto).toFixed(2);
+      // Reemplazar todos los registros del periodo por uno consolidado
+      c.pagos = c.pagos.filter(p=>p.periodo!==periodo);
+      c.pagos.push({ periodo, fecha:fechaDDMMYYYY, monto:newTotal });
+    } else {
+      // Pago nuevo o reemplazo completo
+      const idx = c.pagos.findIndex(p=>p.periodo===periodo);
+      if(idx>=0) c.pagos[idx] = { periodo, fecha:fechaDDMMYYYY, monto };
+      else c.pagos.push({ periodo, fecha:fechaDDMMYYYY, monto });
+    }
 
     DB.set('gf_cred_'+entKey, credits);
     credOpenDetail(entKey, c.cl, creditIdx);
-    toast('✅ Pago registrado — Periodo '+periodo);
+    const nuevoTotal = c.pagos.filter(p=>p.periodo===periodo).reduce((s,p)=>s+(p.monto||0),0);
+    toast('✅ Pago registrado — Periodo '+periodo+(isParcial?' ('+fmtFull(nuevoTotal)+' total)':''));
   }
 
   function credClearAll(entKey){
