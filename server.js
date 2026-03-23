@@ -552,7 +552,7 @@ http.createServer(async (req, res) => {
 
   // ── API: Config (Supabase) — rate limit estricto (10/min), no expone sin auth ──
   if (req.method === 'GET' && req.url === '/api/config') {
-    if (isRateLimited(rateLimitKey(ip, 'config'), 10)) { sendError(res, 429, 'Rate limit exceeded'); return; }
+    if (isRateLimited(rateLimitKey(ip, 'config'), 60)) { sendError(res, 429, 'Rate limit exceeded'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
       supabaseUrl: process.env.SUPABASE_URL || '',

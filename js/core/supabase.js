@@ -10,24 +10,30 @@ let _sb = null;
 
 // Cargar config desde el servidor Node.js (/api/config)
 // Sin fallback embebido — las credenciales solo viven en el servidor
+// _loadConfigPromise: deduplicates concurrent calls so only ONE fetch is made
+let _loadConfigPromise = null;
 async function _loadConfig() {
   if (_sb) return;
+  // If a fetch is already in-flight, wait for it instead of making another request
+  if (_loadConfigPromise) return _loadConfigPromise;
 
-  try {
-    const r = await fetch('/api/config');
-    if (r.ok) {
-      const cfg = await r.json();
-      if (cfg.supabaseUrl && cfg.supabaseKey) {
-        SUPABASE_URL = cfg.supabaseUrl;
-        SUPABASE_KEY = cfg.supabaseKey;
-        _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        return;
+  _loadConfigPromise = (async () => {
+    try {
+      const r = await fetch('/api/config');
+      if (r.ok) {
+        const cfg = await r.json();
+        if (cfg.supabaseUrl && cfg.supabaseKey) {
+          SUPABASE_URL = cfg.supabaseUrl;
+          SUPABASE_KEY = cfg.supabaseKey;
+          _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        }
       }
-    }
-  } catch (e) { /* servidor no disponible */ }
+    } catch (e) { /* servidor no disponible */ }
+    finally { _loadConfigPromise = null; }
+    if (!_sb) console.warn('[SB] No se pudo conectar al servidor. Modo offline.');
+  })();
 
-  // Sin servidor: app funciona en modo offline (solo localStorage)
-  console.warn('[SB] No se pudo conectar al servidor. Modo offline.');
+  return _loadConfigPromise;
 }
 
 // Client identity (para tracking de sync)
