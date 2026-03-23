@@ -587,8 +587,7 @@ http.createServer(async (req, res) => {
       res.end(JSON.stringify(response));
 
     } catch (e) {
-      // Log genérico sin exponer detalles al cliente
-      console.error('[Chat] Request failed');
+      console.error('[Chat] Request failed:', e.message);
       sendError(res, 502, 'Error procesando solicitud');
     }
     return;
