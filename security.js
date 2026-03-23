@@ -43,7 +43,8 @@ const BLOCKED_PATTERNS = [
   /^\/\.vscode/i,
   /^\/.+\.md$/i,
   /^\/\.npmrc/i,
-  /^\/\.DS_Store/i
+  /^\/\.DS_Store/i,
+  /^\/lib\//i
 ];
 
 // ── Directorios permitidos para archivos estáticos ──

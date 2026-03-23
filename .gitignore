@@ -14,6 +14,16 @@ Thumbs.db
 *.tmp
 *.bak
 
+# Dependencies
+node_modules/
+
+# Logs
+*.log
+
+# Build
+dist/
+build/
+
 # Claude dev
 .claude/launch.json
 .claude/serve.mjs
