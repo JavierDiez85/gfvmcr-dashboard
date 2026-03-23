@@ -1202,6 +1202,22 @@
     </div>
   </div>
 
+  <!-- ROW 2b: Risk + Morosidad + Próximos Pagos -->
+  <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px" id="cred-dash-row2b">
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Distribución de Riesgo</div><div class="cc-s">Calificación A-E del portafolio</div></div></div>
+      <div class="cc-b"><canvas id="c-cred-risk" height="140"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Morosidad por Empresa</div><div class="cc-s">% cartera vencida vs vigente</div></div></div>
+      <div class="cc-b"><canvas id="c-cred-morosidad" height="140"></canvas></div>
+    </div>
+    <div class="cc">
+      <div class="cc-h"><div><div class="cc-t">Próximos Vencimientos</div><div class="cc-s">Pagos en los próximos 30 días</div></div></div>
+      <div class="cc-b" id="cred-dash-proximos" style="padding:10px 14px;max-height:160px;overflow-y:auto"></div>
+    </div>
+  </div>
+
   <!-- ROW 3: Entity summary cards -->
   <div class="g2" style="margin-bottom:14px">
     <div class="cc cc-clickable" onclick="sv('end_cred',null)">

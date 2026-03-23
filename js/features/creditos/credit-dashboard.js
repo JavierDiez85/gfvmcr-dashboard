@@ -106,6 +106,107 @@
         scales:{x:{display:false},y:{display:false}}}
     });
 
+    // ── NEW: Risk distribution (doughnut A-E) ──
+    const _chRisk = elPrefix+'-risk';
+    dc(_chRisk);
+    const _canvasRisk = document.getElementById('c-cred-risk');
+    if(_canvasRisk){
+      const dist = {A:0,B:0,C:0,D:0,E:0};
+      activosYVencidos.forEach(c => {
+        const res = credCobranzaResumen(c);
+        if(!res) { dist.A++; return; }
+        const v = res.vencido, d = res.maxAtraso;
+        if(v===0) dist.A++;
+        else if(d<=30) dist.B++;
+        else if(d<=60) dist.C++;
+        else if(d<=90) dist.D++;
+        else dist.E++;
+      });
+      const riskData = [dist.A,dist.B,dist.C,dist.D,dist.E];
+      const hasRisk = riskData.some(v=>v>0);
+      CH[_chRisk] = new Chart(_canvasRisk,{
+        type:'doughnut',
+        data:{
+          labels:['A - Al día','B - 1-30 días','C - 31-60 días','D - 61-90 días','E - >90 días'],
+          datasets:[{
+            data: hasRisk ? riskData : [1],
+            backgroundColor: hasRisk ? ['rgba(0,184,117,.25)','rgba(0,115,234,.25)','rgba(255,160,0,.25)','rgba(255,112,67,.25)','rgba(234,57,67,.25)'] : ['rgba(134,134,134,.15)'],
+            borderColor: hasRisk ? ['#00b875','#0073ea','#ffa000','#ff7043','#ea3943'] : ['rgba(134,134,134,.3)'],
+            borderWidth:2
+          }]
+        },
+        options:{...cOpts(),cutout:'55%',plugins:{legend:{position:'bottom',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8,padding:4}},
+          tooltip:{callbacks:{label:ctx=>' '+ctx.raw+' créditos'}}},scales:{x:{display:false},y:{display:false}}}
+      });
+    }
+
+    // ── NEW: Morosidad por empresa (bar chart) ──
+    const _chMor = elPrefix+'-mor';
+    dc(_chMor);
+    const _canvasMor = document.getElementById('c-cred-morosidad');
+    if(_canvasMor){
+      const calcMor = (creds) => {
+        const av = creds.filter(c=>c.st==='Activo'||c.st==='Vencido');
+        const saldo = av.reduce((s,c)=>s+credSaldoActual(c),0);
+        const venc = av.reduce((s,c)=>{const r=credCobranzaResumen(c);return s+(r?r.montoVencido:0);},0);
+        return { vigente: saldo-venc, vencida: venc, pct: saldo>0?((venc/saldo)*100).toFixed(1):0 };
+      };
+      const endMor = calcMor(END_CREDITS);
+      const dynMor = calcMor(DYN_CREDITS);
+      CH[_chMor] = new Chart(_canvasMor,{
+        type:'bar',
+        data:{
+          labels:['Endless Money','Dynamo Finance'],
+          datasets:[
+            {label:'Vigente',data:[endMor.vigente,dynMor.vigente],backgroundColor:'rgba(0,184,117,.22)',borderColor:'#00b875',borderWidth:1.5,borderRadius:4},
+            {label:'Vencida',data:[endMor.vencida,dynMor.vencida],backgroundColor:'rgba(234,57,67,.22)',borderColor:'#ea3943',borderWidth:1.5,borderRadius:4}
+          ]
+        },
+        options:{...cOpts(),plugins:{legend:{position:'top',labels:{color:'#8b8fb5',font:{size:9},boxWidth:8,padding:6}},
+          tooltip:{callbacks:{label:ctx=>' '+fmtK(ctx.raw)}}},
+          scales:{x:{grid:{display:false},ticks:{color:'#b0b4d0',font:{size:9}}},
+                  y:{grid:{color:'rgba(228,232,244,.7)'},ticks:{color:'#b0b4d0',font:{size:9},callback:v=>fmtK(v)}}}}
+      });
+    }
+
+    // ── NEW: Próximos vencimientos (lista) ──
+    const proxEl = document.getElementById('cred-dash-proximos');
+    if(proxEl){
+      const today = new Date(); today.setHours(0,0,0,0);
+      const limit = new Date(today.getTime() + 30*86400000);
+      const upcoming = [];
+      activosYVencidos.forEach(c => {
+        const prox = credProximoPago(c);
+        if(!prox) return;
+        const f = credParseDate(prox.fecha);
+        if(!f) return;
+        const diff = Math.floor((f-today)/86400000);
+        if(diff>=0 && f<=limit){
+          const st = credPeriodStatus(c, prox);
+          upcoming.push({cl:c.cl||c._entLabel, fecha:prox.fecha, monto:prox.monto, dias:diff, st, ent:c._entLabel||'', col:c._col||'#0073ea'});
+        }
+      });
+      upcoming.sort((a,b)=>a.dias-b.dias);
+      if(!upcoming.length){
+        proxEl.innerHTML='<div style="text-align:center;color:var(--muted);font-size:.75rem;padding:20px 0">Sin vencimientos próximos</div>';
+      } else {
+        proxEl.innerHTML = upcoming.slice(0,8).map(u=>{
+          const urgency = u.dias<=3?'var(--red)':u.dias<=7?'var(--orange)':'var(--muted)';
+          const badge = u.dias===0?'HOY':u.dias===1?'MAÑANA':u.dias+' días';
+          return `<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-size:.73rem">
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${_esc(u.cl)}</div>
+              <div style="color:var(--muted);font-size:.65rem">${_esc(u.fecha)} · ${_esc(u.ent)}</div>
+            </div>
+            <div style="text-align:right;margin-left:8px">
+              <div style="font-weight:700;color:var(--text)">${fmtFull(u.monto)}</div>
+              <span style="font-size:.6rem;font-weight:700;color:${urgency};background:${urgency}15;padding:1px 6px;border-radius:8px">${badge}</span>
+            </div>
+          </div>`;
+        }).join('');
+      }
+    }
+
     // ── Entity summary cards (solo si hay ambas) ──
     if(!entFilter) {
       _credDashEntitySummary('end', END_CREDITS, '#00b875');
