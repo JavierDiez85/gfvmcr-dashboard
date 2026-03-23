@@ -12,25 +12,45 @@ let _sb = null;
 // Sin fallback embebido — las credenciales solo viven en el servidor
 // _loadConfigPromise: deduplicates concurrent calls so only ONE fetch is made
 let _loadConfigPromise = null;
+let _loadConfigError = null;  // Stores the reason _sb failed to init
+
 async function _loadConfig() {
   if (_sb) return;
   // If a fetch is already in-flight, wait for it instead of making another request
   if (_loadConfigPromise) return _loadConfigPromise;
 
   _loadConfigPromise = (async () => {
+    _loadConfigError = null;
     try {
       const r = await fetch('/api/config');
-      if (r.ok) {
-        const cfg = await r.json();
-        if (cfg.supabaseUrl && cfg.supabaseKey) {
-          SUPABASE_URL = cfg.supabaseUrl;
-          SUPABASE_KEY = cfg.supabaseKey;
-          _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        }
+      if (!r.ok) {
+        _loadConfigError = `Servidor respondió ${r.status} en /api/config`;
+        console.warn('[SB] ' + _loadConfigError);
+        return;
       }
-    } catch (e) { /* servidor no disponible */ }
+      const cfg = await r.json();
+      if (!cfg.supabaseUrl || !cfg.supabaseKey) {
+        const missing = [];
+        if (!cfg.supabaseUrl) missing.push('SUPABASE_URL');
+        if (!cfg.supabaseKey) missing.push('SUPABASE_KEY');
+        _loadConfigError = `Variables de entorno no configuradas en el servidor: ${missing.join(', ')}. Ve a Railway → Variables y agrégalas.`;
+        console.warn('[SB] ' + _loadConfigError);
+        return;
+      }
+      SUPABASE_URL = cfg.supabaseUrl;
+      SUPABASE_KEY = cfg.supabaseKey;
+      try {
+        _sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      } catch (e) {
+        _loadConfigError = 'Error al inicializar cliente Supabase: ' + e.message;
+        console.warn('[SB] ' + _loadConfigError);
+      }
+    } catch (e) {
+      _loadConfigError = 'No se pudo contactar el servidor (/api/config): ' + e.message;
+      console.warn('[SB] ' + _loadConfigError);
+    }
     finally { _loadConfigPromise = null; }
-    if (!_sb) console.warn('[SB] No se pudo conectar al servidor. Modo offline.');
+    if (!_sb) console.warn('[SB] Modo offline. Razón:', _loadConfigError || 'desconocida');
   })();
 
   return _loadConfigPromise;

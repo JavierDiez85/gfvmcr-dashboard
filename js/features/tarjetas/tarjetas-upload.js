@@ -14,7 +14,12 @@ async function _ensureSupabase() {
     await new Promise(r => setTimeout(r, 1200));
     if (typeof _loadConfig === 'function') await _loadConfig();
   }
-  if (!_sb) throw new Error('Supabase no disponible. Verifica que el servidor esté corriendo y recarga la página.');
+  if (!_sb) {
+    const reason = (typeof _loadConfigError !== 'undefined' && _loadConfigError)
+      ? _loadConfigError
+      : 'Verifica que el servidor esté corriendo y recarga la página.';
+    throw new Error('Supabase no disponible — ' + reason);
+  }
 }
 
 /** Helper: call a server upload endpoint with session auth (for DELETE/UPDATE operations) */
