@@ -555,15 +555,27 @@ http.createServer(async (req, res) => {
 
   // ── API: Health check — diagnostica el estado de las env vars (sin exponer valores) ──
   if (req.method === 'GET' && req.url === '/api/health') {
+    const sbUrl = process.env.SUPABASE_URL || '';
+    const sbKey = process.env.SUPABASE_KEY || '';
+    const sbSvc = process.env.SUPABASE_SERVICE_KEY || '';
+    const aiKey = process.env.ANTHROPIC_API_KEY || '';
+    const warnings = [];
+    if (sbUrl && !sbUrl.startsWith('https://')) warnings.push('SUPABASE_URL no es una URL válida (debe empezar con https://)');
+    if (sbUrl && sbUrl.startsWith('eyJ'))       warnings.push('SUPABASE_URL contiene un JWT — intercambia con SUPABASE_KEY');
+    if (sbKey && sbKey.startsWith('https://'))   warnings.push('SUPABASE_KEY contiene una URL — intercambia con SUPABASE_URL');
+    if (sbKey && !sbKey.startsWith('eyJ'))       warnings.push('SUPABASE_KEY no es un JWT válido (debe empezar con eyJ...)');
+    if (sbSvc && !sbSvc.startsWith('eyJ'))       warnings.push('SUPABASE_SERVICE_KEY no es un JWT válido');
+    if (aiKey && !aiKey.startsWith('sk-ant-'))   warnings.push('ANTHROPIC_API_KEY no empieza con sk-ant-');
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
-      ok: true,
+      ok: warnings.length === 0,
       env: {
-        SUPABASE_URL:         !!process.env.SUPABASE_URL,
-        SUPABASE_KEY:         !!process.env.SUPABASE_KEY,
-        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
-        ANTHROPIC_API_KEY:    !!process.env.ANTHROPIC_API_KEY,
-      }
+        SUPABASE_URL:         !!sbUrl,
+        SUPABASE_KEY:         !!sbKey,
+        SUPABASE_SERVICE_KEY: !!sbSvc,
+        ANTHROPIC_API_KEY:    !!aiKey,
+      },
+      ...(warnings.length ? { warnings } : {})
     }));
     return;
   }
@@ -870,11 +882,37 @@ http.createServer(async (req, res) => {
 }).listen(PORT, () => {
   console.log('Grupo Financiero Dashboard listening on port ' + PORT);
   // ── Diagnóstico de variables de entorno al arrancar ──
-  const vars = {
-    SUPABASE_URL:         process.env.SUPABASE_URL         ? '✓ configurado' : '✗ NO CONFIGURADO',
-    SUPABASE_KEY:         process.env.SUPABASE_KEY         ? '✓ configurado' : '✗ NO CONFIGURADO',
-    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? '✓ configurado' : '✗ NO CONFIGURADO',
-    ANTHROPIC_API_KEY:    process.env.ANTHROPIC_API_KEY    ? '✓ configurado' : '✗ NO CONFIGURADO',
+  const _env = {
+    SUPABASE_URL:         process.env.SUPABASE_URL         || '',
+    SUPABASE_KEY:         process.env.SUPABASE_KEY         || '',
+    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY || '',
+    ANTHROPIC_API_KEY:    process.env.ANTHROPIC_API_KEY    || '',
   };
+  const vars = {};
+  for (const [k, v] of Object.entries(_env)) vars[k] = v ? '✓ configurado' : '✗ NO CONFIGURADO';
   console.log('[ENV]', JSON.stringify(vars, null, 2));
+
+  // ── Validación de formato — detecta valores intercambiados o incorrectos ──
+  const _warnings = [];
+  if (_env.SUPABASE_URL && !_env.SUPABASE_URL.startsWith('https://')) {
+    _warnings.push('⚠ SUPABASE_URL no empieza con https:// — ¿Pusiste el JWT aquí por error? Debe ser algo como https://xxx.supabase.co');
+  }
+  if (_env.SUPABASE_URL && _env.SUPABASE_URL.startsWith('eyJ')) {
+    _warnings.push('⚠ SUPABASE_URL contiene un JWT (token) en vez de una URL — intercambia los valores de SUPABASE_URL y SUPABASE_KEY');
+  }
+  if (_env.SUPABASE_KEY && _env.SUPABASE_KEY.startsWith('https://')) {
+    _warnings.push('⚠ SUPABASE_KEY contiene una URL en vez de un token — intercambia los valores de SUPABASE_URL y SUPABASE_KEY');
+  }
+  if (_env.SUPABASE_KEY && !_env.SUPABASE_KEY.startsWith('eyJ')) {
+    _warnings.push('⚠ SUPABASE_KEY no parece un JWT válido (debe empezar con eyJ...) — verifica que sea el anon key de Supabase → Settings → API');
+  }
+  if (_env.SUPABASE_SERVICE_KEY && !_env.SUPABASE_SERVICE_KEY.startsWith('eyJ')) {
+    _warnings.push('⚠ SUPABASE_SERVICE_KEY no parece un JWT válido — verifica que sea el service_role key de Supabase → Settings → API');
+  }
+  if (_env.ANTHROPIC_API_KEY && !_env.ANTHROPIC_API_KEY.startsWith('sk-ant-')) {
+    _warnings.push('⚠ ANTHROPIC_API_KEY no empieza con sk-ant- — verifica que sea una API key válida de Anthropic');
+  }
+  if (_warnings.length) {
+    console.error('[ENV] ¡CONFIGURACIÓN INCORRECTA!\n' + _warnings.join('\n'));
+  }
 });
