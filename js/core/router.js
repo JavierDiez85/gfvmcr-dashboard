@@ -165,7 +165,12 @@ function _viewError(viewId, error) {
     const banner = document.createElement('div');
     banner.className = 'view-error-banner';
     banner.style.cssText = 'background:#fee2e2;border:1px solid #fca5a5;color:#b91c1c;padding:12px 16px;margin:12px;border-radius:8px;font-size:.82rem';
-    banner.innerHTML = '⚠️ Error cargando datos: <b>' + String(error.message || error).replace(/</g,'&lt;') + '</b><br><small>Revisa la consola del navegador (F12) para más detalles.</small>';
+    var msg = String(error.message || error).replace(/</g,'&lt;');
+    var isSbErr = msg.toLowerCase().includes('supabase') || msg.toLowerCase().includes('no disponible');
+    var extra = isSbErr
+      ? '<br><button onclick="location.reload()" style="margin-top:6px;padding:4px 12px;background:#b91c1c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.8rem">🔄 Recargar página</button>'
+      : '<br><small>Revisa la consola del navegador (F12) para más detalles.</small>';
+    banner.innerHTML = '⚠️ Error cargando datos: <b>' + msg + '</b>' + extra;
     el.insertBefore(banner, el.firstChild && el.firstChild.nextSibling ? el.firstChild.nextSibling : el.firstChild);
   }
 }

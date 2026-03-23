@@ -6,12 +6,15 @@
 // Sube Excel de transacciones + tarjetahabientes a Supabase
 // Usa: XLSX (SheetJS CDN), _sb (Supabase client), TAR (tarjetas-data.js)
 
-/** Ensure _sb is initialized before any Supabase call (re-declared for load order safety) */
+/** Ensure _sb is initialized before any Supabase call (retries once after delay) */
 async function _ensureSupabase() {
+  if (_sb) return;
+  if (typeof _loadConfig === 'function') await _loadConfig();
   if (!_sb) {
+    await new Promise(r => setTimeout(r, 1200));
     if (typeof _loadConfig === 'function') await _loadConfig();
-    if (!_sb) throw new Error('Supabase not available');
   }
+  if (!_sb) throw new Error('Supabase no disponible. Verifica que el servidor esté corriendo y recarga la página.');
 }
 
 const TAR_UPLOAD = {
