@@ -17,6 +17,19 @@ async function _ensureSupabase() {
   if (!_sb) throw new Error('Supabase no disponible. Verifica que el servidor esté corriendo y recarga la página.');
 }
 
+/** Helper: call a server upload endpoint with session auth (for DELETE/UPDATE operations) */
+async function _serverWriteTar(path, method, body) {
+  const sess = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_session')) || '';
+  const resp = await fetch(path, {
+    method: method || 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + btoa(sess) },
+    body: JSON.stringify(body)
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || `Server error ${resp.status} en ${path}`);
+  return data;
+}
+
 const TAR_UPLOAD = {
   BATCH_SIZE: 500,
   _progress: null,
@@ -164,45 +177,31 @@ const TAR_UPLOAD = {
 
       this._progress(30, `${txnRows.length.toLocaleString()} txns + ${cardRows.length} tarjetahabientes listos...`);
 
-      // ── Step 4: Strategy-based cleanup ──
-      if (strategy === 'replace_all') {
-        this._progress(32, 'Limpiando tablas...');
-        const { error: delTxn } = await _sb.from('tar_transactions').delete().neq('id', 0);
-        if (delTxn) throw new Error('Error limpiando transacciones: ' + delTxn.message);
-        const { error: delCard } = await _sb.from('tar_cardholders').delete().neq('id', 0);
-        if (delCard) throw new Error('Error limpiando tarjetahabientes: ' + delCard.message);
-      } else if (strategy === 'replace_period' && txnRows.length > 0) {
-        const dates = txnRows.map(r => r.fecha).filter(Boolean).sort();
-        const minDate = dates[0];
-        const maxDate = dates[dates.length - 1];
-        this._progress(32, `Limpiando período ${minDate} → ${maxDate}...`);
-        const { error: delErr } = await _sb.from('tar_transactions')
-          .delete()
-          .gte('fecha', minDate)
-          .lte('fecha', maxDate);
-        if (delErr) throw new Error('Error limpiando período: ' + delErr.message);
-        // For replace_period, also replace cardholders (always snapshot)
-        const { error: delCard } = await _sb.from('tar_cardholders').delete().neq('id', 0);
-        if (delCard) throw new Error('Error limpiando tarjetahabientes: ' + delCard.message);
+      // ── Step 4+5: Strategy-based cleanup + register batch (via server — usa service key para DELETE) ──
+      {
+        const txnDates = txnRows.map(r => r.fecha).filter(Boolean).sort();
+        const minDate = txnDates[0];
+        const maxDate = txnDates[txnDates.length - 1];
+        if (strategy === 'replace_all') this._progress(32, 'Limpiando tablas...');
+        else if (strategy === 'replace_period') this._progress(32, `Limpiando período ${minDate} → ${maxDate}...`);
+        else if (strategy === 'append_new' && cardRows.length > 0) this._progress(32, 'Actualizando tarjetahabientes...');
+        const prepResult = await _serverWriteTar('/api/upload/tarjetas/prepare', 'POST', {
+          strategy,
+          minDate: strategy === 'replace_period' ? minDate : undefined,
+          maxDate: strategy === 'replace_period' ? maxDate : undefined,
+          batchInfo: {
+            id: batchId,
+            filename: file.name,
+            txn_count: txnRows.length,
+            card_count: cardRows.length,
+            date_range_from: minDate || null,
+            date_range_to: maxDate || null,
+            strategy,
+            uploaded_by: (typeof localStorage !== 'undefined' && localStorage.getItem('sb_client_id')) || 'unknown'
+          }
+        });
+        if (!prepResult.success) throw new Error(prepResult.error || 'Error preparando upload en servidor');
       }
-      // 'append_new' → no cleanup for transactions, but still replace cardholders
-      if (strategy === 'append_new' && cardRows.length > 0) {
-        const { error: delCard } = await _sb.from('tar_cardholders').delete().neq('id', 0);
-        if (delCard) console.warn('[TAR Upload] Could not clear cardholders:', delCard.message);
-      }
-
-      // ── Step 5: Register upload batch ──
-      const txnDates = txnRows.map(r => r.fecha).filter(Boolean).sort();
-      await _sb.from('tar_upload_batches').insert({
-        id: batchId,
-        filename: file.name,
-        txn_count: txnRows.length,
-        card_count: cardRows.length,
-        date_range_from: txnDates[0] || null,
-        date_range_to: txnDates[txnDates.length - 1] || null,
-        strategy: strategy,
-        uploaded_by: localStorage.getItem('sb_client_id') || 'unknown'
-      });
 
       // ── Step 6: Batch insert transactions ──
       const totalBatches = Math.ceil(txnRows.length / this.BATCH_SIZE);
@@ -271,18 +270,9 @@ const TAR_UPLOAD = {
 
   async rollbackBatch(batchId) {
     try {
-      await _ensureSupabase();
-      const { error: e1 } = await _sb.from('tar_transactions')
-        .delete().eq('upload_batch', batchId);
-      if (e1) throw e1;
-
-      const { error: e2 } = await _sb.from('tar_cardholders')
-        .delete().eq('upload_batch', batchId);
-      if (e2) throw e2;
-
-      await _sb.from('tar_upload_batches')
-        .delete().eq('id', batchId);
-
+      // DELETE via server (uses service key)
+      const result = await _serverWriteTar(`/api/upload/tarjetas/batch/${encodeURIComponent(batchId)}`, 'DELETE', {});
+      if (!result.success) throw new Error(result.error || 'Rollback failed');
       TAR.invalidateAll();
       return { success: true };
     } catch (e) {

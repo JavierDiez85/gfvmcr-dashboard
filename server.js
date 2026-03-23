@@ -47,7 +47,10 @@ setupGlobalErrorHandlers();
 // SUPABASE REST — Zero-dependency helpers
 // ══════════════════════════════════════
 const SB_URL = process.env.SUPABASE_URL || '';
-const SB_KEY = process.env.SUPABASE_KEY || '';
+// SB_SERVICE_KEY: service role key — NUNCA se expone al browser. Úsalo en Railway env vars.
+// SB_ANON_KEY:    anon/public key  — se envía al browser via /api/config (solo lectura via RLS).
+const SB_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || '';
+const SB_ANON_KEY    = process.env.SUPABASE_KEY || '';
 
 /** Generic HTTPS request helper */
 function httpsRequest(options, body) {
@@ -68,10 +71,10 @@ function httpsRequest(options, body) {
   });
 }
 
-/** Resolve Supabase credentials (constants or live env fallback) */
+/** Resolve Supabase credentials — server always uses service key */
 function _sbCreds() {
   const url = SB_URL || process.env.SUPABASE_URL || '';
-  const key = SB_KEY || process.env.SUPABASE_KEY || '';
+  const key = SB_SERVICE_KEY || process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_KEY || '';
   validateSbConfig(url, key);
   return { url, key };
 }
@@ -550,14 +553,221 @@ http.createServer(async (req, res) => {
   // Preflight CORS
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
-  // ── API: Config (Supabase) — rate limit estricto (10/min), no expone sin auth ──
+  // ── API: Config — devuelve SOLO el anon key al browser (nunca el service key) ──
   if (req.method === 'GET' && req.url === '/api/config') {
     if (isRateLimited(rateLimitKey(ip, 'config'), 60)) { sendError(res, 429, 'Rate limit exceeded'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({
       supabaseUrl: process.env.SUPABASE_URL || '',
-      supabaseKey: process.env.SUPABASE_KEY || ''
+      supabaseKey: process.env.SUPABASE_KEY || ''   // anon key only
     }));
+    return;
+  }
+
+  // ══════════════════════════════════════
+  // UPLOAD ENDPOINTS — Operaciones peligrosas (DELETE/UPDATE) vía server con service key
+  // El browser NO puede hacer DELETE/UPDATE directamente — solo el server con service key
+  // ══════════════════════════════════════
+
+  // ── TPV: Preparar upload (delete previo si replace strategy) + crear batch ──
+  if (req.method === 'POST' && req.url === '/api/upload/tpv/prepare') {
+    if (!requireAuth(req, res)) return;
+    if (isRateLimited(rateLimitKey(ip, 'upload'), 30)) { sendError(res, 429, 'Rate limit exceeded'); return; }
+    try {
+      const body = await readBody(req, 10 * 1024 * 1024); // 10MB max
+      const { strategy, periodoKey, minDate, maxDate, batchInfo } = body;
+      const { url: sbUrl, key: sbKey } = _sbCreds();
+      const parsed = new URL(sbUrl);
+      const delHdrs = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Prefer': 'return=minimal' };
+
+      // 1. Delete según estrategia
+      if (strategy === 'replace_all' || strategy === 'replace') {
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_transactions?id=neq.0', method: 'DELETE', headers: delHdrs });
+      } else if ((strategy === 'replace_period' || strategy === 'replace-period') && (minDate || periodoKey)) {
+        const filter = minDate
+          ? `fecha=gte.${encodeURIComponent(minDate)}&fecha=lte.${encodeURIComponent(maxDate || minDate)}`
+          : `periodo=eq.${encodeURIComponent(periodoKey)}`;
+        await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_transactions?${filter}`, method: 'DELETE', headers: delHdrs });
+      }
+
+      // 2. Crear batch record
+      const batchBody = JSON.stringify({ ...batchInfo, created_at: new Date().toISOString() });
+      const batchResult = await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_upload_batches', method: 'POST',
+        headers: { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Content-Type': 'application/json',
+          'Prefer': 'return=representation', 'Content-Length': Buffer.byteLength(batchBody) } }, batchBody);
+
+      const batchId = Array.isArray(batchResult) ? batchResult[0]?.id : batchResult?.id;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, batchId }));
+    } catch (e) {
+      console.error('[Upload TPV prepare]', e.message);
+      sendError(res, 500, 'Error preparando upload: ' + e.message);
+    }
+    return;
+  }
+
+  // ── TPV: Config upload (agentes, clientes, tasas, relink) ──
+  if (req.method === 'POST' && req.url === '/api/upload/tpv/config') {
+    if (!requireAuth(req, res)) return;
+    if (isRateLimited(rateLimitKey(ip, 'upload'), 30)) { sendError(res, 429, 'Rate limit exceeded'); return; }
+    try {
+      const body = await readBody(req, 10 * 1024 * 1024);
+      const { agentes, clients, clientsToDelete, msiRates, batchInfo, replaceClients, relinkTransactions } = body;
+      const { url: sbUrl, key: sbKey } = _sbCreds();
+      const parsed = new URL(sbUrl);
+      const hdrs = (extra = {}) => ({ 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`,
+        'Content-Type': 'application/json', ...extra });
+
+      // Agentes upsert
+      if (agentes?.length) {
+        const b = JSON.stringify(agentes);
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_agentes', method: 'POST',
+          headers: { ...hdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), 'Content-Length': Buffer.byteLength(b) } }, b);
+      }
+
+      // Clients delete + upsert
+      if (clientsToDelete?.length) {
+        // Delete MSI rates first (FK dependency)
+        const bIds = JSON.stringify(clientsToDelete);
+        await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_client_msi_rates?cliente_id=in.(${clientsToDelete.join(',')})`, method: 'DELETE',
+          headers: hdrs({ 'Prefer': 'return=minimal' }) });
+        await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_transactions?cliente_id=in.(${clientsToDelete.join(',')})`, method: 'PATCH',
+          headers: { ...hdrs({ 'Prefer': 'return=minimal' }), 'Content-Length': Buffer.byteLength('{"cliente_id":null}') } }, '{"cliente_id":null}');
+        await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_clients?id=in.(${clientsToDelete.join(',')})`, method: 'DELETE',
+          headers: hdrs({ 'Prefer': 'return=minimal' }) });
+      }
+      if (clients?.length) {
+        const b = JSON.stringify(clients);
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_clients', method: 'POST',
+          headers: { ...hdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), 'Content-Length': Buffer.byteLength(b) } }, b);
+      }
+
+      // MSI rates: replace all
+      if (replaceClients && msiRates !== undefined) {
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_client_msi_rates?cliente_id=neq.0', method: 'DELETE',
+          headers: hdrs({ 'Prefer': 'return=minimal' }) });
+        if (msiRates?.length) {
+          const b = JSON.stringify(msiRates);
+          await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_client_msi_rates', method: 'POST',
+            headers: { ...hdrs({ 'Prefer': 'return=minimal' }), 'Content-Length': Buffer.byteLength(b) } }, b);
+        }
+      }
+
+      // Batch record para config
+      if (batchInfo) {
+        const b = JSON.stringify({ ...batchInfo, created_at: new Date().toISOString() });
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tpv_upload_batches', method: 'POST',
+          headers: { ...hdrs({ 'Prefer': 'return=minimal' }), 'Content-Length': Buffer.byteLength(b) } }, b);
+      }
+
+      // Re-link transactions → clients (nombre ilike match, longer names first)
+      if (relinkTransactions) {
+        const allClients = await httpsRequest({ hostname: parsed.hostname,
+          path: '/rest/v1/tpv_clients?select=id,nombre',
+          method: 'GET', headers: { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Accept': 'application/json' } });
+        if (Array.isArray(allClients)) {
+          const sorted = allClients.sort((a, b) => b.nombre.length - a.nombre.length);
+          for (const c of sorted) {
+            const upd = JSON.stringify({ cliente_id: c.id });
+            await httpsRequest({ hostname: parsed.hostname,
+              path: `/rest/v1/tpv_transactions?cliente=ilike.${encodeURIComponent(c.nombre + '%')}&cliente_id=is.null`,
+              method: 'PATCH',
+              headers: { ...hdrs({ 'Prefer': 'return=minimal' }), 'Content-Length': Buffer.byteLength(upd) } }, upd);
+          }
+        }
+      }
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      console.error('[Upload TPV config]', e.message);
+      sendError(res, 500, 'Error en config TPV: ' + e.message);
+    }
+    return;
+  }
+
+  // ── TPV: Rollback batch ──
+  if (req.method === 'DELETE' && req.url.startsWith('/api/upload/tpv/batch/')) {
+    if (!requireAuth(req, res)) return;
+    try {
+      const batchId = req.url.split('/').pop();
+      if (!batchId || isNaN(Number(batchId))) { sendError(res, 400, 'batchId inválido'); return; }
+      const { url: sbUrl, key: sbKey } = _sbCreds();
+      const parsed = new URL(sbUrl);
+      const hdrs = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Prefer': 'return=minimal' };
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_transactions?batch_id=eq.${batchId}`, method: 'DELETE', headers: hdrs });
+      const upd = JSON.stringify({ estado: 'rolled_back', updated_at: new Date().toISOString() });
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_upload_batches?id=eq.${batchId}`, method: 'PATCH',
+        headers: { ...hdrs, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(upd) } }, upd);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      console.error('[Upload TPV rollback]', e.message);
+      sendError(res, 500, 'Error en rollback: ' + e.message);
+    }
+    return;
+  }
+
+  // ── Tarjetas: Preparar upload (delete previo + crear batch) ──
+  if (req.method === 'POST' && req.url === '/api/upload/tarjetas/prepare') {
+    if (!requireAuth(req, res)) return;
+    if (isRateLimited(rateLimitKey(ip, 'upload'), 30)) { sendError(res, 429, 'Rate limit exceeded'); return; }
+    try {
+      const body = await readBody(req, 10 * 1024 * 1024);
+      const { strategy, periodoKey, minDate, maxDate, batchInfo } = body;
+      const { url: sbUrl, key: sbKey } = _sbCreds();
+      const parsed = new URL(sbUrl);
+      const hdrs = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Prefer': 'return=minimal' };
+
+      if (strategy === 'replace_all' || strategy === 'replace') {
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tar_transactions?id=neq.0', method: 'DELETE', headers: hdrs });
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tar_cardholders?id=neq.0', method: 'DELETE', headers: hdrs });
+      } else if ((strategy === 'replace_period' || strategy === 'replace-period') && (minDate || periodoKey)) {
+        const filter = minDate
+          ? `fecha=gte.${encodeURIComponent(minDate)}&fecha=lte.${encodeURIComponent(maxDate || minDate)}`
+          : `periodo=eq.${encodeURIComponent(periodoKey)}`;
+        await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_transactions?${filter}`, method: 'DELETE', headers: hdrs });
+        // replace_period also replaces all cardholders (snapshot)
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tar_cardholders?id=neq.0', method: 'DELETE', headers: hdrs });
+      } else if (strategy === 'append_new') {
+        // append_new: keep transactions, replace cardholders snapshot
+        await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tar_cardholders?id=neq.0', method: 'DELETE', headers: hdrs });
+      }
+
+      const batchBody = JSON.stringify({ ...batchInfo, created_at: new Date().toISOString() });
+      const batchResult = await httpsRequest({ hostname: parsed.hostname, path: '/rest/v1/tar_upload_batches', method: 'POST',
+        headers: { ...hdrs, 'Content-Type': 'application/json', 'Prefer': 'return=representation', 'Content-Length': Buffer.byteLength(batchBody) } }, batchBody);
+
+      const batchId = Array.isArray(batchResult) ? batchResult[0]?.id : batchResult?.id;
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, batchId }));
+    } catch (e) {
+      console.error('[Upload Tarjetas prepare]', e.message);
+      sendError(res, 500, 'Error preparando upload tarjetas: ' + e.message);
+    }
+    return;
+  }
+
+  // ── Tarjetas: Rollback batch ──
+  if (req.method === 'DELETE' && req.url.startsWith('/api/upload/tarjetas/batch/')) {
+    if (!requireAuth(req, res)) return;
+    try {
+      const batchId = req.url.split('/').pop();
+      if (!batchId || isNaN(Number(batchId))) { sendError(res, 400, 'batchId inválido'); return; }
+      const { url: sbUrl, key: sbKey } = _sbCreds();
+      const parsed = new URL(sbUrl);
+      const hdrs = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Prefer': 'return=minimal' };
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_transactions?batch_id=eq.${batchId}`, method: 'DELETE', headers: hdrs });
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_cardholders?batch_id=eq.${batchId}`, method: 'DELETE', headers: hdrs });
+      const upd = JSON.stringify({ estado: 'rolled_back', updated_at: new Date().toISOString() });
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_upload_batches?id=eq.${batchId}`, method: 'PATCH',
+        headers: { ...hdrs, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(upd) } }, upd);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true }));
+    } catch (e) {
+      console.error('[Upload Tarjetas rollback]', e.message);
+      sendError(res, 500, 'Error en rollback tarjetas: ' + e.message);
+    }
     return;
   }
 

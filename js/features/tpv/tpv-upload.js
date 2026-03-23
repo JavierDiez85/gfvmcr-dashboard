@@ -18,6 +18,19 @@ async function _ensureSupabase() {
   if (!_sb) throw new Error('Supabase no disponible. Verifica que el servidor esté corriendo y recarga la página.');
 }
 
+/** Helper: call a server upload endpoint with session auth (for DELETE/UPDATE operations) */
+async function _serverWrite(path, method, body) {
+  const sess = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_session')) || '';
+  const resp = await fetch(path, {
+    method: method || 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + btoa(sess) },
+    body: JSON.stringify(body)
+  });
+  const data = await resp.json().catch(() => ({}));
+  if (!resp.ok) throw new Error(data.error || `Server error ${resp.status} en ${path}`);
+  return data;
+}
+
 const TPV_UPLOAD = {
   BATCH_SIZE: 500,
   _progress: null,  // callback(pct, msg)
@@ -213,35 +226,29 @@ const TPV_UPLOAD = {
 
       this._progress(30, `${rows.length.toLocaleString()} filas listas. Subiendo a Supabase...`);
 
-      // Step 4: Strategy-based cleanup
-      if (strategy === 'replace_all') {
-        this._progress(32, 'Limpiando tabla de transacciones...');
-        const { error: delErr } = await _sb.from('tpv_transactions').delete().neq('id', 0);
-        if (delErr) throw new Error('Error limpiando tabla: ' + delErr.message);
-      } else if (strategy === 'replace_period' && rows.length > 0) {
-        const dates = rows.map(r => r.fecha).filter(Boolean).sort();
-        const minDate = dates[0];
-        const maxDate = dates[dates.length - 1];
-        this._progress(32, `Limpiando período ${minDate} → ${maxDate}...`);
-        const { error: delErr } = await _sb.from('tpv_transactions')
-          .delete()
-          .gte('fecha', minDate)
-          .lte('fecha', maxDate);
-        if (delErr) throw new Error('Error limpiando período: ' + delErr.message);
+      // Step 4+5: Strategy-based cleanup + register batch (via server — usa service key para DELETE)
+      {
+        const txnDates = rows.map(r => r.fecha).filter(Boolean).sort();
+        const minDate = txnDates[0];
+        const maxDate = txnDates[txnDates.length - 1];
+        if (strategy === 'replace_all') this._progress(32, 'Limpiando tabla de transacciones...');
+        else if (strategy === 'replace_period') this._progress(32, `Limpiando período ${minDate} → ${maxDate}...`);
+        const prepResult = await _serverWrite('/api/upload/tpv/prepare', 'POST', {
+          strategy,
+          minDate: strategy === 'replace_period' ? minDate : undefined,
+          maxDate: strategy === 'replace_period' ? maxDate : undefined,
+          batchInfo: {
+            id: batchId,
+            filename: file.name,
+            row_count: rows.length,
+            date_range_from: minDate || null,
+            date_range_to: maxDate || null,
+            strategy,
+            uploaded_by: (typeof localStorage !== 'undefined' && localStorage.getItem('sb_client_id')) || 'unknown'
+          }
+        });
+        if (!prepResult.success) throw new Error(prepResult.error || 'Error preparando upload en servidor');
       }
-      // 'append_new' → no cleanup, just insert (duplicates handled by excel_id if needed)
-
-      // Step 5: Register upload batch
-      const dates = rows.map(r => r.fecha).filter(Boolean).sort();
-      await _sb.from('tpv_upload_batches').insert({
-        id: batchId,
-        filename: file.name,
-        row_count: rows.length,
-        date_range_from: dates[0] || null,
-        date_range_to: dates[dates.length - 1] || null,
-        strategy: strategy,
-        uploaded_by: localStorage.getItem('sb_client_id') || 'unknown'
-      });
 
       // Step 6: Batch insert
       const totalBatches = Math.ceil(rows.length / this.BATCH_SIZE);
@@ -392,6 +399,8 @@ const TPV_UPLOAD = {
           rate_comisionista_td: parseFloat(r['Comisionista_TD']) || 0,
           rate_comisionista_amex: parseFloat(r['Comisionista_Amex']) || 0,
           rate_comisionista_ti: parseFloat(r['Comisionista_TI']) || 0,
+          // Agente: assign directly in upsert (agentSiglasMap populated above)
+          agente_id: agentSiglasMap[String(r['Agente'] || '').toUpperCase().trim()] || null,
         }));
 
         // Log parsed client summary
@@ -408,21 +417,8 @@ const TPV_UPLOAD = {
             .map(c => c.id);
           if (staleIds.length > 0) {
             this._progress(30, `Eliminando ${staleIds.length} clientes obsoletos...`);
-            // Delete their MSI rates first (FK)
-            for (let i = 0; i < staleIds.length; i += 100) {
-              const batch = staleIds.slice(i, i + 100);
-              await _sb.from('tpv_client_msi_rates').delete().in('cliente_id', batch);
-            }
-            // Delete stale clients
-            for (let i = 0; i < staleIds.length; i += 100) {
-              const batch = staleIds.slice(i, i + 100);
-              await _sb.from('tpv_clients').delete().in('id', batch);
-            }
-            // Null out cliente_id references in transactions
-            for (let i = 0; i < staleIds.length; i += 100) {
-              const batch = staleIds.slice(i, i + 100);
-              await _sb.from('tpv_transactions').update({ cliente_id: null }).in('cliente_id', batch);
-            }
+            // DELETE cascade via server (service key: MSI rates FK + clients + null transactions)
+            await _serverWrite('/api/upload/tpv/config', 'POST', { clientsToDelete: staleIds });
             console.log(`[Upload] Removed ${staleIds.length} stale clients`);
           }
         }
@@ -493,24 +489,12 @@ const TPV_UPLOAD = {
             }
           }
 
-          for (const r of clientRows) {
-            const nombre = String(r['Cliente_Norm'] || '').toUpperCase().trim();
-            const clienteId = clientIdMap[nombre];
-            if (!clienteId) continue;
-
-            // Agent assignment
-            if (hasAgente) {
-              const siglas = String(r['Agente'] || '').toUpperCase().trim();
-              const agenteId = agentSiglasMap[siglas] || null;
-              if (agenteId) {
-                await _sb.from('tpv_clients')
-                  .update({ agente_id: agenteId })
-                  .eq('id', clienteId);
-              }
-            }
-
-            // MSI rates by named columns
-            if (hasMSI) {
+          // Build MSI rates list (agent assignment now included in clients upsert above)
+          if (hasMSI) {
+            for (const r of clientRows) {
+              const nombre = String(r['Cliente_Norm'] || '').toUpperCase().trim();
+              const clienteId = clientIdMap[nombre];
+              if (!clienteId) continue;
               for (const { header, plazo, entity, card_type } of msiCols) {
                 const val = parseFloat(r[header]);
                 if (val && val > 0) {
@@ -520,24 +504,16 @@ const TPV_UPLOAD = {
             }
           }
 
-          // Clear ALL existing MSI rates before re-inserting (removes stale data)
-          this._progress(72, 'Limpiando tasas MSI anteriores...');
-          await _sb.from('tpv_client_msi_rates').delete().neq('cliente_id', 0);
-          console.log('[Upload] Cleared all existing MSI rates');
-
-          // Batch insert MSI rates (fresh)
-          if (msiRatesToInsert.length > 0) {
-            this._progress(75, `Subiendo ${msiRatesToInsert.length} tasas MSI...`);
-            for (let i = 0; i < msiRatesToInsert.length; i += 200) {
-              const batch = msiRatesToInsert.slice(i, i + 200);
-              const { error } = await _sb.from('tpv_client_msi_rates')
-                .insert(batch);
-              if (error) console.warn('[Upload] MSI rate batch error:', error.message);
-            }
-            this._progress(90, `✅ ${msiRatesToInsert.length} tasas MSI actualizadas`);
-          } else {
-            this._progress(90, '✅ Agentes asignados (sin tasas MSI en archivo)');
-          }
+          // Replace all MSI rates via server (DELETE + INSERT, uses service key)
+          this._progress(72, 'Actualizando tasas MSI...');
+          await _serverWrite('/api/upload/tpv/config', 'POST', {
+            replaceClients: true,
+            msiRates: msiRatesToInsert
+          });
+          console.log('[Upload] MSI rates replaced via server:', msiRatesToInsert.length);
+          this._progress(90, msiRatesToInsert.length > 0
+            ? `✅ ${msiRatesToInsert.length} tasas MSI actualizadas`
+            : '✅ Agentes asignados (sin tasas MSI en archivo)');
         }
       }
 
@@ -627,35 +603,23 @@ const TPV_UPLOAD = {
         }
       }
 
-      // ── Register config upload in history ──
+      // ── Register config batch + re-link transactions via server ──
       const cfgBatchId = crypto.randomUUID ? crypto.randomUUID() : 'cfg_' + Date.now();
       const clientCount = this._uploadStats ? this._uploadStats.totalParsed : 0;
-      await _sb.from('tpv_upload_batches').insert({
-        id: cfgBatchId,
-        filename: file.name,
-        row_count: clientCount,
-        date_range_from: null,
-        date_range_to: null,
-        strategy: 'config',
-        uploaded_by: localStorage.getItem('sb_client_id') || 'unknown'
-      }).then(() => console.log('[Upload] Config batch registered:', cfgBatchId))
-        .catch(e => console.warn('[Upload] Config batch insert failed:', e.message));
-
-      // ── STEP 4: Re-link transactions to clients ──
-      // Sort by name length DESC so longer names match first
-      // (prevents "QUESOS CHIAPAS" from stealing "QUESOS CHIAPAS 2" transactions)
-      this._progress(93, 'Actualizando enlaces cliente_id en transacciones...');
-      const { data: freshClients } = await _sb.from('tpv_clients').select('id, nombre');
-      if (freshClients) {
-        const sorted = [...freshClients].sort((a, b) => b.nombre.length - a.nombre.length);
-        for (const c of sorted) {
-          // Match with trailing wildcard to handle trailing whitespace in transaction data
-          await _sb.from('tpv_transactions')
-            .update({ cliente_id: c.id })
-            .ilike('cliente', c.nombre + '%')
-            .is('cliente_id', null);
-        }
-      }
+      this._progress(93, 'Registrando configuración y actualizando enlaces...');
+      await _serverWrite('/api/upload/tpv/config', 'POST', {
+        batchInfo: {
+          id: cfgBatchId,
+          filename: file.name,
+          row_count: clientCount,
+          date_range_from: null,
+          date_range_to: null,
+          strategy: 'config',
+          uploaded_by: (typeof localStorage !== 'undefined' && localStorage.getItem('sb_client_id')) || 'unknown'
+        },
+        relinkTransactions: true
+      }).then(() => console.log('[Upload] Config batch + relink done'))
+        .catch(e => console.warn('[Upload] Config batch/relink failed:', e.message));
 
       // Invalidate cache
       TPV.invalidateAll();
@@ -687,16 +651,9 @@ const TPV_UPLOAD = {
    */
   async rollbackBatch(batchId) {
     try {
-      await _ensureSupabase();
-      const { error } = await _sb.from('tpv_transactions')
-        .delete()
-        .eq('upload_batch', batchId);
-      if (error) throw error;
-
-      await _sb.from('tpv_upload_batches')
-        .delete()
-        .eq('id', batchId);
-
+      // DELETE via server (uses service key)
+      const result = await _serverWrite(`/api/upload/tpv/batch/${encodeURIComponent(batchId)}`, 'DELETE', {});
+      if (!result.success) throw new Error(result.error || 'Rollback failed');
       TPV.invalidateAll();
       return { success: true };
     } catch (e) {
