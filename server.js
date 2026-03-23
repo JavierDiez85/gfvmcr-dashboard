@@ -151,7 +151,16 @@ const TOOL_PERMS = {
   'get_treasury_and_banks': ['tes_flujo', 'tes_grupo', 'tes_individual'],
   'get_tickets':            ['tpv_general', 'tpv_pagos'],
   'get_cash_flows':         ['sal_ing', 'sal_gas', 'end_ing', 'dyn_ing', 'fg', 'nomina'],
-  'get_users':              null  // admin only
+  'get_users':              null,  // admin only
+  // New skills
+  'analyze_credit_risk':    ['cred_dash', 'cred_cobranza'],
+  'project_cash_flow':      ['tes_flujo', 'tes_grupo', 'resumen'],
+  'compare_periods':        ['tpv_dashboard', 'tpv_general', 'resumen'],
+  'get_alerts':             ['resumen', 'grupo', 'cred_dash', 'tpv_dashboard'],
+  'simulate_credit':        ['cred_dash', 'cred_carga'],
+  'search_client':          ['tpv_general', 'cred_dash', 'tarjetas_dash'],
+  'executive_summary':      ['resumen', 'grupo'],
+  'analyze_trends':         ['resumen', 'grupo', 'tpv_dashboard', 'cred_dash']
 };
 
 /** Check if a user can use a specific tool */
@@ -190,7 +199,15 @@ function _restrictedModules(user) {
     'get_treasury_and_banks': 'Tesorería y Bancos',
     'get_tickets':            'Tickets de Pago',
     'get_cash_flows':         'Flujos de Caja (Ingresos/Gastos)',
-    'get_users':              'Gestión de Usuarios'
+    'get_users':              'Gestión de Usuarios',
+    'analyze_credit_risk':    'Análisis de Riesgo Crediticio',
+    'project_cash_flow':      'Proyección de Flujo',
+    'compare_periods':        'Comparativo de Períodos',
+    'get_alerts':             'Alertas del Sistema',
+    'simulate_credit':        'Simulador de Créditos',
+    'search_client':          'Búsqueda de Clientes',
+    'executive_summary':      'Resumen Ejecutivo',
+    'analyze_trends':         'Análisis de Tendencias'
   };
   return Object.keys(TOOL_PERMS)
     .filter(t => !isToolAllowed(t, user))
@@ -300,6 +317,82 @@ const TOOLS = [
     name: 'get_users',
     description: 'Obtener lista de usuarios del sistema: nombres, roles y estado activo.',
     input_schema: { type: 'object', properties: {} }
+  },
+  // ── NEW SKILLS ──
+  {
+    name: 'analyze_credit_risk',
+    description: 'Análisis de riesgo crediticio del portafolio: concentración por cliente, índice de morosidad, reservas sugeridas, distribución de calificación de riesgo (A/B/C/D/E), exposición máxima por cliente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        company: { type: 'string', enum: ['endless', 'dynamo', 'both'], description: 'Empresa o ambas (default: both)' }
+      }
+    }
+  },
+  {
+    name: 'project_cash_flow',
+    description: 'Proyección de flujo de efectivo: estima ingresos futuros por comisiones TPV + intereses de créditos + flujos recurrentes para los próximos N meses.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        months: { type: 'number', description: 'Meses a proyectar (default: 3, max: 12)' }
+      }
+    }
+  },
+  {
+    name: 'compare_periods',
+    description: 'Comparativo entre dos períodos: compara KPIs de TPV, créditos y tarjetas entre período actual vs anterior. Muestra variaciones absolutas y porcentuales.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        period_type: { type: 'string', enum: ['month', 'quarter', 'year'], description: 'Tipo de período a comparar (default: month)' }
+      }
+    }
+  },
+  {
+    name: 'get_alerts',
+    description: 'Alertas proactivas del sistema: créditos próximos a vencer, terminales inactivas, pagos pendientes, concentración de riesgo, anomalías en flujo.',
+    input_schema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'simulate_credit',
+    description: 'Simular un nuevo crédito: calcula tabla de amortización, pago mensual, total de intereses, CAT estimado y ROI para el grupo.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        monto:  { type: 'number', description: 'Monto del crédito en MXN' },
+        tasa:   { type: 'number', description: 'Tasa de interés anual (%)' },
+        plazo:  { type: 'number', description: 'Plazo en meses' },
+        comision: { type: 'number', description: 'Comisión de apertura % (default: 0)' }
+      },
+      required: ['monto', 'tasa', 'plazo']
+    }
+  },
+  {
+    name: 'search_client',
+    description: 'Buscar un cliente por nombre en todas las entidades del grupo (TPV, créditos Endless, créditos Dynamo, tarjetas). Devuelve toda la información encontrada del cliente.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'Nombre o parte del nombre del cliente a buscar' }
+      },
+      required: ['query']
+    }
+  },
+  {
+    name: 'executive_summary',
+    description: 'Resumen ejecutivo completo del Grupo Financiero VMCR: consolida KPIs de todas las entidades (TPV, créditos, tarjetas, tesorería, P&L) en un solo reporte.',
+    input_schema: { type: 'object', properties: {} }
+  },
+  {
+    name: 'analyze_trends',
+    description: 'Análisis de tendencias: identifica patrones en datos históricos de TPV (cobros mensuales, crecimiento de clientes), créditos (colocación, morosidad) y flujos de efectivo.',
+    input_schema: {
+      type: 'object',
+      properties: {
+        area: { type: 'string', enum: ['tpv', 'credits', 'treasury', 'all'], description: 'Área a analizar (default: all)' }
+      }
+    }
   }
 ];
 
@@ -489,6 +582,450 @@ async function executeTool(name, input, user = {}) {
         }
         return data || [];
       }
+      // ── NEW SKILL EXECUTORS ──
+
+      case 'analyze_credit_risk': {
+        const companies = input.company === 'both' || !input.company
+          ? ['endless', 'dynamo'] : [input.company];
+        const results = {};
+        for (const co of companies) {
+          const key = co === 'dynamo' ? 'gf_cred_dyn' : 'gf_cred_end';
+          const label = co === 'dynamo' ? 'Dynamo Finance' : 'Endless Money';
+          const raw = await getAppData(key);
+          if (!raw || !Array.isArray(raw)) { results[label] = { sin_datos: true }; continue; }
+          const credits = _processCredits(raw).filter(c => c.estado === 'Activo' || c.estado === 'Vencido');
+          const totalCartera = credits.reduce((s,c) => s + (c.monto||0), 0);
+          const totalSaldo = credits.reduce((s,c) => s + (c.saldoActual||0), 0);
+          const totalVencido = credits.reduce((s,c) => s + (c.cobranza.montoVencido||0), 0);
+          const morosidad = totalSaldo > 0 ? +(totalVencido / totalSaldo * 100).toFixed(2) : 0;
+
+          // Concentración por cliente
+          const concentracion = credits.map(c => ({
+            cliente: c.cliente, saldo: c.saldoActual,
+            pctCartera: totalSaldo > 0 ? +(c.saldoActual / totalSaldo * 100).toFixed(1) : 0
+          })).sort((a,b) => b.saldo - a.saldo);
+
+          // Calificación de riesgo
+          const calificaciones = credits.map(c => {
+            const v = c.cobranza.vencidos;
+            const d = c.cobranza.maxDiasAtraso;
+            let calif = 'A'; // Al día
+            if (v >= 1 && d <= 30) calif = 'B';
+            else if (v >= 1 && d <= 60) calif = 'C';
+            else if (v >= 2 && d <= 90) calif = 'D';
+            else if (v >= 3 || d > 90) calif = 'E';
+            return { cliente: c.cliente, calificacion: calif, diasAtraso: d, periodosVencidos: v, saldo: c.saldoActual };
+          });
+          const dist = { A:0, B:0, C:0, D:0, E:0 };
+          calificaciones.forEach(c => dist[c.calificacion]++);
+
+          // Reservas sugeridas (% del saldo según calificación)
+          const pctReserva = { A: 0, B: 0.05, C: 0.15, D: 0.40, E: 1.0 };
+          const reservaSugerida = calificaciones.reduce((s,c) => s + c.saldo * (pctReserva[c.calificacion]||0), 0);
+
+          results[label] = {
+            totalCreditos: credits.length,
+            montoOriginalTotal: +totalCartera.toFixed(2),
+            saldoVigente: +totalSaldo.toFixed(2),
+            montoVencido: +totalVencido.toFixed(2),
+            indiceMorosidad: morosidad + '%',
+            concentracionTop5: concentracion.slice(0, 5),
+            exposicionMaxima: concentracion[0] || null,
+            distribucionRiesgo: dist,
+            detalleRiesgo: calificaciones.filter(c => c.calificacion !== 'A'),
+            reservaSugerida: +reservaSugerida.toFixed(2),
+            criteriosReserva: '(A=0%, B=5%, C=15%, D=40%, E=100% del saldo)'
+          };
+        }
+        return { fecha_analisis: new Date().toISOString().slice(0,10), ...results };
+      }
+
+      case 'project_cash_flow': {
+        const months = Math.min(Math.max(input.months || 3, 1), 12);
+        const today = new Date();
+        const projections = [];
+
+        // Credit income projection
+        let creditIncome = 0;
+        for (const key of ['gf_cred_end', 'gf_cred_dyn']) {
+          const raw = await getAppData(key);
+          if (!raw || !Array.isArray(raw)) continue;
+          const processed = _processCredits(raw).filter(c => c.estado === 'Activo');
+          processed.forEach(c => { creditIncome += c.pagoFijo || 0; });
+        }
+
+        // TPV commission projection (use last month average)
+        let tpvMonthlyAvg = 0;
+        try {
+          const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
+          const tpvData = await supabaseRpc('tpv_kpis', {
+            p_from: lastMonth.toISOString().slice(0,10),
+            p_to: lastMonthEnd.toISOString().slice(0,10)
+          });
+          if (Array.isArray(tpvData) && tpvData[0]) {
+            tpvMonthlyAvg = (tpvData[0].com_salem || 0) + (tpvData[0].com_convenia || 0);
+          }
+        } catch(e) { /* no TPV data */ }
+
+        // Cash flow data
+        const [fi, fg] = await Promise.all([getAppData('gf_fi'), getAppData('gf_fg')]);
+        let avgIngresos = 0, avgEgresos = 0;
+        if (Array.isArray(fi) && fi.length > 0) {
+          avgIngresos = fi.reduce((s,r) => s + (r.monto||0), 0) / Math.max(1, new Set(fi.map(r => (r.fecha||'').substring(0,7))).size);
+        }
+        if (Array.isArray(fg) && fg.length > 0) {
+          avgEgresos = fg.reduce((s,r) => s + (r.monto||0), 0) / Math.max(1, new Set(fg.map(r => (r.fecha||'').substring(0,7))).size);
+        }
+
+        for (let i = 1; i <= months; i++) {
+          const m = new Date(today.getFullYear(), today.getMonth() + i, 1);
+          projections.push({
+            mes: m.toISOString().slice(0,7),
+            ingresosCreditos: +creditIncome.toFixed(2),
+            ingresosTPV: +tpvMonthlyAvg.toFixed(2),
+            otrosIngresos: +avgIngresos.toFixed(2),
+            totalIngresos: +(creditIncome + tpvMonthlyAvg + avgIngresos).toFixed(2),
+            egresos: +avgEgresos.toFixed(2),
+            flujoNeto: +(creditIncome + tpvMonthlyAvg + avgIngresos - avgEgresos).toFixed(2)
+          });
+        }
+        return {
+          fecha_analisis: new Date().toISOString().slice(0,10),
+          nota: 'Proyección basada en promedios históricos y pagos esperados de créditos activos',
+          meses_proyectados: months,
+          proyeccion: projections
+        };
+      }
+
+      case 'compare_periods': {
+        const ptype = input.period_type || 'month';
+        const today = new Date();
+        let currFrom, currTo, prevFrom, prevTo;
+
+        if (ptype === 'month') {
+          currFrom = new Date(today.getFullYear(), today.getMonth(), 1);
+          currTo = today;
+          prevFrom = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+          prevTo = new Date(today.getFullYear(), today.getMonth(), 0);
+        } else if (ptype === 'quarter') {
+          const q = Math.floor(today.getMonth() / 3);
+          currFrom = new Date(today.getFullYear(), q * 3, 1);
+          currTo = today;
+          prevFrom = new Date(today.getFullYear(), (q - 1) * 3, 1);
+          prevTo = new Date(today.getFullYear(), q * 3, 0);
+        } else {
+          currFrom = new Date(today.getFullYear(), 0, 1);
+          currTo = today;
+          prevFrom = new Date(today.getFullYear() - 1, 0, 1);
+          prevTo = new Date(today.getFullYear() - 1, 11, 31);
+        }
+
+        const fmt = d => d.toISOString().slice(0,10);
+        const [currTPV, prevTPV] = await Promise.all([
+          supabaseRpc('tpv_kpis', { p_from: fmt(currFrom), p_to: fmt(currTo) }).catch(() => []),
+          supabaseRpc('tpv_kpis', { p_from: fmt(prevFrom), p_to: fmt(prevTo) }).catch(() => [])
+        ]);
+        const c = (Array.isArray(currTPV) && currTPV[0]) || {};
+        const p = (Array.isArray(prevTPV) && prevTPV[0]) || {};
+
+        const variation = (curr, prev) => {
+          if (!prev || prev === 0) return { actual: curr||0, anterior: prev||0, variacion: 'N/A' };
+          const pct = (((curr||0) - prev) / prev * 100).toFixed(1);
+          return { actual: curr||0, anterior: prev||0, variacion: pct + '%' };
+        };
+
+        return {
+          tipo_periodo: ptype,
+          periodo_actual: `${fmt(currFrom)} a ${fmt(currTo)}`,
+          periodo_anterior: `${fmt(prevFrom)} a ${fmt(prevTo)}`,
+          tpv: {
+            total_cobrado: variation(c.total_cobrado, p.total_cobrado),
+            num_transacciones: variation(c.num_transacciones, p.num_transacciones),
+            com_salem: variation(c.com_salem, p.com_salem),
+            num_clientes: variation(c.num_clientes, p.num_clientes)
+          }
+        };
+      }
+
+      case 'get_alerts': {
+        const alerts = [];
+        const today = new Date(); today.setHours(0,0,0,0);
+
+        // Credit alerts
+        for (const co of ['endless', 'dynamo']) {
+          const key = co === 'dynamo' ? 'gf_cred_dyn' : 'gf_cred_end';
+          const label = co === 'dynamo' ? 'Dynamo Finance' : 'Endless Money';
+          const raw = await getAppData(key);
+          if (!raw || !Array.isArray(raw)) continue;
+          const credits = _processCredits(raw);
+
+          credits.forEach(c => {
+            if (c.cobranza.vencidos > 0) {
+              alerts.push({
+                tipo: 'CRÉDITO_VENCIDO', prioridad: 'ALTA', empresa: label,
+                cliente: c.cliente, mensaje: `${c.cobranza.vencidos} periodo(s) vencido(s), $${c.cobranza.montoVencido.toLocaleString()} pendiente, ${c.cobranza.maxDiasAtraso} días de atraso`
+              });
+            }
+            if (c.proximoPago) {
+              const f = _credParseDate(c.proximoPago.fecha);
+              if (f) {
+                const dias = Math.floor((f - today) / 86400000);
+                if (dias >= 0 && dias <= 7) {
+                  alerts.push({
+                    tipo: 'PAGO_PRÓXIMO', prioridad: 'MEDIA', empresa: label,
+                    cliente: c.cliente, mensaje: `Pago de $${(c.proximoPago.monto||0).toLocaleString()} vence en ${dias} día(s) (${c.proximoPago.fecha})`
+                  });
+                }
+              }
+            }
+          });
+        }
+
+        // Terminal inactivity alerts
+        try {
+          const thirtyAgo = new Date(today.getTime() - 30*86400000);
+          const terminals = await supabaseRpc('tpv_terminal_status', {
+            p_from: thirtyAgo.toISOString().slice(0,10),
+            p_to: today.toISOString().slice(0,10)
+          });
+          if (Array.isArray(terminals)) {
+            terminals.forEach(t => {
+              if ((t.dias_sin_uso || 0) > 15) {
+                alerts.push({
+                  tipo: 'TERMINAL_INACTIVA', prioridad: 'BAJA', empresa: 'Salem',
+                  cliente: t.cliente, mensaje: `Terminal ${t.terminal_id} sin actividad hace ${t.dias_sin_uso} días`
+                });
+              }
+            });
+          }
+        } catch(e) { /* skip */ }
+
+        alerts.sort((a,b) => {
+          const p = { ALTA: 0, MEDIA: 1, BAJA: 2 };
+          return (p[a.prioridad]||3) - (p[b.prioridad]||3);
+        });
+        return { fecha: new Date().toISOString().slice(0,10), total_alertas: alerts.length, alertas: alerts };
+      }
+
+      case 'simulate_credit': {
+        const { monto, tasa, plazo, comision = 0 } = input;
+        if (!monto || !tasa || !plazo) return { error: 'Se requiere monto, tasa y plazo' };
+        const tasaMensual = tasa / 100 / 12;
+        const iva = 0.16;
+        // Pago fijo (French amortization)
+        const pagoBase = tasaMensual > 0
+          ? monto * tasaMensual / (1 - Math.pow(1 + tasaMensual, -plazo))
+          : monto / plazo;
+
+        const amort = [];
+        let saldo = monto;
+        let totalIntereses = 0, totalIVA = 0;
+        for (let i = 1; i <= plazo; i++) {
+          const interes = +(saldo * tasaMensual).toFixed(2);
+          const ivaInt = +(interes * iva).toFixed(2);
+          const capital = +(pagoBase - interes - ivaInt).toFixed(2);
+          saldo = +(saldo - capital).toFixed(2);
+          if (saldo < 0) saldo = 0;
+          totalIntereses += interes;
+          totalIVA += ivaInt;
+          amort.push({ periodo: i, pago: +pagoBase.toFixed(2), capital, interes, ivaInt, saldo });
+        }
+
+        const comMonto = monto * (comision / 100);
+        const totalPagos = pagoBase * plazo;
+        const cat = (((totalPagos + comMonto) / monto - 1) / (plazo / 12) * 100);
+        const ingresoGrupo = totalIntereses + totalIVA + comMonto;
+        const roi = ((ingresoGrupo - monto) / monto * 100);
+
+        return {
+          parametros: { monto, tasa_anual: tasa + '%', plazo_meses: plazo, comision_apertura: comision + '%' },
+          resultados: {
+            pago_mensual: +pagoBase.toFixed(2),
+            total_a_pagar: +totalPagos.toFixed(2),
+            total_intereses: +totalIntereses.toFixed(2),
+            total_iva_intereses: +totalIVA.toFixed(2),
+            comision_apertura: +comMonto.toFixed(2),
+            cat_estimado: +cat.toFixed(2) + '%',
+            ingreso_grupo: +ingresoGrupo.toFixed(2),
+            roi_grupo: +roi.toFixed(2) + '%'
+          },
+          tabla_amortizacion: amort.length <= 12 ? amort : { primeros_6: amort.slice(0,6), ultimos_3: amort.slice(-3), _nota: `${amort.length} periodos totales` }
+        };
+      }
+
+      case 'search_client': {
+        const q = (input.query || '').toLowerCase().trim();
+        if (!q) return { error: 'Se requiere un término de búsqueda' };
+        const results = { busqueda: input.query, encontrados: {} };
+
+        // Search in credits
+        for (const co of ['endless', 'dynamo']) {
+          const key = co === 'dynamo' ? 'gf_cred_dyn' : 'gf_cred_end';
+          const label = co === 'dynamo' ? 'Dynamo Finance' : 'Endless Money';
+          const raw = await getAppData(key);
+          if (!raw || !Array.isArray(raw)) continue;
+          const processed = _processCredits(raw);
+          const matches = processed.filter(c => (c.cliente||'').toLowerCase().includes(q));
+          if (matches.length > 0) results.encontrados[label + ' (Créditos)'] = matches;
+        }
+
+        // Search in TPV clients
+        try {
+          const tpvClients = await supabaseRpc('tpv_clients_by_volume', {});
+          if (Array.isArray(tpvClients)) {
+            const matches = tpvClients.filter(c => (c.cliente||c.nombre||'').toLowerCase().includes(q));
+            if (matches.length > 0) results.encontrados['Salem (TPV)'] = truncateResult(matches, 10);
+          }
+        } catch(e) { /* skip */ }
+
+        // Search in tarjetas
+        try {
+          const tarData = await supabaseRpc('tar_cardholders_summary', {});
+          if (Array.isArray(tarData)) {
+            const matches = tarData.filter(c => (c.tarjetahabiente||c.subcliente||'').toLowerCase().includes(q));
+            if (matches.length > 0) results.encontrados['Tarjetas'] = truncateResult(matches, 10);
+          }
+        } catch(e) { /* skip */ }
+
+        results.total_resultados = Object.values(results.encontrados).reduce((s,arr) => s + (Array.isArray(arr) ? arr.length : (arr.data||[]).length), 0);
+        return results;
+      }
+
+      case 'executive_summary': {
+        const [tpvKpis, tarKpis, plData, credEnd, credDyn, tesoreria] = await Promise.all([
+          supabaseRpc('tpv_kpis', {}).then(d => (Array.isArray(d) && d[0]) || {}).catch(() => ({})),
+          supabaseRpc('tar_dashboard_kpis').then(d => (Array.isArray(d) && d[0]) || {}).catch(() => ({})),
+          getAppData('gf4').catch(() => null),
+          getAppData('gf_cred_end').catch(() => null),
+          getAppData('gf_cred_dyn').catch(() => null),
+          getAppData('gf_tesoreria').catch(() => null)
+        ]);
+
+        const processPortfolio = (raw, label) => {
+          if (!raw || !Array.isArray(raw)) return { empresa: label, sin_datos: true };
+          const credits = _processCredits(raw);
+          const activos = credits.filter(c => c.estado === 'Activo' || c.estado === 'Vencido');
+          return {
+            empresa: label,
+            total_creditos: credits.length,
+            activos: activos.length,
+            saldo_total: +activos.reduce((s,c) => s + c.saldoActual, 0).toFixed(2),
+            monto_vencido: +activos.reduce((s,c) => s + c.cobranza.montoVencido, 0).toFixed(2),
+            creditos_con_atraso: activos.filter(c => c.cobranza.vencidos > 0).length
+          };
+        };
+
+        return {
+          fecha: new Date().toISOString().slice(0,10),
+          tpv_salem: {
+            total_cobrado: tpvKpis.total_cobrado || 0,
+            comision_salem: tpvKpis.com_salem || 0,
+            num_clientes: tpvKpis.num_clientes || 0,
+            num_transacciones: tpvKpis.num_transacciones || 0
+          },
+          tarjetas: {
+            total_transacciones: tarKpis.total_transacciones || 0,
+            monto_total: tarKpis.monto_total || 0,
+            tarjetas_activas: tarKpis.tarjetas_activas || 0,
+            tasa_rechazo: tarKpis.tasa_rechazo || 0
+          },
+          creditos: {
+            endless: processPortfolio(credEnd, 'Endless Money'),
+            dynamo: processPortfolio(credDyn, 'Dynamo Finance')
+          },
+          tesoreria_resumen: Array.isArray(tesoreria) ? {
+            total_movimientos: tesoreria.length,
+            ingresos: +tesoreria.filter(t => (t.tipo||'').toLowerCase() === 'ingreso').reduce((s,t) => s + (t.monto||0), 0).toFixed(2),
+            egresos: +tesoreria.filter(t => (t.tipo||'').toLowerCase() === 'egreso').reduce((s,t) => s + (t.monto||0), 0).toFixed(2)
+          } : { sin_datos: true },
+          pl_disponible: !!plData
+        };
+      }
+
+      case 'analyze_trends': {
+        const area = input.area || 'all';
+        const trends = {};
+        const today = new Date();
+
+        if (area === 'tpv' || area === 'all') {
+          // Monthly TPV for last 6 months
+          const monthlyTPV = [];
+          for (let i = 5; i >= 0; i--) {
+            const from = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const to = new Date(today.getFullYear(), today.getMonth() - i + 1, 0);
+            try {
+              const d = await supabaseRpc('tpv_kpis', { p_from: from.toISOString().slice(0,10), p_to: to.toISOString().slice(0,10) });
+              const kpi = (Array.isArray(d) && d[0]) || {};
+              monthlyTPV.push({
+                mes: from.toISOString().slice(0,7),
+                cobrado: kpi.total_cobrado || 0,
+                comision_salem: kpi.com_salem || 0,
+                transacciones: kpi.num_transacciones || 0,
+                clientes: kpi.num_clientes || 0
+              });
+            } catch(e) { monthlyTPV.push({ mes: from.toISOString().slice(0,7), sin_datos: true }); }
+          }
+          // Calculate growth rates
+          for (let i = 1; i < monthlyTPV.length; i++) {
+            const prev = monthlyTPV[i-1].cobrado;
+            const curr = monthlyTPV[i].cobrado;
+            monthlyTPV[i].crecimiento = prev > 0 ? +((curr - prev) / prev * 100).toFixed(1) + '%' : 'N/A';
+          }
+          trends.tpv = { ultimos_6_meses: monthlyTPV };
+        }
+
+        if (area === 'credits' || area === 'all') {
+          // Credit portfolio status
+          const portfolioStatus = {};
+          for (const co of ['endless', 'dynamo']) {
+            const key = co === 'dynamo' ? 'gf_cred_dyn' : 'gf_cred_end';
+            const label = co === 'dynamo' ? 'Dynamo Finance' : 'Endless Money';
+            const raw = await getAppData(key);
+            if (!raw || !Array.isArray(raw)) continue;
+            const credits = _processCredits(raw);
+            const activos = credits.filter(c => c.estado === 'Activo' || c.estado === 'Vencido');
+            const totalColocado = credits.reduce((s,c) => s + (c.monto||0), 0);
+            const saldoActual = activos.reduce((s,c) => s + c.saldoActual, 0);
+            const capitalRecuperado = totalColocado - saldoActual;
+            portfolioStatus[label] = {
+              total_colocado: +totalColocado.toFixed(2),
+              saldo_vigente: +saldoActual.toFixed(2),
+              capital_recuperado: +capitalRecuperado.toFixed(2),
+              pct_recuperado: totalColocado > 0 ? +(capitalRecuperado/totalColocado*100).toFixed(1)+'%' : '0%',
+              morosidad: activos.filter(c => c.cobranza.vencidos > 0).length + ' de ' + activos.length + ' créditos'
+            };
+          }
+          trends.creditos = portfolioStatus;
+        }
+
+        if (area === 'treasury' || area === 'all') {
+          const [fi, fg] = await Promise.all([getAppData('gf_fi'), getAppData('gf_fg')]);
+          if (Array.isArray(fi) || Array.isArray(fg)) {
+            const monthlyFlow = {};
+            (fi||[]).forEach(r => {
+              const m = (r.fecha||'').substring(0,7);
+              if (!m) return;
+              if (!monthlyFlow[m]) monthlyFlow[m] = { ingresos: 0, egresos: 0 };
+              monthlyFlow[m].ingresos += (r.monto||0);
+            });
+            (fg||[]).forEach(r => {
+              const m = (r.fecha||'').substring(0,7);
+              if (!m) return;
+              if (!monthlyFlow[m]) monthlyFlow[m] = { ingresos: 0, egresos: 0 };
+              monthlyFlow[m].egresos += (r.monto||0);
+            });
+            const sorted = Object.entries(monthlyFlow).sort((a,b) => a[0].localeCompare(b[0])).slice(-6);
+            trends.flujo_efectivo = sorted.map(([mes, d]) => ({
+              mes, ingresos: +d.ingresos.toFixed(2), egresos: +d.egresos.toFixed(2),
+              neto: +(d.ingresos - d.egresos).toFixed(2)
+            }));
+          }
+        }
+
+        return { fecha_analisis: new Date().toISOString().slice(0,10), area_analizada: area, tendencias: trends };
+      }
+
       default:
         return { error: 'Tool no reconocida: ' + name };
     }
@@ -516,6 +1053,17 @@ const BASE_SYSTEM_PROMPT = [
   '• Al mostrar P&L: calcula margen %, variación mensual, identifica la entidad más/menos rentable.',
   '• Al mostrar tesorería: señala saldo neto, flujo positivo/negativo, alertas de liquidez.',
   '• SIEMPRE termina con 1-2 observaciones clave o acciones recomendadas.',
+  '',
+  'SKILLS AVANZADOS DISPONIBLES:',
+  '• analyze_credit_risk: Usa cuando pregunten sobre riesgo, morosidad, concentración o reservas de cartera.',
+  '• project_cash_flow: Usa para proyecciones de flujo de efectivo futuro.',
+  '• compare_periods: Usa para comparativos mes vs mes, trimestre vs trimestre, o año vs año.',
+  '• get_alerts: Usa al inicio de sesión o cuando pregunten "qué hay pendiente", "alertas", "novedades".',
+  '• simulate_credit: Usa cuando pidan simular, calcular o cotizar un crédito nuevo.',
+  '• search_client: Usa para buscar un cliente específico en todas las entidades del grupo.',
+  '• executive_summary: Usa cuando pidan "resumen general", "cómo va el grupo", "reporte ejecutivo".',
+  '• analyze_trends: Usa para identificar patrones, tendencias, comparar evolución histórica.',
+  '• Puedes combinar múltiples skills en una sola respuesta para dar análisis más completos.',
   '',
   'FORMATO DE RESPUESTA:',
   '• Cifras exactas con formato $X,XXX MXN (usa K para miles, M para millones en resúmenes).',
