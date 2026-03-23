@@ -469,10 +469,25 @@ function _processCredits(credits) {
       else { pendiente++; montoPendiente += (r.pago||0); }
     });
 
-    // Saldo actual = saldo del último periodo pagado
+    // Saldo actual = saldo del último periodo con pago (PAGADO o PARCIAL)
     let saldoActual = c.monto || 0;
-    for (let i = rows.length - 1; i >= 0; i--) {
-      if (_credPeriodStatus(c, rows[i]) === 'PAGADO') { saldoActual = rows[i].saldo || 0; break; }
+    let lastWithPayment = -1;
+    for (let i = 0; i < rows.length; i++) {
+      const st = _credPeriodStatus(c, rows[i]);
+      if (st === 'PAGADO' || st === 'PARCIAL') lastWithPayment = i;
+    }
+    if (lastWithPayment >= 0) {
+      const lrow = rows[lastWithPayment];
+      const lst = _credPeriodStatus(c, lrow);
+      if (lst === 'PAGADO') {
+        saldoActual = lrow.saldo || 0;
+      } else {
+        // PARCIAL: calcular saldo real descontando abono a capital
+        const totalPag = pagos.filter(p => p.periodo === lrow.periodo).reduce((s,p) => s + (p.monto||0), 0);
+        const abonoCapital = Math.max(0, totalPag - (lrow.int||0) - (lrow.ivaInt||0));
+        const saldoAnterior = lastWithPayment > 0 ? (rows[lastWithPayment-1].saldo||0) : (c.monto||0);
+        saldoActual = +(saldoAnterior - abonoCapital).toFixed(2);
+      }
     }
 
     // Próximo pago

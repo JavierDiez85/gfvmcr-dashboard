@@ -224,7 +224,8 @@
 
     if(!c.pagos) c.pagos = [];
     const totalYaPagado = c.pagos.filter(p=>p.periodo===periodo).reduce((s,p)=>s+(p.monto||0),0);
-    const isParcial = totalYaPagado > 0 && totalYaPagado < (amortRow.pago||0) - 0.01;
+    const amortPago = (c.amort && c.amort.find(r=>r.periodo===periodo)) ? c.amort.find(r=>r.periodo===periodo).pago||0 : 0;
+    const isParcial = totalYaPagado > 0 && totalYaPagado < amortPago - 0.01;
 
     if(isParcial){
       // Complemento: sumar al pago existente y consolidar en un solo registro

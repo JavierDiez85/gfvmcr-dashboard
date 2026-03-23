@@ -11,7 +11,7 @@
     if(!c.monto||!c.tasa) return 0;
     // If amortization table exists, use first period interest
     if(c.amort && c.amort.length>1) return c.amort[1].int||0;
-    return c.monto * (c.tasa/100) / (c.plazo<=24?12:c.plazo<=60?12:1);
+    return c.monto * (c.tasa/100) / 12;
   }
   function credComApertura(c){ return c.monto*(c.com||0)/100; }
   function credIngAnual(c){
@@ -21,14 +21,24 @@
     return credIntMes(c)*12 + credComApertura(c);
   }
   function credSaldoActual(c){
-    // Return current outstanding capital based on last fully-paid period
+    // Saldo = saldo del último periodo con pago (PAGADO o PARCIAL), o monto original
     if(!c.amort || c.amort.length<=1) return c.monto||0;
-    let lastPaid = 0;
+    let lastWithPayment = 0;
     for(let i=1; i<c.amort.length; i++){
       const st = credPeriodStatus(c, c.amort[i]);
-      if(st === 'PAGADO') lastPaid = i;
+      if(st === 'PAGADO' || st === 'PARCIAL') lastWithPayment = i;
     }
-    return c.amort[lastPaid].saldo||0;
+    if(lastWithPayment === 0) return c.amort[0].saldo || c.monto || 0;
+    const row = c.amort[lastWithPayment];
+    const st = credPeriodStatus(c, row);
+    if(st === 'PAGADO') return row.saldo || 0;
+    // PARCIAL: saldo del periodo anterior menos lo que sí se abonó a capital
+    const totalPag = credTotalPagadoPeriodo(c, row.periodo);
+    const intPeriodo = row.int || 0;
+    const ivaPeriodo = row.ivaInt || 0;
+    const abonoCapital = Math.max(0, totalPag - intPeriodo - ivaPeriodo);
+    const saldoAnterior = lastWithPayment > 1 ? (c.amort[lastWithPayment-1].saldo||0) : (c.monto||0);
+    return +(saldoAnterior - abonoCapital).toFixed(2);
   }
   function credPagoFijo(c){
     if(c.amort && c.amort.length>1) return c.amort[1].pago||0;
