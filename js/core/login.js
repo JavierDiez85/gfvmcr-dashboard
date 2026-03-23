@@ -200,43 +200,71 @@ async function doLogin(){
     errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
   }
 
-  // Verificar contraseña: PBKDF2 si tiene salt, legacy SHA-256 si no
-  let passwordOk = false;
-  if (candidate.salt) {
-    const hash = await hashPasswordPBKDF2(password, candidate.salt);
-    passwordOk = (hash === candidate.passwordHash);
+  // ── Server-side login con JWT firmado ──
+  // 1. Obtener salt del usuario
+  let userSalt = null;
+  try {
+    const saltResp = await fetch('/api/login/salt', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const saltData = await saltResp.json();
+    userSalt = saltData.salt;
+  } catch(e) { console.warn('[login] No se pudo obtener salt, intentando local'); }
+
+  // 2. Hashear contraseña client-side
+  let passwordHash;
+  if (userSalt) {
+    passwordHash = await hashPasswordPBKDF2(password, userSalt);
   } else {
-    const legacyHash = await hashPasswordLegacy(password);
-    passwordOk = (legacyHash === candidate.passwordHash);
+    passwordHash = await hashPasswordLegacy(password);
+  }
 
-    // Migración lazy: re-hashear con PBKDF2 + salt
-    if (passwordOk) {
-      // Migración lazy a PBKDF2
-      const newSalt = generateSalt();
-      const newHash = await hashPasswordPBKDF2(password, newSalt);
-      candidate.salt = newSalt;
-      candidate.passwordHash = newHash;
-      // Persistir la migración
-      try {
-        if (typeof DB !== 'undefined' && DB.set) {
-          await DB.set('gf_usuarios', usuarios);
-        } else {
-          localStorage.setItem('gf_usuarios', JSON.stringify(usuarios));
-        }
-      } catch (e) { console.warn('[login] No se pudo persistir migración PBKDF2:', e); }
+  // 3. Enviar hash al server para validación + JWT
+  let loginResult = null;
+  try {
+    const loginResp = await fetch('/api/login', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, passwordHash, salt: userSalt })
+    });
+    if (loginResp.ok) {
+      loginResult = await loginResp.json();
+    } else {
+      // Fallback: si el servidor no responde, validar localmente
+      const errData = await loginResp.json().catch(() => ({}));
+      if (loginResp.status === 401) {
+        _recordAttempt(email);
+        errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
+      }
     }
-  }
+  } catch(e) { console.warn('[login] Server login falló, usando validación local'); }
 
-  if (!passwordOk) {
-    _recordAttempt(email);
-    errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
+  // 4. Si server login funcionó, usar JWT
+  if (loginResult && loginResult.token) {
+    _clearAttempts(email);
+    const user = loginResult.user;
+    CURRENT_USER = { ...user, lastActivity: Date.now() };
+    sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
+    sessionStorage.setItem('gf_token', loginResult.token);
+  } else {
+    // Fallback local (para desarrollo sin server o si server no tiene datos)
+    let passwordOk = false;
+    if (candidate.salt) {
+      const hash = await hashPasswordPBKDF2(password, candidate.salt);
+      passwordOk = (hash === candidate.passwordHash);
+    } else {
+      const legacyHash = await hashPasswordLegacy(password);
+      passwordOk = (legacyHash === candidate.passwordHash);
+    }
+    if (!passwordOk) {
+      _recordAttempt(email);
+      errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
+    }
+    _clearAttempts(email);
+    const user = candidate;
+    CURRENT_USER = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'viewer', perms: user.perms || {}, lastActivity: Date.now() };
+    sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
   }
-  _clearAttempts(email);
-  const user = candidate;
-
-  // Guardar sesión (sin passwordHash) + timestamp de actividad
-  CURRENT_USER={id:user.id,nombre:user.nombre,email:user.email,rol:user.rol||'viewer',perms:user.perms||{},lastActivity:Date.now()};
-  sessionStorage.setItem('gf_session',JSON.stringify(CURRENT_USER));
 
   // Ocultar login, iniciar app
   document.getElementById('login-overlay').style.display='none';
@@ -250,6 +278,7 @@ async function doLogin(){
 function doLogout(){
   CURRENT_USER=null;
   sessionStorage.removeItem('gf_session');
+  sessionStorage.removeItem('gf_token');
   location.reload();
 }
 

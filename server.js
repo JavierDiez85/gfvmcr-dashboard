@@ -6,7 +6,7 @@ const {
   SECURITY_HEADERS, ALLOWED_DIRS,
   isBlockedPath, getClientIP, isRateLimited, startCleanup,
   checkCors, readBody, sendError, validateSbConfig,
-  requireAuth, setupGlobalErrorHandlers, rateLimitKey
+  requireAuth, signToken, verifyToken, setupGlobalErrorHandlers, rateLimitKey
 } = require('./security');
 
 // Modules
@@ -77,6 +77,70 @@ http.createServer(async (req, res) => {
     if (isRateLimited(rateLimitKey(ip, 'config'), 60)) { sendError(res, 429, 'Rate limit exceeded'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
     res.end(JSON.stringify({ supabaseUrl: process.env.SUPABASE_URL || '', supabaseKey: process.env.SUPABASE_KEY || '' }));
+    return;
+  }
+
+  // ── API: Login — valida credenciales server-side y devuelve JWT firmado ──
+  if (req.method === 'POST' && req.url === '/api/login') {
+    if (isRateLimited(rateLimitKey(ip, 'login'), 10)) { sendError(res, 429, 'Demasiados intentos. Espera un momento.'); return; }
+    try {
+      const body = await readBody(req);
+      const { email, passwordHash, salt } = body;
+      if (!email || !passwordHash) { sendError(res, 400, 'Email y hash requeridos'); return; }
+
+      // Fetch users from Supabase
+      const { getAppData } = require('./lib/supabase-helpers');
+      let usuarios = [];
+      try { usuarios = await getAppData('gf_usuarios') || []; } catch(e) {}
+      if (!Array.isArray(usuarios) || !usuarios.length) { sendError(res, 503, 'No se pudieron cargar usuarios'); return; }
+
+      const user = usuarios.find(u => u.email && u.email.toLowerCase() === email.toLowerCase() && u.activo !== false);
+      if (!user) { sendError(res, 401, 'Credenciales inválidas'); return; }
+
+      // Verify hash matches
+      if (user.salt) {
+        if (passwordHash !== user.passwordHash) { sendError(res, 401, 'Credenciales inválidas'); return; }
+      } else {
+        if (passwordHash !== user.passwordHash) { sendError(res, 401, 'Credenciales inválidas'); return; }
+      }
+
+      // Sign JWT
+      const token = signToken({
+        id: user.id, nombre: user.nombre, email: user.email,
+        rol: user.rol || 'viewer', perms: user.perms || {}
+      });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        token,
+        user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'viewer', perms: user.perms || {} },
+        // Return salt for client-side hashing on next login
+        salt: user.salt || null
+      }));
+    } catch (e) {
+      console.error('[Login]', e.message);
+      sendError(res, 500, 'Error en login');
+    }
+    return;
+  }
+
+  // ── API: Get user salt (for client-side hashing before login) ──
+  if (req.method === 'POST' && req.url === '/api/login/salt') {
+    if (isRateLimited(rateLimitKey(ip, 'login'), 15)) { sendError(res, 429, 'Rate limit'); return; }
+    try {
+      const body = await readBody(req);
+      const { email } = body;
+      if (!email) { sendError(res, 400, 'Email requerido'); return; }
+      const { getAppData } = require('./lib/supabase-helpers');
+      let usuarios = [];
+      try { usuarios = await getAppData('gf_usuarios') || []; } catch(e) {}
+      const user = (Array.isArray(usuarios) ? usuarios : []).find(u => u.email && u.email.toLowerCase() === email.toLowerCase() && u.activo !== false);
+      // Always return 200 to prevent user enumeration
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ salt: user?.salt || null }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ salt: null }));
+    }
     return;
   }
 
@@ -277,11 +341,8 @@ http.createServer(async (req, res) => {
       const body = await readBody(req);
       const messages = (body.messages || []).map(m => ({ role: m.role, content: m.content }));
       const context = body.context || '';
-      let chatUser = {};
-      try {
-        const decoded = Buffer.from(req.headers.authorization.slice(7), 'base64').toString('utf8');
-        chatUser = JSON.parse(decoded);
-      } catch (e) { chatUser = {}; }
+      // Use user from requireAuth (supports JWT + legacy Base64)
+      const chatUser = req._user || {};
       const response = await handleChat(API_KEY, messages, context, chatUser);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(response));

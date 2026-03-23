@@ -162,21 +162,72 @@ function validateSbConfig(url, key) {
   if (!url || !key) throw new Error('Supabase not configured');
 }
 
-/** Auth middleware — valida que la petición API lleve sesión de usuario */
+// ── JWT helpers (HMAC-SHA256, zero-dependency) ──
+const crypto = require('crypto');
+
+function _jwtSecret() {
+  return process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_KEY || 'gf-default-secret-change-me';
+}
+
+function _b64url(buf) {
+  return (typeof buf === 'string' ? Buffer.from(buf) : buf)
+    .toString('base64').replace(/=/g, '').replace(/\+/g, '-').replace(/\//g, '_');
+}
+
+function _b64urlDecode(str) {
+  str = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (str.length % 4) str += '=';
+  return Buffer.from(str, 'base64').toString('utf8');
+}
+
+/** Sign a JWT with HMAC-SHA256 — expires in 24h */
+function signToken(payload) {
+  const header = _b64url(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+  const now = Math.floor(Date.now() / 1000);
+  const body = _b64url(JSON.stringify({ ...payload, iat: now, exp: now + 86400 }));
+  const sig = _b64url(crypto.createHmac('sha256', _jwtSecret()).update(header + '.' + body).digest());
+  return header + '.' + body + '.' + sig;
+}
+
+/** Verify a JWT — returns payload or null */
+function verifyToken(token) {
+  if (!token || typeof token !== 'string') return null;
+  const parts = token.split('.');
+  if (parts.length !== 3) return null;
+  try {
+    const sig = _b64url(crypto.createHmac('sha256', _jwtSecret()).update(parts[0] + '.' + parts[1]).digest());
+    if (sig !== parts[2]) return null; // invalid signature
+    const payload = JSON.parse(_b64urlDecode(parts[1]));
+    if (payload.exp && payload.exp < Math.floor(Date.now() / 1000)) return null; // expired
+    return payload;
+  } catch { return null; }
+}
+
+/** Auth middleware — accepts both signed JWT and legacy Base64 tokens */
 function requireAuth(req, res) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ') || auth.length < 30) {
     sendError(res, 401, 'No autorizado');
     return false;
   }
-  // Decodificar base64 y verificar que contiene sesión con user ID
+  const token = auth.slice(7);
+
+  // Try signed JWT first
+  const jwt = verifyToken(token);
+  if (jwt && jwt.id && jwt.nombre) {
+    req._user = jwt;
+    return true;
+  }
+
+  // Fallback: legacy Base64 (for backwards compatibility during migration)
   try {
-    const decoded = Buffer.from(auth.slice(7), 'base64').toString('utf8');
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
     const session = JSON.parse(decoded);
     if (!session.id || !session.nombre) {
       sendError(res, 401, 'Sesión inválida');
       return false;
     }
+    req._user = session;
     return true;
   } catch {
     sendError(res, 401, 'Token malformado');
@@ -216,6 +267,8 @@ module.exports = {
   extractDateParams,
   validateSbConfig,
   requireAuth,
+  signToken,
+  verifyToken,
   setupGlobalErrorHandlers,
   rateLimitKey
 };

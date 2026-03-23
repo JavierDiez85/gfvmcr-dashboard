@@ -191,8 +191,11 @@ function _chatInjectDOM() {
   searchWrap.id = 'ai-search-wrap';
   searchWrap.innerHTML = `
     <div id="ai-search-icon">${_IC_SPARKLE}</div>
-    <input id="ai-search-bar" type="text" placeholder="Pregunta al asistente IA..." autocomplete="off" />
+    <input id="ai-search-bar" type="text" placeholder="Buscar módulo o preguntar a la IA..." autocomplete="off" />
     <span id="ai-search-kbd">Enter</span>
+    <div id="ai-search-dropdown" style="display:none;position:absolute;top:100%;left:0;right:0;margin-top:4px;
+      background:var(--white);border:1px solid var(--border);border-radius:10px;
+      box-shadow:0 8px 24px rgba(0,0,0,.12);max-height:300px;overflow-y:auto;z-index:9002;"></div>
   `;
 
   const tb = document.getElementById('tb');
@@ -201,23 +204,99 @@ function _chatInjectDOM() {
     tb.insertBefore(searchWrap, tbR);
   }
 
+  // ── Build module search index from NAV_STRUCTURE ──
+  const _searchIndex = [];
+  if (typeof NAV_STRUCTURE !== 'undefined') {
+    NAV_STRUCTURE.forEach(co => {
+      (co.sections||[]).forEach(sec => {
+        (sec.views||[]).forEach(v => {
+          _searchIndex.push({ id: v.id, label: v.label, section: sec.label, company: co.label, co: co.id });
+        });
+      });
+    });
+  }
+
+  let _searchSel = -1; // selected index in dropdown
+
   // Search bar events
   const searchBar = document.getElementById('ai-search-bar');
-  if (searchBar) {
+  const dropdown = document.getElementById('ai-search-dropdown');
+  if (searchBar && dropdown) {
+    searchBar.addEventListener('input', () => {
+      const q = searchBar.value.trim().toLowerCase();
+      if (!q || q.length < 2) { dropdown.style.display = 'none'; _searchSel = -1; return; }
+
+      // Filter modules
+      const matches = _searchIndex.filter(m =>
+        m.label.toLowerCase().includes(q) || m.section.toLowerCase().includes(q) || m.company.toLowerCase().includes(q)
+      ).slice(0, 6);
+
+      if (!matches.length) { dropdown.style.display = 'none'; _searchSel = -1; return; }
+
+      _searchSel = -1;
+      dropdown.innerHTML = matches.map((m, i) =>
+        `<div class="ai-sr" data-idx="${i}" data-view="${m.id}" data-co="${m.co}" style="padding:8px 14px;cursor:pointer;
+          display:flex;justify-content:space-between;align-items:center;font-size:.78rem;
+          border-bottom:1px solid var(--border);transition:background .1s">
+          <span><b style="color:var(--text)">${_chatEsc(m.label)}</b>
+            <span style="color:var(--muted);margin-left:6px">${_chatEsc(m.section)}</span></span>
+          <span style="font-size:.65rem;color:var(--muted);background:var(--bg);padding:2px 6px;border-radius:4px">${_chatEsc(m.company)}</span>
+        </div>`
+      ).join('') +
+        `<div class="ai-sr-ai" style="padding:8px 14px;cursor:pointer;font-size:.78rem;color:var(--blue);
+          display:flex;align-items:center;gap:6px;background:rgba(0,115,234,.03)">
+          ${_IC_SPARKLE.replace('width:18px;height:18px', 'width:14px;height:14px')}
+          <span>Preguntar a la IA: "<b>${_chatEsc(searchBar.value.trim())}</b>"</span>
+        </div>`;
+      dropdown.style.display = 'block';
+
+      // Click handlers
+      dropdown.querySelectorAll('.ai-sr').forEach(el => {
+        el.onmouseenter = () => el.style.background = 'var(--bg)';
+        el.onmouseleave = () => el.style.background = '';
+        el.onclick = () => {
+          const viewId = el.dataset.view;
+          searchBar.value = ''; dropdown.style.display = 'none';
+          if (typeof selectCompany === 'function') selectCompany(el.dataset.co);
+          setTimeout(() => { if (typeof navTo === 'function') navTo(viewId); }, 50);
+        };
+      });
+      const aiOption = dropdown.querySelector('.ai-sr-ai');
+      if (aiOption) {
+        aiOption.onmouseenter = () => aiOption.style.background = 'rgba(0,115,234,.08)';
+        aiOption.onmouseleave = () => aiOption.style.background = 'rgba(0,115,234,.03)';
+        aiOption.onclick = () => {
+          const q = searchBar.value.trim();
+          searchBar.value = ''; dropdown.style.display = 'none';
+          _chatOpenPanel();
+          setTimeout(() => { const chatInp = document.getElementById('ai-chat-input'); if (chatInp) { chatInp.value = q; _chatSend(); } }, 100);
+        };
+      }
+    });
+
     searchBar.addEventListener('keydown', e => {
-      if (e.key === 'Enter') {
+      const items = dropdown.querySelectorAll('.ai-sr, .ai-sr-ai');
+      if (e.key === 'ArrowDown' && dropdown.style.display !== 'none') {
+        e.preventDefault(); _searchSel = Math.min(_searchSel + 1, items.length - 1);
+        items.forEach((el, i) => el.style.background = i === _searchSel ? 'var(--bg)' : '');
+      } else if (e.key === 'ArrowUp' && dropdown.style.display !== 'none') {
+        e.preventDefault(); _searchSel = Math.max(_searchSel - 1, 0);
+        items.forEach((el, i) => el.style.background = i === _searchSel ? 'var(--bg)' : '');
+      } else if (e.key === 'Enter') {
+        if (_searchSel >= 0 && items[_searchSel]) {
+          items[_searchSel].click(); return;
+        }
         const q = searchBar.value.trim();
         if (!q) return;
-        searchBar.value = '';
+        searchBar.value = ''; dropdown.style.display = 'none';
         _chatOpenPanel();
-        // Set the query in the chat input and send
-        setTimeout(() => {
-          const chatInp = document.getElementById('ai-chat-input');
-          if (chatInp) { chatInp.value = q; _chatSend(); }
-        }, 100);
+        setTimeout(() => { const chatInp = document.getElementById('ai-chat-input'); if (chatInp) { chatInp.value = q; _chatSend(); } }, 100);
+      } else if (e.key === 'Escape') {
+        searchBar.blur(); dropdown.style.display = 'none';
       }
-      if (e.key === 'Escape') { searchBar.blur(); }
     });
+
+    searchBar.addEventListener('blur', () => { setTimeout(() => { dropdown.style.display = 'none'; }, 200); });
   }
 
   // Global shortcut: Ctrl+K / Cmd+K to focus search
@@ -364,12 +443,14 @@ async function _chatSend() {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
+    const _jwt = sessionStorage.getItem('gf_token') || '';
     const _sess = sessionStorage.getItem('gf_session') || '';
+    const _token = _jwt || btoa(_sess);
     const resp = await fetch('/api/chat', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + btoa(_sess)
+        'Authorization': 'Bearer ' + _token
       },
       body: JSON.stringify({ messages: apiMessages, context })
     });
