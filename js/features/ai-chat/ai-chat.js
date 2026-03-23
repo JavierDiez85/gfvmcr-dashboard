@@ -29,14 +29,26 @@ function _chatInjectDOM() {
   const style = document.createElement('style');
   style.textContent = `
     #ai-chat-fab{
-      display:inline-flex;align-items:center;gap:5px;
-      padding:5px 10px;border-radius:7px;
-      background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-lt,#b3d4f7);
-      cursor:pointer;font-size:.72rem;font-weight:600;font-family:'Figtree',sans-serif;
-      transition:background .15s,box-shadow .15s;white-space:nowrap;flex-shrink:0;
+      display:inline-flex;align-items:center;gap:7px;
+      padding:8px 18px;border-radius:10px;
+      background:linear-gradient(135deg,#0073ea 0%,#5b5fc7 100%);
+      color:#fff;border:none;
+      cursor:pointer;font-size:.82rem;font-weight:700;font-family:'Figtree',sans-serif;
+      transition:all .2s ease;white-space:nowrap;flex-shrink:0;
+      box-shadow:0 2px 8px rgba(0,115,234,.25);
+      letter-spacing:.02em;
     }
-    #ai-chat-fab:hover{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(0,115,234,.3)}
-    #ai-chat-fab.chat-active{background:var(--blue);color:#fff}
+    #ai-chat-fab svg{width:18px;height:18px;flex-shrink:0}
+    #ai-chat-fab:hover{
+      transform:translateY(-1px);
+      box-shadow:0 4px 16px rgba(0,115,234,.4);
+      background:linear-gradient(135deg,#005ec4 0%,#4a4fb3 100%);
+    }
+    #ai-chat-fab:active{transform:translateY(0);box-shadow:0 2px 6px rgba(0,115,234,.3)}
+    #ai-chat-fab.chat-active{
+      background:linear-gradient(135deg,#5b5fc7 0%,#7b61ff 100%);
+      box-shadow:0 4px 16px rgba(91,95,199,.45);
+    }
 
     #ai-chat-panel{
       position:fixed;top:56px;right:16px;z-index:9001;
@@ -134,7 +146,7 @@ function _chatInjectDOM() {
   const fab = document.createElement('button');
   fab.id = 'ai-chat-fab';
   fab.title = 'Asistente IA';
-  fab.innerHTML = '🤖 IA';
+  fab.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L9.5 8.5 2 12l7.5 3.5L12 22l2.5-6.5L22 12l-7.5-3.5z"/></svg> Asistente IA';
   fab.onclick = _chatToggle;
   const tbR = document.querySelector('.tb-r');
   if (tbR) {
