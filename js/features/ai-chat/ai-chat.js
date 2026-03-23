@@ -41,27 +41,27 @@ function _chatInjectDOM() {
       margin:0 16px;position:relative;
     }
     #ai-search-bar{
-      width:100%;height:32px;padding:0 14px 0 38px;
-      border:1px solid rgba(255,255,255,.15);border-radius:8px;
-      background:rgba(255,255,255,.08);color:#fff;
+      width:100%;height:34px;padding:0 14px 0 38px;
+      border:1px solid var(--border);border-radius:8px;
+      background:#fff;color:var(--text);
       font-size:.82rem;font-family:'Figtree',sans-serif;font-weight:500;
       outline:none;transition:all .2s ease;
     }
-    #ai-search-bar::placeholder{color:rgba(255,255,255,.45);font-weight:400}
-    #ai-search-bar:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.25)}
+    #ai-search-bar::placeholder{color:var(--muted);font-weight:400}
+    #ai-search-bar:hover{border-color:rgba(0,115,234,.3)}
     #ai-search-bar:focus{
-      background:rgba(255,255,255,.15);border-color:rgba(91,95,199,.7);
-      box-shadow:0 0 0 3px rgba(91,95,199,.2);
+      border-color:var(--blue);
+      box-shadow:0 0 0 3px rgba(0,115,234,.12);
     }
     #ai-search-icon{
       position:absolute;left:10px;top:50%;transform:translateY(-50%);
-      width:18px;height:18px;color:rgba(255,255,255,.4);
+      width:18px;height:18px;color:var(--muted);
       pointer-events:none;transition:color .2s;
     }
-    #ai-search-wrap:focus-within #ai-search-icon{color:rgba(91,95,199,.9)}
+    #ai-search-wrap:focus-within #ai-search-icon{color:var(--blue)}
     #ai-search-kbd{
       position:absolute;right:10px;top:50%;transform:translateY(-50%);
-      font-size:.6rem;color:rgba(255,255,255,.3);border:1px solid rgba(255,255,255,.15);
+      font-size:.6rem;color:var(--muted);border:1px solid var(--border);
       border-radius:4px;padding:1px 5px;pointer-events:none;font-family:monospace;
       transition:opacity .15s;
     }
