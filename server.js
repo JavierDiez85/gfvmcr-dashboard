@@ -553,6 +553,21 @@ http.createServer(async (req, res) => {
   // Preflight CORS
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
 
+  // ── API: Health check — diagnostica el estado de las env vars (sin exponer valores) ──
+  if (req.method === 'GET' && req.url === '/api/health') {
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' });
+    res.end(JSON.stringify({
+      ok: true,
+      env: {
+        SUPABASE_URL:         !!process.env.SUPABASE_URL,
+        SUPABASE_KEY:         !!process.env.SUPABASE_KEY,
+        SUPABASE_SERVICE_KEY: !!process.env.SUPABASE_SERVICE_KEY,
+        ANTHROPIC_API_KEY:    !!process.env.ANTHROPIC_API_KEY,
+      }
+    }));
+    return;
+  }
+
   // ── API: Config — devuelve SOLO el anon key al browser (nunca el service key) ──
   if (req.method === 'GET' && req.url === '/api/config') {
     if (isRateLimited(rateLimitKey(ip, 'config'), 60)) { sendError(res, 429, 'Rate limit exceeded'); return; }
@@ -852,4 +867,14 @@ http.createServer(async (req, res) => {
     });
   });
 
-}).listen(PORT, () => console.log('Grupo Financiero Dashboard listening on port ' + PORT));
+}).listen(PORT, () => {
+  console.log('Grupo Financiero Dashboard listening on port ' + PORT);
+  // ── Diagnóstico de variables de entorno al arrancar ──
+  const vars = {
+    SUPABASE_URL:         process.env.SUPABASE_URL         ? '✓ configurado' : '✗ NO CONFIGURADO',
+    SUPABASE_KEY:         process.env.SUPABASE_KEY         ? '✓ configurado' : '✗ NO CONFIGURADO',
+    SUPABASE_SERVICE_KEY: process.env.SUPABASE_SERVICE_KEY ? '✓ configurado' : '✗ NO CONFIGURADO',
+    ANTHROPIC_API_KEY:    process.env.ANTHROPIC_API_KEY    ? '✓ configurado' : '✗ NO CONFIGURADO',
+  };
+  console.log('[ENV]', JSON.stringify(vars, null, 2));
+});
