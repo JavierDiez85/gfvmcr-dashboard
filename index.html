@@ -641,9 +641,13 @@
       <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">👥 Nómina Compartida — Configuración y Distribución</div>
       <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Ajusta sueldos y porcentajes · El sistema calcula automáticamente la distribución por empresa</div>
     </div>
-    <div style="display:flex;gap:8px;align-items:center">
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
       <button class="btn btn-blue edit-action" onclick="nomAddRow()" style="font-size:.72rem">+ Empleado</button>
-      <button class="btn btn-out edit-action" onclick="nomSave()" style="font-size:.72rem">💾 Guardar</button>
+      <button class="btn btn-out edit-action" onclick="nomDownloadTemplate()" style="font-size:.72rem">Descargar Plantilla</button>
+      <label class="btn btn-out edit-action" style="font-size:.72rem;cursor:pointer">Cargar Excel
+        <input type="file" accept=".xlsx,.xls,.csv" onchange="nomUploadExcel(this)" style="display:none">
+      </label>
+      <button class="btn btn-out edit-action" onclick="nomSave()" style="font-size:.72rem">Guardar</button>
     </div>
   </div>
 

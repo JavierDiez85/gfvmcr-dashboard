@@ -138,6 +138,59 @@ function nomRefreshRow(i){
   nomUpdateFooter();
 }
 
+// ── Plantilla Excel: descargar template vacío ──
+function nomDownloadTemplate(){
+  const headers = ['Nombre','Rol','Sueldo','Tipo','Fecha Ingreso','% Salem','% Endless','% Dynamo','% Wirebit','% Stellaris'];
+  const example = ['Juan Pérez','Analista',15000,'Operativo','2026-01-15',40,10,10,40,0];
+  const ws = XLSX.utils.aoa_to_sheet([headers, example]);
+  // Column widths
+  ws['!cols'] = [{wch:25},{wch:20},{wch:12},{wch:15},{wch:15},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'Nomina');
+  XLSX.writeFile(wb, 'plantilla_nomina.xlsx');
+}
+
+// ── Carga masiva desde Excel ──
+function nomUploadExcel(input){
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try {
+      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+      if (!rows.length) { toast('El archivo está vacío'); return; }
+      let added = 0;
+      rows.forEach(r => {
+        const nombre = r['Nombre'] || r['nombre'] || r['NOMBRE'] || '';
+        if (!nombre) return;
+        const sueldo = +(r['Sueldo'] || r['sueldo'] || r['SUELDO'] || 0);
+        const rol = r['Rol'] || r['rol'] || r['ROL'] || r['Puesto'] || r['puesto'] || '';
+        const tipo = (r['Tipo'] || r['tipo'] || r['TIPO'] || 'Administrativo');
+        const fi = r['Fecha Ingreso'] || r['fecha_ingreso'] || r['FI'] || '';
+        const sal = +(r['% Salem'] || r['Salem'] || r['salem'] || 0);
+        const end = +(r['% Endless'] || r['Endless'] || r['endless'] || 0);
+        const dyn = +(r['% Dynamo'] || r['Dynamo'] || r['dynamo'] || 0);
+        const wbp = +(r['% Wirebit'] || r['Wirebit'] || r['wirebit'] || 0);
+        const stel = +(r['% Stellaris'] || r['Stellaris'] || r['stellaris'] || 0);
+        NOM_EDIT.push({
+          n: nombre, r: rol, s: sueldo,
+          tipo: tipo.toLowerCase().includes('oper') ? 'Operativo' : 'Administrativo',
+          fi: fi, sal, end, dyn, wb: wbp, stel
+        });
+        added++;
+      });
+      rNomina();
+      toast(added + ' empleados cargados desde Excel — revisa y guarda');
+    } catch(err) {
+      toast('Error al leer archivo: ' + err.message);
+    }
+    input.value = '';
+  };
+  reader.readAsArrayBuffer(file);
+}
+
 function nomAddRow(){
   NOM_EDIT.push({n:'Nuevo empleado',r:'Rol',s:0,tipo:'Administrativo',fi:'',sal:100,end:0,dyn:0,wb:0,stel:0});
   rNomina();
@@ -183,6 +236,8 @@ function rNomina(){
   window.nomAddRow = nomAddRow;
   window.nomDelRow = nomDelRow;
   window.nomSave = nomSave;
+  window.nomDownloadTemplate = nomDownloadTemplate;
+  window.nomUploadExcel = nomUploadExcel;
   window.rNomina = rNomina;
 
   // Register views
