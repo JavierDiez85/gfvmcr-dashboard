@@ -206,11 +206,13 @@ function _chatInjectDOM() {
 
   // ── Build module search index from NAV_STRUCTURE ──
   const _searchIndex = [];
-  if (typeof NAV_STRUCTURE !== 'undefined') {
-    NAV_STRUCTURE.forEach(co => {
+  if (typeof NAV_STRUCTURE !== 'undefined' && NAV_STRUCTURE.companies) {
+    NAV_STRUCTURE.companies.forEach(co => {
       (co.sections||[]).forEach(sec => {
-        (sec.views||[]).forEach(v => {
-          _searchIndex.push({ id: v.id, label: v.label, section: sec.label, company: co.label, co: co.id });
+        (sec.groups||[]).forEach(g => {
+          (g.views||[]).forEach(v => {
+            _searchIndex.push({ id: v.id, label: v.label, section: sec.label, company: co.label, co: co.id });
+          });
         });
       });
     });
