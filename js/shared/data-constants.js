@@ -51,7 +51,8 @@
 
   const WB_NOM_TOTAL = [0,0,0,0,0,0,0,0,0,0,0,0];
 
-  const NOM = [
+  // ── NOM: nómina configurable (carga de Supabase/localStorage, fallback a defaults) ──
+  const NOM_DEFAULTS = [
     {n:'\u00c1ngel Ahedo',     r:'Dir. Comercial',    s:120000, tipo:'Administrativo', dist:{Salem:.9, Endless:.05,Dynamo:.05,Wirebit:0, Stellaris:0}},
     {n:'Javier Diez',     r:'DOF / CFO',         s:120000, tipo:'Administrativo', dist:{Salem:.4, Endless:.1, Dynamo:.1, Wirebit:.4, Stellaris:0}},
     {n:'Joaquin Vallejo', r:'CEO Wirebit',       s:120000, tipo:'Administrativo', dist:{Salem:0,  Endless:0,  Dynamo:0,  Wirebit:1, Stellaris:0}},
@@ -63,10 +64,18 @@
     {n:'Emiliano Mendoza',r:'Serv. al cliente',  s:10000,  tipo:'Operativo',      dist:{Salem:.6, Endless:.1, Dynamo:.1, Wirebit:.2, Stellaris:0}},
     {n:'Sergio',          r:'Administraci\u00f3n',    s:8000,   tipo:'Administrativo', dist:{Salem:1,  Endless:0,  Dynamo:0,  Wirebit:0, Stellaris:0}},
   ];
-  const NOM_DIST = {Salem:186000, Endless:23000, Dynamo:23000, Wirebit:320000, Stellaris:0};
+  const NOM = (typeof DB !== 'undefined' && DB.get('gf_nomina')) || NOM_DEFAULTS;
 
-  const GCOMP = [
-    // Porcentajes de distribuci\u00f3n (data real pendiente de captura)
+  // Recalculate NOM_DIST from actual NOM data
+  function _calcNomDist() {
+    const d = {Salem:0, Endless:0, Dynamo:0, Wirebit:0, Stellaris:0};
+    NOM.forEach(e => { for (const [ent, pct] of Object.entries(e.dist || {})) { d[ent] = (d[ent]||0) + Math.round(e.s * pct); } });
+    return d;
+  }
+  const NOM_DIST = _calcNomDist();
+
+  // ── GCOMP: gastos compartidos configurables ──
+  const GCOMP_DEFAULTS = [
     {c:'Renta impresora',    cat:'Administrativo', sal:.2,end:.2,dyn:.2,wb:.4, stel:0, vals:[]},
     {c:'Renta oficina',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
     {c:'Mantenimiento',      cat:'Renta Oficina',  sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
@@ -88,6 +97,11 @@
     {c:'Icarus Dynamo',      cat:'Regulatorio',    sal:0, end:0, dyn:1, wb:0,  stel:0, vals:[]},
     {c:'Otros/Varios',       cat:'Varios',         sal:.4,end:.1,dyn:.1,wb:.4, stel:0, vals:[]},
   ];
+  const GCOMP = (typeof DB !== 'undefined' && DB.get('gf_gastos_comp')) || GCOMP_DEFAULTS;
+
+  /** Save NOM/GCOMP changes back to storage */
+  function nomSave() { if (typeof DB !== 'undefined') DB.set('gf_nomina', NOM); }
+  function gcompSave() { if (typeof DB !== 'undefined') DB.set('gf_gastos_comp', GCOMP); }
 
   const SAL_TPV_CLIENTES = [];
 
@@ -153,8 +167,13 @@
   window.wbLoadFees = wbLoadFees;
   window.WB_NOM_TOTAL = WB_NOM_TOTAL;
   window.NOM = NOM;
+  window.NOM_DEFAULTS = NOM_DEFAULTS;
   window.NOM_DIST = NOM_DIST;
+  window.nomSave = nomSave;
+  window._calcNomDist = _calcNomDist;
   window.GCOMP = GCOMP;
+  window.GCOMP_DEFAULTS = GCOMP_DEFAULTS;
+  window.gcompSave = gcompSave;
   window.SAL_TPV_CLIENTES = SAL_TPV_CLIENTES;
   window.SAL_GASTOS_ITEMS = SAL_GASTOS_ITEMS;
   window.END_CREDITS = END_CREDITS;
