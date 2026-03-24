@@ -313,7 +313,9 @@ function nomAddRow(){
 
 function nomDelRow(i){
   NOM_EDIT.splice(i,1);
+  DB.set('gf_nomina', NOM_EDIT);
   rNomina();
+  toast('Empleado eliminado');
 }
 
 function nomSave(){

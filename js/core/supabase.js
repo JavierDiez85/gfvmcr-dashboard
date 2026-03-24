@@ -418,7 +418,8 @@ async function initApp() {
     // Siempre iniciar en modo día al abrir sesión
     applyTheme('light');
     renderReg();
-    sv('inicio', null);
+    const _lastView = sessionStorage.getItem('gf_lastView') || 'inicio';
+    sv(_lastView, null);
     if (typeof updateToggleBtn === 'function') updateToggleBtn();
     if (typeof _tkUpdateBadge === 'function') _tkUpdateBadge();
   } catch (e) {
