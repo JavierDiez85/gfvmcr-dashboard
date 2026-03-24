@@ -73,6 +73,8 @@
     }
 
     // ── Generate expense rows from configurable categories ──
+    // Each config category maps to ONE P&L row, matched ONLY by cats (category type).
+    // No concepts filter — all records with that category type are summed into the row.
     function _gasRowsFromConfig(entName){
       const cd = typeof catGetData === 'function' ? catGetData('cd') : [];
       const ga = typeof catGetData === 'function' ? catGetData('ga') : [];
@@ -80,14 +82,12 @@
         const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
         if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
           row.ppto = (m,y) => nomMesOp(entName,m,y);
-        else row.concepts = [c.nombre.toLowerCase()];
         return row;
       });
       const gaRows = ga.filter(c => !c.empresas || c.empresas.includes(entName)).map(c => {
         const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
         if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
           row.ppto = (m,y) => nomMesAdm(entName,m,y);
-        else row.concepts = [c.nombre.toLowerCase()];
         return row;
       });
       return { cdRows, gaRows };
