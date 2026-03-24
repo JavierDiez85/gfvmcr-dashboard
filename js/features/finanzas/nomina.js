@@ -44,15 +44,34 @@ function _nomFactor(n, mes, year) {
   return factor;
 }
 
-// Sueldo efectivo: si hay cambio de sueldo (s2 + fs2), usa s2 a partir de esa fecha
+// Sueldo efectivo: recorre historial de cambios (más reciente primero)
+// Soporta legacy s2/fs2 (migra a cambios[]) y nuevo cambios[]
 function _nomSueldo(n, mes, year) {
-  if (!n.s2 || !n.fs2) return n.s;
-  const parts = n.fs2.split('-');
-  if (parts.length < 2) return n.s;
-  const fsY = +parts[0], fsM = +parts[1] - 1;
+  const cambios = _nomGetCambios(n);
+  if (!cambios.length) return n.s;
   const yr = +year, m = +mes;
-  if (yr > fsY || (yr === fsY && m >= fsM)) return n.s2;
+  // Buscar el cambio más reciente que aplique
+  for (let i = cambios.length - 1; i >= 0; i--) {
+    const c = cambios[i];
+    const parts = (c.desde||'').split('-');
+    if (parts.length < 2) continue;
+    const cY = +parts[0], cM = +parts[1] - 1;
+    if (yr > cY || (yr === cY && m >= cM)) return c.s;
+  }
   return n.s;
+}
+
+// Get cambios array (migrate legacy s2/fs2 if needed)
+function _nomGetCambios(n) {
+  if (n.cambios && n.cambios.length) return n.cambios;
+  if (n.s2 && n.fs2) return [{ s: n.s2, desde: n.fs2 }];
+  return [];
+}
+
+// Current effective salary (today)
+function _nomSueldoActual(n) {
+  const now = new Date();
+  return _nomSueldo(n, now.getMonth(), now.getFullYear());
 }
 
 const _nomDist = (e, n, mes, year) => {
@@ -120,12 +139,15 @@ function nomRenderRow(e,i){
   const statusBadge = isBaja
     ? '<span style="background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600">Baja</span>'
     : '<span style="background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600">Activo</span>';
-  const salM=e.s*(e.sal/100), endM=e.s*(e.end/100), dynM=e.s*(e.dyn/100), wbM=e.s*(e.wb/100), stelM=e.s*((e.stel||0)/100);
+  const sActual = _nomSueldoActual(e);
+  const cambios = _nomGetCambios(e);
+  const salM=sActual*(e.sal/100), endM=sActual*(e.end/100), dynM=sActual*(e.dyn/100), wbM=sActual*(e.wb/100), stelM=sActual*((e.stel||0)/100);
+  const cambioLabel = cambios.length ? '<span style="display:block;font-size:.58rem;color:var(--blue);font-weight:400">'+cambios.length+' cambio'+(cambios.length>1?'s':'')+' de sueldo</span>' : '';
   return`<tr id="nom-row-${i}" style="cursor:pointer;${isBaja?'opacity:.5;':''}" onclick="nomOpenDetail(${i})">
-    <td style="padding:8px 12px;font-weight:600;font-size:.8rem">${escapeHtml(e.n)}${e.s2?'<span style="display:block;font-size:.58rem;color:var(--blue);font-weight:400">Cambio → '+fmt(e.s2)+' desde '+(e.fs2||'?')+'</span>':''}</td>
+    <td style="padding:8px 12px;font-weight:600;font-size:.8rem">${escapeHtml(e.n)}${cambioLabel}</td>
     <td style="color:var(--muted);font-size:.76rem">${escapeHtml(e.r)}</td>
     <td><span style="color:${tipoColor};font-weight:600;font-size:.72rem">${e.tipo}</span></td>
-    <td class="r" style="font-weight:600;color:var(--green);font-size:.8rem">${fmt(e.s)}</td>
+    <td class="r" style="font-weight:600;color:var(--green);font-size:.8rem">${fmt(sActual)}</td>
     <td style="font-size:.72rem;color:var(--muted)">${e.fi||'—'}</td>
     <td class="r" style="color:#0073ea;font-size:.78rem">${salM>0?fmt(salM):'—'}</td>
     <td class="r" style="color:#00b875;font-size:.78rem">${endM>0?fmt(endM):'—'}</td>
@@ -162,14 +184,28 @@ function nomOpenDetail(i){
     <div></div>
   </div>`;
 
-  // Section 2: Sueldo
-  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;padding:14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
-    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Sueldo Actual</label>
-      <input id="nd-s" type="text" ${inS} value="${e.s}" style="font-weight:700;color:var(--green);font-size:.95rem"></div>
-    <div><label style="font-size:.68rem;color:var(--blue);display:block;margin-bottom:4px">Nuevo Sueldo</label>
-      <input id="nd-s2" type="text" ${inS} value="${e.s2||''}" placeholder="Sin cambio" style="color:var(--blue)"></div>
-    <div><label style="font-size:.68rem;color:var(--blue);display:block;margin-bottom:4px">Aplica Desde</label>
-      <input id="nd-fs2" type="date" ${inS} value="${e.fs2||''}"></div>
+  // Section 2: Sueldo + Historial de cambios
+  const cambios = _nomGetCambios(e);
+  const sActual = _nomSueldoActual(e);
+  html += `<div style="margin-bottom:20px;padding:14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+      <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Sueldo Inicial</label>
+        <input id="nd-s" type="text" ${inS} value="${e.s}" style="font-weight:700;color:var(--green);font-size:.95rem"></div>
+      <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Sueldo Actual (efectivo hoy)</label>
+        <div style="font-weight:700;color:var(--blue);font-size:1.1rem;padding:6px 0">${fmt(sActual)}</div></div>
+    </div>
+    <h4 style="font-size:.72rem;margin:0 0 8px;color:var(--text)">Historial de Cambios de Sueldo</h4>
+    <div id="nd-cambios-list">`;
+  cambios.forEach((c,ci)=>{
+    html+=`<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px" data-ci="${ci}">
+      <input type="text" value="${c.s}" placeholder="Monto" class="nd-cambio-s" style="width:120px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--bg);color:var(--blue);font-weight:600">
+      <span style="font-size:.72rem;color:var(--muted)">desde</span>
+      <input type="date" value="${c.desde||''}" class="nd-cambio-d" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.78rem;font-family:inherit;background:var(--bg);color:var(--text)">
+      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px" title="Eliminar cambio">✕</button>
+    </div>`;
+  });
+  html+=`</div>
+    <button onclick="nomAddCambio()" style="background:none;border:1px dashed var(--border);color:var(--blue);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.72rem;margin-top:4px">+ Agregar cambio de sueldo</button>
   </div>`;
 
   // Section 3: Distribución %
@@ -229,6 +265,18 @@ function nomDetailUpdateTot(){
   if(el){ el.textContent=tot+'%'; el.style.color=tot===100?'var(--green)':'var(--red)'; }
 }
 
+function nomAddCambio(){
+  const list = document.getElementById('nd-cambios-list');
+  if(!list) return;
+  const div = document.createElement('div');
+  div.style.cssText='display:flex;gap:8px;align-items:center;margin-bottom:6px';
+  div.innerHTML=`<input type="text" placeholder="Monto" class="nd-cambio-s" style="width:120px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--bg);color:var(--blue);font-weight:600">
+    <span style="font-size:.72rem;color:var(--muted)">desde</span>
+    <input type="date" class="nd-cambio-d" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.78rem;font-family:inherit;background:var(--bg);color:var(--text)">
+    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px">✕</button>`;
+  list.appendChild(div);
+}
+
 function nomSaveDetail(i){
   const e = NOM_EDIT[i];
   e.n = document.getElementById('nd-n').value;
@@ -237,9 +285,18 @@ function nomSaveDetail(i){
   e.fi = document.getElementById('nd-fi').value;
   e.fb = document.getElementById('nd-fb').value;
   e.s = +(document.getElementById('nd-s').value.replace(/[^0-9.]/g,''))||0;
-  const s2v = +(document.getElementById('nd-s2').value.replace(/[^0-9.]/g,''))||0;
-  e.s2 = s2v || undefined;
-  e.fs2 = document.getElementById('nd-fs2').value;
+  // Collect cambios from DOM
+  const cambioRows = document.querySelectorAll('#nd-cambios-list > div');
+  const cambios = [];
+  cambioRows.forEach(row => {
+    const sVal = +(row.querySelector('.nd-cambio-s').value.replace(/[^0-9.]/g,''))||0;
+    const dVal = row.querySelector('.nd-cambio-d').value||'';
+    if(sVal && dVal) cambios.push({s: sVal, desde: dVal});
+  });
+  cambios.sort((a,b) => a.desde.localeCompare(b.desde));
+  e.cambios = cambios.length ? cambios : undefined;
+  // Clean legacy fields
+  delete e.s2; delete e.fs2;
   e.sal = +document.getElementById('nd-sal').value||0;
   e.end = +document.getElementById('nd-end').value||0;
   e.dyn = +document.getElementById('nd-dyn').value||0;
@@ -343,6 +400,8 @@ function rNomina(){
   window.NOM_EDIT = NOM_EDIT;
   window._nomFactor = _nomFactor;
   window._nomSueldo = _nomSueldo;
+  window._nomSueldoActual = _nomSueldoActual;
+  window._nomGetCambios = _nomGetCambios;
   window._nomDist = _nomDist;
   window.nomMesTotal = nomMesTotal;
   window.nomMesOp = nomMesOp;
@@ -353,6 +412,7 @@ function rNomina(){
   window.nomOpenDetail = nomOpenDetail;
   window.nomDetailUpdateTot = nomDetailUpdateTot;
   window.nomSaveDetail = nomSaveDetail;
+  window.nomAddCambio = nomAddCambio;
   window.nomAddRow = nomAddRow;
   window.nomDelRow = nomDelRow;
   window.nomSave = nomSave;
