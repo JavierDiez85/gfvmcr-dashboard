@@ -1485,8 +1485,12 @@ function recvSetManual(){
   html += '<input type="date" id="recv-f-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Folio</label>';
   html += '<input type="text" id="recv-f-folio" class="fi" placeholder="Folio factura" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
-  html += '<div>'+_selField('recv-f-cat','Categoría','<option value="">Sin categoría</option>'+_catOptions())+'</div>';
-  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Tipo de Gasto</label>';
+  html += '<select id="recv-f-tipo" class="fi" onchange="recvTipoChanged()" style="width:100%;font-size:.78rem;padding:7px 10px">';
+  html += '<option value="">— Seleccionar —</option><option value="Operativo">Costo Directo / Operativo</option><option value="Administrativo">Gasto Administrativo</option></select></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Categoría</label>';
+  html += '<select id="recv-f-cat" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"><option value="">Primero selecciona tipo</option></select></div>';
+  html += '<div style="grid-column:1/-1"><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
   html += '<input type="text" id="recv-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
   html += '<input type="text" id="recv-f-subtotal" class="fi" placeholder="$0.00" oninput="facSubInput(\'recv\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
@@ -1576,6 +1580,19 @@ function recvSaveFromPreview(){
   if(typeof toast === 'function') toast('✅ Factura recibida guardada como CxP');
   recvClearForm();
   recvRenderAll();
+}
+
+function recvTipoChanged(){
+  var tipo = (document.getElementById('recv-f-tipo')||{}).value;
+  var catSel = document.getElementById('recv-f-cat');
+  if(!catSel) return;
+  var cats = (typeof CATS_GAS !== 'undefined') ? CATS_GAS : [];
+  var opCats = ['Nómina','Costo Directo','Operaciones','Com. Bancarias'];
+  var admCats = ['Nómina','Renta','Marketing','Regulatorio','Administrativo','Representación','Varios'];
+  var filtered = tipo === 'Operativo' ? cats.filter(function(c){return opCats.indexOf(c)>=0;})
+    : tipo === 'Administrativo' ? cats.filter(function(c){return admCats.indexOf(c)>=0;})
+    : cats;
+  catSel.innerHTML = '<option value="">— Seleccionar —</option>' + filtered.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
 }
 
 function recvSaveManual(){
@@ -2096,6 +2113,7 @@ window.recvLoadFile   = recvLoadFile;
 window.recvSetManual  = recvSetManual;
 window.recvSaveFromPreview = recvSaveFromPreview;
 window.recvSaveManual = recvSaveManual;
+window.recvTipoChanged = recvTipoChanged;
 window.recvClearForm  = recvClearForm;
 window.recvCalcTotal  = recvCalcTotal;
 window.facFocus       = facFocus;
