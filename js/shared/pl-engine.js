@@ -60,6 +60,27 @@
       }, 0);
     }
 
+    // ── Generate expense rows from configurable categories ──
+    function _gasRowsFromConfig(entName){
+      const cd = typeof catGetData === 'function' ? catGetData('cd') : [];
+      const ga = typeof catGetData === 'function' ? catGetData('ga') : [];
+      const cdRows = cd.filter(c => !c.empresas || c.empresas.includes(entName)).map(c => {
+        const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
+        if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
+          row.ppto = (m,y) => nomMesOp(entName,m,y);
+        else row.concepts = [c.nombre.toLowerCase()];
+        return row;
+      });
+      const gaRows = ga.filter(c => !c.empresas || c.empresas.includes(entName)).map(c => {
+        const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
+        if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
+          row.ppto = (m,y) => nomMesAdm(entName,m,y);
+        else row.concepts = [c.nombre.toLowerCase()];
+        return row;
+      });
+      return { cdRows, gaRows };
+    }
+
     const configs = {
       // ── SALEM ──
       sal: { id:'sal-res', entName:'Salem', acColor:'#0073ea',
@@ -72,29 +93,12 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Salem',m,y) },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias','TPV Comisiones'], concepts:['sitespay','promotor','promotor\u00eda'] },
-          { type:'gasto', label:'  Comisiones Internas',    cats:['Com. Bancarias','TPV Comisiones'], concepts:['internas'] },
+          ..._gasRowsFromConfig('Salem').cdRows,
           { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Salem',m,y) },
-          { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
-          { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
-          { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Efevoo Tarjetas',        cats:['Costo Directo','Marketing'], concepts:['efevoo tarjetas'] },
-          { type:'gasto', label:'  Efevoo TPV',             cats:['Costo Directo'], concepts:['efevoo tpv'] },
-          { type:'gasto', label:'  Marketing',              cats:['Marketing'] },
-          { type:'gasto', label:'  Luz',                    cats:['Administrativo'], concepts:['luz'] },
-          { type:'gasto', label:'  Insumos Oficina',        cats:['Administrativo'], concepts:['insumos','material oficina'] },
-          { type:'gasto', label:'  Vi\u00e1ticos',               cats:['Representaci\u00f3n'], concepts:['viaje','viatico'] },
-          { type:'gasto', label:'  Comisiones Bancarias',   cats:['Com. Bancarias'] },
-          { type:'gasto', label:'  Cumplimiento',           cats:['Regulatorio'], concepts:['alestra','cnbv','icarus','stp','cumpl'] },
+          ..._gasRowsFromConfig('Salem').gaRows,
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
         ]
@@ -113,28 +117,12 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Endless',m,y) },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias'], concepts:['sitespay','promotor','promotor\u00eda'] },
+          ..._gasRowsFromConfig('Endless').cdRows,
           { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Endless',m,y) },
-          { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
-          { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
-          { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Efevoo Tarjetas',        cats:['Costo Directo','Marketing'], concepts:['efevoo tarjetas'] },
-          { type:'gasto', label:'  Efevoo TPV',             cats:['Costo Directo'], concepts:['efevoo tpv'] },
-          { type:'gasto', label:'  Marketing',              cats:['Marketing'] },
-          { type:'gasto', label:'  Luz',                    cats:['Administrativo'], concepts:['luz'] },
-          { type:'gasto', label:'  Insumos Oficina',        cats:['Administrativo'], concepts:['insumos','material oficina'] },
-          { type:'gasto', label:'  Vi\u00e1ticos',               cats:['Representaci\u00f3n'], concepts:['viaje','viatico'] },
-          { type:'gasto', label:'  Comisiones Bancarias',   cats:['Com. Bancarias'] },
-          { type:'gasto', label:'  Cumplimiento',           cats:['Regulatorio'], concepts:['alestra','cnbv','icarus','stp','cumpl'] },
+          ..._gasRowsFromConfig('Endless').gaRows,
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
         ]
@@ -152,28 +140,12 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Dynamo',m,y) },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias'], concepts:['sitespay','promotor','promotor\u00eda'] },
+          ..._gasRowsFromConfig('Dynamo').cdRows,
           { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Dynamo',m,y) },
-          { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
-          { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
-          { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Efevoo Tarjetas',        cats:['Costo Directo','Marketing'], concepts:['efevoo tarjetas'] },
-          { type:'gasto', label:'  Efevoo TPV',             cats:['Costo Directo'], concepts:['efevoo tpv'] },
-          { type:'gasto', label:'  Marketing',              cats:['Marketing'] },
-          { type:'gasto', label:'  Luz',                    cats:['Administrativo'], concepts:['luz'] },
-          { type:'gasto', label:'  Insumos Oficina',        cats:['Administrativo'], concepts:['insumos','material oficina'] },
-          { type:'gasto', label:'  Vi\u00e1ticos',               cats:['Representaci\u00f3n'], concepts:['viaje','viatico'] },
-          { type:'gasto', label:'  Comisiones Bancarias',   cats:['Com. Bancarias'] },
-          { type:'gasto', label:'  Cumplimiento',           cats:['Regulatorio'], concepts:['alestra','cnbv','icarus','stp','cumpl'] },
+          ..._gasRowsFromConfig('Dynamo').gaRows,
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
         ]
@@ -191,29 +163,12 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Wirebit',m,y) },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Liquidity Providers',    cats:['Costos Directos'], concepts:['liquidity','proveedor liquidez'] },
-          { type:'gasto', label:'  Comisiones Promotor\u00eda',  cats:['Com. Bancarias'], concepts:['sitespay','promotor','promotor\u00eda'] },
+          ..._gasRowsFromConfig('Wirebit').cdRows,
           { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Wirebit',m,y) },
-          { type:'gasto', label:'  Renta Oficina',          cats:['Renta'], concepts:['renta oficina'] },
-          { type:'gasto', label:'  Mantenimiento',          cats:['Renta'], concepts:['mantenimiento'] },
-          { type:'gasto', label:'  Renta Impresora',        cats:['Administrativo','Renta'], concepts:['impresora'] },
-          { type:'gasto', label:'  Software',               cats:['Operaciones'], concepts:['software'] },
-          { type:'gasto', label:'  Hardware',               cats:['Operaciones'], concepts:['hardware'] },
-          { type:'gasto', label:'  Efevoo Tarjetas',        cats:['Costo Directo','Marketing'], concepts:['efevoo tarjetas'] },
-          { type:'gasto', label:'  Efevoo TPV',             cats:['Costo Directo'], concepts:['efevoo tpv'] },
-          { type:'gasto', label:'  Marketing',              cats:['Marketing'] },
-          { type:'gasto', label:'  Luz',                    cats:['Administrativo'], concepts:['luz'] },
-          { type:'gasto', label:'  Insumos Oficina',        cats:['Administrativo'], concepts:['insumos','material oficina'] },
-          { type:'gasto', label:'  Vi\u00e1ticos',               cats:['Representaci\u00f3n'], concepts:['viaje','viatico'] },
-          { type:'gasto', label:'  Comisiones Bancarias',   cats:['Com. Bancarias'] },
-          { type:'gasto', label:'  Cumplimiento',           cats:['Regulatorio'], concepts:['alestra','cnbv','icarus','stp','cumpl'] },
+          ..._gasRowsFromConfig('Wirebit').gaRows,
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
         ]
@@ -231,21 +186,12 @@
           { type:'total_ing', label:'TOTAL INGRESOS', bold:true },
 
           { type:'header', label:'\u25b6 COSTES DIRECTOS', note:'Variables ligados al producto' },
-          { type:'gasto', label:'  N\u00f3mina Directa',         cats:['N\u00f3mina'], ppto: (m,y)=>nomMesOp('Stellaris',m,y) },
-          { type:'gasto', label:'  Costo Directo',           cats:['Costo Directo'] },
+          ..._gasRowsFromConfig('Stellaris').cdRows,
           { type:'total_cost', label:'TOTAL COSTES DIRECTOS', bold:true },
           { type:'margen_op',  label:'MARGEN OPERATIVO', bold:true, util:true },
 
           { type:'header', label:'\u25b6 GASTOS ADMINISTRATIVOS', note:'Fijos y overhead' },
-          { type:'gasto', label:'  N\u00f3mina Administrativa',  cats:['N\u00f3mina'], ppto: (m,y)=>nomMesAdm('Stellaris',m,y) },
-          { type:'gasto', label:'  Renta',                   cats:['Renta'] },
-          { type:'gasto', label:'  Marketing',               cats:['Marketing'] },
-          { type:'gasto', label:'  Operaciones',             cats:['Operaciones'] },
-          { type:'gasto', label:'  Administrativo',          cats:['Administrativo'] },
-          { type:'gasto', label:'  Representaci\u00f3n',          cats:['Representaci\u00f3n'] },
-          { type:'gasto', label:'  Com. Bancarias',          cats:['Com. Bancarias'] },
-          { type:'gasto', label:'  Regulatorio',             cats:['Regulatorio'] },
-          { type:'gasto', label:'  Varios',                  cats:['Varios'] },
+          ..._gasRowsFromConfig('Stellaris').gaRows,
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
         ]
