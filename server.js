@@ -52,6 +52,13 @@ http.createServer(async (req, res) => {
 
   // ── API: Health check ──
   if (req.method === 'GET' && req.url === '/api/health') {
+    // Require admin auth — don't expose env info publicly
+    const authUser = requireAuth(req);
+    if (!authUser || authUser.rol !== 'admin') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: true }));
+      return;
+    }
     const sbUrl = process.env.SUPABASE_URL || '';
     const sbKey = process.env.SUPABASE_KEY || '';
     const sbSvc = process.env.SUPABASE_SERVICE_KEY || '';
@@ -98,11 +105,7 @@ http.createServer(async (req, res) => {
       if (!user) { sendError(res, 401, 'Credenciales inválidas'); return; }
 
       // Verify hash matches
-      if (user.salt) {
-        if (passwordHash !== user.passwordHash) { sendError(res, 401, 'Credenciales inválidas'); return; }
-      } else {
-        if (passwordHash !== user.passwordHash) { sendError(res, 401, 'Credenciales inválidas'); return; }
-      }
+      if (passwordHash !== user.passwordHash) { sendError(res, 401, 'Credenciales inválidas'); return; }
 
       // Sign JWT
       const token = signToken({
@@ -200,6 +203,7 @@ http.createServer(async (req, res) => {
           headers: { ...hdrs({ 'Prefer': 'resolution=merge-duplicates,return=minimal' }), 'Content-Length': Buffer.byteLength(b) } }, b);
       }
       if (clientsToDelete?.length) {
+        if (!clientsToDelete.every(id => /^\d+$/.test(String(id)))) { sendError(res, 400, 'clientsToDelete contiene IDs inválidos'); return; }
         await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_client_msi_rates?cliente_id=in.(${clientsToDelete.join(',')})`, method: 'DELETE', headers: hdrs({ 'Prefer': 'return=minimal' }) });
         await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_transactions?cliente_id=in.(${clientsToDelete.join(',')})`, method: 'PATCH',
           headers: { ...hdrs({ 'Prefer': 'return=minimal' }), 'Content-Length': Buffer.byteLength('{"cliente_id":null}') } }, '{"cliente_id":null}');

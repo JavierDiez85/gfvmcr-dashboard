@@ -178,28 +178,6 @@ async function doLogin(){
     errEl.style.display = 'block'; return;
   }
 
-  // Obtener usuarios: primero de Supabase, fallback a localStorage
-  let usuarios=[];
-  try{
-    if(!_sb && typeof _loadConfig==='function') await _loadConfig();
-    if(_sb){
-      const {data}=await _sb.from('app_data').select('value').eq('key','gf_usuarios').single();
-      if(data&&data.value) usuarios=data.value;
-    }
-  }catch(e){ console.warn('[login] Supabase fetch falló, usando localStorage'); }
-  if(!usuarios.length){
-    try{ usuarios=JSON.parse(localStorage.getItem('gf_usuarios'))||[]; }catch(e2){}
-  }
-
-  // Buscar usuario por email activo
-  const candidate = usuarios.find(u =>
-    u.email && u.email.toLowerCase() === email && u.activo !== false
-  );
-  if (!candidate) {
-    _recordAttempt(email);
-    errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
-  }
-
   // ── Server-side login con JWT firmado ──
   // 1. Obtener salt del usuario
   let userSalt = null;
@@ -208,9 +186,11 @@ async function doLogin(){
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email })
     });
-    const saltData = await saltResp.json();
-    userSalt = saltData.salt;
-  } catch(e) { console.warn('[login] No se pudo obtener salt, intentando local'); }
+    if (saltResp.ok) {
+      const saltData = await saltResp.json();
+      userSalt = saltData.salt;
+    }
+  } catch(e) { console.warn('[login] No se pudo obtener salt'); }
 
   // 2. Hashear contraseña client-side
   let passwordHash;
@@ -221,49 +201,24 @@ async function doLogin(){
   }
 
   // 3. Enviar hash al server para validación + JWT
-  let loginResult = null;
   try {
     const loginResp = await fetch('/api/login', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, passwordHash, salt: userSalt })
     });
     if (loginResp.ok) {
-      loginResult = await loginResp.json();
+      const loginResult = await loginResp.json();
+      _clearAttempts(email);
+      const user = loginResult.user;
+      CURRENT_USER = { ...user, lastActivity: Date.now() };
+      sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
+      sessionStorage.setItem('gf_token', loginResult.token);
     } else {
-      // Fallback: si el servidor no responde, validar localmente
-      const errData = await loginResp.json().catch(() => ({}));
-      if (loginResp.status === 401) {
-        _recordAttempt(email);
-        errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
-      }
-    }
-  } catch(e) { console.warn('[login] Server login falló, usando validación local'); }
-
-  // 4. Si server login funcionó, usar JWT
-  if (loginResult && loginResult.token) {
-    _clearAttempts(email);
-    const user = loginResult.user;
-    CURRENT_USER = { ...user, lastActivity: Date.now() };
-    sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
-    sessionStorage.setItem('gf_token', loginResult.token);
-  } else {
-    // Fallback local (para desarrollo sin server o si server no tiene datos)
-    let passwordOk = false;
-    if (candidate.salt) {
-      const hash = await hashPasswordPBKDF2(password, candidate.salt);
-      passwordOk = (hash === candidate.passwordHash);
-    } else {
-      const legacyHash = await hashPasswordLegacy(password);
-      passwordOk = (legacyHash === candidate.passwordHash);
-    }
-    if (!passwordOk) {
       _recordAttempt(email);
       errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
     }
-    _clearAttempts(email);
-    const user = candidate;
-    CURRENT_USER = { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'viewer', perms: user.perms || {}, lastActivity: Date.now() };
-    sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
+  } catch(e) {
+    errEl.textContent = 'Error de conexión con el servidor'; errEl.style.display = 'block'; return;
   }
 
   // Ocultar login, iniciar app

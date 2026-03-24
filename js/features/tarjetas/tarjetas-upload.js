@@ -400,7 +400,7 @@ async function startTarUpload() {
     } else {
       resultDiv.style.background = 'var(--red-bg)';
       resultDiv.style.color = 'var(--red)';
-      resultDiv.innerHTML = '❌ Error: ' + (result.errors[0] || 'Error desconocido');
+      resultDiv.innerHTML = '❌ Error: ' + escapeHtml(result.errors[0] || 'Error desconocido');
     }
   }
 

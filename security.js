@@ -219,7 +219,7 @@ function requireAuth(req, res) {
     return true;
   }
 
-  // Fallback: legacy Base64 (for backwards compatibility during migration)
+  // Fallback: legacy Base64 — DEPRECATED, will be removed in future version
   try {
     const decoded = Buffer.from(token, 'base64').toString('utf8');
     const session = JSON.parse(decoded);
@@ -227,6 +227,7 @@ function requireAuth(req, res) {
       sendError(res, 401, 'Sesión inválida');
       return false;
     }
+    console.warn(`[AUTH] ⚠️ Legacy Base64 token used by ${session.nombre} (${session.email || 'no-email'}) — should migrate to JWT`);
     req._user = session;
     return true;
   } catch {
