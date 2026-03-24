@@ -3,7 +3,7 @@
   'use strict';
 
   const TODAY_YEAR = new Date().getFullYear();
-  const GFP_YEARS = ['2025','2026'];
+  const GFP_YEARS = [String(TODAY_YEAR - 1), String(TODAY_YEAR)];
   const _MO = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
 
   function _isCurrentYear(y){ return parseInt(y) === TODAY_YEAR; }

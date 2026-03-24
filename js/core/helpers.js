@@ -3,7 +3,7 @@
 // STATE
 // ═══════════════════════════════════════
 let S = { recs: [], excelData: null };
-let _year = 2026;
+let _year = new Date().getFullYear();
 let _gfPeriod = {}; // {ent: 'año'|'q1'|'q2'|'q3'|'q4'|'mes_0'..'mes_11'}
 let _gfCompare = false; // true cuando "vs Año Anterior" está activo
 

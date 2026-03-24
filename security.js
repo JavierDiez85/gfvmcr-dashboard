@@ -166,7 +166,12 @@ function validateSbConfig(url, key) {
 const crypto = require('crypto');
 
 function _jwtSecret() {
-  return process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_KEY || 'gf-default-secret-change-me';
+  const secret = process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_KEY;
+  if (!secret) {
+    console.error('[SECURITY] ❌ No SESSION_SECRET nor SUPABASE_SERVICE_KEY — JWT signing is insecure!');
+    throw new Error('Server misconfigured: no JWT secret available');
+  }
+  return secret;
 }
 
 function _b64url(buf) {

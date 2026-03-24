@@ -11,8 +11,12 @@ const { createClient } = require('@supabase/supabase-js');
 const XLSX = require('xlsx');
 const path = require('path');
 
-const SUPABASE_URL = 'https://ofuzwfiqjvlronulhwbw.supabase.co';
-const SUPABASE_KEY = '***REDACTED_SUPABASE_ANON_KEY***';
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+if (!SUPABASE_URL || !SUPABASE_KEY) {
+  console.error('Set SUPABASE_URL and SUPABASE_KEY environment variables');
+  process.exit(1);
+}
 
 const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
