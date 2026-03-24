@@ -427,27 +427,27 @@ async function initTarCharts(view) {
 // CATEGORÍAS P&L — GESTOR
 // ==============================
 const CAT_CD_DEFAULT = [
-  {id:'cd1', nombre:'Nómina Operativa',      tipo:'Nómina',          empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'cd2', nombre:'Software',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'cd3', nombre:'Hardware',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'cd1', nombre:'Nómina Operativa',      tipo:'Nómina',          empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'cd2', nombre:'Software',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'cd3', nombre:'Hardware',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
   {id:'cd4', nombre:'Liquidity Providers',   tipo:'Costos Directos', empresas:['Wirebit'], ppto:0},
-  {id:'cd5', nombre:'Comisiones Promotoría', tipo:'Com. Bancarias',  empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'cd5', nombre:'Comisiones Promotoría', tipo:'Com. Bancarias',  empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
 ];
 const CAT_GA_DEFAULT = [
-  {id:'ga1', nombre:'Nómina Administrativa', tipo:'Nómina', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga2', nombre:'Renta Oficina', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga3', nombre:'Mantenimiento', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga4', nombre:'Renta Impresora', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga5', nombre:'Software', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga6', nombre:'Hardware', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga7', nombre:'Efevoo Tarjetas', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga8', nombre:'Efevoo TPV', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga9', nombre:'Marketing', tipo:'Marketing', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga10', nombre:'Luz', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga11', nombre:'Insumos Oficina', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga12', nombre:'Viáticos', tipo:'Representación', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga13', nombre:'Comisiones Bancarias', tipo:'Com. Bancarias', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
-  {id:'ga14', nombre:'Cumplimiento', tipo:'Regulatorio', empresas:['Salem','Endless','Dynamo','Wirebit'], ppto:0},
+  {id:'ga1', nombre:'Nómina Administrativa', tipo:'Nómina', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga2', nombre:'Renta Oficina', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga3', nombre:'Mantenimiento', tipo:'Renta', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga4', nombre:'Renta Impresora', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga5', nombre:'Software', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga6', nombre:'Hardware', tipo:'Operaciones', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga7', nombre:'Efevoo Tarjetas', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga8', nombre:'Efevoo TPV', tipo:'Costo Directo', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga9', nombre:'Marketing', tipo:'Marketing', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga10', nombre:'Luz', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga11', nombre:'Insumos Oficina', tipo:'Administrativo', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga12', nombre:'Viáticos', tipo:'Representación', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga13', nombre:'Comisiones Bancarias', tipo:'Com. Bancarias', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  {id:'ga14', nombre:'Cumplimiento', tipo:'Regulatorio', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
 ];
 
 function catGetData(sec){
@@ -458,6 +458,32 @@ function catGetData(sec){
 }
 function catSetData(sec,data){
   DB.set(sec==='cd'?'gf_cat_cd':'gf_cat_ga', data);
+  catSyncGlobals();
+}
+
+// Sync configurable categories into global ENT_CATS_GAS / CATS_GAS
+function catSyncGlobals(){
+  try {
+    const cd = catGetData('cd');
+    const ga = catGetData('ga');
+    const all = cd.concat(ga);
+    const allEnts = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+    // Rebuild ENT_CATS_GAS from config
+    allEnts.forEach(function(ent){
+      const tipos = [];
+      all.forEach(function(c){
+        if(c.empresas && c.empresas.includes(ent) && c.tipo && tipos.indexOf(c.tipo)<0) tipos.push(c.tipo);
+      });
+      if(tipos.length && typeof ENT_CATS_GAS !== 'undefined') ENT_CATS_GAS[ent] = tipos;
+    });
+    // Rebuild global CATS_GAS from all unique tipos
+    if(typeof CATS_GAS !== 'undefined'){
+      const allTipos = [];
+      all.forEach(function(c){ if(c.tipo && allTipos.indexOf(c.tipo)<0) allTipos.push(c.tipo); });
+      CATS_GAS.length = 0;
+      allTipos.forEach(function(t){ CATS_GAS.push(t); });
+    }
+  } catch(e){ console.warn('[catSyncGlobals]', e); }
 }
 
 let _catTab = 'cd';
@@ -652,6 +678,9 @@ function catToggleEmp(idx, sec, empresa, checked){
   window.CAT_GA_DEFAULT = CAT_GA_DEFAULT;
   window.catGetData = catGetData;
   window.catSetData = catSetData;
+  window.catSyncGlobals = catSyncGlobals;
+  // Sync config categories into globals on load
+  catSyncGlobals();
   window.rCatView = rCatView;
   window.catSwitchTab = catSwitchTab;
   window.catNew = catNew;
