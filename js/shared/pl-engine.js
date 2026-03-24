@@ -15,13 +15,25 @@
   // Categorias que son Costes Directos (variables, ligados al producto)
   const COST_CATS = ['Operaciones','Com. Bancarias','TPV Comisiones','Costo Directo','Costos Directos'];
 
+  // Build dynamic cost category types from config (cd = costos directos)
+  function _getCostTypes(){
+    const types = new Set(COST_CATS.map(c=>c.toLowerCase()));
+    if(typeof catGetData === 'function'){
+      const cd = catGetData('cd') || [];
+      cd.forEach(c => { if(c.tipo) types.add(c.tipo.toLowerCase()); });
+    }
+    return types;
+  }
+
   function _isCostRow(r){
     // Explicit tipo field takes precedence (set by user in flujo-gastos UI)
     if(r.tipo === 'costo') return true;
     if(r.tipo === 'gasto') return false;
     // Fallback: auto-detect from category (legacy rows without tipo)
-    if(r.cat==='N\u00f3mina') return r.concepto.toLowerCase().includes('operativ') || r.concepto.toLowerCase().includes('directa');
-    return COST_CATS.some(c=>r.cat===c);
+    if(r.cat==='Nómina') return r.concepto.toLowerCase().includes('operativ') || r.concepto.toLowerCase().includes('directa');
+    // Check against both hardcoded and config-based cost categories
+    const costTypes = _getCostTypes();
+    return costTypes.has((r.cat||'').toLowerCase());
   }
 
   // ═══════════════════════════════════════
