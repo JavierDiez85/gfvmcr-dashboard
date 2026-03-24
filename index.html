@@ -703,26 +703,27 @@
     <div style="overflow-x:auto">
       <table class="bt">
         <thead><tr>
-          <th style="width:160px">Nombre</th>
+          <th style="width:150px">Nombre</th>
           <th style="width:110px">Rol</th>
           <th style="width:80px">Tipo</th>
           <th class="r" style="width:95px">Sueldo/Mes</th>
-          <th style="width:90px">Ingreso</th>
-          <th style="min-width:300px">Distribución</th>
-          <th style="width:60px;text-align:center">Status</th>
+          <th style="width:88px">Ingreso</th>
+          <th class="r" style="width:85px;color:#0073ea">Salem</th>
+          <th class="r" style="width:85px;color:#00b875">Endless</th>
+          <th class="r" style="width:85px;color:#ff7043">Dynamo</th>
+          <th class="r" style="width:85px;color:#9b51e0">Wirebit</th>
+          <th class="r" style="width:85px;color:#e53935">Stellaris</th>
+          <th style="width:55px;text-align:center">Status</th>
         </tr></thead>
         <tbody id="nom-edit-tbody"></tbody>
         <tfoot><tr style="background:var(--bg);font-weight:700;border-top:2px solid var(--border2)">
-          <td colspan="3" style="padding:8px 12px;font-size:.78rem;color:var(--text)">TOTAL</td>
+          <td colspan="4" style="padding:8px 12px;font-size:.78rem;color:var(--text)">TOTAL</td>
           <td class="mo bld pos" id="nom-ft-total" style="padding:8px 12px"></td>
-          <td></td>
-          <td style="padding:4px 12px;font-size:.7rem">
-            <span style="color:#0073ea" id="nom-ft-sal"></span>
-            <span style="color:#00b875;margin-left:6px" id="nom-ft-end"></span>
-            <span style="color:#ff7043;margin-left:6px" id="nom-ft-dyn"></span>
-            <span style="color:#9b51e0;margin-left:6px" id="nom-ft-wb"></span>
-            <span style="color:#e53935;margin-left:6px" id="nom-ft-stel"></span>
-          </td>
+          <td class="mo bld" id="nom-ft-sal" style="padding:8px 12px;color:#0073ea"></td>
+          <td class="mo bld" id="nom-ft-end" style="padding:8px 12px;color:#00b875"></td>
+          <td class="mo bld" id="nom-ft-dyn" style="padding:8px 12px;color:#ff7043"></td>
+          <td class="mo bld" id="nom-ft-wb" style="padding:8px 12px;color:#9b51e0"></td>
+          <td class="mo bld" id="nom-ft-stel" style="padding:8px 12px;color:#e53935"></td>
           <td id="nom-ft-count" style="text-align:center;font-size:.72rem;color:var(--muted)"></td>
         </tr></tfoot>
       </table>

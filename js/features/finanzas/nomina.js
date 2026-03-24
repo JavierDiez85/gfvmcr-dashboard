@@ -77,11 +77,11 @@ function nomUpdateFooter(){
   const {ts,te,td,tw,tst,tot}=nomCalcTotals();
   const q=id=>document.getElementById(id);
   if(q('nom-ft-total')) q('nom-ft-total').textContent=fmt(tot);
-  if(q('nom-ft-sal')) q('nom-ft-sal').textContent='S:'+fmtK(ts);
-  if(q('nom-ft-end')) q('nom-ft-end').textContent='E:'+fmtK(te);
-  if(q('nom-ft-dyn')) q('nom-ft-dyn').textContent='D:'+fmtK(td);
-  if(q('nom-ft-wb')) q('nom-ft-wb').textContent='W:'+fmtK(tw);
-  if(q('nom-ft-stel')) q('nom-ft-stel').textContent='St:'+fmtK(tst);
+  if(q('nom-ft-sal')) q('nom-ft-sal').textContent=fmt(ts);
+  if(q('nom-ft-end')) q('nom-ft-end').textContent=fmt(te);
+  if(q('nom-ft-dyn')) q('nom-ft-dyn').textContent=fmt(td);
+  if(q('nom-ft-wb')) q('nom-ft-wb').textContent=fmt(tw);
+  if(q('nom-ft-stel')) q('nom-ft-stel').textContent=fmt(tst);
   const activos = NOM_EDIT.filter(e=>!e.fb).length;
   if(q('nom-ft-count')) q('nom-ft-count').textContent=activos+'/'+NOM_EDIT.length;
   // KPI cards
@@ -120,13 +120,18 @@ function nomRenderRow(e,i){
   const statusBadge = isBaja
     ? '<span style="background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600">Baja</span>'
     : '<span style="background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600">Activo</span>';
+  const salM=e.s*(e.sal/100), endM=e.s*(e.end/100), dynM=e.s*(e.dyn/100), wbM=e.s*(e.wb/100), stelM=e.s*((e.stel||0)/100);
   return`<tr id="nom-row-${i}" style="cursor:pointer;${isBaja?'opacity:.5;':''}" onclick="nomOpenDetail(${i})">
-    <td style="padding:8px 12px;font-weight:600;font-size:.82rem">${escapeHtml(e.n)}${e.s2?'<span style="display:block;font-size:.6rem;color:var(--blue);font-weight:400">Cambio sueldo desde '+(e.fs2||'?')+'</span>':''}</td>
-    <td style="color:var(--muted);font-size:.78rem">${escapeHtml(e.r)}</td>
-    <td style="padding:4px 8px"><span style="color:${tipoColor};font-weight:600;font-size:.72rem">${e.tipo}</span></td>
-    <td class="r" style="font-weight:600;color:var(--green);font-size:.82rem">${fmt(e.s)}${e.s2?'<span style="display:block;font-size:.6rem;color:var(--blue)">→ '+fmt(e.s2)+'</span>':''}</td>
+    <td style="padding:8px 12px;font-weight:600;font-size:.8rem">${escapeHtml(e.n)}${e.s2?'<span style="display:block;font-size:.58rem;color:var(--blue);font-weight:400">Cambio → '+fmt(e.s2)+' desde '+(e.fs2||'?')+'</span>':''}</td>
+    <td style="color:var(--muted);font-size:.76rem">${escapeHtml(e.r)}</td>
+    <td><span style="color:${tipoColor};font-weight:600;font-size:.72rem">${e.tipo}</span></td>
+    <td class="r" style="font-weight:600;color:var(--green);font-size:.8rem">${fmt(e.s)}</td>
     <td style="font-size:.72rem;color:var(--muted)">${e.fi||'—'}</td>
-    <td style="padding:4px 12px">${_nomMiniBar(e)}</td>
+    <td class="r" style="color:#0073ea;font-size:.78rem">${salM>0?fmt(salM):'—'}</td>
+    <td class="r" style="color:#00b875;font-size:.78rem">${endM>0?fmt(endM):'—'}</td>
+    <td class="r" style="color:#ff7043;font-size:.78rem">${dynM>0?fmt(dynM):'—'}</td>
+    <td class="r" style="color:#9b51e0;font-size:.78rem">${wbM>0?fmt(wbM):'—'}</td>
+    <td class="r" style="color:#e53935;font-size:.78rem">${stelM>0?fmt(stelM):'—'}</td>
     <td style="text-align:center">${statusBadge}</td>
   </tr>`;
 }
