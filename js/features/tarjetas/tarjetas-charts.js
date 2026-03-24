@@ -501,8 +501,8 @@ function rCatView(){
         +'<td><div style="display:flex;gap:3px;flex-wrap:wrap">'+boxes+'</div></td>'
         +'<td style="text-align:right">'+pp+'</td>'
         +'<td style="text-align:center;white-space:nowrap">'
-          +(!isViewer() ? '<button onclick="catEdit('+i+',\''+sec+'\')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>'
-          +'<button onclick="catDel('+i+',\''+sec+'\')" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>' : '')
+          +(!isViewer() ? '<button onclick="catEdit('+i+',\''+sec+'\')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:6px;padding:5px 12px;font-size:.7rem;cursor:pointer;margin-right:4px;font-weight:600">Editar</button>'
+          +'<button onclick="catDel('+i+',\''+sec+'\')" style="background:#fde8e8;color:#c62828;border:none;border-radius:6px;padding:5px 12px;font-size:.7rem;cursor:pointer;font-weight:600">Eliminar</button>' : '')
         +'</td></tr>';
     }).join('');
   }
@@ -510,7 +510,7 @@ function rCatView(){
   // Update KPI exclusivas
   const allCats = cd.concat(ga);
   const kExcl = document.querySelector('#view-cfg_categorias .kpi-val[style*="orange"]');
-  if(kExcl) kExcl.textContent = allCats.filter(c=>!c.empresas||c.empresas.length<4).length;
+  if(kExcl) kExcl.textContent = allCats.filter(c=>!c.empresas||c.empresas.length<5).length;
 
   const tcd = document.getElementById('cat-tbody-cd');
   const tga = document.getElementById('cat-tbody-ga');
