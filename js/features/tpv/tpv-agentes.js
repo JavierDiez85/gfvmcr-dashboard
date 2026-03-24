@@ -18,7 +18,9 @@ async function rTPVAgentes(){
     gfpRender('tpv-agentes-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026'], viewId:'tpv_agentes'});
   }
   const tbody=document.getElementById('agentes-tbody');if(!tbody)return;
-  const agents = await TPV.agentSummary() || [];
+  const range = typeof _tpvPeriodRange === 'function' ? _tpvPeriodRange() : {from:null,to:null};
+  TPV.invalidateAll();
+  const agents = await TPV.agentSummary(range.from, range.to) || [];
   const agPagosData = agentePagosLoad();
 
   // Enrich with payment data
@@ -185,7 +187,8 @@ async function openTopComisiones() {
   if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Cargando...</td></tr>';
 
   try {
-    const data = await TPV.clientCommissions();
+    const _r2 = typeof _tpvPeriodRange === 'function' ? _tpvPeriodRange() : {from:null,to:null};
+    const data = await TPV.clientCommissions(_r2.from, _r2.to);
     if (!data || !data.length) {
       if (tbody) tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--muted)">Sin datos</td></tr>';
       return;

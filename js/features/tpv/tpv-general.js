@@ -327,19 +327,48 @@ function _renderCharts(topKey, pieKey, clients, mix, barColor) {
   }
 }
 
+// Convert period filter state to {from, to} date range
+function _tpvPeriodRange(){
+  const y = typeof _year !== 'undefined' ? _year : new Date().getFullYear();
+  const p = (typeof _gfPeriod !== 'undefined' && _gfPeriod.tpv) || 'año';
+  if(p === 'año') return { from: y+'-01-01', to: y+'-12-31', label: 'Año '+y };
+  if(p.startsWith('q')){
+    const q = parseInt(p.slice(1));
+    const m0 = (q-1)*3; // 0-based start month
+    const from = y+'-'+String(m0+1).padStart(2,'0')+'-01';
+    const endM = m0+3; // 1-based end month
+    const lastDay = new Date(y, endM, 0).getDate();
+    const to = y+'-'+String(endM).padStart(2,'0')+'-'+lastDay;
+    return { from, to, label: 'Q'+q+' '+y };
+  }
+  if(p.startsWith('mes_')){
+    const mi = parseInt(p.split('_')[1]);
+    const mo = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    const from = y+'-'+String(mi+1).padStart(2,'0')+'-01';
+    const lastDay = new Date(y, mi+1, 0).getDate();
+    const to = y+'-'+String(mi+1).padStart(2,'0')+'-'+lastDay;
+    return { from, to, label: mo[mi]+' '+y };
+  }
+  return { from: null, to: null, label: 'Histórico Completo' };
+}
+
 async function initTPVGeneral() {
   // Period filter bar (year selector)
   if(typeof gfpRender === 'function'){
     gfpRender('tpv-pbar', {ent:'tpv', color:'#0073ea', type:'sub', years:['2025','2026']});
   }
-  console.log('[TPV] initTPVGeneral loading...');
+  const range = _tpvPeriodRange();
+  console.log('[TPV] initTPVGeneral loading...', range);
+  TPV.invalidateAll();
   const [clients, kpis, mix] = await Promise.all([
-    TPV.clientsByVolume(), TPV.kpis(), TPV.commissionMix()
+    TPV.clientsByVolume(range.from, range.to),
+    TPV.kpis(range.from, range.to),
+    TPV.commissionMix(range.from, range.to)
   ]);
   console.log('[TPV] initTPVGeneral data:', { clients: (clients||[]).length, kpis: kpis ? 'OK' : 'null', mix: (mix||[]).length });
   const k = kpis || {};
   const sub = document.getElementById('tpv-general-subtitle');
-  if (sub) sub.innerHTML = `Análisis acumulado · Sin filtro de fechas · <span style="color:#0073ea;font-weight:600">${k.num_clientes || 0} clientes</span> · <span style="color:var(--green);font-weight:600">${(k.num_transacciones||0).toLocaleString()} txns</span>`;
+  if (sub) sub.innerHTML = `${range.label} · <span style="color:#0073ea;font-weight:600">${k.num_clientes || 0} clientes</span> · <span style="color:var(--green);font-weight:600">${(k.num_transacciones||0).toLocaleString()} txns</span>`;
   _renderClientTable('dg-tbody', clients || []);
   _renderKpis('tpv-general-kpis', k, mix, true);
   setTimeout(() => _renderCharts('top10', 'com_pie', clients, mix, '#0073ea'), 50);
@@ -372,6 +401,7 @@ const TPV_CHARTS = {};
   window._renderClientTable = _renderClientTable;
   window._renderKpis = _renderKpis;
   window._renderCharts = _renderCharts;
+  window._tpvPeriodRange = _tpvPeriodRange;
   window.initTPVGeneral = initTPVGeneral;
   window._tpvPagosCache = _tpvPagosCache;
   window._termAllData = _termAllData;

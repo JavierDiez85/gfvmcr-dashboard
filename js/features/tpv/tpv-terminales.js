@@ -18,7 +18,9 @@ async function rTPVTerminales(){
   const existingBanner = document.getElementById('tpv-conn-banner');
   if (existingBanner) existingBanner.remove();
 
-  const terms = await TPV.terminalStatus() || [];
+  const range = typeof _tpvPeriodRange === 'function' ? _tpvPeriodRange() : {from:null,to:null};
+  TPV.invalidateAll();
+  const terms = await TPV.terminalStatus(range.from, range.to) || [];
   _termAllData = terms; // store for filtering
 
   // Banner de error de conexión
