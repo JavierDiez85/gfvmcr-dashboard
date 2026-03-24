@@ -76,118 +76,173 @@ function nomCalcTotals(){
 function nomUpdateFooter(){
   const {ts,te,td,tw,tst,tot}=nomCalcTotals();
   const q=id=>document.getElementById(id);
-  q('nom-ft-total').textContent=fmt(tot);
-  q('nom-ft-sal').textContent=fmt(ts);
-  q('nom-ft-end').textContent=fmt(te);
-  q('nom-ft-dyn').textContent=fmt(td);
-  q('nom-ft-wb').textContent=fmt(tw);
-  var _stelFt=q('nom-ft-stel'); if(_stelFt) _stelFt.textContent=fmt(tst);
+  if(q('nom-ft-total')) q('nom-ft-total').textContent=fmt(tot);
+  if(q('nom-ft-sal')) q('nom-ft-sal').textContent='S:'+fmtK(ts);
+  if(q('nom-ft-end')) q('nom-ft-end').textContent='E:'+fmtK(te);
+  if(q('nom-ft-dyn')) q('nom-ft-dyn').textContent='D:'+fmtK(td);
+  if(q('nom-ft-wb')) q('nom-ft-wb').textContent='W:'+fmtK(tw);
+  if(q('nom-ft-stel')) q('nom-ft-stel').textContent='St:'+fmtK(tst);
+  const activos = NOM_EDIT.filter(e=>!e.fb).length;
+  if(q('nom-ft-count')) q('nom-ft-count').textContent=activos+'/'+NOM_EDIT.length;
   // KPI cards
-  q('nom-kpi-total').textContent=fmtK(tot);
-  q('nom-kpi-emp').textContent=NOM_EDIT.length+' empleados';
-  q('nom-kpi-sal').textContent=fmtK(ts);
-  q('nom-kpi-end').textContent=fmtK(te);
-  q('nom-kpi-dyn').textContent=fmtK(td);
-  q('nom-kpi-wb').textContent=fmtK(tw);
-  var _stelKpi=q('nom-kpi-stel'); if(_stelKpi) _stelKpi.textContent=fmtK(tst);
-  // avg % cols
-  const n=NOM_EDIT.length||1;
-  const as=NOM_EDIT.reduce((a,e)=>a+e.sal,0)/n;
-  const ae=NOM_EDIT.reduce((a,e)=>a+e.end,0)/n;
-  const ad=NOM_EDIT.reduce((a,e)=>a+e.dyn,0)/n;
-  const aw=NOM_EDIT.reduce((a,e)=>a+e.wb,0)/n;
-  const ast=NOM_EDIT.reduce((a,e)=>a+(e.stel||0),0)/n;
-  q('nom-ft-sal-p').textContent=as.toFixed(1)+'% avg';
-  q('nom-ft-end-p').textContent=ae.toFixed(1)+'% avg';
-  q('nom-ft-dyn-p').textContent=ad.toFixed(1)+'% avg';
-  q('nom-ft-wb-p').textContent=aw.toFixed(1)+'% avg';
-  var _stelFtP=q('nom-ft-stel-p'); if(_stelFtP) _stelFtP.textContent=ast.toFixed(1)+'% avg';
+  if(q('nom-kpi-total')) q('nom-kpi-total').textContent=fmtK(tot);
+  if(q('nom-kpi-emp')) q('nom-kpi-emp').textContent=NOM_EDIT.length+' empleados';
+  if(q('nom-kpi-sal')) q('nom-kpi-sal').textContent=fmtK(ts);
+  if(q('nom-kpi-end')) q('nom-kpi-end').textContent=fmtK(te);
+  if(q('nom-kpi-dyn')) q('nom-kpi-dyn').textContent=fmtK(td);
+  if(q('nom-kpi-wb')) q('nom-kpi-wb').textContent=fmtK(tw);
+  if(q('nom-kpi-stel')) q('nom-kpi-stel').textContent=fmtK(tst);
   // propagate to NOM global
   NOM_EDIT.forEach((e,i)=>{
     if(NOM[i]){NOM[i].s=e.s;NOM[i].dist={Salem:e.sal/100,Endless:e.end/100,Dynamo:e.dyn/100,Wirebit:e.wb/100,Stellaris:(e.stel||0)/100};}
   });
 }
 
+// ── Mini distribution bar (visual % per company) ──
+function _nomMiniBar(e){
+  const ents = [{k:'sal',c:'#0073ea'},{k:'end',c:'#00b875'},{k:'dyn',c:'#ff7043'},{k:'wb',c:'#9b51e0'},{k:'stel',c:'#e53935'}];
+  const tot = e.sal+e.end+e.dyn+e.wb+(e.stel||0);
+  if(tot===0) return '<span style="color:var(--muted);font-size:.7rem">Sin asignar</span>';
+  let bar = '<div style="display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--border)">';
+  ents.forEach(en=>{
+    const v=e[en.k]||0;
+    if(v>0) bar+=`<div style="width:${v/tot*100}%;background:${en.c}" title="${en.k.toUpperCase()} ${v}%"></div>`;
+  });
+  bar+='</div>';
+  // labels below
+  const labels = ents.filter(en=>(e[en.k]||0)>0).map(en=>`<span style="color:${en.c};font-weight:600">${e[en.k]}%</span>`).join(' ');
+  return bar+'<div style="font-size:.62rem;margin-top:2px">'+labels+(tot!==100?' <span style="color:var(--red)">!=100</span>':'')+'</div>';
+}
+
 function nomRenderRow(e,i){
-  const tot=e.sal+e.end+e.dyn+e.wb+(e.stel||0);
-  const ok=tot===100;
-  const totCls=ok?'pos':'neg';
-  const inStyle='style="width:100%;border:none;background:transparent;text-align:right;font-size:.78rem;font-family:inherit;color:inherit;padding:0"';
+  const isBaja = !!e.fb;
   const tipoColor = e.tipo==='Operativo' ? '#0073ea' : '#9b51e0';
-  const fiVal = e.fi || '';
-  const fbVal = e.fb || '';
-  const isBaja = !!fbVal;
-  const rowOpacity = isBaja ? 'opacity:.5;' : '';
-  // Cambio de sueldo
-  const s2Val = e.s2 || '';
-  const fs2Val = e.fs2 || '';
-  const s2Display = s2Val ? fmt(s2Val) : '';
-  return`<tr id="nom-row-${i}" style="${rowOpacity}">
-    <td><input ${inStyle} value="${e.n}" onchange="NOM_EDIT[${i}].n=this.value" style="text-align:left;width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit"></td>
-    <td><input ${inStyle} value="${e.r}" onchange="NOM_EDIT[${i}].r=this.value" style="text-align:left;width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;color:var(--muted)"></td>
-    <td style="padding:2px 6px">
-      <input type="date" value="${fiVal}" title="Fecha de ingreso"
-        style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.7rem;padding:2px 4px;background:var(--bg);font-family:inherit;color:var(--text)"
-        onchange="NOM_EDIT[${i}].fi=this.value;nomUpdateFooter()">
-    </td>
-    <td style="padding:2px 6px">
-      <input type="date" value="${fbVal}" title="Fecha de baja — deja de contar en nómina desde esta fecha"
-        style="width:100%;border:1px solid ${isBaja?'var(--red)':'var(--border)'};border-radius:4px;font-size:.7rem;padding:2px 4px;background:${isBaja?'var(--red-bg)':'var(--bg)'};font-family:inherit;color:${isBaja?'var(--red)':'var(--text)'}"
-        onchange="NOM_EDIT[${i}].fb=this.value;rNomina()">
-    </td>
-    <td style="padding:2px 6px">
-      <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.72rem;padding:2px 4px;background:var(--bg);color:${tipoColor};font-weight:600"
-        onchange="NOM_EDIT[${i}].tipo=this.value;nomRefreshRow(${i})">
-        <option${e.tipo==='Operativo'?' selected':''}>Operativo</option>
-        <option${e.tipo==='Administrativo'?' selected':''}>Administrativo</option>
-      </select>
-    </td>
-    <td><input type="text" value="${fmt(e.s)}"
-      onfocus="this.value=NOM_EDIT[${i}].s;this.select()"
-      onblur="NOM_EDIT[${i}].s=+(this.value.replace(/[^0-9.]/g,''))||0;this.value=fmt(NOM_EDIT[${i}].s);nomUpdateFooter()"
-      style="text-align:right;width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;font-weight:600;color:var(--green);padding:0"></td>
-    <td style="padding:2px 4px">
-      <input type="text" value="${s2Display}" placeholder="—" title="Nuevo sueldo (dejar vacío si no hay cambio)"
-        onfocus="this.value=NOM_EDIT[${i}].s2||'';this.select()"
-        onblur="var v=+(this.value.replace(/[^0-9.]/g,''))||0;NOM_EDIT[${i}].s2=v||undefined;this.value=v?fmt(v):'';nomUpdateFooter()"
-        style="text-align:right;width:100%;border:1px solid var(--border);border-radius:4px;background:var(--bg);font-size:.72rem;font-family:inherit;color:var(--blue);padding:2px 4px"></td>
-    <td style="padding:2px 4px">
-      <input type="date" value="${fs2Val}" title="Fecha desde la cual aplica el nuevo sueldo"
-        style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.7rem;padding:2px 4px;background:var(--bg);font-family:inherit;color:var(--text)"
-        onchange="NOM_EDIT[${i}].fs2=this.value;nomUpdateFooter()">
-    </td>
-    <td style="background:rgba(0,115,234,.05)"><input type="number" ${inStyle} value="${e.sal}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].sal=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#0073ea;font-weight:600"></td>
-    <td style="background:rgba(0,184,117,.05)"><input type="number" ${inStyle} value="${e.end}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].end=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#00b875;font-weight:600"></td>
-    <td style="background:rgba(255,112,67,.05)"><input type="number" ${inStyle} value="${e.dyn}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].dyn=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#ff7043;font-weight:600"></td>
-    <td style="background:rgba(155,81,224,.05)"><input type="number" ${inStyle} value="${e.wb}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].wb=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#9b51e0;font-weight:600"></td>
-    <td style="background:rgba(229,57,53,.05)"><input type="number" ${inStyle} value="${e.stel||0}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].stel=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#e53935;font-weight:600"></td>
-    <td class="mo ${totCls}" style="font-weight:700" id="nom-tot-${i}">${tot}%</td>
-    <td class="mo" style="color:#0073ea">${fmt(e.s*(e.sal/100))}</td>
-    <td class="mo" style="color:#00b875">${fmt(e.s*(e.end/100))}</td>
-    <td class="mo" style="color:#ff7043">${fmt(e.s*(e.dyn/100))}</td>
-    <td class="mo" style="color:#9b51e0">${fmt(e.s*(e.wb/100))}</td>
-    <td class="mo" style="color:#e53935">${fmt(e.s*((e.stel||0)/100))}</td>
-    <td style="text-align:center"><button onclick="if(confirm('Eliminar a '+NOM_EDIT[${i}].n+'?'))nomDelRow(${i})" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 5px" title="Eliminar empleado">✕</button></td>
+  const statusBadge = isBaja
+    ? '<span style="background:var(--red-bg);color:var(--red);padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600">Baja</span>'
+    : '<span style="background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:600">Activo</span>';
+  return`<tr id="nom-row-${i}" style="cursor:pointer;${isBaja?'opacity:.5;':''}" onclick="nomOpenDetail(${i})">
+    <td style="padding:8px 12px;font-weight:600;font-size:.82rem">${escapeHtml(e.n)}${e.s2?'<span style="display:block;font-size:.6rem;color:var(--blue);font-weight:400">Cambio sueldo desde '+(e.fs2||'?')+'</span>':''}</td>
+    <td style="color:var(--muted);font-size:.78rem">${escapeHtml(e.r)}</td>
+    <td style="padding:4px 8px"><span style="color:${tipoColor};font-weight:600;font-size:.72rem">${e.tipo}</span></td>
+    <td class="r" style="font-weight:600;color:var(--green);font-size:.82rem">${fmt(e.s)}${e.s2?'<span style="display:block;font-size:.6rem;color:var(--blue)">→ '+fmt(e.s2)+'</span>':''}</td>
+    <td style="font-size:.72rem;color:var(--muted)">${e.fi||'—'}</td>
+    <td style="padding:4px 12px">${_nomMiniBar(e)}</td>
+    <td style="text-align:center">${statusBadge}</td>
   </tr>`;
 }
 
-function nomRefreshRow(i){
-  const e=NOM_EDIT[i];
-  const tot=e.sal+e.end+e.dyn+e.wb+(e.stel||0);
-  const ok=tot===100;
-  const el=document.getElementById('nom-tot-'+i);
-  if(el){el.textContent=tot+'%';el.className='mo '+(ok?'pos':'neg');el.style.fontWeight='700';}
-  // refresh calculated cells (columns: 0-name,1-rol,2-fi,3-fb,4-tipo,5-sueldo,6-s2,7-fs2,8-13=%s,14-tot%,15-19=$/mes,20=del)
-  const row=document.getElementById('nom-row-'+i);
-  if(row){
-    const tds=row.querySelectorAll('td');
-    tds[15].textContent=fmt(e.s*(e.sal/100));
-    tds[16].textContent=fmt(e.s*(e.end/100));
-    tds[17].textContent=fmt(e.s*(e.dyn/100));
-    tds[18].textContent=fmt(e.s*(e.wb/100));
-    tds[19].textContent=fmt(e.s*((e.stel||0)/100));
+// ── Modal de detalle de empleado ──
+function nomOpenDetail(i){
+  const e = NOM_EDIT[i];
+  const yr = _year;
+  const _ENT = [{k:'Salem',c:'#0073ea',f:'sal'},{k:'Endless',c:'#00b875',f:'end'},{k:'Dynamo',c:'#ff7043',f:'dyn'},{k:'Wirebit',c:'#9b51e0',f:'wb'},{k:'Stellaris',c:'#e53935',f:'stel'}];
+  const inS = 'style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px 10px;font-size:.82rem;font-family:inherit;background:var(--bg);color:var(--text)"';
+  const tot = e.sal+e.end+e.dyn+e.wb+(e.stel||0);
+
+  // Section 1: Info general
+  let html = `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px">
+    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Nombre</label>
+      <input id="nd-n" ${inS} value="${escapeHtml(e.n)}"></div>
+    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Rol</label>
+      <input id="nd-r" ${inS} value="${escapeHtml(e.r)}"></div>
+    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Tipo</label>
+      <select id="nd-tipo" ${inS}>
+        <option${e.tipo==='Operativo'?' selected':''}>Operativo</option>
+        <option${e.tipo==='Administrativo'?' selected':''}>Administrativo</option>
+      </select></div>
+    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Fecha Ingreso</label>
+      <input id="nd-fi" type="date" ${inS} value="${e.fi||''}"></div>
+    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Fecha Baja</label>
+      <input id="nd-fb" type="date" ${inS} value="${e.fb||''}" style="border-color:${e.fb?'var(--red)':'var(--border)'}"></div>
+    <div></div>
+  </div>`;
+
+  // Section 2: Sueldo
+  html += `<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:20px;padding:14px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+    <div><label style="font-size:.68rem;color:var(--muted);display:block;margin-bottom:4px">Sueldo Actual</label>
+      <input id="nd-s" type="text" ${inS} value="${e.s}" style="font-weight:700;color:var(--green);font-size:.95rem"></div>
+    <div><label style="font-size:.68rem;color:var(--blue);display:block;margin-bottom:4px">Nuevo Sueldo</label>
+      <input id="nd-s2" type="text" ${inS} value="${e.s2||''}" placeholder="Sin cambio" style="color:var(--blue)"></div>
+    <div><label style="font-size:.68rem;color:var(--blue);display:block;margin-bottom:4px">Aplica Desde</label>
+      <input id="nd-fs2" type="date" ${inS} value="${e.fs2||''}"></div>
+  </div>`;
+
+  // Section 3: Distribución %
+  html += `<div style="margin-bottom:20px"><h4 style="font-size:.78rem;margin:0 0 10px;color:var(--text)">Distribución por Empresa <span id="nd-tot" style="font-weight:700;color:${tot===100?'var(--green)':'var(--red)'}">${tot}%</span></h4>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">`;
+  _ENT.forEach(en=>{
+    html+=`<div style="text-align:center">
+      <label style="font-size:.68rem;color:${en.c};font-weight:600;display:block;margin-bottom:4px">${en.k}</label>
+      <input id="nd-${en.f}" type="number" min="0" max="100" step="5" value="${e[en.f]||0}"
+        oninput="nomDetailUpdateTot()"
+        style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px;font-size:.9rem;text-align:center;font-weight:700;color:${en.c};background:var(--bg);font-family:inherit">
+    </div>`;
+  });
+  html+=`</div></div>`;
+
+  // Section 4: Costo mensual por empresa
+  html += `<div style="margin-bottom:16px"><h4 style="font-size:.78rem;margin:0 0 10px;color:var(--text)">Costo Mensual por Empresa (${yr})</h4>
+    <div style="overflow-x:auto"><table class="bt" style="font-size:.72rem">
+    <thead><tr><th>Empresa</th>`;
+  MO.forEach(m=>{ html+=`<th class="r">${m}</th>`; });
+  html+=`<th class="r" style="font-weight:700">Total</th></tr></thead><tbody>`;
+  _ENT.forEach(en=>{
+    let rowTotal = 0;
+    html+=`<tr><td style="color:${en.c};font-weight:600">${en.k}</td>`;
+    for(let m=0;m<12;m++){
+      const v = _nomDist(en.k, e, m, yr);
+      rowTotal += v;
+      html+=`<td class="r">${v>0?fmt(Math.round(v)):'—'}</td>`;
+    }
+    html+=`<td class="r" style="font-weight:700;color:${en.c}">${fmt(Math.round(rowTotal))}</td></tr>`;
+  });
+  // Total row
+  html+=`<tr style="font-weight:700;border-top:2px solid var(--border2)"><td>TOTAL</td>`;
+  let grandTotal = 0;
+  for(let m=0;m<12;m++){
+    let mTotal = 0;
+    _ENT.forEach(en=>{ mTotal+=_nomDist(en.k, e, m, yr); });
+    grandTotal += mTotal;
+    html+=`<td class="r">${mTotal>0?fmt(Math.round(mTotal)):'—'}</td>`;
   }
-  nomUpdateFooter();
+  html+=`<td class="r">${fmt(Math.round(grandTotal))}</td></tr>`;
+  html+=`</tbody></table></div></div>`;
+
+  // Action buttons
+  html += `<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border)">
+    <button onclick="if(confirm('Eliminar a ${escapeHtml(e.n)}?')){nomDelRow(${i});closeModal()}" style="background:none;border:1px solid var(--red);color:var(--red);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:.78rem">Eliminar Empleado</button>
+    <button onclick="nomSaveDetail(${i})" style="background:var(--blue);color:#fff;border:none;padding:8px 24px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600">Guardar Cambios</button>
+  </div>`;
+
+  openModal('nomina_detail', e.n + ' — Ficha de Empleado', html);
+}
+
+function nomDetailUpdateTot(){
+  const fields = ['sal','end','dyn','wb','stel'];
+  const tot = fields.reduce((s,f)=>s+(+document.getElementById('nd-'+f).value||0),0);
+  const el = document.getElementById('nd-tot');
+  if(el){ el.textContent=tot+'%'; el.style.color=tot===100?'var(--green)':'var(--red)'; }
+}
+
+function nomSaveDetail(i){
+  const e = NOM_EDIT[i];
+  e.n = document.getElementById('nd-n').value;
+  e.r = document.getElementById('nd-r').value;
+  e.tipo = document.getElementById('nd-tipo').value;
+  e.fi = document.getElementById('nd-fi').value;
+  e.fb = document.getElementById('nd-fb').value;
+  e.s = +(document.getElementById('nd-s').value.replace(/[^0-9.]/g,''))||0;
+  const s2v = +(document.getElementById('nd-s2').value.replace(/[^0-9.]/g,''))||0;
+  e.s2 = s2v || undefined;
+  e.fs2 = document.getElementById('nd-fs2').value;
+  e.sal = +document.getElementById('nd-sal').value||0;
+  e.end = +document.getElementById('nd-end').value||0;
+  e.dyn = +document.getElementById('nd-dyn').value||0;
+  e.wb = +document.getElementById('nd-wb').value||0;
+  e.stel = +document.getElementById('nd-stel').value||0;
+  closeModal();
+  rNomina();
+  toast('Empleado actualizado');
 }
 
 // ── Plantilla Excel: descargar template vacío ──
@@ -288,7 +343,9 @@ function rNomina(){
   window.nomCalcTotals = nomCalcTotals;
   window.nomUpdateFooter = nomUpdateFooter;
   window.nomRenderRow = nomRenderRow;
-  window.nomRefreshRow = nomRefreshRow;
+  window.nomOpenDetail = nomOpenDetail;
+  window.nomDetailUpdateTot = nomDetailUpdateTot;
+  window.nomSaveDetail = nomSaveDetail;
   window.nomAddRow = nomAddRow;
   window.nomDelRow = nomDelRow;
   window.nomSave = nomSave;

@@ -701,45 +701,29 @@
       </div>
     </div>
     <div style="overflow-x:auto">
-      <table class="bt" style="min-width:760px">
+      <table class="bt">
         <thead><tr>
-          <th style="width:140px">Nombre</th>
-          <th style="width:130px">Rol</th>
-          <th style="width:105px">Ingreso</th>
-          <th style="width:105px">Baja</th>
-          <th style="width:90px">Tipo</th>
+          <th style="width:180px">Nombre</th>
+          <th style="width:140px">Rol</th>
+          <th style="width:100px">Tipo</th>
           <th class="r" style="width:110px">Sueldo/Mes</th>
-          <th class="r" style="width:90px;color:var(--blue)">Nuevo Sueldo</th>
-          <th style="width:105px;color:var(--blue)">Desde</th>
-          <th class="r" style="width:60px;color:#0073ea">SAL %</th>
-          <th class="r" style="width:60px;color:#00b875">END %</th>
-          <th class="r" style="width:60px;color:#ff7043">DYN %</th>
-          <th class="r" style="width:60px;color:#9b51e0">WB %</th>
-          <th class="r" style="width:60px;color:#e53935">STEL %</th>
-          <th class="r" style="width:50px">Total %</th>
-          <th class="r" style="width:80px">Salem/mes</th>
-          <th class="r" style="width:80px">Endless/mes</th>
-          <th class="r" style="width:80px">Dynamo/mes</th>
-          <th class="r" style="width:80px">Wirebit/mes</th>
-          <th class="r" style="width:80px">Stellaris/mes</th>
-          <th style="width:36px"></th>
+          <th style="width:100px">Ingreso</th>
+          <th style="width:200px">Distribución</th>
+          <th style="width:70px;text-align:center">Status</th>
         </tr></thead>
         <tbody id="nom-edit-tbody"></tbody>
         <tfoot><tr style="background:var(--bg);font-weight:700;border-top:2px solid var(--border2)">
-          <td colspan="7" style="padding:8px 12px;font-size:.78rem;color:var(--text)">TOTAL</td>
+          <td colspan="3" style="padding:8px 12px;font-size:.78rem;color:var(--text)">TOTAL</td>
           <td class="mo bld pos" id="nom-ft-total" style="padding:8px 12px"></td>
-          <td class="mo" id="nom-ft-sal-p" style="padding:8px 12px;color:#0073ea;font-size:.75rem"></td>
-          <td class="mo" id="nom-ft-end-p" style="padding:8px 12px;color:#00b875;font-size:.75rem"></td>
-          <td class="mo" id="nom-ft-dyn-p" style="padding:8px 12px;color:#ff7043;font-size:.75rem"></td>
-          <td class="mo" id="nom-ft-wb-p" style="padding:8px 12px;color:#9b51e0;font-size:.75rem"></td>
-          <td class="mo" id="nom-ft-stel-p" style="padding:8px 12px;color:#e53935;font-size:.75rem"></td>
-          <td style="padding:8px 12px"></td>
-          <td class="mo bld neg" id="nom-ft-sal" style="padding:8px 12px;color:#0073ea"></td>
-          <td class="mo bld neg" id="nom-ft-end" style="padding:8px 12px;color:#00b875"></td>
-          <td class="mo bld neg" id="nom-ft-dyn" style="padding:8px 12px;color:#ff7043"></td>
-          <td class="mo bld neg" id="nom-ft-wb" style="padding:8px 12px;color:#9b51e0"></td>
-          <td class="mo bld neg" id="nom-ft-stel" style="padding:8px 12px;color:#e53935"></td>
-          <td style="padding:8px 12px"></td>
+          <td></td>
+          <td style="padding:4px 12px;font-size:.7rem">
+            <span style="color:#0073ea" id="nom-ft-sal"></span>
+            <span style="color:#00b875;margin-left:6px" id="nom-ft-end"></span>
+            <span style="color:#ff7043;margin-left:6px" id="nom-ft-dyn"></span>
+            <span style="color:#9b51e0;margin-left:6px" id="nom-ft-wb"></span>
+            <span style="color:#e53935;margin-left:6px" id="nom-ft-stel"></span>
+          </td>
+          <td id="nom-ft-count" style="text-align:center;font-size:.72rem;color:var(--muted)"></td>
         </tr></tfoot>
       </table>
     </div>
