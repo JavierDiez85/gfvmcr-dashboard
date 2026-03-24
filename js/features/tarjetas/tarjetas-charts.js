@@ -467,8 +467,8 @@ let _catEditSec = 'cd';
 function rCatView(){
   const cd = catGetData('cd');
   const ga = catGetData('ga');
-  const empCols = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
-  const allEmps = ['Salem','Endless','Dynamo','Wirebit'];
+  const empCols = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
+  const allEmps = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
 
   function empBadges(empresas){
     return allEmps.map(e => {
@@ -481,8 +481,8 @@ function rCatView(){
   }
 
   function buildRows(arr, sec){
-    const empList = ['Salem','Endless','Dynamo','Wirebit'];
-    const empCols2 = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
+    const empList = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+    const empCols2 = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
     if(!arr.length) return '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">Sin categorías</td></tr>';
     return arr.map((c,i)=>{
       const pp = c.ppto ? '$'+Number(c.ppto).toLocaleString('es-MX') : '—';
@@ -554,8 +554,8 @@ function catShowModal(idx, sec){
   const isNew = idx===null;
   const data  = catGetData(sec);
   const item  = isNew ? {nombre:'',tipo:'',wb_only:false,ppto:0} : data[idx];
-  const empList = ['Salem','Endless','Dynamo','Wirebit'];
-  const empColors = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0'};
+  const empList = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
+  const empColors = {Salem:'#0073ea',Endless:'#00b875',Dynamo:'#ff7043',Wirebit:'#9b51e0',Stellaris:'#e53935'};
   const curEmps = item.empresas || empList;
   const wbRow = '<div style="margin-bottom:12px"><label class="fl">Aplica a estas empresas</label>'
     +'<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px">'
@@ -597,7 +597,7 @@ function catSaveModal(){
   const nombre = document.getElementById('cm-nombre').value.trim();
   const tipo   = document.getElementById('cm-tipo').value.trim();
   const ppto   = parseFloat(document.getElementById('cm-ppto').value)||0;
-  const empList2 = ['Salem','Endless','Dynamo','Wirebit'];
+  const empList2 = ['Salem','Endless','Dynamo','Wirebit','Stellaris'];
   const empresas = empList2.filter(e => { const el=document.getElementById('cm-emp-'+e); return el&&el.checked; });
   if(!nombre){ toast('⚠️ Ingresa el nombre'); return; }
   if(!empresas.length){ toast('⚠️ Selecciona al menos una empresa'); return; }

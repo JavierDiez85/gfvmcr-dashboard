@@ -56,8 +56,11 @@ function _isVencida(cxp){
   return cxp.fecha_vencimiento < _today();
 }
 
-function _catOptions(selected){
-  var cats = (typeof CATS_GAS !== 'undefined') ? CATS_GAS : ['Administrativo','Renta','Operaciones','Varios'];
+function _catOptions(selected, empresa){
+  var ent = empresa || _recvEmpresa || _emitEmpresa || null;
+  var cats = (typeof ENT_CATS_GAS !== 'undefined' && ent && ENT_CATS_GAS[ent])
+    ? ENT_CATS_GAS[ent]
+    : (typeof CATS_GAS !== 'undefined') ? CATS_GAS : ['Administrativo','Renta','Operaciones','Varios'];
   return cats.map(function(c){ return '<option value="'+c+'"'+(c===selected?' selected':'')+'>'+c+'</option>'; }).join('');
 }
 
@@ -1586,12 +1589,15 @@ function recvTipoChanged(){
   var tipo = (document.getElementById('recv-f-tipo')||{}).value;
   var catSel = document.getElementById('recv-f-cat');
   if(!catSel) return;
-  var cats = (typeof CATS_GAS !== 'undefined') ? CATS_GAS : [];
+  // Use entity-specific categories if available
+  var entCats = (typeof ENT_CATS_GAS !== 'undefined' && _recvEmpresa && ENT_CATS_GAS[_recvEmpresa])
+    ? ENT_CATS_GAS[_recvEmpresa]
+    : (typeof CATS_GAS !== 'undefined') ? CATS_GAS : [];
   var opCats = ['Nómina','Costo Directo','Operaciones','Com. Bancarias'];
   var admCats = ['Nómina','Renta','Marketing','Regulatorio','Administrativo','Representación','Varios'];
-  var filtered = tipo === 'Operativo' ? cats.filter(function(c){return opCats.indexOf(c)>=0;})
-    : tipo === 'Administrativo' ? cats.filter(function(c){return admCats.indexOf(c)>=0;})
-    : cats;
+  var filtered = tipo === 'Operativo' ? entCats.filter(function(c){return opCats.indexOf(c)>=0;})
+    : tipo === 'Administrativo' ? entCats.filter(function(c){return admCats.indexOf(c)>=0;})
+    : entCats;
   catSel.innerHTML = '<option value="">— Seleccionar —</option>' + filtered.map(function(c){return '<option value="'+c+'">'+c+'</option>';}).join('');
 }
 
