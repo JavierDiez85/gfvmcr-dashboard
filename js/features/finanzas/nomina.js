@@ -102,7 +102,7 @@ function nomRenderRow(e,i){
     </td>
     <td><input type="text" value="${fmt(e.s)}"
       onfocus="this.value=NOM_EDIT[${i}].s;this.select()"
-      onblur="NOM_EDIT[${i}].s=+(this.value.replace(/[^0-9]/g,''))||0;this.value=fmt(NOM_EDIT[${i}].s);nomUpdateFooter()"
+      onblur="NOM_EDIT[${i}].s=+(this.value.replace(/[^0-9.]/g,''))||0;this.value=fmt(NOM_EDIT[${i}].s);nomUpdateFooter()"
       style="text-align:right;width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;font-weight:600;color:var(--green);padding:0"></td>
     <td style="background:rgba(0,115,234,.05)"><input type="number" ${inStyle} value="${e.sal}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].sal=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#0073ea;font-weight:600"></td>
     <td style="background:rgba(0,184,117,.05)"><input type="number" ${inStyle} value="${e.end}" min="0" max="100" step="5" onchange="NOM_EDIT[${i}].end=+this.value;nomRefreshRow(${i})" style="text-align:right;color:#00b875;font-weight:600"></td>
