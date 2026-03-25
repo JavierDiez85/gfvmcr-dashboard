@@ -73,15 +73,16 @@
     }
 
     // ── Generate expense rows from configurable categories ──
-    // Groups by unique tipo to avoid double-counting when multiple categories share the same tipo.
-    // Each unique tipo produces ONE P&L row, labeled with the category nombre.
+    // Each unique tipo produces ONE P&L row. The label is the tipo name itself
+    // (since records are stored with the tipo as r.cat, not the config nombre).
+    // This prevents mislabeling (e.g. "Impresora" catching all "Administrativo" records).
     function _gasRowsFromConfig(entName){
       const cd = typeof catGetData === 'function' ? catGetData('cd') : [];
       const ga = typeof catGetData === 'function' ? catGetData('ga') : [];
 
       function buildRows(cats, nomFn){
         const filtered = cats.filter(c => !c.empresas || c.empresas.includes(entName));
-        // Deduplicate by tipo — first category name wins as label
+        // Deduplicate by tipo — one row per unique tipo, labeled with the tipo name
         const seen = new Set();
         return filtered.filter(c => {
           const key = c.tipo.toLowerCase();
@@ -89,9 +90,9 @@
           seen.add(key);
           return true;
         }).map(c => {
-          const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
-          if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
-            row.ppto = nomFn;
+          const isNom = c.tipo.toLowerCase().includes('nómina') || c.tipo.toLowerCase().includes('nomina');
+          const row = { type:'gasto', label:'  '+c.tipo, cats:[c.tipo] };
+          if(isNom) row.ppto = nomFn;
           return row;
         });
       }
