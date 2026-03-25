@@ -73,24 +73,33 @@
     }
 
     // ── Generate expense rows from configurable categories ──
-    // Each config category maps to ONE P&L row, matched ONLY by cats (category type).
-    // No concepts filter — all records with that category type are summed into the row.
+    // Groups by unique tipo to avoid double-counting when multiple categories share the same tipo.
+    // Each unique tipo produces ONE P&L row, labeled with the category nombre.
     function _gasRowsFromConfig(entName){
       const cd = typeof catGetData === 'function' ? catGetData('cd') : [];
       const ga = typeof catGetData === 'function' ? catGetData('ga') : [];
-      const cdRows = cd.filter(c => !c.empresas || c.empresas.includes(entName)).map(c => {
-        const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
-        if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
-          row.ppto = (m,y) => nomMesOp(entName,m,y);
-        return row;
-      });
-      const gaRows = ga.filter(c => !c.empresas || c.empresas.includes(entName)).map(c => {
-        const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
-        if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
-          row.ppto = (m,y) => nomMesAdm(entName,m,y);
-        return row;
-      });
-      return { cdRows, gaRows };
+
+      function buildRows(cats, nomFn){
+        const filtered = cats.filter(c => !c.empresas || c.empresas.includes(entName));
+        // Deduplicate by tipo — first category name wins as label
+        const seen = new Set();
+        return filtered.filter(c => {
+          const key = c.tipo.toLowerCase();
+          if(seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        }).map(c => {
+          const row = { type:'gasto', label:'  '+c.nombre, cats:[c.tipo] };
+          if(c.nombre.toLowerCase().includes('nómina') || c.nombre.toLowerCase().includes('nomina'))
+            row.ppto = nomFn;
+          return row;
+        });
+      }
+
+      return {
+        cdRows: buildRows(cd, (m,y) => nomMesOp(entName,m,y)),
+        gaRows: buildRows(ga, (m,y) => nomMesAdm(entName,m,y))
+      };
     }
 
     const configs = {

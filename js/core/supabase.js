@@ -419,7 +419,19 @@ async function initApp() {
     applyTheme('light');
     renderReg();
     const _lastView = sessionStorage.getItem('gf_lastView') || 'inicio';
-    sv(_lastView, null);
+    // Restore full nav state (company + section + hnav) before navigating
+    if(_lastView !== 'inicio' && typeof navFindView === 'function'){
+      const found = navFindView(_lastView);
+      if(found && found.company){
+        selectCompany(found.company.id, found.section.id, _lastView);
+      } else if(found && found.cross){
+        selectCross(found.cross.id, _lastView);
+      } else {
+        sv(_lastView, null);
+      }
+    } else {
+      sv(_lastView, null);
+    }
     if (typeof updateToggleBtn === 'function') updateToggleBtn();
     if (typeof _tkUpdateBadge === 'function') _tkUpdateBadge();
   } catch (e) {

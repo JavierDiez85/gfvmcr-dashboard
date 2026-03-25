@@ -301,6 +301,19 @@ function navLookupView(viewId){
 /** Get company definition by id */
 function navGetCompany(id){ return NAV_STRUCTURE.companies.find(c=>c.id===id); }
 
+/** Find which company + section a viewId belongs to */
+function navFindView(viewId){
+  for(const co of NAV_STRUCTURE.companies)
+    for(const sec of co.sections)
+      for(const grp of sec.groups)
+        for(const v of grp.views)
+          if(v.id === viewId) return { company: co, section: sec, view: v };
+  for(const cc of NAV_STRUCTURE.crossCutting)
+    for(const v of cc.views)
+      if(v.id === viewId) return { cross: cc, view: v };
+  return null;
+}
+
 /** Get all unique view IDs in the structure */
 function navAllViewIds(){
   const ids = new Set();
