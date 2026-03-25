@@ -257,6 +257,9 @@
     // Limpiar recs previos generados por flujos (no los de addRec legacy)
     S.recs = S.recs.filter(r => !r.fromFlujo);
 
+    // Auto-inject CxP (facturas recibidas) into FG_ROWS
+    if(typeof ceInjectGastos === 'function') ceInjectGastos();
+
     // Ingresos
     FI_ROWS.forEach(r => {
       if(!r.concepto && !r.auto && !r.autoTPV) return;
