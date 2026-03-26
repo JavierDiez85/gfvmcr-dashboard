@@ -599,7 +599,7 @@ function exportHistorialCSV() {
   toast('📥 CSV descargado');
 }
 
-function exportHistorialXLSX() {
+async function exportHistorialXLSX() {
   const rows = _historialFiltered || _historialCache;
   if (!rows.length) { toast('⚠️ No hay datos para exportar'); return; }
   if (typeof XLSX === 'undefined') { toast('⚠️ Librería XLSX no disponible'); return; }
@@ -616,7 +616,7 @@ function exportHistorialXLSX() {
   ws['!cols'] = [{wch:12},{wch:30},{wch:14},{wch:10},{wch:25},{wch:20},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Historial de Pagos');
-  XLSX.writeFile(wb, 'historial_pagos_' + new Date().toISOString().split('T')[0] + '.xlsx');
+  await XLSX.writeFile(wb, 'historial_pagos_' + new Date().toISOString().split('T')[0] + '.xlsx');
   toast('📥 Excel descargado');
 }
 

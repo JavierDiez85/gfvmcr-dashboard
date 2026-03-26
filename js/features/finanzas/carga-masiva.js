@@ -9,7 +9,7 @@
   window._cmFilterEnt = null;
 
   // ── Descargar plantilla Excel ──────────────────────────
-  function downloadPlantilla(){
+  async function downloadPlantilla(){
     if(typeof XLSX === 'undefined'){ toast('XLSX no disponible'); return; }
 
     var wb = XLSX.utils.book_new();
@@ -72,7 +72,7 @@
     wsRef['!cols'] = [{wch:30},{wch:20},{wch:18},{wch:18},{wch:18},{wch:18}];
     XLSX.utils.book_append_sheet(wb, wsRef, 'Referencia');
 
-    XLSX.writeFile(wb, 'GF_Plantilla_Carga_Masiva.xlsx');
+    await XLSX.writeFile(wb, 'GF_Plantilla_Carga_Masiva.xlsx');
     toast('Plantilla descargada');
   }
 
@@ -103,7 +103,7 @@
     try {
       progress(5, 'Leyendo archivo...');
       var buffer = await file.arrayBuffer();
-      var workbook = XLSX.read(buffer, { type: 'array' });
+      var workbook = await XLSX.read(buffer, { type: 'array' });
 
       progress(15, 'Buscando hojas Ingresos y Gastos...');
 

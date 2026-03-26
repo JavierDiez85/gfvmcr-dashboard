@@ -109,7 +109,7 @@ function fiSave(){
   toast('✅ Flujo de Ingresos guardado — P&L actualizado');
 }
 
-function fiExport(){
+async function fiExport(){
   if(typeof XLSX==='undefined'){toast('❌ XLSX no disponible');return;}
   const data = FI_ROWS.map(r=>({
     Concepto:r.concepto, Empresa:r.ent, Categoría:r.cat, Año:r.yr,
@@ -119,7 +119,7 @@ function fiExport(){
   const ws = XLSX.utils.json_to_sheet(data);
   const wb2 = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb2, ws, 'Flujo Ingresos');
-  XLSX.writeFile(wb2, 'GF_Flujo_Ingresos.xlsx');
+  await XLSX.writeFile(wb2, 'GF_Flujo_Ingresos.xlsx');
 }
 
   // Expose globals

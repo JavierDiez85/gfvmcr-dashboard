@@ -8,7 +8,7 @@
  */
 
 const { createClient } = require('@supabase/supabase-js');
-const XLSX = require('xlsx');
+const ExcelJS = require('exceljs');
 const path = require('path');
 
 const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -100,19 +100,18 @@ async function main() {
   console.log(`  Terminales: ${rows.length}`);
 
   // Crear Excel
-  const ws = XLSX.utils.json_to_sheet(rows);
+  const workbook = new ExcelJS.Workbook();
+  const worksheet = workbook.addWorksheet('Clientes y Terminales');
 
-  // Ajustar anchos de columna
-  ws['!cols'] = [
-    { wch: 40 }, // Cliente
-    { wch: 25 }, // Terminal
+  worksheet.columns = [
+    { header: 'Cliente', key: 'Cliente', width: 40 },
+    { header: 'Terminal (No. Serie)', key: 'Terminal (No. Serie)', width: 25 }
   ];
 
-  const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Clientes y Terminales');
+  worksheet.addRows(rows);
 
   const outPath = path.join(__dirname, '..', 'Clientes_Terminales_Actual.xlsx');
-  XLSX.writeFile(wb, outPath);
+  await workbook.xlsx.writeFile(outPath);
   console.log(`\n✅ Archivo generado: ${outPath}`);
 }
 

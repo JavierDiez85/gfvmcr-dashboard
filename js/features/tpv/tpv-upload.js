@@ -151,7 +151,7 @@ const TPV_UPLOAD = {
       // Step 1: Read file
       this._progress(5, 'Leyendo archivo Excel...');
       const ab = await file.arrayBuffer();
-      const wb = XLSX.read(ab, { type: 'array' });
+      const wb = await XLSX.read(ab, { type: 'array' });
 
       // Find the transactions sheet
       const sheetName = wb.SheetNames.find(s =>
@@ -319,7 +319,7 @@ const TPV_UPLOAD = {
       await _ensureSupabase();
       this._progress(5, 'Leyendo archivo de configuración...');
       const ab = await file.arrayBuffer();
-      const wb = XLSX.read(ab, { type: 'array' });
+      const wb = await XLSX.read(ab, { type: 'array' });
 
       // ── STEP 1: Upload Agentes ──
       const agSheet = wb.Sheets['Agentes'];

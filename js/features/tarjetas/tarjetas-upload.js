@@ -92,7 +92,7 @@ const TAR_UPLOAD = {
       // ── Step 1: Read file ──
       this._progress(5, 'Leyendo archivo Excel...');
       const ab = await file.arrayBuffer();
-      const wb = XLSX.read(ab, { type: 'array' });
+      const wb = await XLSX.read(ab, { type: 'array' });
 
       // ── Step 2: Parse Transacciones ──
       const txnSheetName = wb.SheetNames.find(s => /transacciones/i.test(s)) || wb.SheetNames[0];

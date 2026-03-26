@@ -660,9 +660,9 @@
   function loadFile(ev){
     const f=ev.target.files[0]; if(!f)return;
     const r=new FileReader();
-    r.onload=e=>{
+    r.onload=async e=>{
       try{
-        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const wb=await XLSX.read(e.target.result,{type:'array',cellDates:true});
         S.excelData={};
         wb.SheetNames.forEach(n=>{ S.excelData[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''}); });
         const lu=document.getElementById('lu');

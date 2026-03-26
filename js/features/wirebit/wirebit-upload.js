@@ -95,7 +95,7 @@ const WB_UPLOAD = (() => {
 
     // Read Excel
     const buffer = await file.arrayBuffer();
-    const wb = XLSX.read(buffer, { type: 'array', cellDates: true });
+    const wb = await XLSX.read(buffer, { type: 'array', cellDates: true });
 
     // Find data sheet
     const sheetName = wb.SheetNames.find(n =>

@@ -17,6 +17,23 @@ const SECURITY_HEADERS = {
   'X-Permitted-Cross-Domain-Policies': 'none',
   'X-Download-Options': 'noopen',
   // CSP — bloquea scripts inyectados, solo permite origenes conocidos
+  //
+  // PENDIENTES para CSP strict (ver auditoría 2026-03-24):
+  //
+  // 1. 'unsafe-eval' en script-src:
+  //    Requerido por xlsx@0.18.5 (CDN, usa new Function() internamente) y pdf.js.
+  //    Se puede eliminar al migrar xlsx client-side a una alternativa sin eval
+  //    y reemplazar pdf.js worker con un hash SRI + sin eval.
+  //
+  // 2. 'unsafe-inline' en script-src:
+  //    index.html tiene ~356 event handlers inline (onclick, onkeydown, onchange…).
+  //    Requiere modularizar index.html: mover todos los handlers a archivos JS externos.
+  //
+  // 3. 'unsafe-inline' en style-src:
+  //    Cientos de atributos style="" inline en el HTML.
+  //    Requiere extraer todos los estilos inline a clases CSS.
+  //    (El único <style> tag — @keyframes gf-spin — ya fue movido a styles.css).
+  //
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",

@@ -308,14 +308,14 @@ function nomSaveDetail(i){
 }
 
 // ── Plantilla Excel: descargar template vacío ──
-function nomDownloadTemplate(){
+async function nomDownloadTemplate(){
   const headers = ['Nombre','Rol','Sueldo','Tipo','Fecha Ingreso','Fecha Baja','Nuevo Sueldo','Cambio Desde','% Salem','% Endless','% Dynamo','% Wirebit','% Stellaris'];
   const example = ['Juan Pérez','Analista',15000,'Operativo','2026-01-15','','','',40,10,10,40,0];
   const ws = XLSX.utils.aoa_to_sheet([headers, example]);
   ws['!cols'] = [{wch:25},{wch:20},{wch:12},{wch:15},{wch:15},{wch:15},{wch:14},{wch:15},{wch:10},{wch:10},{wch:10},{wch:10},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Nomina');
-  XLSX.writeFile(wb, 'plantilla_nomina.xlsx');
+  await XLSX.writeFile(wb, 'plantilla_nomina.xlsx');
 }
 
 // ── Carga masiva desde Excel ──
@@ -323,9 +323,9 @@ function nomUploadExcel(input){
   const file = input.files[0];
   if (!file) return;
   const reader = new FileReader();
-  reader.onload = function(e){
+  reader.onload = async function(e){
     try {
-      const wb = XLSX.read(e.target.result, { type: 'array' });
+      const wb = await XLSX.read(e.target.result, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
       if (!rows.length) { toast('El archivo está vacío'); return; }

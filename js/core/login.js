@@ -280,3 +280,11 @@ function applyMenuPermissions(){
     if(coEl) coEl.style.display=anyVisible?'':'none';
   });
 }
+
+// ── Handlers del formulario de login (sin inline handlers en el HTML) ──
+(function(){
+  const btn = document.getElementById('login-btn');
+  const pwd = document.getElementById('login-password');
+  if(btn) btn.addEventListener('click', doLogin);
+  if(pwd) pwd.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
+})();
