@@ -97,9 +97,9 @@ function tesRenderTabla(){
       <td style="font-size:.75rem;white-space:nowrap">${m.fecha||''}</td>
       <td><span style="font-size:.65rem;font-weight:700;color:${col};background:${col}15;padding:2px 7px;border-radius:8px">${m.empresa}</span></td>
       <td><span style="font-size:.65rem;background:${isIng?'var(--green-bg)':'var(--red-bg)'};color:${isIng?'var(--green)':'var(--red)'};padding:2px 7px;border-radius:8px">${m.tipo}</span></td>
-      <td style="font-size:.75rem">${_esc(m.categoria)||'—'}</td>
-      <td style="font-size:.75rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${_esc(m.concepto||'')}">${_esc(m.concepto)||'—'}</td>
-      <td style="font-size:.72rem;color:var(--muted)">${_esc(m.cuenta)||'—'}</td>
+      <td style="font-size:.75rem">${m.categoria||'—'}</td>
+      <td style="font-size:.75rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${m.concepto||''}">${m.concepto||'—'}</td>
+      <td style="font-size:.72rem;color:var(--muted)">${m.cuenta||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${montoCol};white-space:nowrap">${montoSign}${tesFmt(m.monto).substring(1)}</td>
       <td style="text-align:center">
         ${!isViewer() ? `<button onclick="tesEditarMov('${m.id}')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer;margin-right:2px">✏️</button>
@@ -386,9 +386,9 @@ function tesSelectorEmp(emp){
         return `<tr>
           <td style="font-size:.75rem;white-space:nowrap">${m.fecha||''}</td>
           <td><span style="font-size:.65rem;background:${isIng?'var(--green-bg)':'var(--red-bg)'};color:${isIng?'var(--green)':'var(--red)'};padding:2px 7px;border-radius:8px">${m.tipo}</span></td>
-          <td style="font-size:.75rem">${_esc(m.categoria)||'—'}</td>
-          <td style="font-size:.75rem">${_esc(m.concepto)||'—'}</td>
-          <td style="font-size:.72rem;color:var(--muted)">${_esc(m.cuenta)||'—'}</td>
+          <td style="font-size:.75rem">${m.categoria||'—'}</td>
+          <td style="font-size:.75rem">${m.concepto||'—'}</td>
+          <td style="font-size:.72rem;color:var(--muted)">${m.cuenta||'—'}</td>
           <td style="text-align:right;font-weight:700;color:${isIng?'var(--green)':'var(--red)'};white-space:nowrap">${isIng?'+':'-'}${tesFmt(m.monto).substring(1)}</td>
         </tr>`;
       }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sin movimientos para '+emp+'</td></tr>'}</tbody>
@@ -756,8 +756,8 @@ function rBancosView(){
 
   const rows = bancos.map((b,i)=>`
     <tr id="banco-row-${i}">
-      <td style="font-weight:600">${_esc(b.nombre)}</td>
-      <td><span style="font-size:.65rem;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:10px">${_esc(b.tipo)||'—'}</span></td>
+      <td style="font-weight:600">${b.nombre}</td>
+      <td><span style="font-size:.65rem;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:10px">${b.tipo||'—'}</span></td>
       <td>
         <div style="display:flex;gap:3px;flex-wrap:wrap">
           ${emps.map(e=>{

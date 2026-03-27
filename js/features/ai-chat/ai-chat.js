@@ -445,10 +445,15 @@ async function _chatSend() {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    // Auth via httpOnly cookie (R4) — sent automatically by browser for same-origin requests
+    const _jwt = sessionStorage.getItem('gf_token') || '';
+    const _sess = sessionStorage.getItem('gf_session') || '';
+    const _token = _jwt || btoa(_sess);
     const resp = await fetch('/api/chat', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + _token
+      },
       body: JSON.stringify({ messages: apiMessages, context })
     });
 

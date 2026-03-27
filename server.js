@@ -112,11 +112,9 @@ http.createServer(async (req, res) => {
         id: user.id, nombre: user.nombre, email: user.email,
         rol: user.rol || 'viewer', perms: user.perms || {}
       });
-      // R4: Set JWT as httpOnly cookie (inaccessible to JS — XSS-safe)
-      const isHttps = req.headers['x-forwarded-proto'] === 'https';
-      const cookieValue = `gf_token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${isHttps ? '; Secure' : ''}`;
-      res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': cookieValue });
+      res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
+        token,
         user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'viewer', perms: user.perms || {} },
         // Return salt for client-side hashing on next login
         salt: user.salt || null
@@ -146,13 +144,6 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ salt: null }));
     }
-    return;
-  }
-
-  // ── API: Logout — clear httpOnly cookie ──
-  if (req.method === 'POST' && req.url === '/api/logout') {
-    res.writeHead(200, { 'Content-Type': 'application/json', 'Set-Cookie': 'gf_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0' });
-    res.end(JSON.stringify({ ok: true }));
     return;
   }
 

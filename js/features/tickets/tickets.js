@@ -111,8 +111,8 @@ function rTkPagosList(){
     const pagosHint = pagosCount > 1 ? ` <span style="font-size:.55rem;color:var(--muted)">(${pagosCount})</span>` : '';
     return `<tr style="cursor:pointer;${rowBg}" onclick="openTkDetail('${t.id}')">
     <td style="font-size:.7rem;color:var(--muted);font-weight:600">${unreadDot}#${t.id}</td>
-    <td style="font-size:.75rem;font-weight:600">${_esc(t.cliente)||'—'}${origenBadge}</td>
-    <td style="font-size:.73rem">${_esc(t.asunto)||'—'}</td>
+    <td style="font-size:.75rem;font-weight:600">${t.cliente||'—'}${origenBadge}</td>
+    <td style="font-size:.73rem">${t.asunto||'—'}</td>
     <td>${priorBadge[t.prioridad]||'—'}</td>
     <td>${statusBadge[t.estado]||'—'}</td>
     <td class="r" style="font-size:.75rem;font-weight:600">${_tkFmtMonto(t)}${pagosHint}</td>
@@ -382,7 +382,7 @@ function changeTkStatus(id){
   const cancelBtn = document.getElementById('confirm-cancel');
 
   msg.innerHTML = `<div style="margin-bottom:10px;font-weight:600">Cambiar estado — Ticket #${id}</div>
-    <div style="font-size:.75rem;margin-bottom:6px;color:var(--muted)">${_esc(t.cliente)} — ${_esc(t.asunto)}</div>
+    <div style="font-size:.75rem;margin-bottom:6px;color:var(--muted)">${t.cliente} — ${t.asunto}</div>
     <select id="tk-status-change-sel" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">${opts}</select>`;
   okBtn.textContent = 'Guardar';
   okBtn.style.background = 'var(--blue)';
@@ -460,7 +460,7 @@ function openTkDetail(id){
                 <td style="padding:6px 8px;font-weight:600">${tipoLabel}</td>
                 <td style="padding:6px 8px">${p.banco || '—'}</td>
                 <td style="padding:6px 8px;text-align:right;font-weight:600;color:${p.monto_tipo==='porcentaje'?'#ff9800':'var(--text)'}">${montoStr}</td>
-                <td style="padding:6px 8px;color:var(--muted)">${_esc(p.descripcion) || '—'}</td>
+                <td style="padding:6px 8px;color:var(--muted)">${p.descripcion || '—'}</td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -471,7 +471,7 @@ function openTkDetail(id){
     pagosHTML = `
       <div style="margin-top:14px;font-size:.72rem;font-weight:700;text-transform:uppercase;letter-spacing:.3px;color:var(--text);margin-bottom:6px">💳 Pago</div>
       <div style="padding:8px 10px;border:1px solid var(--border2);border-radius:var(--r);font-size:.75rem;background:var(--bg)">
-        <span style="font-weight:600">${fmt(t.monto)}</span>${t.referencia ? ` · Ref: ${_esc(t.referencia)}` : ''}
+        <span style="font-weight:600">${fmt(t.monto)}</span>${t.referencia ? ` · Ref: ${t.referencia}` : ''}
       </div>`;
   }
 
@@ -483,15 +483,15 @@ function openTkDetail(id){
   msg.innerHTML = `
     <div style="font-weight:700;font-size:.88rem;margin-bottom:12px">🎫 Ticket #${t.id}</div>
     <div style="display:grid;grid-template-columns:100px 1fr;gap:6px 12px;font-size:.75rem">
-      <div style="color:var(--muted);font-weight:600">Cliente:</div><div>${_esc(t.cliente)}</div>
-      <div style="color:var(--muted);font-weight:600">Asunto:</div><div>${_esc(t.asunto)}</div>
+      <div style="color:var(--muted);font-weight:600">Cliente:</div><div>${t.cliente}</div>
+      <div style="color:var(--muted);font-weight:600">Asunto:</div><div>${t.asunto}</div>
       <div style="color:var(--muted);font-weight:600">Estado:</div><div>${statusLabels[t.estado]||t.estado}</div>
       <div style="color:var(--muted);font-weight:600">Prioridad:</div><div>${priorLabels[t.prioridad]||t.prioridad}</div>
       <div style="color:var(--muted);font-weight:600">Origen:</div><div>${origenLabels[t.origen]||'—'}</div>
       <div style="color:var(--muted);font-weight:600">Creado:</div><div>${new Date(t.creado).toLocaleString('es-MX')}</div>
       <div style="color:var(--muted);font-weight:600">Actualizado:</div><div>${new Date(t.actualizado).toLocaleString('es-MX')}</div>
     </div>
-    ${t.descripcion ? `<div style="margin-top:10px;font-size:.73rem;padding:8px;background:var(--bg);border-radius:var(--r)">${_esc(t.descripcion)}</div>` : ''}
+    ${t.descripcion ? `<div style="margin-top:10px;font-size:.73rem;padding:8px;background:var(--bg);border-radius:var(--r)">${t.descripcion}</div>` : ''}
     ${pagosHTML}`;
 
   okBtn.textContent = 'Cerrar';

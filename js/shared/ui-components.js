@@ -313,7 +313,7 @@
           const totalMes = salRows.reduce((s,r)=>s+(r.vals.reduce((a,b)=>a+b,0)/12),0);
           const hasReal = salRows.length > 0;
           const rowsHtml = hasReal
-            ? salRows.map(r=>`<tr><td class="bld">${_esc(r.concepto)||'\u2014'}</td><td style="color:var(--muted);font-size:.73rem">${_esc(r.cat)}</td><td class="mo pos">${fmt(r.vals.reduce((a,b)=>a+b,0)/12)}</td><td class="mo pos bld">${fmt(r.vals.reduce((a,b)=>a+b,0))}</td></tr>`).join('')
+            ? salRows.map(r=>`<tr><td class="bld">${r.concepto||'\u2014'}</td><td style="color:var(--muted);font-size:.73rem">${r.cat}</td><td class="mo pos">${fmt(r.vals.reduce((a,b)=>a+b,0)/12)}</td><td class="mo pos bld">${fmt(r.vals.reduce((a,b)=>a+b,0))}</td></tr>`).join('')
             : `<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:16px">Sin datos reales capturados \u2014 usa Flujo de Ingresos para agregar</td></tr>`;
           return `<div class="m-kpi-row">
             <div class="m-kpi" style="--ac:#0073ea"><div class="m-kpi-lbl">Real Anual</div><div class="m-kpi-val" style="color:#0073ea">${fmtK(totalAnual)}</div></div>
@@ -660,14 +660,14 @@
   function loadFile(ev){
     const f=ev.target.files[0]; if(!f)return;
     const r=new FileReader();
-    r.onload=async e=>{
+    r.onload=e=>{
       try{
-        const wb=await XLSX.read(e.target.result,{type:'array',cellDates:true});
+        const wb=XLSX.read(e.target.result,{type:'array',cellDates:true});
         S.excelData={};
         wb.SheetNames.forEach(n=>{ S.excelData[n]=XLSX.utils.sheet_to_json(wb.Sheets[n],{header:1,defval:''}); });
         const lu=document.getElementById('lu');
         lu.style.display='inline';
-        lu.innerHTML=`\u2705 <b>${escapeHtml(f.name)}</b>`;
+        lu.innerHTML=`\u2705 <b>${f.name}</b>`;
         toast('\u2705 Excel cargado: '+f.name+' ('+wb.SheetNames.length+' hojas)');
         render(document.querySelector('.view.active').id.replace('view-',''));
       }catch(err){toast('\u274c '+err.message);}
@@ -826,9 +826,9 @@
           const ec = entColors[r.ent] || '#555';
           return `<tr>
             <td style="font-weight:700;color:var(--orange)">${i + 1}</td>
-            <td><b>${_esc(r.concepto)}</b></td>
-            ${entity ? '' : `<td><span style="color:${ec};font-weight:600">${_esc(r.ent)}</span></td>`}
-            <td style="color:var(--muted)">${_esc(r.cat)}</td>
+            <td><b>${r.concepto}</b></td>
+            ${entity ? '' : `<td><span style="color:${ec};font-weight:600">${r.ent}</span></td>`}
+            <td style="color:var(--muted)">${r.cat}</td>
             <td style="text-align:right"><b style="color:var(--orange)">${fmtK(r.total)}</b>
               <div style="height:3px;background:var(--border);border-radius:2px;margin-top:3px">
                 <div style="height:100%;background:var(--orange);border-radius:2px;width:${barW}%"></div>

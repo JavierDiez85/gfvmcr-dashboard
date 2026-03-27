@@ -599,7 +599,7 @@ function exportHistorialCSV() {
   toast('📥 CSV descargado');
 }
 
-async function exportHistorialXLSX() {
+function exportHistorialXLSX() {
   const rows = _historialFiltered || _historialCache;
   if (!rows.length) { toast('⚠️ No hay datos para exportar'); return; }
   if (typeof XLSX === 'undefined') { toast('⚠️ Librería XLSX no disponible'); return; }
@@ -616,7 +616,7 @@ async function exportHistorialXLSX() {
   ws['!cols'] = [{wch:12},{wch:30},{wch:14},{wch:10},{wch:25},{wch:20},{wch:10}];
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, 'Historial de Pagos');
-  await XLSX.writeFile(wb, 'historial_pagos_' + new Date().toISOString().split('T')[0] + '.xlsx');
+  XLSX.writeFile(wb, 'historial_pagos_' + new Date().toISOString().split('T')[0] + '.xlsx');
   toast('📥 Excel descargado');
 }
 
@@ -646,7 +646,7 @@ function exportHistorialPDF() {
 <div class="sub">Generado: ${new Date().toLocaleString('es-MX')} · ${rows.length} pagos · Monto activo: $${totalMonto.toLocaleString('es-MX',{minimumFractionDigits:2})}</div>
 <table>
 <thead><tr><th>Fecha</th><th>Cliente</th><th class="r">Monto</th><th>Destino</th><th>Referencia</th><th>Estado</th></tr></thead>
-<tbody>${rows.map(p=>`<tr class="${p.anulado?'anulado':''}"><td>${p.fecha}</td><td>${_esc(p.cliente)}</td><td class="r">$${(p.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</td><td>${p.destino==='tarjeta'?'Tarjeta':'Banco'}</td><td>${_esc(p.ref)||'—'}</td><td>${p.anulado?'Anulado':'Activo'}</td></tr>`).join('')}</tbody>
+<tbody>${rows.map(p=>`<tr class="${p.anulado?'anulado':''}"><td>${p.fecha}</td><td>${p.cliente}</td><td class="r">$${(p.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</td><td>${p.destino==='tarjeta'?'Tarjeta':'Banco'}</td><td>${p.ref||'—'}</td><td>${p.anulado?'Anulado':'Activo'}</td></tr>`).join('')}</tbody>
 </table></body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 300);

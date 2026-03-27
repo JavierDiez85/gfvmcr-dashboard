@@ -175,7 +175,7 @@ function fgSave(){
   toast('✅ Flujo de Gastos guardado — P&L actualizado');
 }
 
-async function fgExport(){
+function fgExport(){
   if(typeof XLSX==='undefined'){toast('❌ XLSX no disponible');return;}
   const data = FG_ROWS.map(r=>({
     Concepto:r.concepto, 'Empresa que paga':r.ent, Categoría:r.cat, 'Tipo P&L':r.tipo==='costo'?'Costo':'Gasto', Año:r.yr,
@@ -186,7 +186,7 @@ async function fgExport(){
   const ws = XLSX.utils.json_to_sheet(data);
   const wb2 = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb2, ws, 'Flujo Gastos');
-  await XLSX.writeFile(wb2, 'GF_Flujo_Gastos.xlsx');
+  XLSX.writeFile(wb2, 'GF_Flujo_Gastos.xlsx');
 }
 
   // Expose globals

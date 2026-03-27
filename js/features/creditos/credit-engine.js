@@ -8,13 +8,10 @@
 
   // ── Helpers de calculo ──
   function credIntMes(c){
-    // A4: coerce to number and validate — reject negative tasa or monto
-    const monto = +c.monto;
-    const tasa  = +c.tasa;
-    if(!monto || !tasa || isNaN(monto) || isNaN(tasa) || monto < 0 || tasa <= 0) return 0;
+    if(!c.monto||!c.tasa) return 0;
     // If amortization table exists, use first period interest
     if(c.amort && c.amort.length>1) return c.amort[1].int||0;
-    return monto * (tasa/100) / 12;
+    return c.monto * (c.tasa/100) / 12;
   }
   function credComApertura(c){ return c.monto*(c.com||0)/100; }
   function credIngAnual(c){
@@ -84,9 +81,8 @@
     const today = new Date(); today.setHours(0,0,0,0);
 
     if(totalPagado > 0){
-      // A5: tolerancia relativa — max($0.10, 0.01% del pago) escala con créditos grandes
-      const tolerance = Math.max(0.10, (row.pago||0) * 0.0001);
-      return totalPagado >= (row.pago||0) - tolerance ? 'PAGADO' : 'PARCIAL';
+      // Tolerancia de $0.05 para diferencias de redondeo
+      return totalPagado >= (row.pago||0) - 0.05 ? 'PAGADO' : 'PARCIAL';
     }
     if(!fechaVenc) return 'PENDIENTE';
     return fechaVenc < today ? 'VENCIDO' : 'PENDIENTE';

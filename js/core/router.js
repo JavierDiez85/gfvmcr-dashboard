@@ -177,135 +177,6 @@ function _viewError(viewId, error) {
 }
 
 // ═══════════════════════════════════════
-// LAZY LOADER — Carga feature scripts bajo demanda
-// ═══════════════════════════════════════
-const _SCRIPTS_VERSION = '5';
-const _loadedScripts = new Set();
-
-/** Carga un script dinámicamente; resuelve inmediatamente si ya está cargado. */
-function _loadScript(src) {
-  const key = src.split('?')[0]; // normalizar sin query string
-  if (_loadedScripts.has(key)) return Promise.resolve();
-  return new Promise(function(resolve, reject) {
-    var s = document.createElement('script');
-    s.src = src + '?v=' + _SCRIPTS_VERSION;
-    s.onload  = function(){ _loadedScripts.add(key); resolve(); };
-    s.onerror = function(){ reject(new Error('Error cargando: ' + src)); };
-    document.head.appendChild(s);
-  });
-}
-
-/** Carga en serie todos los scripts de un grupo (respeta orden de dependencias). */
-function _loadScriptsSeq(srcs) {
-  return srcs.reduce(function(p, src){ return p.then(function(){ return _loadScript(src); }); }, Promise.resolve());
-}
-
-/**
- * Mapa: viewId (o base via VIEW_ALIAS) → scripts necesarios en orden.
- * Scripts del core y shared layer ya se cargan en index.html — no se incluyen aquí.
- */
-const VIEW_JS_MAP = {
-  // ── Dashboard ──
-  inicio:           ['js/features/dashboard/inicio.js'],
-  resumen:          ['js/features/dashboard/inversiones.js', 'js/features/dashboard/resumen.js'],
-  carga_inversiones:['js/features/dashboard/inversiones.js'],
-
-  // ── Finanzas ──
-  nomina:           ['js/features/finanzas/nomina.js'],
-  gastos_comp:      ['js/features/finanzas/gastos-comp.js'],
-  flujo_ing:        ['js/features/finanzas/flujo-ingresos.js'],
-  flujo_gas:        ['js/features/finanzas/flujo-gastos.js'],
-  carga_masiva:     ['js/features/finanzas/carga-masiva.js'],
-
-  // ── Créditos (credit-engine es dep de todos) ──
-  cred_dash:        ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-dashboard.js'],
-  dyn_dash:         ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-dashboard.js'],
-  end_cred:         ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-detail.js'],
-  dyn_cred:         ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-detail.js'],
-  cred_cobr:        ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-cobranza.js'],
-  dyn_cobr:         ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-cobranza.js'],
-  carga_creditos:   ['js/features/creditos/credit-engine.js', 'js/features/creditos/credit-carga.js'],
-
-  // ── TPV (tpv-data es dep de todos) ──
-  tpv_general:      ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-general.js'],
-  tpv_upload:       ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-upload.js'],
-  tpv_dashboard:    ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-dashboard.js'],
-  tpv_agentes:      ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-agentes.js'],
-  tpv_promotores:   ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-promotores.js'],
-  tpv_terminales:   ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-terminales.js'],
-  tpv_pagos:        ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-pagos.js'],
-  tpv_resumen:      ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-resumen.js'],
-  tpv_comisiones:   ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-comisiones.js'],
-  tpv_facturacion:  ['js/features/tpv/tpv-data.js', 'js/features/tpv/tpv-facturacion.js'],
-
-  // ── Facturación ──
-  carga_egresos:    ['js/features/facturacion/facturacion-egresos.js'],
-  carga_facturas:   ['js/features/facturacion/facturacion-egresos.js'],
-  pagos_pendientes: ['js/features/facturacion/facturacion-egresos.js'],
-  fact_terminales:  ['js/features/facturacion/facturacion-empresa.js'],
-  fact_tarjetas:    ['js/features/facturacion/facturacion-empresa.js'],
-  fact_endless:     ['js/features/facturacion/facturacion-empresa.js'],
-  fact_dynamo:      ['js/features/facturacion/facturacion-empresa.js'],
-  fact_wirebit:     ['js/features/facturacion/facturacion-empresa.js'],
-  fact_stellaris:   ['js/features/facturacion/facturacion-empresa.js'],
-  emit_salem:       ['js/features/facturacion/facturacion-empresa.js'],
-  emit_endless:     ['js/features/facturacion/facturacion-empresa.js'],
-  emit_dynamo:      ['js/features/facturacion/facturacion-empresa.js'],
-  emit_wirebit:     ['js/features/facturacion/facturacion-empresa.js'],
-  emit_stellaris:   ['js/features/facturacion/facturacion-empresa.js'],
-  recv_salem:       ['js/features/facturacion/facturacion-empresa.js'],
-  recv_endless:     ['js/features/facturacion/facturacion-empresa.js'],
-  recv_dynamo:      ['js/features/facturacion/facturacion-empresa.js'],
-  recv_wirebit:     ['js/features/facturacion/facturacion-empresa.js'],
-  recv_stellaris:   ['js/features/facturacion/facturacion-empresa.js'],
-  pp_salem:         ['js/features/facturacion/facturacion-empresa.js'],
-  pp_endless:       ['js/features/facturacion/facturacion-empresa.js'],
-  pp_dynamo:        ['js/features/facturacion/facturacion-empresa.js'],
-  pp_wirebit:       ['js/features/facturacion/facturacion-empresa.js'],
-  pp_stellaris:     ['js/features/facturacion/facturacion-empresa.js'],
-
-  // ── Tarjetas (tarjetas-data es dep) ──
-  tar_upload:           ['js/features/tarjetas/tarjetas-data.js', 'js/features/tarjetas/tarjetas-upload.js'],
-  tar_rechazos:         ['js/features/tarjetas/tarjetas-data.js', 'js/features/tarjetas/tarjetas-upload.js'],
-  tar_tarjetahabientes: ['js/features/tarjetas/tarjetas-data.js', 'js/features/tarjetas/tarjetas-upload.js'],
-  tar_dashboard:        ['js/features/tarjetas/tarjetas-data.js', 'js/features/tarjetas/tarjetas-charts.js'],
-  tar_conceptos:        ['js/features/tarjetas/tarjetas-data.js', 'js/features/tarjetas/tarjetas-charts.js'],
-  tar_subclientes:      ['js/features/tarjetas/tarjetas-data.js', 'js/features/tarjetas/tarjetas-charts.js'],
-
-  // ── Wirebit (wirebit-data es dep) ──
-  wb_res:       ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_ing:       ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_gas:       ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_cripto:    ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_nom:       ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_tarjetas:  ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_grupo:     ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-views.js'],
-  wb_upload:    ['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-upload.js'],
-  wb_tar_upload:['js/features/wirebit/wirebit-data.js', 'js/features/wirebit/wirebit-upload.js'],
-
-  // ── Tesorería ──
-  tes_flujo:      ['js/features/tesoreria/tesoreria.js'],
-  tes_individual: ['js/features/tesoreria/tesoreria.js'],
-  tes_grupo:      ['js/features/tesoreria/tesoreria.js'],
-
-  // ── Tickets ──
-  tk_pagos_tpv: ['js/features/tickets/tickets.js'],
-
-  // ── Configuración ──
-  cfg_usuarios:   ['js/features/config/config.js'],
-  cfg_apariencia: ['js/features/config/config.js'],
-  cfg_permisos:   ['js/features/config/config.js'],
-  cfg_categorias: ['js/features/config/config.js'],
-  cfg_bancos:     ['js/features/config/config.js'],
-
-  // ── Expedientes ──
-  expedientes: ['js/features/expedientes/expedientes.js'],
-
-  // ── Ingresar datos (carga masiva) ──
-  ingresar: ['js/features/finanzas/carga-masiva.js'],
-};
-
-// ═══════════════════════════════════════
 // RENDER — Dispatches to registered view handlers
 // ═══════════════════════════════════════
 function render(id){
@@ -318,14 +189,8 @@ function render(id){
       if(result && typeof result.catch === 'function') result.catch(_c);
     } catch(e){ _c(e); }
   } else {
-    // Sin handler registrado: intentar carga lazy del módulo correspondiente
-    const baseId = VIEW_ALIAS[id] || id;
-    const scripts = VIEW_JS_MAP[baseId] || VIEW_JS_MAP[id];
-    if(scripts){
-      _loadScriptsSeq(scripts).then(function(){ render(id); }).catch(_c);
-    } else if(!VT[id]){
-      console.warn('[Router] Vista no registrada:', id);
-    }
+    // Stub views (fact_tarjetas, fact_endless, etc.) — no handler, no error
+    if(!VT[id]) console.warn('[Router] Vista no registrada:', id);
   }
 }
 

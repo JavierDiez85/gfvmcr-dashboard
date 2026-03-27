@@ -24,10 +24,12 @@ async function _ensureSupabase() {
 
 /** Helper: call a server upload endpoint with session auth (for DELETE/UPDATE operations) */
 async function _serverWriteTar(path, method, body) {
-  // Auth via httpOnly cookie (R4) — sent automatically by browser for same-origin requests
+  const jwt = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_token')) || '';
+  const sess = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_session')) || '';
+  const token = jwt || btoa(sess);
   const resp = await fetch(path, {
     method: method || 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
     body: JSON.stringify(body)
   });
   const data = await resp.json().catch(() => ({}));
@@ -90,7 +92,7 @@ const TAR_UPLOAD = {
       // ── Step 1: Read file ──
       this._progress(5, 'Leyendo archivo Excel...');
       const ab = await file.arrayBuffer();
-      const wb = await XLSX.read(ab, { type: 'array' });
+      const wb = XLSX.read(ab, { type: 'array' });
 
       // ── Step 2: Parse Transacciones ──
       const txnSheetName = wb.SheetNames.find(s => /transacciones/i.test(s)) || wb.SheetNames[0];
@@ -172,7 +174,7 @@ const TAR_UPLOAD = {
               tarjeta: r['Tarjeta'] || null,
               estado: r['Estado'] || null,
               telefono: String(r['Teléfono'] || r['Telefono'] || '').trim() || null,
-              saldo: isNaN(parseFloat(r['Saldo'])) ? 0 : parseFloat(r['Saldo'])
+              saldo: parseFloat(r['Saldo']) || 0
             });
           } catch (rowErr) {
             errors.push(`Card fila ${i + 2}: ${rowErr.message}`);
@@ -208,10 +210,9 @@ const TAR_UPLOAD = {
         if (!prepResult.success) throw new Error(prepResult.error || 'Error preparando upload en servidor');
       }
 
-      // ── Step 6: Batch insert transactions — A1: break on first error and rollback ──
+      // ── Step 6: Batch insert transactions ──
       const totalBatches = Math.ceil(txnRows.length / this.BATCH_SIZE);
       let insertedTxn = 0;
-      let batchFailed = false;
 
       for (let i = 0; i < txnRows.length; i += this.BATCH_SIZE) {
         const batch = txnRows.slice(i, i + this.BATCH_SIZE);
@@ -223,22 +224,9 @@ const TAR_UPLOAD = {
         if (insertErr) {
           errors.push(`Lote txn ${batchNum}: ${insertErr.message}`);
           console.error('[TAR Upload] Batch error:', insertErr);
-          batchFailed = true;
-          break; // A1: stop immediately
+        } else {
+          insertedTxn += batch.length;
         }
-        insertedTxn += batch.length;
-      }
-
-      // A1: rollback on batch failure
-      if (batchFailed) {
-        this._progress(0, '⚠️ Error en inserción — revirtiendo upload...');
-        try {
-          await _serverWriteTar(`/api/upload/tarjetas/batch/${encodeURIComponent(batchId)}`, 'DELETE', {});
-        } catch (rbErr) {
-          errors.push('Rollback falló: ' + rbErr.message);
-          console.error('[TAR Upload] Rollback error:', rbErr);
-        }
-        return { success: false, txnCount: 0, cardCount: 0, batchId, errors };
       }
 
       // ── Step 7: Insert cardholders ──
@@ -252,20 +240,9 @@ const TAR_UPLOAD = {
           if (insertErr) {
             errors.push(`Lote cards: ${insertErr.message}`);
             console.error('[TAR Upload] Card batch error:', insertErr);
-            batchFailed = true;
-            break; // A1: stop cardholders too
+          } else {
+            insertedCards += batch.length;
           }
-          insertedCards += batch.length;
-        }
-        // A1: rollback cardholders failure
-        if (batchFailed) {
-          this._progress(0, '⚠️ Error en tarjetahabientes — revirtiendo upload...');
-          try {
-            await _serverWriteTar(`/api/upload/tarjetas/batch/${encodeURIComponent(batchId)}`, 'DELETE', {});
-          } catch (rbErr) {
-            errors.push('Rollback falló: ' + rbErr.message);
-          }
-          return { success: false, txnCount: insertedTxn, cardCount: 0, batchId, errors };
         }
       }
 
@@ -379,7 +356,7 @@ async function rTarUpload() {
         : '—';
       return `<tr>
         <td style="font-size:.72rem">${fecha}</td>
-        <td style="font-size:.72rem;max-width:180px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(h.filename) || '—'}</td>
+        <td style="font-size:.72rem;max-width:180px;overflow:hidden;text-overflow:ellipsis">${h.filename || '—'}</td>
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.txn_count || 0).toLocaleString()}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.card_count || 0).toLocaleString()}</td>

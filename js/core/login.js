@@ -212,7 +212,7 @@ async function doLogin(){
       const user = loginResult.user;
       CURRENT_USER = { ...user, lastActivity: Date.now() };
       sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
-      // Token is now stored as httpOnly cookie (R4) — no longer in sessionStorage
+      sessionStorage.setItem('gf_token', loginResult.token);
     } else {
       _recordAttempt(email);
       errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
@@ -233,8 +233,8 @@ async function doLogin(){
 function doLogout(){
   CURRENT_USER=null;
   sessionStorage.removeItem('gf_session');
-  // Clear httpOnly cookie server-side (R4)
-  fetch('/api/logout', { method: 'POST' }).finally(() => location.reload());
+  sessionStorage.removeItem('gf_token');
+  location.reload();
 }
 
 // ── Aplicar restricciones de rol ──
@@ -280,11 +280,3 @@ function applyMenuPermissions(){
     if(coEl) coEl.style.display=anyVisible?'':'none';
   });
 }
-
-// ── Handlers del formulario de login (sin inline handlers en el HTML) ──
-(function(){
-  const btn = document.getElementById('login-btn');
-  const pwd = document.getElementById('login-password');
-  if(btn) btn.addEventListener('click', doLogin);
-  if(pwd) pwd.addEventListener('keydown', function(e){ if(e.key==='Enter') doLogin(); });
-})();

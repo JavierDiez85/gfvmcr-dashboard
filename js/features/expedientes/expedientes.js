@@ -552,15 +552,20 @@ async function expUploadDoc(categoria, file){
 
 // Actual upload to Supabase Storage + DB record
 async function _expUploadFileToStorage(clienteId, categoria, file){
-  // Para categorías de doc único: leer existentes ANTES de cualquier cambio
+  // For single-doc categories, delete existing first
   const multiCats = ['contratos','anexos'];
-  let existing = null;
   if(!multiCats.includes(categoria)){
-    const { data } = await _sb.from('exp_documentos')
+    const { data: existing } = await _sb.from('exp_documentos')
       .select('id, storage_path')
       .eq('cliente_id', clienteId)
       .eq('categoria', categoria);
-    existing = data;
+    if(existing && existing.length){
+      const paths = existing.map(d => d.storage_path);
+      await _sb.storage.from('expedientes').remove(paths);
+      for(const doc of existing){
+        await _sb.from('exp_documentos').delete().eq('id', doc.id);
+      }
+    }
   }
 
   const ext = file.name.split('.').pop();
@@ -577,7 +582,6 @@ async function _expUploadFileToStorage(clienteId, categoria, file){
     return;
   }
 
-  // INSERT primero — si falla, datos viejos quedan intactos (insert-first pattern)
   const { error: dbErr } = await _sb.from('exp_documentos').insert({
     cliente_id: clienteId,
     categoria: categoria,
@@ -589,18 +593,7 @@ async function _expUploadFileToStorage(clienteId, categoria, file){
 
   if(dbErr){
     toast('❌ Error en BD: ' + dbErr.message);
-    // Limpiar archivo de storage que quedó huérfano
-    await _sb.storage.from('expedientes').remove([storagePath]).catch(()=>{});
     return;
-  }
-
-  // Solo si INSERT exitoso: eliminar registros y archivos viejos
-  if(existing && existing.length){
-    const paths = existing.map(d => d.storage_path);
-    for(const doc of existing){
-      await _sb.from('exp_documentos').delete().eq('id', doc.id);
-    }
-    await _sb.storage.from('expedientes').remove(paths).catch(()=>{});
   }
 
   toast('✅ Documento subido');

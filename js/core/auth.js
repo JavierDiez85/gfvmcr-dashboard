@@ -23,7 +23,7 @@ function rUsuarios(){
   cnt.textContent = USUARIOS.length + ' usuario' + (USUARIOS.length!==1?'s':'');
 
   if(!USUARIOS.length){
-    el.innerHTML = `<div class="gf-empty-lg" style="font-style:italic">
+    el.innerHTML = `<div style="padding:28px;text-align:center;color:var(--muted);font-style:italic;font-size:.82rem">
       No hay usuarios registrados. Crea el primero con "+ Nuevo Usuario".
     </div>`;
     return;
@@ -33,26 +33,34 @@ function rUsuarios(){
   const rolLabel = {admin:'Admin',editor:'Editor',viewer:'Solo lectura'};
 
   el.innerHTML = USUARIOS.map(u => {
-    const menuCount = Object.keys(u.perms||{}).filter(k=>u.perms[k]==='menu').length;
-    const initials  = escapeHtml(u.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase());
-    const rc        = rolColor[u.rol] || 'var(--muted)';
-    return `<div class="u-row">
-      <div class="u-avatar ${u.activo ? 'active' : 'inactive'}">${initials}</div>
-      <div class="u-info">
-        <div class="u-name">
+    const permsCount = Object.keys(u.perms||{}).filter(k=>u.perms[k]===true||u.perms[k]==='menu').length;
+    const menuCount  = Object.keys(u.perms||{}).filter(k=>u.perms[k]==='menu').length;
+    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      <!-- Avatar -->
+      <div style="width:36px;height:36px;border-radius:50%;background:${u.activo?'var(--blue-bg)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:${u.activo?'var(--blue)':'var(--muted)'};flex-shrink:0">
+        ${escapeHtml(u.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase())}
+      </div>
+      <!-- Info -->
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.84rem;display:flex;align-items:center;gap:6px">
           ${escapeHtml(u.nombre)}
-          ${!u.activo ? '<span class="u-badge-inactivo">INACTIVO</span>' : ''}
+          ${!u.activo ? '<span style="font-size:.6rem;background:var(--red-bg);color:var(--red);border:1px solid var(--red-lt);padding:1px 6px;border-radius:10px;font-weight:700">INACTIVO</span>' : ''}
         </div>
-        <div class="u-email">${escapeHtml(u.email)}${u.empresa?' · '+escapeHtml(u.empresa):''}</div>
+        <div style="font-size:.7rem;color:var(--muted)">${escapeHtml(u.email)}${u.empresa?' · '+escapeHtml(u.empresa):''}</div>
       </div>
-      <div class="u-role">
-        <div class="u-role-badge" style="color:${rc}">${rolLabel[u.rol]||u.rol}</div>
+      <!-- Role -->
+      <div style="text-align:center;flex-shrink:0">
+        <div style="font-size:.65rem;font-weight:700;color:${rolColor[u.rol]||'var(--muted)'};background:var(--bg);border:1px solid var(--border);padding:2px 8px;border-radius:10px">${rolLabel[u.rol]||u.rol}</div>
       </div>
-      <div class="u-access">
-        <div class="u-access-lbl">Accesos</div>
-        <div class="u-access-val">${menuCount} módulos</div>
+      <!-- Access -->
+      <div style="text-align:center;flex-shrink:0;min-width:80px">
+        <div style="font-size:.65rem;color:var(--muted)">Accesos</div>
+        <div style="font-size:.82rem;font-weight:700;color:var(--blue)">${menuCount} módulos</div>
       </div>
-      <button class="u-edit-btn" data-click="uEditUser" data-arg="${u.id}">✏️ Editar</button>
+      <!-- Edit -->
+      <button onclick="uEditUser('${u.id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:.72rem;color:var(--text2);flex-shrink:0" onmouseover="this.style.background='var(--blue-bg)';this.style.color='var(--blue)'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text2)'">
+        ✏️ Editar
+      </button>
     </div>`;
   }).join('');
 }
@@ -62,17 +70,21 @@ function uRenderPerms(perms){
   if(!el) return;
   el.innerHTML = Object.entries(MENU_PERMS).map(([menuId, menu]) => {
     const menuOn = perms[menuId] === 'menu' || perms[menuId] === true;
-    return `<div class="u-perm-block ${menuOn?'on':'off'}">
-      <label class="u-perm-hdr ${menuOn?'on':'off'}">
-        <input type="checkbox" class="u-perm-hdr-chk" data-menu="${menuId}" ${menuOn?'checked':''}>
-        <span class="u-perm-hdr-lbl ${menuOn?'on':'off'}">${menu.label}</span>
+    return `<div style="background:var(--bg);border:1px solid ${menuOn?'var(--blue-lt)':'var(--border)'};border-radius:var(--r);overflow:hidden;transition:border-color .15s">
+      <!-- Header del módulo -->
+      <label style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:${menuOn?'var(--blue-bg)':'transparent'};transition:background .15s">
+        <input type="checkbox" data-menu="${menuId}" ${menuOn?'checked':''} onchange="uToggleMenu('${menuId}',this)"
+          style="width:14px;height:14px;accent-color:var(--blue);flex-shrink:0">
+        <span style="font-size:.76rem;font-weight:700;color:${menuOn?'var(--blue)':'var(--text2)'}">${menu.label}</span>
       </label>
-      ${menu.subs.length ? `<div id="subperms-${menuId}" class="u-perm-subs ${menuOn?'on':'off'}" ${menuOn?'':'style="display:none"'}>
+      <!-- Submenús -->
+      ${menu.subs.length ? `<div id="subperms-${menuId}" style="border-top:1px solid ${menuOn?'var(--blue-lt)':'var(--border)'};padding:6px 8px;display:${menuOn?'block':'none'}">
         ${menu.subs.map(s=>{
           const subOn = perms[s.id] !== false && menuOn;
-          return `<label class="u-perm-sub-label">
-            <input type="checkbox" class="u-perm-sub-chk" data-sub="${s.id}" data-menu="${menuId}" ${subOn?'checked':''}>
-            <span class="u-perm-sub-txt">${s.label}</span>
+          return `<label style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;border-radius:5px" onmouseover="this.style.background='rgba(0,115,234,.06)'" onmouseout="this.style.background=''">
+            <input type="checkbox" data-sub="${s.id}" data-menu="${menuId}" ${subOn?'checked':''} onchange="uToggleSub('${s.id}','${menuId}',this)"
+              style="width:13px;height:13px;accent-color:var(--blue);flex-shrink:0">
+            <span style="font-size:.7rem;color:var(--text2)">${s.label}</span>
           </label>`;
         }).join('')}
       </div>` : ''}
@@ -80,46 +92,33 @@ function uRenderPerms(perms){
   }).join('');
 }
 
-function uToggleMenu(cb){
-  const menuId = cb.dataset.menu;
-  const panel  = document.getElementById('subperms-'+menuId);
-  const label  = cb.closest('.u-perm-hdr');
-  const block  = cb.closest('.u-perm-block');
-  const span   = label && label.querySelector('.u-perm-hdr-lbl');
+function uToggleMenu(menuId, cb){
+  const panel = document.getElementById('subperms-'+menuId);
+  const label = cb.parentElement;
   const menuOn = cb.checked;
-  // Update visual classes
-  if(label){ label.className = 'u-perm-hdr ' + (menuOn?'on':'off'); }
-  if(span){  span.className  = 'u-perm-hdr-lbl ' + (menuOn?'on':'off'); }
-  if(block){ block.className = 'u-perm-block ' + (menuOn?'on':'off'); }
+  // Update visual
+  label.style.background = menuOn ? 'var(--blue-bg)' : 'transparent';
+  label.querySelector('span').style.color = menuOn ? 'var(--blue)' : 'var(--text2)';
   if(panel){
     panel.style.display = menuOn ? 'block' : 'none';
-    panel.className = 'u-perm-subs ' + (menuOn?'on':'off');
+    panel.style.borderTopColor = menuOn ? 'var(--blue-lt)' : 'var(--border)';
+    // Check all subs if menu enabled
     panel.querySelectorAll('input[type=checkbox]').forEach(inp => { inp.checked = menuOn; });
   }
+  label.closest('[style]').style.borderColor = menuOn ? 'var(--blue-lt)' : 'var(--border)';
 }
 
-function uToggleSub(cb){
-  const menuId = cb.dataset.menu;
+function uToggleSub(subId, menuId, cb){
+  // If enabling a sub, ensure parent menu is enabled
   if(cb.checked){
     const menuCb = document.querySelector(`input[data-menu="${menuId}"]:not([data-sub])`);
     if(menuCb && !menuCb.checked){
       menuCb.checked = true;
-      uToggleMenu(menuCb);
-      cb.checked = true;
+      uToggleMenu(menuId, menuCb);
+      cb.checked = true; // restore after parent toggle
     }
   }
 }
-
-// Delegación de eventos para el panel de usuarios/permisos (reemplaza inline handlers)
-(function(){
-  document.addEventListener('change', function(e){
-    const t = e.target;
-    // Checkbox de módulo en permisos
-    if(t.matches('#u-perms input[data-menu]:not([data-sub])')) { uToggleMenu(t); return; }
-    // Checkbox de submódulo en permisos
-    if(t.matches('#u-perms input[data-sub]')) { uToggleSub(t); return; }
-  });
-})();
 
 function uCollectPerms(){
   const perms = {};

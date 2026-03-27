@@ -17,26 +17,10 @@ const SECURITY_HEADERS = {
   'X-Permitted-Cross-Domain-Policies': 'none',
   'X-Download-Options': 'noopen',
   // CSP — bloquea scripts inyectados, solo permite origenes conocidos
-  //
-  // PENDIENTES para CSP strict (ver auditoría 2026-03-26):
-  //
-  // 1. 'unsafe-eval' — RESUELTO 2026-03-26:
-  //    xlsx@0.18.5 (CVE-2023-30533) reemplazado por ExcelJS + xlsx-compat.js.
-  //    pdf.js 3.x no requiere eval. unsafe-eval eliminado.
-  //
-  // 2. 'unsafe-inline' en script-src — RESUELTO 2026-03-26:
-  //    0 inline handlers ni <script> blocks en index.html.
-  //    El único onmouseover restante fue reemplazado por clase CSS .modal-close-btn.
-  //    unsafe-inline eliminado de script-src.
-  //
-  // 3. 'unsafe-inline' en style-src — RESUELTO 2026-03-27:
-  //    680 atributos style="" extraídos a clases CSS utilitarias gf-* + reglas #id{}.
-  //    unsafe-inline eliminado de style-src. CSP ahora en modo STRICT completo.
-  //
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-    "style-src 'self' https://fonts.googleapis.com",
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
     "connect-src 'self' https://*.supabase.co https://cdnjs.cloudflare.com",
@@ -94,14 +78,7 @@ function isRateLimited(key, max = 20) {
   return false;
 }
 
-/** Iniciar limpieza periódica de IPs inactivas.
- *  Intervalo: 60s (antes 300s) para contener mejor el crecimiento de memoria
- *  en ataques volumétricos sostenidos.
- *
- *  Limitación conocida (BAJO): _rl es in-memory → se resetea en reinicios y
- *  no funciona en multi-instancia. Aceptable para single-instance Railway.
- *  Migración futura: better-sqlite3 con tabla rate_limits(key TEXT, ts INTEGER).
- */
+/** Iniciar limpieza periódica de IPs inactivas (cada 5 min) */
 function startCleanup() {
   setInterval(() => {
     const now = Date.now();
@@ -109,7 +86,7 @@ function startCleanup() {
       _rl[key] = _rl[key].filter(t => now - t < 60000);
       if (_rl[key].length === 0) delete _rl[key];
     }
-  }, 60000); // cada 1 min
+  }, 300000);
 }
 
 /** Enviar respuesta JSON de error (DRY helper) */
@@ -231,39 +208,14 @@ function verifyToken(token) {
   } catch { return null; }
 }
 
-/** Parse Cookie header into key-value map */
-function _parseCookies(req) {
-  const header = req.headers.cookie || '';
-  const cookies = {};
-  header.split(';').forEach(part => {
-    const eq = part.indexOf('=');
-    if (eq < 0) return;
-    const key = part.slice(0, eq).trim();
-    if (key) cookies[key] = part.slice(eq + 1).trim();
-  });
-  return cookies;
-}
-
-/** Auth middleware — accepts signed JWT from Authorization header or httpOnly cookie */
+/** Auth middleware — accepts both signed JWT and legacy Base64 tokens */
 function requireAuth(req, res) {
-  let token = null;
-
-  // 1. Authorization header (legacy / API clients)
   const auth = req.headers.authorization;
-  if (auth && auth.startsWith('Bearer ') && auth.length >= 30) {
-    token = auth.slice(7);
-  }
-
-  // 2. httpOnly cookie (R4 — browser clients)
-  if (!token) {
-    const cookies = _parseCookies(req);
-    if (cookies.gf_token) token = cookies.gf_token;
-  }
-
-  if (!token) {
-    if (res) sendError(res, 401, 'No autorizado');
+  if (!auth || !auth.startsWith('Bearer ') || auth.length < 30) {
+    sendError(res, 401, 'No autorizado');
     return false;
   }
+  const token = auth.slice(7);
 
   // Try signed JWT first
   const jwt = verifyToken(token);
@@ -272,26 +224,21 @@ function requireAuth(req, res) {
     return true;
   }
 
-  // Fallback: legacy Base64 — DEPRECATED, only from header (never from cookie)
-  if (auth && auth.startsWith('Bearer ')) {
-    try {
-      const decoded = Buffer.from(token, 'base64').toString('utf8');
-      const session = JSON.parse(decoded);
-      if (!session.id || !session.nombre) {
-        if (res) sendError(res, 401, 'Sesión inválida');
-        return false;
-      }
-      console.warn(`[AUTH] ⚠️ Legacy Base64 token used by ${session.nombre} (${session.email || 'no-email'}) — should migrate to JWT`);
-      req._user = session;
-      return true;
-    } catch {
-      if (res) sendError(res, 401, 'Token malformado');
+  // Fallback: legacy Base64 — DEPRECATED, will be removed in future version
+  try {
+    const decoded = Buffer.from(token, 'base64').toString('utf8');
+    const session = JSON.parse(decoded);
+    if (!session.id || !session.nombre) {
+      sendError(res, 401, 'Sesión inválida');
       return false;
     }
+    console.warn(`[AUTH] ⚠️ Legacy Base64 token used by ${session.nombre} (${session.email || 'no-email'}) — should migrate to JWT`);
+    req._user = session;
+    return true;
+  } catch {
+    sendError(res, 401, 'Token malformado');
+    return false;
   }
-
-  if (res) sendError(res, 401, 'Token inválido');
-  return false;
 }
 
 /** Global error handler — registrar sin exponer detalles al cliente */

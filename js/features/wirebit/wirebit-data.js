@@ -616,7 +616,7 @@ async function startWBTarUpload(){
     progressMsg.textContent = 'Leyendo archivo Excel...';
 
     const buffer = await file.arrayBuffer();
-    const wb = await XLSX.read(buffer, {type:'array', cellDates:true});
+    const wb = XLSX.read(buffer, {type:'array', cellDates:true});
     const sheetName = wb.SheetNames[0];
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:''});
 

@@ -390,7 +390,7 @@
     DB.set('gf4', S.recs);
     refreshActivePL();
   }
-  async function expData(){
+  function expData(){
     if(typeof XLSX==='undefined'){toast('\u274c XLSX no disponible');return;}
     const all = [...FI_ROWS.map(r=>({...r,tipo:'ingreso'})), ...FG_ROWS.map(r=>({...r,tipo:'gasto'}))];
     const data = all.map(r=>({
@@ -401,7 +401,7 @@
     const ws=XLSX.utils.json_to_sheet(data);
     const wb2=XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb2,ws,'Flujo GF');
-    await XLSX.writeFile(wb2,'GF_datos.xlsx');
+    XLSX.writeFile(wb2,'GF_datos.xlsx');
   }
 
   // Expose FI_ROWS and FG_ROWS as window properties with getter/setter
