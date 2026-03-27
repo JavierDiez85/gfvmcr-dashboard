@@ -288,3 +288,176 @@ body[data-role="viewer"] .admin-only { display:none !important; }
 
 /* Loading spinner animation */
 @keyframes gf-spin{to{transform:rotate(360deg)}}
+
+/* Modal close button hover (replaces inline onmouseover/onmouseout — A3) */
+.modal-close-btn:hover{background:var(--red-bg)!important;border-color:var(--red-lt)!important;}
+
+/* ─── Utility classes — extraídas de inline styles (A3 refactor 2026-03-26) ─── */
+/* Spacing */
+.mb14{margin-bottom:14px}
+.mb10{margin-bottom:10px}
+.mb6{margin-bottom:6px}
+.mb18{margin-bottom:18px}
+.mb8{margin-bottom:8px}
+/* Overflow */
+.ovx{overflow-x:auto}
+/* Typography — subtítulos y textos auxiliares */
+.sub{font-size:.68rem;color:var(--muted);margin-top:2px}
+.hint{color:var(--muted);font-size:.85rem}
+.sec-title{font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700}
+.fs72{font-size:.72rem}
+.fs7{font-size:.7rem}
+.fs6{font-size:.6rem}
+.fw6{font-weight:600}
+.fw7{font-weight:700}
+/* Layout */
+.row-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.row-h0{display:flex;align-items:center;justify-content:space-between}
+.flex-ac{display:flex;align-items:center}
+/* Numeric / alignment */
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.tcn{text-align:center;white-space:nowrap}
+/* Accent custom-property helpers (para kpi-card, m-kpi) */
+.ac-g{--ac:var(--green)}
+.ac-o{--ac:var(--orange)}
+.ac-b{--ac:var(--blue)}
+.ac-r{--ac:var(--red)}
+.ac-p{--ac:var(--purple)}
+/* Badge color combos (background + foreground) */
+.bg-g{background:var(--green-bg);color:var(--green)}
+.bg-b{background:var(--blue-bg);color:var(--blue)}
+.bg-o{background:var(--orange-bg);color:var(--orange)}
+.bg-r{background:var(--red-bg);color:var(--red)}
+.bg-p{background:var(--purple-bg);color:var(--purple)}
+/* Padding */
+.p-md{padding:10px 12px}
+/* Tag pill — pequeña etiqueta por color de entidad */
+.tag-o{font-size:.6rem;font-weight:700;color:var(--orange)}
+.tag-b{font-size:.6rem;font-weight:700;color:var(--blue)}
+.tag-g{font-size:.6rem;font-weight:700;color:var(--green)}
+.tag-p{font-size:.6rem;font-weight:700;color:var(--purple)}
+.tag-r{font-size:.6rem;font-weight:700;color:var(--red)}
+/* Chips clicables por entidad (inline-flex con borde semitransparente) */
+.chip-b{display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid #0073ea33;background:#0073ea11;user-select:none}
+.chip-g{display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid #00b87533;background:#00b87511;user-select:none}
+.chip-o{display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid #ff704333;background:#ff704311;user-select:none}
+.chip-p{display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid #9b51e033;background:#9b51e011;user-select:none}
+/* Checkboxes con accent-color por entidad */
+.chk-b{accent-color:var(--blue);width:11px;height:11px}
+.chk-g{accent-color:var(--green);width:11px;height:11px}
+.chk-o{accent-color:var(--orange);width:11px;height:11px}
+.chk-p{accent-color:var(--purple);width:11px;height:11px}
+/* Pill muted (pequeña etiqueta gris background) */
+.pill-muted{font-size:.65rem;color:var(--muted);background:var(--bg);padding:2px 7px;border-radius:10px}
+/* Botones mini inline (add/delete en tablas) */
+.btn-add{background:var(--blue-bg);color:var(--blue);border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px}
+.btn-del{background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer}
+/* Input numérico inline de tablas */
+.inp-num{width:100%;padding:4px 6px;border:1px solid var(--border);border-radius:4px;font-size:.72rem;text-align:right;background:var(--bg);color:var(--text);box-sizing:border-box}
+/* Flex gaps adicionales */
+.flex-tags{display:flex;gap:3px;flex-wrap:wrap}
+.flex-6{display:flex;gap:6px}
+.flex-6-ac{display:flex;gap:6px;align-items:center}
+.flex-8-ac{display:flex;gap:8px;align-items:center}
+/* Color helpers simples */
+.c-g{color:var(--green)}
+.c-b{color:var(--blue)}
+.c-o{color:var(--orange)}
+.c-r{color:var(--red)}
+.c-muted{color:var(--muted)}
+.c-b-fw7{color:var(--blue);font-weight:700}
+.c-o-fw7{color:var(--orange);font-weight:700}
+/* Text helpers simples */
+.tc{text-align:center}
+.h14{height:14px}
+.fs62-p{font-size:.62rem;padding:3px 7px}
+.fs68-muted{font-size:.68rem;color:var(--muted)}
+/* Row-header variantes de margin */
+.row-h16{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.row-h12{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.row-h10{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.row-sb3{display:flex;justify-content:space-between;margin-bottom:3px}
+/* Flex adicionales */
+.flex-8{display:flex;gap:8px}
+.flex-10-ac-wrap{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+/* Inputs inline */
+.inp-sm{padding:4px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);width:200px}
+.inp-lg{width:100%;padding:6px 8px;border:1px solid var(--border);border-radius:8px;font-size:.75rem;background:var(--bg);color:var(--text)}
+.inp-xs{padding:4px 8px;border:1px solid var(--border);border-radius:6px;font-size:.7rem;background:var(--bg);color:var(--text)}
+/* Tipografía bloques */
+.sub-blk{font-size:.68rem;color:var(--muted);display:block;margin-bottom:3px}
+.sub-blk2{color:var(--muted);font-size:.68rem;display:block}
+.lbl-muted-blk{font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px}
+.lbl2-blk{font-size:.72rem;font-weight:600;color:var(--text2);display:block;margin-bottom:4px}
+.fs72-muted{font-size:.72rem;color:var(--muted)}
+.fw7-9{font-weight:700;font-size:.9rem}
+.fw7-76{font-weight:700;font-size:.76rem}
+/* Accent amarillo */
+.ac-y{--ac:var(--yellow)}
+/* Botón ícono */
+.btn-ico{background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted)}
+/* Text right */
+.tr{text-align:right}
+/* Padding */
+.p-16{padding:16px}
+/* Grid variante */
+.g31-10{display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px}
+/* Columnas tabla con ancho fijo */
+.w68-b{width:68px;color:var(--blue)}
+.w65-o{width:65px;color:var(--orange)}
+.w80{width:80px}
+.w90{width:90px}
+.w100{width:100%}
+/* Inputs adicionales */
+.inp-md{width:100%;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;background:var(--bg);color:var(--text);box-sizing:border-box}
+.inp-white{width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)}
+.inp-white-full{width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text);box-sizing:border-box}
+.flex-inp{font-size:.75rem;flex:1;min-width:200px}
+.inp-err{font-size:.7rem;border-color:var(--red);color:var(--red)}
+.inp-b{font-size:.7rem;border-color:var(--blue);color:var(--blue)}
+.inp-g{font-size:.7rem;border-color:var(--green);color:var(--green)}
+.inp-o{font-size:.7rem;border-color:var(--orange);color:var(--orange)}
+/* Background-only */
+.bg-o-only{background:var(--orange-bg)}
+.bg-r-only{background:var(--red-bg)}
+.bg-y-only{background:var(--yellow-bg)}
+/* Progress track */
+.prog-track{background:var(--border);border-radius:8px;height:8px;overflow:hidden}
+.bar-blue{background:var(--blue);width:100%}
+/* Accent muted */
+.ac-muted{--ac:var(--muted)}
+/* Color adicionales */
+.c-p{color:var(--purple)}
+/* Tipografía bloques adicionales */
+.lbl-muted3{font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px}
+.sub-mb4{font-size:.68rem;color:var(--muted);margin-bottom:4px}
+.hint-mb12{font-size:.75rem;color:var(--muted);margin:0 0 12px}
+.fs72-nw{font-size:.72rem;white-space:nowrap}
+.hint-mt4{font-size:.7rem;color:var(--muted);margin-top:4px}
+.fs6-muted{font-size:.6rem;font-weight:500;color:var(--muted)}
+.fs67-muted{font-size:.67rem;color:var(--muted)}
+.fs65-muted{font-size:.65rem;color:var(--muted)}
+.fs62-muted{font-size:.62rem;color:var(--muted)}
+.fs6-muted2{font-size:.6rem;color:var(--muted)}
+.fs75{font-size:.75rem}
+.fs78{font-size:.78rem}
+.fs68-p2{font-size:.68rem;padding:5px 10px}
+.fw7-74{font-weight:700;font-size:.74rem}
+.fw6-72{font-weight:600;font-size:.72rem}
+.fs7-muted-fw6{font-size:.7rem;color:var(--muted);font-weight:600}
+/* Empty state */
+.empty-state{text-align:center;color:var(--muted);padding:20px;font-size:.75rem}
+/* Flex adicionales */
+.flex-6-ac-wrap{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.flex-10-mb14-wrap{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.flex-3{display:flex;gap:3px}
+.flex-4-ac{display:flex;align-items:center;gap:4px}
+.row-h4{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px}
+/* Mini card (kpi compacto) */
+.mini-card{flex:1;min-width:120px;background:var(--bg);border-radius:8px;padding:10px;text-align:center}
+/* Margin */
+.mb16{margin-bottom:16px}
+/* Padding variantes */
+.p-14{padding:14px}
+.p-10-14{padding:10px 14px}
+.p-td{padding:8px 6px;text-align:left}

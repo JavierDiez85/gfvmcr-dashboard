@@ -18,25 +18,25 @@ const SECURITY_HEADERS = {
   'X-Download-Options': 'noopen',
   // CSP — bloquea scripts inyectados, solo permite origenes conocidos
   //
-  // PENDIENTES para CSP strict (ver auditoría 2026-03-24):
+  // PENDIENTES para CSP strict (ver auditoría 2026-03-26):
   //
-  // 1. 'unsafe-eval' en script-src:
-  //    Requerido por xlsx@0.18.5 (CDN, usa new Function() internamente) y pdf.js.
-  //    Se puede eliminar al migrar xlsx client-side a una alternativa sin eval
-  //    y reemplazar pdf.js worker con un hash SRI + sin eval.
+  // 1. 'unsafe-eval' — RESUELTO 2026-03-26:
+  //    xlsx@0.18.5 (CVE-2023-30533) reemplazado por ExcelJS + xlsx-compat.js.
+  //    pdf.js 3.x no requiere eval. unsafe-eval eliminado.
   //
-  // 2. 'unsafe-inline' en script-src:
-  //    index.html tiene ~356 event handlers inline (onclick, onkeydown, onchange…).
-  //    Requiere modularizar index.html: mover todos los handlers a archivos JS externos.
+  // 2. 'unsafe-inline' en script-src — RESUELTO 2026-03-26:
+  //    0 inline handlers ni <script> blocks en index.html.
+  //    El único onmouseover restante fue reemplazado por clase CSS .modal-close-btn.
+  //    unsafe-inline eliminado de script-src.
   //
-  // 3. 'unsafe-inline' en style-src:
-  //    Cientos de atributos style="" inline en el HTML.
-  //    Requiere extraer todos los estilos inline a clases CSS.
-  //    (El único <style> tag — @keyframes gf-spin — ya fue movido a styles.css).
+  // 3. 'unsafe-inline' en style-src — PENDIENTE (deuda técnica):
+  //    1885 atributos style="" inline en index.html.
+  //    Requiere extraer estilos a clases CSS (refactor largo).
+  //    Riesgo: CSS injection (menor que script injection).
   //
   'Content-Security-Policy': [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
+    "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
@@ -225,14 +225,39 @@ function verifyToken(token) {
   } catch { return null; }
 }
 
-/** Auth middleware — accepts both signed JWT and legacy Base64 tokens */
+/** Parse Cookie header into key-value map */
+function _parseCookies(req) {
+  const header = req.headers.cookie || '';
+  const cookies = {};
+  header.split(';').forEach(part => {
+    const eq = part.indexOf('=');
+    if (eq < 0) return;
+    const key = part.slice(0, eq).trim();
+    if (key) cookies[key] = part.slice(eq + 1).trim();
+  });
+  return cookies;
+}
+
+/** Auth middleware — accepts signed JWT from Authorization header or httpOnly cookie */
 function requireAuth(req, res) {
+  let token = null;
+
+  // 1. Authorization header (legacy / API clients)
   const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ') || auth.length < 30) {
-    sendError(res, 401, 'No autorizado');
+  if (auth && auth.startsWith('Bearer ') && auth.length >= 30) {
+    token = auth.slice(7);
+  }
+
+  // 2. httpOnly cookie (R4 — browser clients)
+  if (!token) {
+    const cookies = _parseCookies(req);
+    if (cookies.gf_token) token = cookies.gf_token;
+  }
+
+  if (!token) {
+    if (res) sendError(res, 401, 'No autorizado');
     return false;
   }
-  const token = auth.slice(7);
 
   // Try signed JWT first
   const jwt = verifyToken(token);
@@ -241,21 +266,26 @@ function requireAuth(req, res) {
     return true;
   }
 
-  // Fallback: legacy Base64 — DEPRECATED, will be removed in future version
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf8');
-    const session = JSON.parse(decoded);
-    if (!session.id || !session.nombre) {
-      sendError(res, 401, 'Sesión inválida');
+  // Fallback: legacy Base64 — DEPRECATED, only from header (never from cookie)
+  if (auth && auth.startsWith('Bearer ')) {
+    try {
+      const decoded = Buffer.from(token, 'base64').toString('utf8');
+      const session = JSON.parse(decoded);
+      if (!session.id || !session.nombre) {
+        if (res) sendError(res, 401, 'Sesión inválida');
+        return false;
+      }
+      console.warn(`[AUTH] ⚠️ Legacy Base64 token used by ${session.nombre} (${session.email || 'no-email'}) — should migrate to JWT`);
+      req._user = session;
+      return true;
+    } catch {
+      if (res) sendError(res, 401, 'Token malformado');
       return false;
     }
-    console.warn(`[AUTH] ⚠️ Legacy Base64 token used by ${session.nombre} (${session.email || 'no-email'}) — should migrate to JWT`);
-    req._user = session;
-    return true;
-  } catch {
-    sendError(res, 401, 'Token malformado');
-    return false;
   }
+
+  if (res) sendError(res, 401, 'Token inválido');
+  return false;
 }
 
 /** Global error handler — registrar sin exponer detalles al cliente */

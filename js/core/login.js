@@ -212,7 +212,7 @@ async function doLogin(){
       const user = loginResult.user;
       CURRENT_USER = { ...user, lastActivity: Date.now() };
       sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
-      sessionStorage.setItem('gf_token', loginResult.token);
+      // Token is now stored as httpOnly cookie (R4) — no longer in sessionStorage
     } else {
       _recordAttempt(email);
       errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
@@ -233,8 +233,8 @@ async function doLogin(){
 function doLogout(){
   CURRENT_USER=null;
   sessionStorage.removeItem('gf_session');
-  sessionStorage.removeItem('gf_token');
-  location.reload();
+  // Clear httpOnly cookie server-side (R4)
+  fetch('/api/logout', { method: 'POST' }).finally(() => location.reload());
 }
 
 // ── Aplicar restricciones de rol ──

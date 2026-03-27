@@ -25,13 +25,10 @@ async function _ensureSupabase() {
 
 /** Helper: call a server upload endpoint with session auth (for DELETE/UPDATE operations) */
 async function _serverWrite(path, method, body) {
-  // Prefer signed JWT, fallback to legacy Base64
-  const jwt = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_token')) || '';
-  const sess = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_session')) || '';
-  const token = jwt || btoa(sess);
+  // Auth via httpOnly cookie (R4) — sent automatically by browser for same-origin requests
   const resp = await fetch(path, {
     method: method || 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   const data = await resp.json().catch(() => ({}));
@@ -170,7 +167,10 @@ const TPV_UPLOAD = {
             clientMap[c.nombre.toUpperCase()] = c.id;
           });
         }
-      } catch (e) { console.warn('[Upload] Could not load client map:', e.message); }
+      } catch (e) {
+        errors.push(`⚠️ No se pudo cargar mapa de clientes: ${e.message}. Los cliente_id quedarán sin vincular.`);
+        console.warn('[Upload] Could not load client map:', e.message);
+      }
 
       // Step 3: Transform rows
       this._progress(20, 'Transformando datos...');
@@ -201,7 +201,10 @@ const TPV_UPLOAD = {
           // Month: derive from fecha
           const mesStr = fecha.substring(0, 7); // YYYY-MM
 
-          const monto = parseFloat(r['Monto']) || 0;
+          // M1: reject NaN silently — invalid monto skips the row with an explicit error
+          const montoRaw = parseFloat(r['Monto']);
+          if (isNaN(montoRaw)) { errors.push(`Fila ${i + 2}: Monto inválido ("${r['Monto']}")`); continue; }
+          const monto = montoRaw;
 
           rows.push({
             excel_id: String(r['ID'] || ''),
@@ -258,9 +261,10 @@ const TPV_UPLOAD = {
         if (!prepResult.success) throw new Error(prepResult.error || 'Error preparando upload en servidor');
       }
 
-      // Step 6: Batch insert
+      // Step 6: Batch insert — A1: break on first error and rollback
       const totalBatches = Math.ceil(rows.length / this.BATCH_SIZE);
       let inserted = 0;
+      let batchFailed = false;
 
       for (let i = 0; i < rows.length; i += this.BATCH_SIZE) {
         const batch = rows.slice(i, i + this.BATCH_SIZE);
@@ -272,10 +276,22 @@ const TPV_UPLOAD = {
         if (insertErr) {
           errors.push(`Lote ${batchNum}: ${insertErr.message}`);
           console.error('[Upload] Batch error:', insertErr);
-          // Continue with remaining batches
-        } else {
-          inserted += batch.length;
+          batchFailed = true;
+          break; // A1: stop immediately — do not insert more batches
         }
+        inserted += batch.length;
+      }
+
+      // A1: rollback if any batch failed to avoid partial state
+      if (batchFailed) {
+        this._progress(0, '⚠️ Error en inserción — revirtiendo upload...');
+        try {
+          await _serverWrite(`/api/upload/tpv/batch/${encodeURIComponent(batchId)}`, 'DELETE', {});
+        } catch (rbErr) {
+          errors.push('Rollback falló: ' + rbErr.message);
+          console.error('[Upload] Rollback error:', rbErr);
+        }
+        return { success: false, rowCount: 0, batchId, errors };
       }
 
       // Step 7: Invalidate cache
@@ -763,7 +779,7 @@ async function rTPVUpload() {
         : '—';
       return `<tr>
         <td style="font-size:.72rem">${fecha}</td>
-        <td style="font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis">${h.filename || '—'}</td>
+        <td style="font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(h.filename) || '—'}</td>
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.row_count || 0).toLocaleString()}</td>
         <td style="font-size:.72rem">${periodo}</td>

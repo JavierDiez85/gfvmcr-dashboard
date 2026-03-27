@@ -13,8 +13,7 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.80.0",
     "@supabase/supabase-js": "^2.99.2",
-    "exceljs": "^4.4.0",
-    "express": "^5.2.1"
+    "exceljs": "^4.4.0"
   },
   "devDependencies": {
     "vitest": "^4.1.1"
