@@ -29,15 +29,14 @@ const SECURITY_HEADERS = {
   //    El único onmouseover restante fue reemplazado por clase CSS .modal-close-btn.
   //    unsafe-inline eliminado de script-src.
   //
-  // 3. 'unsafe-inline' en style-src — PENDIENTE (deuda técnica):
-  //    1885 atributos style="" inline en index.html.
-  //    Requiere extraer estilos a clases CSS (refactor largo).
-  //    Riesgo: CSS injection (menor que script injection).
+  // 3. 'unsafe-inline' en style-src — RESUELTO 2026-03-27:
+  //    680 atributos style="" extraídos a clases CSS utilitarias gf-* + reglas #id{}.
+  //    unsafe-inline eliminado de style-src. CSP ahora en modo STRICT completo.
   //
   'Content-Security-Policy': [
     "default-src 'self'",
     "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+    "style-src 'self' https://fonts.googleapis.com",
     "font-src 'self' https://fonts.gstatic.com",
     "img-src 'self' data: blob:",
     "connect-src 'self' https://*.supabase.co https://cdnjs.cloudflare.com",
@@ -95,7 +94,14 @@ function isRateLimited(key, max = 20) {
   return false;
 }
 
-/** Iniciar limpieza periódica de IPs inactivas (cada 5 min) */
+/** Iniciar limpieza periódica de IPs inactivas.
+ *  Intervalo: 60s (antes 300s) para contener mejor el crecimiento de memoria
+ *  en ataques volumétricos sostenidos.
+ *
+ *  Limitación conocida (BAJO): _rl es in-memory → se resetea en reinicios y
+ *  no funciona en multi-instancia. Aceptable para single-instance Railway.
+ *  Migración futura: better-sqlite3 con tabla rate_limits(key TEXT, ts INTEGER).
+ */
 function startCleanup() {
   setInterval(() => {
     const now = Date.now();
@@ -103,7 +109,7 @@ function startCleanup() {
       _rl[key] = _rl[key].filter(t => now - t < 60000);
       if (_rl[key].length === 0) delete _rl[key];
     }
-  }, 300000);
+  }, 60000); // cada 1 min
 }
 
 /** Enviar respuesta JSON de error (DRY helper) */
