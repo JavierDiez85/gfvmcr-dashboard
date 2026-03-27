@@ -17,7 +17,7 @@ function _nomFactor(n, mes, year) {
 
   // Fecha de ingreso: prorrateo en mes de entrada, 0 antes
   if (n.fi) {
-    const parts = n.fi.split('-');
+    const parts = String(n.fi).split('-');
     if (parts.length >= 2) {
       const fiY = +parts[0], fiM = +parts[1] - 1, fiD = parts[2] ? +parts[2] : 1;
       if (yr < fiY || (yr === fiY && m < fiM)) return 0;

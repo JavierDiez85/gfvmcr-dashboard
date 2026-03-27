@@ -67,8 +67,8 @@ async function rTPVTerminales(){
   const totIng = terms.reduce((s,t)=>s+parseFloat(t.ingresos||0),0);
   const totTxn = terms.reduce((s,t)=>s+parseInt(t.transacciones||0),0);
   const avgTicket = totTxn > 0 ? totIng / totTxn : 0;
-  const kEl=document.getElementById('tpv-term-kpis');
-  if(kEl)kEl.innerHTML=`
+  const kEl2=document.getElementById('tpv-term-kpis');
+  if(kEl2)kEl2.innerHTML=`
     <div class="kpi-card" style="--ac:#0073ea"><div class="kpi-top"><div class="kpi-lbl">Terminales</div><div class="kpi-ico" style="background:var(--blue-bg);color:#0073ea">🖥️</div></div><div class="kpi-val" style="color:#0073ea">${numTerm}</div><div class="kpi-d dnu">Total registradas</div><div class="kbar"><div class="kfill" style="background:#0073ea;width:100%"></div></div></div>
     <div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Ingresos</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div><div class="kpi-val" style="color:var(--green)">${fmtTPV(totIng)}</div><div class="kpi-d dnu">Total período</div><div class="kbar"><div class="kfill" style="background:var(--green);width:100%"></div></div></div>
     <div class="kpi-card" style="--ac:var(--purple)"><div class="kpi-top"><div class="kpi-lbl">Transacciones</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">🔢</div></div><div class="kpi-val" style="color:var(--purple)">${totTxn.toLocaleString()}</div><div class="kpi-d dnu">Pagos procesados</div><div class="kbar"><div class="kfill" style="background:var(--purple);width:100%"></div></div></div>
