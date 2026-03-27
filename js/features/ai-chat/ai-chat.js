@@ -37,8 +37,8 @@ function _chatInjectDOM() {
   style.textContent = `
     /* ── Search Bar in Topbar ── */
     #ai-search-wrap{
-      display:flex;align-items:center;flex:1;max-width:280px;
-      margin:0 12px;position:relative;
+      display:flex;align-items:center;flex:1;max-width:480px;
+      margin:0 16px;position:relative;
     }
     #ai-search-bar{
       width:100%;height:34px;padding:0 14px 0 38px;
