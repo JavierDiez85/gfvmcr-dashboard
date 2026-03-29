@@ -351,8 +351,10 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(response));
     } catch (e) {
-      console.error('[Chat] Request failed:', e.message);
-      sendError(res, 502, 'Error procesando solicitud');
+      console.error('[Chat] Request failed:', e.message, e.stack);
+      const safeMsg = e.message && !e.message.includes('sk-')
+        ? e.message : 'Error interno del servidor';
+      sendError(res, 502, safeMsg);
     }
     return;
   }
