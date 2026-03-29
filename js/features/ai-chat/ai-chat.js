@@ -446,15 +446,9 @@ async function _chatSend() {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    const _jwt = sessionStorage.getItem('gf_token') || '';
-    const _sess = sessionStorage.getItem('gf_session') || '';
-    const _token = _jwt || btoa(_sess);
     const resp = await fetch('/api/chat', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer ' + _token
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ messages: apiMessages, context })
     });
 

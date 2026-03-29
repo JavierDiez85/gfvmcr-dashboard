@@ -212,7 +212,6 @@ async function doLogin(){
       const user = loginResult.user;
       CURRENT_USER = { ...user, lastActivity: Date.now() };
       sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
-      sessionStorage.setItem('gf_token', loginResult.token);
     } else {
       _recordAttempt(email);
       errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
@@ -233,7 +232,8 @@ async function doLogin(){
 function doLogout(){
   CURRENT_USER=null;
   sessionStorage.removeItem('gf_session');
-  sessionStorage.removeItem('gf_token');
+  // Clear httpOnly cookie by requesting server to expire it
+  fetch('/api/logout', { method: 'POST' }).catch(() => {});
   location.reload();
 }
 

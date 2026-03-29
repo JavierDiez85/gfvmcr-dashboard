@@ -112,17 +112,28 @@ http.createServer(async (req, res) => {
         id: user.id, nombre: user.nombre, email: user.email,
         rol: user.rol || 'viewer', perms: user.perms || {}
       });
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Set-Cookie': `gf_token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400`
+      });
       res.end(JSON.stringify({
-        token,
         user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'viewer', perms: user.perms || {} },
-        // Return salt for client-side hashing on next login
         salt: user.salt || null
       }));
     } catch (e) {
       console.error('[Login]', e.message);
       sendError(res, 500, 'Error en login');
     }
+    return;
+  }
+
+  // ── API: Logout — expire httpOnly cookie ──
+  if (req.method === 'POST' && req.url === '/api/logout') {
+    res.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Set-Cookie': 'gf_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
+    });
+    res.end(JSON.stringify({ ok: true }));
     return;
   }
 

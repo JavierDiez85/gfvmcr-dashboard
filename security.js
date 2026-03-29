@@ -208,37 +208,36 @@ function verifyToken(token) {
   } catch { return null; }
 }
 
-/** Auth middleware — accepts both signed JWT and legacy Base64 tokens */
+/** Auth middleware — reads JWT from httpOnly cookie or Authorization header */
 function requireAuth(req, res) {
-  const auth = req.headers.authorization;
-  if (!auth || !auth.startsWith('Bearer ') || auth.length < 30) {
+  let token = null;
+
+  // 1. Try httpOnly cookie first
+  const cookies = req.headers.cookie || '';
+  const match = cookies.match(/(?:^|;\s*)gf_token=([^;]+)/);
+  if (match) token = match[1];
+
+  // 2. Fallback to Authorization header (for API clients)
+  if (!token) {
+    const auth = req.headers.authorization;
+    if (auth && auth.startsWith('Bearer ') && auth.length >= 30) {
+      token = auth.slice(7);
+    }
+  }
+
+  if (!token) {
     sendError(res, 401, 'No autorizado');
     return false;
   }
-  const token = auth.slice(7);
 
-  // Try signed JWT first
   const jwt = verifyToken(token);
   if (jwt && jwt.id && jwt.nombre) {
     req._user = jwt;
     return true;
   }
 
-  // Fallback: legacy Base64 — DEPRECATED, will be removed in future version
-  try {
-    const decoded = Buffer.from(token, 'base64').toString('utf8');
-    const session = JSON.parse(decoded);
-    if (!session.id || !session.nombre) {
-      sendError(res, 401, 'Sesión inválida');
-      return false;
-    }
-    console.warn(`[AUTH] ⚠️ Legacy Base64 token used by ${session.nombre} (${session.email || 'no-email'}) — should migrate to JWT`);
-    req._user = session;
-    return true;
-  } catch {
-    sendError(res, 401, 'Token malformado');
-    return false;
-  }
+  sendError(res, 401, 'Token inválido o expirado');
+  return false;
 }
 
 /** Global error handler — registrar sin exponer detalles al cliente */

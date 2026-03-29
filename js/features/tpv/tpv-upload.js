@@ -25,13 +25,9 @@ async function _ensureSupabase() {
 
 /** Helper: call a server upload endpoint with session auth (for DELETE/UPDATE operations) */
 async function _serverWrite(path, method, body) {
-  // Prefer signed JWT, fallback to legacy Base64
-  const jwt = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_token')) || '';
-  const sess = (typeof sessionStorage !== 'undefined' && sessionStorage.getItem('gf_session')) || '';
-  const token = jwt || btoa(sess);
   const resp = await fetch(path, {
     method: method || 'POST',
-    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body)
   });
   const data = await resp.json().catch(() => ({}));
