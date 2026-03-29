@@ -113,7 +113,7 @@ function _renderComTable(clients) {
     const ent = _getClientEntity(c);
     const entPill = ent ? `<span class="pill" style="font-size:.58rem;background:${ent.color}20;color:${ent.color};border:1px solid ${ent.color}40">${escapeHtml(ent.name)}</span>` : '<span style="color:var(--muted)">—</span>';
     return `<tr data-com-idx="${i}" data-com-nombre="${(c.nombre||'').toLowerCase()}" data-com-agente="${c.agente_id||''}">
-      <td style="font-weight:600;font-size:.72rem;white-space:nowrap;cursor:pointer;color:var(--blue)" onclick="openComDetail(_comClientesCache[${origIdx}])">${escapeHtml(c.nombre_display || c.nombre || '—')}</td>
+      <td style="font-weight:600;font-size:.72rem;white-space:nowrap;cursor:pointer;color:var(--blue)" class="com-detail-link" data-idx="${origIdx}">${escapeHtml(c.nombre_display || c.nombre || '—')}</td>
       <td style="font-size:.72rem">${agSig ? `<span class="pill" style="font-size:.62rem">${escapeHtml(agSig)}</span>` : '<span style="color:var(--muted)">—</span>'}</td>
       <td style="font-size:.72rem">${entPill}</td>
       <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'tc'))}</td>
@@ -121,12 +121,23 @@ function _renderComTable(clients) {
       <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'amex'))}</td>
       <td class="r" style="font-size:.72rem">${_fmtRate(_getCardRate(c, 'ti'))}</td>
       <td class="r" style="font-size:.72rem">${c.factor_iva || 1.16}</td>
-      <td style="text-align:center">${!isViewer() ? `<button onclick="openComEdit(_comClientesCache[${origIdx}])" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Editar">✏️</button>` : ''}</td>
+      <td style="text-align:center">${!isViewer() ? `<button class="com-edit-btn" data-idx="${origIdx}" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Editar">✏️</button>` : ''}</td>
     </tr>`;
   }).join('');
 
   const ct = document.getElementById('com-cfg-count');
   if (ct) ct.textContent = `${clients.length} cliente${clients.length !== 1 ? 's' : ''}`;
+
+  // Event delegation for comisiones table
+  if (!tbody._comBound) {
+    tbody.addEventListener('click', function(e) {
+      const detailLink = e.target.closest('.com-detail-link');
+      if (detailLink) { openComDetail(_comClientesCache[parseInt(detailLink.dataset.idx)]); return; }
+      const editBtn = e.target.closest('.com-edit-btn');
+      if (editBtn) { openComEdit(_comClientesCache[parseInt(editBtn.dataset.idx)]); return; }
+    });
+    tbody._comBound = true;
+  }
 }
 
 function filterComClientes() {

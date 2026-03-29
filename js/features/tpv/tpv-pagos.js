@@ -135,7 +135,7 @@ async function rTPVPagos() {
       : '';
     return `<tr>
       <td style="padding:6px 8px;width:28px">
-        <button onclick="openHistorial(${p.id})" title="Ver historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px;border-radius:4px;${p._nPagos===0?'opacity:.35':''}">🕐${histBtn}</button>
+        <button class="pagos-hist-btn" data-pid="${p.id}" title="Ver historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px;border-radius:4px;${p._nPagos===0?'opacity:.35':''}">🕐${histBtn}</button>
       </td>
       <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}${p._rate_corrected ? ' <span title="Comisiones corregidas por cambio de tasa histórica" style="font-size:.55rem;background:var(--purple-bg);color:var(--purple);border-radius:6px;padding:1px 5px;font-weight:700;cursor:help;vertical-align:middle">📊 Ajuste</span>' : ''}</td>
       <td class="mo">${fmtTPVFull(p.total_cobrado,2)}</td>
@@ -145,10 +145,21 @@ async function rTPVPagos() {
       <td class="mo ${p._saldo > 0 ? 'neg' : 'pos'}">${p._saldo > 0.01 ? fmtTPVFull(p._saldo,2) : '<span style="color:var(--green)">✓ $0</span>'}</td>
       <td>${est}</td>
       <td style="text-align:center">
-        <button onclick="openPagoModal(${p.id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
+        <button class="pagos-pago-btn" data-pid="${p.id}" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
       </td>
     </tr>`;
   }).join('');
+
+  // Event delegation for pagos table
+  if (!tbody._pagosBound) {
+    tbody.addEventListener('click', function(e) {
+      const histBtn = e.target.closest('.pagos-hist-btn');
+      if (histBtn) { openHistorial(parseInt(histBtn.dataset.pid)); return; }
+      const pagoBtn = e.target.closest('.pagos-pago-btn');
+      if (pagoBtn) { openPagoModal(parseInt(pagoBtn.dataset.pid)); return; }
+    });
+    tbody._pagosBound = true;
+  }
 
   // Show correction info banner if any clients have rate corrections
   const correctedCount = rows.filter(r => r._rate_corrected).length;
@@ -306,7 +317,7 @@ function openHistorial(clienteId) {
     document.getElementById('hist-body').innerHTML = `
       <div style="text-align:center;padding:30px;color:var(--muted);font-size:.8rem">
         No hay pagos registrados para este cliente.<br>
-        <button class="btn btn-blue" style="margin-top:12px;font-size:.72rem" onclick="closeHistorial();openPagoModal(${clienteId})">+ Registrar primer pago</button>
+        <button class="btn btn-blue hist-first-pago-btn" style="margin-top:12px;font-size:.72rem" data-cid="${clienteId}">+ Registrar primer pago</button>
       </div>`;
   } else {
     document.getElementById('hist-body').innerHTML = `
@@ -325,14 +336,26 @@ function openHistorial(clienteId) {
                 <td class="mo pos">${fmtTPVFull(p.monto)}</td>
                 <td style="color:var(--muted);font-size:.72rem">${p.ref || '—'}</td>
                 <td style="color:var(--muted);font-size:.66rem">${p.registrado}</td>
-                <td><button onclick="deletePago(${clienteId},${p.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem" title="Eliminar">🗑</button></td>
+                <td><button class="hist-del-pago-btn" data-cid="${clienteId}" data-pid="${p.id}" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem" title="Eliminar">🗑</button></td>
               </tr>`).join('')}
           </tbody>
         </table>
       </div>`;
   }
 
-  document.getElementById('historial-overlay').style.display = 'flex';
+  const histOverlay = document.getElementById('historial-overlay');
+  histOverlay.style.display = 'flex';
+
+  // Event delegation for historial overlay
+  if (!histOverlay._bound) {
+    histOverlay.addEventListener('click', function(e) {
+      const firstBtn = e.target.closest('.hist-first-pago-btn');
+      if (firstBtn) { closeHistorial(); openPagoModal(parseInt(firstBtn.dataset.cid)); return; }
+      const delBtn = e.target.closest('.hist-del-pago-btn');
+      if (delBtn) { deletePago(parseInt(delBtn.dataset.cid), parseInt(delBtn.dataset.pid)); return; }
+    });
+    histOverlay._bound = true;
+  }
 }
 
 function closeHistorial() {
@@ -542,7 +565,7 @@ function _renderHistorial(rows) {
     const rowStyle = isAnulado ? 'opacity:.5;text-decoration:line-through' : '';
     const anularBtn = isAnulado
       ? `<span style="font-size:.62rem;color:var(--muted)" title="Anulado el ${p.anulado_fecha||''}">—</span>`
-      : `<button onclick="anularPago('${p.clienteId}',${p.id})" style="background:none;border:1px solid var(--red-lt);border-radius:5px;cursor:pointer;color:var(--red);font-size:.65rem;padding:2px 8px;font-family:'Figtree',sans-serif" title="Anular pago">Anular</button>`;
+      : `<button class="hist-anular-btn" data-cid="${p.clienteId}" data-pid="${p.id}" style="background:none;border:1px solid var(--red-lt);border-radius:5px;cursor:pointer;color:var(--red);font-size:.65rem;padding:2px 8px;font-family:'Figtree',sans-serif" title="Anular pago">Anular</button>`;
     return `<tr style="${rowStyle}">
       <td class="bld">${p.fecha || '—'}</td>
       <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}</td>
@@ -554,6 +577,15 @@ function _renderHistorial(rows) {
       <td style="text-align:center">${anularBtn}</td>
     </tr>`;
   }).join('');
+
+  // Event delegation for anular buttons
+  if (!tbody._anularBound) {
+    tbody.addEventListener('click', function(e) {
+      const btn = e.target.closest('.hist-anular-btn');
+      if (btn) anularPago(btn.dataset.cid, parseInt(btn.dataset.pid));
+    });
+    tbody._anularBound = true;
+  }
 }
 
 // ── ANULAR PAGO ──

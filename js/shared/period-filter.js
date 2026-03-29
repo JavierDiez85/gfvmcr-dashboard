@@ -25,7 +25,7 @@
         ? `background:${acColor};color:white;border-color:${acColor};`
         : '';
       const fs = small ? '.63rem' : '.68rem';
-      return `<button class="pbtn" style="${sty}font-size:${fs};padding:2px 6px" onclick="_gfSetPeriod('${ent}','${mode}')">${label}</button>`;
+      return `<button class="pbtn gfp-period" data-ent="${ent}" data-mode="${mode}" style="${sty}font-size:${fs};padding:2px 6px">${label}</button>`;
     };
 
     // Separador vertical
@@ -36,7 +36,7 @@
       const isAct = y === curY;
       const dot = _isCurrentYear(y) ? '<span style="font-size:.4rem;vertical-align:middle;opacity:.6;margin-left:1px">●</span>' : '';
       const sty = isAct ? `background:${acColor};color:white;border-color:${acColor};` : '';
-      return `<button class="pbtn" style="${sty}font-size:.68rem;padding:2px 6px" onclick="_gfSetYear(${y},'${ent}')">${y}${dot}</button>`;
+      return `<button class="pbtn gfp-year" data-year="${y}" data-ent="${ent}" style="${sty}font-size:.68rem;padding:2px 6px">${y}${dot}</button>`;
     }).join('');
 
     // ── Botones PERÍODO (Año / Q1-Q4) ──
@@ -54,7 +54,7 @@
       const isCurM = i === curMonth && _isCurrentYear(curY);
       const label = m + (isCurM ? '<span style="font-size:.38rem;vertical-align:super;opacity:.7">●</span>' : '');
       const sty = isAct ? `background:${acColor};color:white;border-color:${acColor};` : '';
-      return `<button class="pbtn" style="${sty}font-size:.63rem;padding:2px 5px" onclick="_gfSetPeriod('${ent}','mes_${i}')">${label}</button>`;
+      return `<button class="pbtn gfp-period" data-ent="${ent}" data-mode="mes_${i}" style="${sty}font-size:.63rem;padding:2px 5px">${label}</button>`;
     }).join('');
 
     // ── Botón COMPARAR vs año anterior ──
@@ -99,6 +99,13 @@
     }
     if(!el) return;
     el.innerHTML = gfpBarHTML(opts);
+    // ── Event delegation for data-* handlers ──
+    el.querySelectorAll('.gfp-year').forEach(function(btn){
+      btn.onclick = function(){ _gfSetYear(+this.dataset.year, this.dataset.ent); };
+    });
+    el.querySelectorAll('.gfp-period').forEach(function(btn){
+      btn.onclick = function(){ _gfSetPeriod(this.dataset.ent, this.dataset.mode); };
+    });
   }
 
   // ── Cambiar año ──

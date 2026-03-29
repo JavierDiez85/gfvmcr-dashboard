@@ -92,8 +92,8 @@ function tesRenderTabla(){
     const montoCol = isIng ? 'var(--green)' : 'var(--red)';
     const montoSign = isIng ? '+' : '-';
     const sel = _tesSeleccionados.has(m.id);
-    return `<tr style="${sel?'background:var(--blue-bg)':''}">
-      <td><input type="checkbox" ${sel?'checked':''} onchange="tesToggleSel('${m.id}',this)" style="cursor:pointer"></td>
+    return `<tr data-mid="${escapeHtml(m.id)}" style="${sel?'background:var(--blue-bg)':''}">
+      <td><input type="checkbox" class="tes-sel-cb" ${sel?'checked':''} style="cursor:pointer"></td>
       <td style="font-size:.75rem;white-space:nowrap">${m.fecha||''}</td>
       <td><span style="font-size:.65rem;font-weight:700;color:${col};background:${col}15;padding:2px 7px;border-radius:8px">${m.empresa}</span></td>
       <td><span style="font-size:.65rem;background:${isIng?'var(--green-bg)':'var(--red-bg)'};color:${isIng?'var(--green)':'var(--red)'};padding:2px 7px;border-radius:8px">${m.tipo}</span></td>
@@ -102,11 +102,27 @@ function tesRenderTabla(){
       <td style="font-size:.72rem;color:var(--muted)">${m.cuenta||'—'}</td>
       <td style="text-align:right;font-weight:700;color:${montoCol};white-space:nowrap">${montoSign}${tesFmt(m.monto).substring(1)}</td>
       <td style="text-align:center">
-        ${!isViewer() ? `<button onclick="tesEditarMov('${m.id}')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer;margin-right:2px">✏️</button>
-        <button onclick="tesEliminarMov('${m.id}')" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer">🗑</button>` : ''}
+        ${!isViewer() ? `<button class="tes-edit-btn" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer;margin-right:2px">✏️</button>
+        <button class="tes-del-btn" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 7px;font-size:.6rem;cursor:pointer">🗑</button>` : ''}
       </td>
     </tr>`;
   }).join('');
+
+  // Event delegation for movimientos table
+  if(!tbody._tesBound){
+    tbody._tesBound = true;
+    tbody.addEventListener('change', function(e){
+      const cb = e.target.closest('.tes-sel-cb');
+      if(cb){ const mid = cb.closest('tr').dataset.mid; tesToggleSel(mid, cb); }
+    });
+    tbody.addEventListener('click', function(e){
+      const row = e.target.closest('tr');
+      if(!row) return;
+      const mid = row.dataset.mid;
+      if(e.target.closest('.tes-edit-btn')) tesEditarMov(mid);
+      else if(e.target.closest('.tes-del-btn')) tesEliminarMov(mid);
+    });
+  }
 }
 
 function tesSelAll(cb){
@@ -378,7 +394,7 @@ function tesSelectorEmp(emp){
     <!-- Últimos movimientos -->
     <div class="tw">
       <div class="tw-h"><div class="tw-ht">Últimos movimientos — ${emp}</div>
-        <button onclick="sv('tes_flujo',null);tesSelectorEmpFiltro('${emp}')" style="background:transparent;color:#0073ea;border:1px solid #0073ea;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">Ver todos →</button>
+        <button class="tes-ver-todos-btn" data-emp="${escapeHtml(emp)}" style="background:transparent;color:#0073ea;border:1px solid #0073ea;border-radius:6px;padding:4px 10px;font-size:.68rem;cursor:pointer">Ver todos →</button>
       </div>
       <table class="bt"><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Concepto</th><th>Cuenta</th><th style="text-align:right">Monto</th></tr></thead>
       <tbody>${recientes.map(m=>{
@@ -394,6 +410,11 @@ function tesSelectorEmp(emp){
       }).join('')||'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Sin movimientos para '+emp+'</td></tr>'}</tbody>
       </table>
     </div>`;
+
+  // Event delegation for "Ver todos" button
+  cont.querySelectorAll('.tes-ver-todos-btn').forEach(btn => {
+    btn.addEventListener('click', function(){ sv('tes_flujo',null); tesSelectorEmpFiltro(this.dataset.emp); });
+  });
 
   // Draw chart
   setTimeout(()=>{
@@ -764,15 +785,15 @@ function rBancosView(){
             const col=EMP_COLS_B[e];
             const chk=b.empresas&&b.empresas.includes(e)?'checked':'';
             return `<label style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid ${col}33;background:${col}11">
-              <input type="checkbox" ${chk} onchange="bancosToggleEmp(${i},'${e}',this.checked)" style="accent-color:${col};width:11px;height:11px">
+              <input type="checkbox" class="banco-emp-cb" data-idx="${i}" data-emp="${e}" ${chk} style="accent-color:${col};width:11px;height:11px">
               <span style="font-size:.6rem;font-weight:700;color:${col}">${e.substring(0,3)}</span>
             </label>`;
           }).join('')}
         </div>
       </td>
       <td style="text-align:center;white-space:nowrap">
-        ${!isViewer() ? `<button onclick="bancosEditModal(${i})" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>
-        <button onclick="bancosDelete(${i})" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>` : ''}
+        ${!isViewer() ? `<button class="banco-edit-btn" data-idx="${i}" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer;margin-right:4px">✏️</button>
+        <button class="banco-del-btn" data-idx="${i}" style="background:#fde8e8;color:#c62828;border:none;border-radius:5px;padding:3px 9px;font-size:.65rem;cursor:pointer">🗑</button>` : ''}
       </td>
     </tr>`).join('');
 
@@ -814,6 +835,18 @@ function rBancosView(){
         <tbody>${rows||'<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:20px">Sin cuentas configuradas</td></tr>'}</tbody>
       </table>
     </div>`;
+
+  // Event delegation for bancos
+  root.addEventListener('change', function(e){
+    const cb = e.target.closest('.banco-emp-cb');
+    if(cb) bancosToggleEmp(+cb.dataset.idx, cb.dataset.emp, cb.checked);
+  });
+  root.addEventListener('click', function(e){
+    const edit = e.target.closest('.banco-edit-btn');
+    if(edit){ bancosEditModal(+edit.dataset.idx); return; }
+    const del = e.target.closest('.banco-del-btn');
+    if(del){ bancosDelete(+del.dataset.idx); return; }
+  });
 }
 
 function bancosToggleEmp(idx, empresa, checked){

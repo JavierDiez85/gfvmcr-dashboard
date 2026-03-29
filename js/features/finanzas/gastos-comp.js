@@ -57,15 +57,15 @@ function gcRenderRow(g,i){
   const inS='style="width:100%;border:none;background:transparent;font-size:.78rem;font-family:inherit;padding:0;color:var(--text)"';
   const catOpts=CAT_OPTIONS.map(c=>`<option${c===g.cat?' selected':''}>${c}</option>`).join('');
   return`<tr id="gc-row-${i}">
-    <td><input ${inS} value="${g.c}" onchange="GC_EDIT[${i}].c=this.value;gcUpdateKPIs()"></td>
-    <td><select onchange="GC_EDIT[${i}].cat=this.value;gcUpdateKPIs()" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:3px 4px;background:var(--bg)">${catOpts}</select></td>
-    <td><input type="number" ${inS} value="${g.ppto||0}" min="0" step="1000" onchange="GC_EDIT[${i}].ppto=+this.value;gcUpdateKPIs()" style="text-align:right;color:var(--text);font-weight:500"></td>
-    <td style="background:rgba(0,115,234,.05)"><input type="number" ${inS} value="${g.sal}" min="0" max="100" step="5" onchange="GC_EDIT[${i}].sal=+this.value;gcRefreshRow(${i})" style="text-align:right;color:#0073ea;font-weight:600"></td>
-    <td style="background:rgba(0,184,117,.05)"><input type="number" ${inS} value="${g.end}" min="0" max="100" step="5" onchange="GC_EDIT[${i}].end=+this.value;gcRefreshRow(${i})" style="text-align:right;color:#00b875;font-weight:600"></td>
-    <td style="background:rgba(255,112,67,.05)"><input type="number" ${inS} value="${g.dyn}" min="0" max="100" step="5" onchange="GC_EDIT[${i}].dyn=+this.value;gcRefreshRow(${i})" style="text-align:right;color:#ff7043;font-weight:600"></td>
-    <td style="background:rgba(155,81,224,.05)"><input type="number" ${inS} value="${g.wb}" min="0" max="100" step="5" onchange="GC_EDIT[${i}].wb=+this.value;gcRefreshRow(${i})" style="text-align:right;color:#9b51e0;font-weight:600"></td>
+    <td><input ${inS} value="${g.c}" class="gc-c" data-idx="${i}"></td>
+    <td><select class="gc-cat" data-idx="${i}" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:3px 4px;background:var(--bg)">${catOpts}</select></td>
+    <td><input type="number" ${inS} value="${g.ppto||0}" min="0" step="1000" class="gc-ppto" data-idx="${i}" style="text-align:right;color:var(--text);font-weight:500"></td>
+    <td style="background:rgba(0,115,234,.05)"><input type="number" ${inS} value="${g.sal}" min="0" max="100" step="5" class="gc-pct" data-idx="${i}" data-field="sal" style="text-align:right;color:#0073ea;font-weight:600"></td>
+    <td style="background:rgba(0,184,117,.05)"><input type="number" ${inS} value="${g.end}" min="0" max="100" step="5" class="gc-pct" data-idx="${i}" data-field="end" style="text-align:right;color:#00b875;font-weight:600"></td>
+    <td style="background:rgba(255,112,67,.05)"><input type="number" ${inS} value="${g.dyn}" min="0" max="100" step="5" class="gc-pct" data-idx="${i}" data-field="dyn" style="text-align:right;color:#ff7043;font-weight:600"></td>
+    <td style="background:rgba(155,81,224,.05)"><input type="number" ${inS} value="${g.wb}" min="0" max="100" step="5" class="gc-pct" data-idx="${i}" data-field="wb" style="text-align:right;color:#9b51e0;font-weight:600"></td>
     <td class="mo ${ok?'pos':'neg'}" style="font-weight:700" id="gc-tot-${i}">${tot}%</td>
-    <td style="text-align:center"><button onclick="gcDelRow(${i})" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 5px" title="Eliminar">✕</button></td>
+    <td style="text-align:center"><button class="gc-del" data-idx="${i}" style="background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 5px" title="Eliminar">✕</button></td>
   </tr>`;
 }
 
@@ -105,6 +105,22 @@ function rGastosComp(){
   const tbody=document.getElementById('gc-edit-tbody');
   if(!tbody) return;
   tbody.innerHTML=GC_EDIT.map((g,i)=>gcRenderRow(g,i)).join('');
+  // ── Event delegation for data-* handlers ──
+  tbody.querySelectorAll('.gc-c').forEach(function(el){
+    el.onchange = function(){ GC_EDIT[+this.dataset.idx].c=this.value; gcUpdateKPIs(); };
+  });
+  tbody.querySelectorAll('.gc-cat').forEach(function(el){
+    el.onchange = function(){ GC_EDIT[+this.dataset.idx].cat=this.value; gcUpdateKPIs(); };
+  });
+  tbody.querySelectorAll('.gc-ppto').forEach(function(el){
+    el.onchange = function(){ GC_EDIT[+this.dataset.idx].ppto=+this.value; gcUpdateKPIs(); };
+  });
+  tbody.querySelectorAll('.gc-pct').forEach(function(el){
+    el.onchange = function(){ var idx=+this.dataset.idx; GC_EDIT[idx][this.dataset.field]=+this.value; gcRefreshRow(idx); };
+  });
+  tbody.querySelectorAll('.gc-del').forEach(function(el){
+    el.onclick = function(){ gcDelRow(+this.dataset.idx); };
+  });
   gcUpdateKPIs();
 }
 

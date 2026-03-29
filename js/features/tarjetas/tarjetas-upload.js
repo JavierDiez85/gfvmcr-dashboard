@@ -358,9 +358,18 @@ async function rTarUpload() {
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.txn_count || 0).toLocaleString()}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.card_count || 0).toLocaleString()}</td>
         <td style="font-size:.72rem">${periodo}</td>
-        <td><button class="btn btn-out" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" onclick="rollbackTarUpload('${h.id}')">🗑️ Deshacer</button></td>
+        <td><button class="btn btn-out tar-rollback-btn" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" data-hid="${h.id}">🗑️ Deshacer</button></td>
       </tr>`;
     }).join('');
+
+    // Event delegation for rollback buttons
+    if (!el._tarRollbackBound) {
+      el.addEventListener('click', function(e) {
+        const btn = e.target.closest('.tar-rollback-btn');
+        if (btn) rollbackTarUpload(btn.dataset.hid);
+      });
+      el._tarRollbackBound = true;
+    }
   } catch (e) { console.warn('[TAR Upload UI] History error:', e.message); }
 }
 

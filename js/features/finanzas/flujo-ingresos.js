@@ -39,21 +39,19 @@ function rFlujoIng(filterEnt){
       <td style="padding:4px 8px">
         ${isAuto
           ? `<div style="font-size:.78rem;font-weight:600;color:var(--text)">${r.concepto}${badge}</div>${noteEl}`
-          : `<input ${inS('left')} value="${r.concepto}" onchange="FI_ROWS[${ri}].concepto=this.value" placeholder="Concepto...">`}
+          : `<input ${inS('left')} value="${r.concepto}" class="fi-concepto" data-ri="${ri}" placeholder="Concepto...">`}
       </td>
       <td style="padding:4px 6px">
         ${isAuto
           ? `<span style="font-weight:600;font-size:.76rem;color:${entC}">${r.ent}</span>`
-          : `<select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.74rem;padding:2px 4px;background:var(--bg);color:${entC};font-weight:600"
-              onchange="FI_ROWS[${ri}].ent=this.value;this.style.color=ENT_COLOR[this.value]||'#555';FI_ROWS[${ri}].cat=catsIng(this.value)[0];rFlujoIng(window._fiFilterEnt)">
+          : `<select class="fi-ent" data-ri="${ri}" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.74rem;padding:2px 4px;background:var(--bg);color:${entC};font-weight:600">
               ${EMPRESAS.map(e=>`<option${e===r.ent?' selected':''} style="color:${ENT_COLOR[e]}">${e}</option>`).join('')}
             </select>`}
       </td>
       <td style="padding:4px 6px">
         ${isAuto
           ? `<span style="font-size:.73rem;color:var(--muted)">${r.cat}</span>`
-          : `<select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:2px 4px;background:var(--bg)"
-              onchange="FI_ROWS[${ri}].cat=this.value">
+          : `<select class="fi-cat" data-ri="${ri}" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:2px 4px;background:var(--bg)">
               ${selOpts(catsIng(r.ent), r.cat)}
             </select>`}
       </td>
@@ -61,7 +59,7 @@ function rFlujoIng(filterEnt){
       ${r.vals.map((v,i)=>`<td style="padding:2px 3px">${moInput(r.id,i,v,false)}</td>`).join('')}
       <td class="mo pos bld" style="font-size:.78rem;font-weight:700" id="fi-rtot-${r.id}">${fmt(r.vals.reduce((a,b)=>a+b,0))}</td>
       <td style="text-align:center;padding:2px">
-        ${!isAuto && !isViewer() ? `<button onclick="fiDelRow('${r.id}')" title="Eliminar"
+        ${!isAuto && !isViewer() ? `<button class="fi-del" data-rid="${r.id}" title="Eliminar"
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px"
           onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>` : ''}
       </td>
@@ -75,6 +73,29 @@ function rFlujoIng(filterEnt){
       </button>
     </td>
   </tr>`;
+
+  // ── Event delegation for data-* handlers ──
+  tbody.querySelectorAll('.fi-concepto').forEach(function(el){
+    el.onchange = function(){ FI_ROWS[+this.dataset.ri].concepto = this.value; };
+  });
+  tbody.querySelectorAll('.fi-ent').forEach(function(el){
+    el.onchange = function(){
+      var ri = +this.dataset.ri;
+      FI_ROWS[ri].ent = this.value;
+      this.style.color = ENT_COLOR[this.value]||'#555';
+      FI_ROWS[ri].cat = catsIng(this.value)[0];
+      rFlujoIng(window._fiFilterEnt);
+    };
+  });
+  tbody.querySelectorAll('.fi-cat').forEach(function(el){
+    el.onchange = function(){ FI_ROWS[+this.dataset.ri].cat = this.value; };
+  });
+  tbody.querySelectorAll('.fi-del').forEach(function(el){
+    el.onclick = function(){ fiDelRow(this.dataset.rid); };
+  });
+  tbody.querySelectorAll('.fl-mo').forEach(function(el){
+    el.oninput = function(){ flRowUpdate(this.dataset.type, +this.dataset.rid, +this.dataset.col, +this.value); };
+  });
 
   flUpdateFooter('fi');
   flUpdateKPIs('fi');

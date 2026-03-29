@@ -289,9 +289,8 @@
       const intTot = credTotalIntereses(c);
       const origIdx = c._origIdx;
 
-      return `<div class="cred-dash-row" data-name="${_esc((c.cl||'').toLowerCase())}" onclick="credOpenDetail('${_esc(c._ent)}','${_esc((c.cl||'').replace(/'/g,"\\'"))}',${origIdx})"
-        style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
-        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      return `<div class="cred-dash-row cred-dash-open" data-name="${_esc((c.cl||'').toLowerCase())}" data-ent="${escapeHtml(c._ent)}" data-client="${escapeHtml((c.cl||'').replace(/'/g,"\\'"))}" data-idx="${origIdx}"
+        style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s">
         <div style="width:36px;height:36px;border-radius:10px;background:${stBg[c.st]||stBg.Activo};border:1px solid ${stBor[c.st]||stBor.Activo};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${stIco[c.st]||'📋'}</div>
         <div style="flex:1;min-width:0;overflow:hidden">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
@@ -316,6 +315,16 @@
         <div style="color:var(--muted);font-size:.9rem;flex-shrink:0">›</div>
       </div>`;
     }).join('');
+
+    // Event delegation for consolidated list
+    if(!listEl._bound){
+      listEl._bound = true;
+      listEl.addEventListener('click', function(e){
+        const row = e.target.closest('.cred-dash-open');
+        if(!row) return;
+        credOpenDetail(row.dataset.ent, row.dataset.client, Number(row.dataset.idx));
+      });
+    }
   }
 
   function credDashFilter(query){
@@ -415,9 +424,8 @@
       const mPendiente = cobr ? cobr.montoPendiente : 0;
       const mVencido   = cobr ? cobr.montoVencido : 0;
 
-      return `<div onclick="credOpenDetail('${_esc(entKey)}','${_esc(c.cl.replace(/'/g,"\\'"))}',${credits.indexOf(c)})"
-        style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
-        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      return `<div class="cred-ent-row" data-ent="${escapeHtml(entKey)}" data-client="${escapeHtml(c.cl.replace(/'/g,"\\'"))}" data-idx="${credits.indexOf(c)}"
+        style="display:flex;align-items:center;gap:12px;padding:14px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s">
 
         <!-- Avatar -->
         <div style="width:40px;height:40px;border-radius:12px;background:${st.bg};border:1px solid ${st.border};display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0">
@@ -460,11 +468,35 @@
 
         <!-- Actions -->
         <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
-          <button onclick="credOpenDetail('${_esc(entKey)}','${_esc(c.cl.replace(/'/g,"\\'"))}',${credits.indexOf(c)})" style="font-size:.62rem;padding:4px 10px;border:1px solid ${col};color:${col};background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap" onmouseover="this.style.background='${col}';this.style.color='white'" onmouseout="this.style.background='transparent';this.style.color='${col}'">📋 Ver tabla</button>
-          <button onclick="credDeleteFromList('${entKey}',${credits.indexOf(c)})" style="font-size:.62rem;padding:4px 10px;border:1px solid var(--border2);color:var(--red);background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap" onmouseover="this.style.background='var(--red)';this.style.color='white';this.style.borderColor='var(--red)'" onmouseout="this.style.background='transparent';this.style.color='var(--red)';this.style.borderColor='var(--border2)'">🗑 Eliminar</button>
+          <button class="cred-ent-detail-btn" data-ent="${escapeHtml(entKey)}" data-client="${escapeHtml(c.cl.replace(/'/g,"\\'"))}" data-idx="${credits.indexOf(c)}" style="--btn-col:${col};font-size:.62rem;padding:4px 10px;border:1px solid ${col};color:${col};background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">📋 Ver tabla</button>
+          <button class="cred-ent-delete-btn" data-ent="${escapeHtml(entKey)}" data-idx="${credits.indexOf(c)}" style="font-size:.62rem;padding:4px 10px;border:1px solid var(--border2);color:var(--red);background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">🗑 Eliminar</button>
         </div>
       </div>`;
     }).join('');
+
+    // Event delegation for entity credit list
+    if(!listEl._bound){
+      listEl._bound = true;
+      listEl.addEventListener('click', function(e){
+        // "Ver tabla" button
+        const detBtn = e.target.closest('.cred-ent-detail-btn');
+        if(detBtn){
+          credOpenDetail(detBtn.dataset.ent, detBtn.dataset.client, Number(detBtn.dataset.idx));
+          return;
+        }
+        // "Eliminar" button
+        const delBtn = e.target.closest('.cred-ent-delete-btn');
+        if(delBtn){
+          credDeleteFromList(delBtn.dataset.ent, Number(delBtn.dataset.idx));
+          return;
+        }
+        // Row click
+        const row = e.target.closest('.cred-ent-row');
+        if(row){
+          credOpenDetail(row.dataset.ent, row.dataset.client, Number(row.dataset.idx));
+        }
+      });
+    }
   }
 
   function rEndCred(){

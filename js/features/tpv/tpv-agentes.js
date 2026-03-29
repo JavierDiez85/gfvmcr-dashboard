@@ -82,11 +82,25 @@ async function rTPVAgentes(){
       <td class="mo pos">${ag._pagado>0?fmtTPVFull(ag._pagado):'<span style="color:var(--muted)">—</span>'}</td>
       <td>${badge}</td>
       <td style="text-align:center;white-space:nowrap">
-        <button onclick="openHistorialAgente(${ag.agente_id})" title="Historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px">🕐${histBtn}</button>
-        ${!isViewer() ? `<button onclick="openEditAgente(${ag.agente_id})" title="Editar" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--blue);padding:2px 4px">✏️</button>
-        <button onclick="openPagoAgenteModal(${ag.agente_id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>` : ''}
+        <button class="ag-hist-btn" data-aid="${ag.agente_id}" title="Historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px">🕐${histBtn}</button>
+        ${!isViewer() ? `<button class="ag-edit-btn" data-aid="${ag.agente_id}" title="Editar" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--blue);padding:2px 4px">✏️</button>
+        <button class="ag-pago-btn" data-aid="${ag.agente_id}" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>` : ''}
       </td></tr>`;
   }).join('');
+
+  // Event delegation for agentes table
+  if (!tbody._agBound) {
+    tbody.addEventListener('click', function(e) {
+      const histBtn = e.target.closest('.ag-hist-btn');
+      if (histBtn) { openHistorialAgente(parseInt(histBtn.dataset.aid)); return; }
+      const editBtn = e.target.closest('.ag-edit-btn');
+      if (editBtn) { openEditAgente(parseInt(editBtn.dataset.aid)); return; }
+      const pagoBtn = e.target.closest('.ag-pago-btn');
+      if (pagoBtn) { openPagoAgenteModal(parseInt(pagoBtn.dataset.aid)); return; }
+    });
+    tbody._agBound = true;
+  }
+
   // Chart
   setTimeout(()=>{
     const isDark=document.body.classList.contains('dark');
@@ -168,10 +182,20 @@ function openHistorialAgente(agenteId) {
     document.getElementById('hist-agente-body').innerHTML = '<div style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem">Sin pagos registrados</div>';
   } else {
     document.getElementById('hist-agente-body').innerHTML = `<table class="bt"><thead><tr><th>Fecha</th><th class="r">Monto</th><th>Referencia</th><th>Registrado</th><th></th></tr></thead><tbody>
-      ${pagos.map(p => `<tr><td class="bld">${p.fecha}</td><td class="mo pos">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td>${!isViewer() ? `<button onclick="deletePagoAgente(${agenteId},${p.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem">🗑</button>` : ''}</td></tr>`).join('')}
+      ${pagos.map(p => `<tr><td class="bld">${p.fecha}</td><td class="mo pos">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td>${!isViewer() ? `<button class="ag-del-pago-btn" data-aid="${agenteId}" data-pid="${p.id}" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem">🗑</button>` : ''}</td></tr>`).join('')}
     </tbody></table>`;
   }
-  document.getElementById('historial-agente-overlay').style.display = 'flex';
+  const histAgOverlay = document.getElementById('historial-agente-overlay');
+  histAgOverlay.style.display = 'flex';
+
+  // Event delegation for agente historial
+  if (!histAgOverlay._bound) {
+    histAgOverlay.addEventListener('click', function(e) {
+      const btn = e.target.closest('.ag-del-pago-btn');
+      if (btn) deletePagoAgente(parseInt(btn.dataset.aid), parseInt(btn.dataset.pid));
+    });
+    histAgOverlay._bound = true;
+  }
 }
 function closeHistorialAgente() { document.getElementById('historial-agente-overlay').style.display = 'none'; }
 

@@ -148,7 +148,7 @@ async function rFactTerminales(){
           <td style="text-align:center"><span class="pill" style="background:var(--green-bg);color:var(--green)">Facturada</span></td>
           <td style="text-align:center;font-size:.75rem">${fact.numero_factura||'—'}</td>
           <td style="text-align:center;font-size:.75rem">${fact.fecha||'—'}</td>
-          <td style="text-align:center"><button onclick="deleteFactura('${fact.id}')" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Eliminar factura">🗑</button></td>
+          <td style="text-align:center"><button class="fact-del-btn" data-fid="${fact.id}" style="background:none;border:none;cursor:pointer;font-size:.85rem" title="Eliminar factura">🗑</button></td>
         </tr>`;
       } else {
         return `<tr data-name="${(r.cliente||'').toLowerCase()}">
@@ -158,10 +158,21 @@ async function rFactTerminales(){
           <td class="r" style="font-weight:700">${fmtTPVFull(total,2)}</td>
           <td style="text-align:center"><span class="pill" style="background:var(--red-bg);color:var(--red)">Pendiente</span></td>
           <td style="text-align:center">—</td><td style="text-align:center">—</td>
-          <td style="text-align:center"><button onclick="openFacturaModal(${r.client_id},'${periodo}')" class="btn" style="font-size:.62rem;height:24px;padding:0 10px">+ Factura</button></td>
+          <td style="text-align:center"><button class="btn fact-new-btn" data-cid="${r.client_id}" data-periodo="${periodo}" style="font-size:.62rem;height:24px;padding:0 10px">+ Factura</button></td>
         </tr>`;
       }
     }).join('');
+
+    // Event delegation for facturacion table
+    if (!tbody._factBound) {
+      tbody.addEventListener('click', function(e) {
+        const delBtn = e.target.closest('.fact-del-btn');
+        if (delBtn) { deleteFactura(delBtn.dataset.fid); return; }
+        const newBtn = e.target.closest('.fact-new-btn');
+        if (newBtn) { openFacturaModal(newBtn.dataset.cid, newBtn.dataset.periodo); return; }
+      });
+      tbody._factBound = true;
+    }
   }
 
   // Convenia section
@@ -190,11 +201,22 @@ function _renderFactConvenia(rows, data, periodo){
   if(fact){
     icoEl.style.background = 'var(--green-bg)'; icoEl.style.color = 'var(--green)'; icoEl.textContent = '✅';
     estEl.textContent = 'Facturada'; estEl.style.color = 'var(--green)';
-    actEl.innerHTML = `<div style="font-size:.7rem;margin-top:4px">${fact.numero_factura||''} — ${fact.fecha||''} <button onclick="deleteFactura('${fact.id}')" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Eliminar">🗑</button></div>`;
+    actEl.innerHTML = `<div style="font-size:.7rem;margin-top:4px">${fact.numero_factura||''} — ${fact.fecha||''} <button class="fact-conv-del-btn" data-fid="${fact.id}" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Eliminar">🗑</button></div>`;
   } else {
     icoEl.style.background = 'var(--red-bg)'; icoEl.style.color = 'var(--red)'; icoEl.textContent = '📋';
     estEl.textContent = 'Pendiente'; estEl.style.color = 'var(--red)';
-    actEl.innerHTML = `<button onclick="openFacturaModal('CONVENIA','${periodo}')" class="btn" style="font-size:.66rem;height:26px;margin-top:6px">+ Factura Consolidada</button>`;
+    actEl.innerHTML = `<button class="btn fact-conv-new-btn" data-cid="CONVENIA" data-periodo="${periodo}" style="font-size:.66rem;height:26px;margin-top:6px">+ Factura Consolidada</button>`;
+  }
+
+  // Event delegation for convenia action buttons
+  if (!section._convBound) {
+    section.addEventListener('click', function(e) {
+      const delBtn = e.target.closest('.fact-conv-del-btn');
+      if (delBtn) { deleteFactura(delBtn.dataset.fid); return; }
+      const newBtn = e.target.closest('.fact-conv-new-btn');
+      if (newBtn) { openFacturaModal(newBtn.dataset.cid, newBtn.dataset.periodo); return; }
+    });
+    section._convBound = true;
   }
 
   // Sub-clients table
@@ -931,11 +953,22 @@ function cfRenderHistory(){
       <td style="text-align:center;font-size:.65rem" title="${u.folio_fiscal||''}">${folio}</td>
       <td style="text-align:center">${vinc}</td>
       <td style="text-align:center">
-        <button onclick="cfViewPDF(${i})" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Ver PDF">📄</button>
-        <button onclick="cfDeleteUpload(${i})" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Eliminar">🗑</button>
+        <button class="cf-view-btn" data-idx="${i}" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Ver PDF">📄</button>
+        <button class="cf-del-btn" data-idx="${i}" style="background:none;border:none;cursor:pointer;font-size:.8rem" title="Eliminar">🗑</button>
       </td>
     </tr>`;
   }).join('');
+
+  // Event delegation for CFDI history table
+  if (!tbody._cfBound) {
+    tbody.addEventListener('click', function(e) {
+      const viewBtn = e.target.closest('.cf-view-btn');
+      if (viewBtn) { cfViewPDF(parseInt(viewBtn.dataset.idx)); return; }
+      const delBtn = e.target.closest('.cf-del-btn');
+      if (delBtn) { cfDeleteUpload(parseInt(delBtn.dataset.idx)); return; }
+    });
+    tbody._cfBound = true;
+  }
 }
 
 function cfFilterHistory(q){

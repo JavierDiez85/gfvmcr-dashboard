@@ -245,13 +245,13 @@ function feRenderCxpTable(search){
     var vencStyle = vencida ? 'color:#b02020;font-weight:600' : '';
     var actions = '';
     if(c.status==='pendiente'||c.status==='parcial'){
-      actions += '<button class="btn" style="font-size:.62rem;padding:3px 8px" onclick="feOpenPago(\''+c.id+'\')">💳 Pagar</button>';
+      actions += '<button class="btn fe-open-pago" style="font-size:.62rem;padding:3px 8px" data-id="'+escapeHtml(c.id)+'">💳 Pagar</button>';
     }
     if(c.pdf_base64){
-      actions += ' <button class="btn btn-out" style="font-size:.62rem;padding:3px 8px" onclick="feViewPDF(\''+c.id+'\')">📄</button>';
+      actions += ' <button class="btn btn-out fe-view-pdf" style="font-size:.62rem;padding:3px 8px" data-id="'+escapeHtml(c.id)+'">📄</button>';
     }
-    actions += ' <button onclick="cxpEditRow(\''+c.id+'\')" title="Editar factura" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'var(--blue-bg,#ebf4ff)\';this.style.color=\'#0073ea\'">✎ Editar</button>';
-    actions += ' <button onclick="feDeleteCxp(\''+c.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>';
+    actions += ' <button class="cxp-edit fe-edit-hover" title="Editar factura" style="'+_emEditBtn+'" data-id="'+escapeHtml(c.id)+'">✎ Editar</button>';
+    actions += ' <button class="fe-del-cxp fe-del-hover" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle" data-id="'+escapeHtml(c.id)+'">✕</button>';
     return '<tr>'
       + '<td>'+_fmtD(c.fecha_factura)+'</td>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
@@ -286,7 +286,7 @@ function feRenderPagosTable(){
 
   tb.innerHTML = pagos.map(function(p){
     var cxp = myCxpIds[p.cxp_id];
-    var eb = '<button onclick="pagoEditRow(\''+p.id+'\')" title="Editar pago" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'var(--blue-bg,#ebf4ff)\';this.style.color=\'#0073ea\'">✎ Editar</button>';
+    var eb = '<button class="pago-edit fe-edit-hover" title="Editar pago" style="'+_emEditBtn+'" data-id="'+escapeHtml(p.id)+'">✎ Editar</button>';
     return '<tr>'
       + '<td>'+_fmtD(p.fecha)+'</td>'
       + '<td style="font-weight:600">'+_esc(cxp ? cxp.proveedor : '—')+'</td>'
@@ -755,7 +755,7 @@ function feOpenPago(cxpId){
 
   html += '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">';
   html += '<button class="btn btn-out" onclick="closeModal()">Cancelar</button>';
-  html += '<button class="btn" onclick="feSavePago(\''+cxp.id+'\')">💾 Registrar Pago</button>';
+  html += '<button class="btn fe-save-pago" data-id="'+escapeHtml(cxp.id)+'">💾 Registrar Pago</button>';
   html += '</div>';
   html += '</div>';
 
@@ -1013,8 +1013,8 @@ function _emitRenderTable(){
       + '<td class="r mo" style="font-weight:700">'+_fmt(u.total||0)+'</td>'
       + '<td style="font-size:.62rem;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)">'+_esc(u.uuid||'—')+'</td>'
       + '<td style="text-align:center;white-space:nowrap">'
-      + '<button onclick="emitEditRow(\''+u.id+'\')" title="Editar" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'var(--blue-bg,#ebf4ff)\';this.style.color=\'#0073ea\'">✎ Editar</button> '
-      + '<button onclick="emitDelete(\''+u.id+'\')" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>'
+      + '<button class="emit-edit fe-edit-hover" title="Editar" style="'+_emEditBtn+'" data-id="'+escapeHtml(u.id)+'">✎ Editar</button> '
+      + '<button class="emit-del fe-del-hover" title="Eliminar factura" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0" data-id="'+escapeHtml(u.id)+'">✕</button>'
       + '</td>'
       + '</tr>';
   }).join('');
@@ -1361,8 +1361,8 @@ function _recvRenderTable(){
   tb.innerHTML = rows.map(function(c){
     var vencida = _isVencida(c);
     var vencStyle = vencida ? 'color:#b02020;font-weight:600' : '';
-    var editBtn = '<button onclick="cxpEditRow(\''+c.id+'\')" title="Editar" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'var(--blue-bg,#ebf4ff)\';this.style.color=\'#0073ea\'">✎ Editar</button>';
-    var delBtn  = '<button onclick="feDeleteCxp(\''+c.id+'\')" title="Eliminar" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle" onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>';
+    var editBtn = '<button class="cxp-edit fe-edit-hover" title="Editar" style="'+_emEditBtn+'" data-id="'+escapeHtml(c.id)+'">✎ Editar</button>';
+    var delBtn  = '<button class="fe-del-cxp fe-del-hover" title="Eliminar" style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;vertical-align:middle" data-id="'+escapeHtml(c.id)+'">✕</button>';
     return '<tr>'
       + '<td>'+_fmtD(c.fecha_factura)+'</td>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
@@ -1794,7 +1794,7 @@ function _ppRenderTable(){
       + '<td class="r mo" style="font-weight:700;color:#b02020">'+_fmt(c.saldo_mxn)+'</td>'
       + '<td style="'+vencStyle+'">'+(c.fecha_vencimiento ? _fmtD(c.fecha_vencimiento)+(vencida?' ⚠️':'') : '—')+'</td>'
       + '<td>'+_statusPill(c.status)+'</td>'
-      + '<td><button class="btn" style="font-size:.62rem;padding:3px 8px" onclick="feOpenPago(\''+c.id+'\')">💳 Pagar</button></td>'
+      + '<td><button class="btn fe-open-pago" style="font-size:.62rem;padding:3px 8px" data-id="'+escapeHtml(c.id)+'">💳 Pagar</button></td>'
       + '</tr>';
   }).join('');
 }
@@ -1816,7 +1816,7 @@ function _ppRenderPagos(){
 
   tb.innerHTML = pagos.slice(0,50).map(function(p){
     var cxp = myCxpIds[p.cxp_id];
-    var eb = '<button onclick="pagoEditRow(\''+p.id+'\')" title="Editar pago" style="'+_emEditBtn+'" onmouseover="this.style.background=\'#0073ea\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'var(--blue-bg,#ebf4ff)\';this.style.color=\'#0073ea\'">✎ Editar</button>';
+    var eb = '<button class="pago-edit fe-edit-hover" title="Editar pago" style="'+_emEditBtn+'" data-id="'+escapeHtml(p.id)+'">✎ Editar</button>';
     return '<tr>'
       + '<td>'+_fmtD(p.fecha)+'</td>'
       + '<td style="font-weight:600">'+_esc(cxp ? cxp.proveedor : '—')+'</td>'
@@ -1952,7 +1952,7 @@ function cxpEditRow(id){
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
     +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
-    +'<button class="btn" style="font-size:.72rem" onclick="cxpSaveEdit(\''+id+'\')">💾 Guardar cambios</button>'
+    +'<button class="btn cxp-save-edit" style="font-size:.72rem" data-id="'+escapeHtml(id)+'">💾 Guardar cambios</button>'
     +'</div></div>');
 }
 function cxpSaveEdit(id){
@@ -1995,7 +1995,7 @@ function emitEditRow(id){
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
     +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
-    +'<button class="btn" style="font-size:.72rem" onclick="emitSaveEdit(\''+id+'\')">💾 Guardar cambios</button>'
+    +'<button class="btn emit-save-edit" style="font-size:.72rem" data-id="'+escapeHtml(id)+'">💾 Guardar cambios</button>'
     +'</div></div>');
 }
 function emitSaveEdit(id){
@@ -2039,7 +2039,7 @@ function pagoEditRow(id){
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
     +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
-    +'<button class="btn" style="font-size:.72rem" onclick="pagoSaveEdit(\''+id+'\')">💾 Guardar cambios</button>'
+    +'<button class="btn pago-save-edit" style="font-size:.72rem" data-id="'+escapeHtml(id)+'">💾 Guardar cambios</button>'
     +'</div></div>');
 }
 function pagoSaveEdit(id){
@@ -2072,6 +2072,41 @@ function pagoSaveEdit(id){
   if(typeof toast==='function') toast('✅ Pago actualizado');
   feRenderAll(); ppRenderAll(); recvRenderAll();
 }
+
+// ══════════════════════════════════════════════════════════
+// EVENT DELEGATION — replaces inline onclick/onmouseover/onmouseout
+// ══════════════════════════════════════════════════════════
+(function _feInitDelegation(){
+  // Inject hover styles once (replaces onmouseover/onmouseout)
+  var style = document.createElement('style');
+  style.textContent =
+    '.fe-edit-hover:hover{background:#0073ea !important;color:#fff !important}' +
+    '.fe-del-hover:hover{background:#e53935 !important;color:#fff !important}';
+  document.head.appendChild(style);
+
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest(
+      '.fe-open-pago,.fe-view-pdf,.cxp-edit,.fe-del-cxp,' +
+      '.pago-edit,.emit-edit,.emit-del,' +
+      '.fe-save-pago,.cxp-save-edit,.emit-save-edit,.pago-save-edit'
+    );
+    if(!btn) return;
+    var id = btn.getAttribute('data-id');
+    if(!id) return;
+
+    if(btn.classList.contains('fe-open-pago'))    { feOpenPago(id); }
+    else if(btn.classList.contains('fe-view-pdf')){ feViewPDF(id); }
+    else if(btn.classList.contains('cxp-edit'))    { cxpEditRow(id); }
+    else if(btn.classList.contains('fe-del-cxp')) { feDeleteCxp(id); }
+    else if(btn.classList.contains('pago-edit'))  { pagoEditRow(id); }
+    else if(btn.classList.contains('emit-edit'))  { emitEditRow(id); }
+    else if(btn.classList.contains('emit-del'))   { emitDelete(id); }
+    else if(btn.classList.contains('fe-save-pago'))   { feSavePago(id); }
+    else if(btn.classList.contains('cxp-save-edit'))  { cxpSaveEdit(id); }
+    else if(btn.classList.contains('emit-save-edit')) { emitSaveEdit(id); }
+    else if(btn.classList.contains('pago-save-edit')) { pagoSaveEdit(id); }
+  });
+})();
 
 // ══════════════════════════════════════════════════════════
 // EXPOSE GLOBALS

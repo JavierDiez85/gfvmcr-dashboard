@@ -34,12 +34,12 @@
         if(st==='PAGADO'){
           cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);font-weight:700">Pagado</span><br><span style="font-size:.58rem;color:var(--muted)">${pr?pr.fecha:''} · ${fmtFull(totalPagR)}</span></td>`;
         } else if(st==='PARCIAL'){
-          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(totalPagR)} de ${fmtFull(r.pago)}</span><br>${!isViewer() ? `<button class="btn btn-out" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">+ Completar</button>` : ''}</td>`;
+          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--orange-bg);color:var(--orange);font-weight:700">Parcial</span><br><span style="font-size:.58rem;color:var(--muted)">${fmtFull(totalPagR)} de ${fmtFull(r.pago)}</span><br>${!isViewer() ? `<button class="btn btn-out cred-reg-pago-btn" style="font-size:.58rem;margin-top:2px;padding:1px 6px;height:auto" data-ent="${escapeHtml(entKey)}" data-idx="${resolvedIdx}" data-periodo="${r.periodo}">+ Completar</button>` : ''}</td>`;
         } else if(st==='VENCIDO'){
           const dias = credDiasAtraso(r);
-          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700">Vencido ${dias}d</span><br>${!isViewer() ? `<button style="font-size:.58rem;margin-top:2px;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;border:none;cursor:pointer" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button>` : ''}</td>`;
+          cobrCell = `<td style="text-align:center"><span style="font-size:.62rem;padding:2px 7px;border-radius:8px;background:var(--red-bg);color:var(--red);font-weight:700">Vencido ${dias}d</span><br>${!isViewer() ? `<button class="cred-reg-pago-btn" style="font-size:.58rem;margin-top:2px;padding:2px 8px;border-radius:6px;background:var(--red);color:#fff;border:none;cursor:pointer" data-ent="${escapeHtml(entKey)}" data-idx="${resolvedIdx}" data-periodo="${r.periodo}">Registrar Pago</button>` : ''}</td>`;
         } else {
-          cobrCell = !isViewer() ? `<td style="text-align:center"><button class="btn btn-out" style="font-size:.58rem;padding:2px 8px;height:auto" onclick="event.stopPropagation();credRegistrarPago('${entKey}',${resolvedIdx},${r.periodo})">Registrar Pago</button></td>` : '<td></td>';
+          cobrCell = !isViewer() ? `<td style="text-align:center"><button class="btn btn-out cred-reg-pago-btn" style="font-size:.58rem;padding:2px 8px;height:auto" data-ent="${escapeHtml(entKey)}" data-idx="${resolvedIdx}" data-periodo="${r.periodo}">Registrar Pago</button></td>` : '<td></td>';
         }
         return `<tr ${isPaid?'style="opacity:.6"':''}>
           <td class="r">${r.periodo}</td>
@@ -135,15 +135,42 @@
       </div>
       ${amortTable}
       <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);display:flex;justify-content:flex-end">
-        <button id="cred-del-btn" data-ent="${entKey}" data-idx="${resolvedIdx}"
-          style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-lt);border-radius:var(--r);padding:7px 16px;cursor:pointer;font-size:.78rem;font-weight:600"
-          onmouseover="this.style.background='var(--red)';this.style.color='#fff'"
-          onmouseout="this.style.background='var(--red-bg)';this.style.color='var(--red)'">
+        <button id="cred-del-btn" class="cred-del-hover-btn" data-ent="${escapeHtml(entKey)}" data-idx="${resolvedIdx}"
+          style="background:var(--red-bg);color:var(--red);border:1px solid var(--red-lt);border-radius:var(--r);padding:7px 16px;cursor:pointer;font-size:.78rem;font-weight:600">
           🗑 Eliminar credito
         </button>
       </div>`;
 
     openModal(null, `🏦 Detalle — ${_esc(c.cl)} · ${fmtK(c.monto)}`, html);
+
+    // Event delegation for detail modal (bind once per render)
+    const modalBody = document.getElementById('modal-body');
+    if(modalBody && !modalBody._credDetailBound){
+      modalBody._credDetailBound = true;
+      modalBody.addEventListener('click', function(e){
+        const regBtn = e.target.closest('.cred-reg-pago-btn');
+        if(regBtn){
+          e.stopPropagation();
+          credRegistrarPago(regBtn.dataset.ent, +regBtn.dataset.idx, +regBtn.dataset.periodo);
+          return;
+        }
+        const delBtn = e.target.closest('#cred-del-btn');
+        if(delBtn){
+          credDelete(delBtn.dataset.ent, +delBtn.dataset.idx);
+          return;
+        }
+        const guardarBtn = e.target.closest('.cred-guardar-pago-btn');
+        if(guardarBtn){
+          credGuardarPago(guardarBtn.dataset.ent, +guardarBtn.dataset.idx, +guardarBtn.dataset.periodo);
+          return;
+        }
+        const cancelBtn = e.target.closest('.cred-cancel-pago-btn');
+        if(cancelBtn){
+          var f = document.getElementById(cancelBtn.dataset.form);
+          if(f) f.remove();
+        }
+      });
+    }
   }
 
   // ── Registro de pagos ──
@@ -185,12 +212,12 @@
             <input id="cobr-monto-${periodo}" type="number" step="0.01" value="${defaultMonto}"
               style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;font-family:'Figtree',sans-serif;background:var(--white);color:var(--text)">
           </div>
-          <button style="padding:7px 18px;border-radius:8px;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:.72rem;font-weight:600;font-family:'Figtree',sans-serif"
-            onclick="credGuardarPago('${entKey}',${creditIdx},${periodo})">
+          <button class="cred-guardar-pago-btn" data-ent="${escapeHtml(entKey)}" data-idx="${creditIdx}" data-periodo="${periodo}"
+            style="padding:7px 18px;border-radius:8px;background:var(--green);color:#fff;border:none;cursor:pointer;font-size:.72rem;font-weight:600;font-family:'Figtree',sans-serif">
             Guardar
           </button>
-          <button style="padding:7px 14px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;font-size:.72rem;font-family:'Figtree',sans-serif"
-            onclick="document.getElementById('${formId}').remove()">
+          <button class="cred-cancel-pago-btn" data-form="${escapeHtml(formId)}"
+            style="padding:7px 14px;border-radius:8px;background:var(--bg);color:var(--text);border:1px solid var(--border);cursor:pointer;font-size:.72rem;font-family:'Figtree',sans-serif">
             Cancelar
           </button>
         </div>
@@ -456,17 +483,17 @@
     const rows = _amortDraft.map((r,i)=>{
       if(i===0) return `<tr style="background:var(--bg)">
         <td class="r" style="font-weight:600">0</td>
-        <td><input type="text" value="${r.fecha}" onchange="_amortDraft[0].fecha=this.value" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem;background:var(--bg)"></td>
+        <td><input class="amort-draft-input" type="text" value="${r.fecha}" data-idx="0" data-field="fecha" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem;background:var(--bg)"></td>
         <td class="mo">—</td><td class="mo">—</td><td class="mo">—</td><td class="mo">—</td>
         <td class="mo bld" style="color:${col}">${fmtFull(r.saldo)}</td>
       </tr>`;
       return `<tr>
         <td class="r">${r.periodo}</td>
-        <td><input type="text" value="${r.fecha}" onchange="_amortDraft[${i}].fecha=this.value" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
-        <td><input type="number" step="0.01" value="${r.pago.toFixed(2)}" onchange="_amortDraft[${i}].pago=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
-        <td><input type="number" step="0.01" value="${r.capital.toFixed(2)}" onchange="_amortDraft[${i}].capital=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
-        <td><input type="number" step="0.01" value="${r.int.toFixed(2)}" onchange="_amortDraft[${i}].int=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
-        <td><input type="number" step="0.01" value="${r.ivaInt.toFixed(2)}" onchange="_amortDraft[${i}].ivaInt=+this.value;_credRecalcTotals()" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+        <td><input class="amort-draft-input" type="text" value="${r.fecha}" data-idx="${i}" data-field="fecha" style="width:90px;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+        <td><input class="amort-draft-input" type="number" step="0.01" value="${r.pago.toFixed(2)}" data-idx="${i}" data-field="pago" data-recalc="1" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+        <td><input class="amort-draft-input" type="number" step="0.01" value="${r.capital.toFixed(2)}" data-idx="${i}" data-field="capital" data-recalc="1" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+        <td><input class="amort-draft-input" type="number" step="0.01" value="${r.int.toFixed(2)}" data-idx="${i}" data-field="int" data-recalc="1" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
+        <td><input class="amort-draft-input" type="number" step="0.01" value="${r.ivaInt.toFixed(2)}" data-idx="${i}" data-field="ivaInt" data-recalc="1" style="width:85px;text-align:right;border:1px solid var(--border);border-radius:4px;padding:2px 6px;font-size:.72rem"></td>
         <td class="mo bld" style="color:${r.saldo<=0.01?'var(--green)':col};font-size:.75rem">${r.saldo<=0.01?'✅ $0':fmtFull(r.saldo)}</td>
       </tr>`;
     }).join('');
@@ -494,6 +521,23 @@
       </div>
       <div style="font-size:.62rem;color:var(--muted);margin-top:6px">${_amortDraft.length-1} periodos · Sistema frances (pagos fijos)</div>
     `;
+
+    // Event delegation for amort draft inputs (bind once)
+    if(!el._amortBound){
+      el._amortBound = true;
+      el.addEventListener('change', function(e){
+        const inp = e.target.closest('.amort-draft-input');
+        if(!inp) return;
+        var idx = +inp.dataset.idx;
+        var field = inp.dataset.field;
+        if(field === 'fecha'){
+          _amortDraft[idx].fecha = inp.value;
+        } else {
+          _amortDraft[idx][field] = +inp.value;
+          if(inp.dataset.recalc) _credRecalcTotals();
+        }
+      });
+    }
   }
 
   /** Recalcular totales del footer cuando se edita una celda */

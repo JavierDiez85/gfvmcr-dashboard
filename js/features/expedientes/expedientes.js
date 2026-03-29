@@ -97,7 +97,7 @@ function expRenderList(clients){
     const tipoColor = c.tipo_persona === 'moral' ? 'var(--purple)' : 'var(--blue)';
     const prods = c.productos || [];
     const isActive = c.id === _expCurrentId;
-    return `<div class="exp-list-item${isActive?' active':''}" onclick="expSelectClient(${c.id})" data-id="${c.id}">
+    return `<div class="exp-list-item${isActive?' active':''}" data-cid="${c.id}" data-id="${c.id}">
       <div style="display:flex;align-items:center;gap:8px">
         <span style="background:${tipoColor};color:#fff;font-size:.55rem;font-weight:700;padding:2px 6px;border-radius:4px">${tipo}</span>
         <span style="font-weight:600;font-size:.78rem;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${name}</span>
@@ -105,6 +105,15 @@ function expRenderList(clients){
       ${prods.length ? `<div style="display:flex;gap:3px;flex-wrap:wrap;margin-top:3px">${prods.map(p=>`<span style="font-size:.55rem;background:var(--bg);padding:1px 5px;border-radius:3px;color:var(--muted)">${p}</span>`).join('')}</div>` : ''}
     </div>`;
   }).join('');
+
+  // Event delegation for client list
+  if (!el._expBound) {
+    el.addEventListener('click', function(e) {
+      const item = e.target.closest('.exp-list-item[data-cid]');
+      if (item) expSelectClient(parseInt(item.dataset.cid));
+    });
+    el._expBound = true;
+  }
 }
 
 function expFilterList(){
@@ -422,8 +431,8 @@ function _expDocCardHTML(cat, docs, pendingFiles){
         <span style="font-size:.58rem;color:var(--muted);white-space:nowrap">${size} · ${date}</span>
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0">
-        <button onclick="expViewDoc(${d.id})" title="Ver" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">👁️</button>
-        <button onclick="expDeleteDoc(${d.id})" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">🗑️</button>
+        <button class="exp-view-doc-btn" data-did="${d.id}" title="Ver" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">👁️</button>
+        <button class="exp-del-doc-btn" data-did="${d.id}" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -456,7 +465,7 @@ function _expDocCardHTML(cat, docs, pendingFiles){
       ondragleave="this.classList.remove('dragover')"
       ondrop="expHandleDrop(event,'${cat.key}')">
       <div style="font-size:.72rem;color:var(--muted)">${hasDoc?'+ Reemplazar':'Arrastra o haz clic'}</div>
-      <input type="file" accept=".pdf,.png,.jpg,.jpeg" hidden onchange="expFileSelected(this,'${cat.key}')">
+      <input type="file" accept=".pdf,.png,.jpg,.jpeg" hidden data-cat="${cat.key}" class="exp-file-input">
     </div>
   </div>`;
 }
@@ -476,8 +485,8 @@ function _expRenderFixedDocs(categoria, docs){
         <span style="font-size:.58rem;color:var(--muted);white-space:nowrap">${size} · ${date}</span>
       </div>
       <div style="display:flex;gap:4px;flex-shrink:0">
-        <button onclick="expViewDoc(${d.id})" title="Ver" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">👁️</button>
-        <button onclick="expDeleteDoc(${d.id})" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">🗑️</button>
+        <button class="exp-view-doc-btn" data-did="${d.id}" title="Ver" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">👁️</button>
+        <button class="exp-del-doc-btn" data-did="${d.id}" title="Eliminar" style="background:none;border:none;cursor:pointer;font-size:.7rem;padding:2px">🗑️</button>
       </div>
     </div>`;
   }).join('');
@@ -650,13 +659,28 @@ function expAddOtroDoc(){
       ondragleave="this.classList.remove('dragover')"
       ondrop="expHandleDrop(event,'${key}')">
       <div style="font-size:.72rem;color:var(--muted)">Arrastra o haz clic</div>
-      <input type="file" accept=".pdf,.png,.jpg,.jpeg" hidden onchange="expFileSelected(this,'${key}')">
+      <input type="file" accept=".pdf,.png,.jpg,.jpeg" hidden data-cat="${key}" class="exp-file-input">
     </div>`;
 
   grid.appendChild(card);
   card.querySelector('input[type=text]').focus();
   card.querySelector('input[type=text]').select();
 }
+
+// ══════════════════════════════════════
+// EVENT DELEGATION: Doc view/delete + file inputs
+// ══════════════════════════════════════
+document.addEventListener('click', e => {
+  const viewBtn = e.target.closest('.exp-view-doc-btn');
+  if (viewBtn) { expViewDoc(parseInt(viewBtn.dataset.did)); return; }
+  const delBtn = e.target.closest('.exp-del-doc-btn');
+  if (delBtn) { expDeleteDoc(parseInt(delBtn.dataset.did)); return; }
+});
+document.addEventListener('change', e => {
+  if (e.target.matches('.exp-file-input[data-cat]')) {
+    expFileSelected(e.target, e.target.dataset.cat);
+  }
+});
 
 // ══════════════════════════════════════
 // CHIPS: Toggle productos

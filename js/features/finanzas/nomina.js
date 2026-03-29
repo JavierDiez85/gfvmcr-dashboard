@@ -143,7 +143,7 @@ function nomRenderRow(e,i){
   const cambios = _nomGetCambios(e);
   const salM=sActual*(e.sal/100), endM=sActual*(e.end/100), dynM=sActual*(e.dyn/100), wbM=sActual*(e.wb/100), stelM=sActual*((e.stel||0)/100);
   const cambioLabel = cambios.length ? '<span style="display:block;font-size:.58rem;color:var(--blue);font-weight:400">'+cambios.length+' cambio'+(cambios.length>1?'s':'')+' de sueldo</span>' : '';
-  return`<tr id="nom-row-${i}" style="cursor:pointer;${isBaja?'opacity:.5;':''}" onclick="nomOpenDetail(${i})">
+  return`<tr id="nom-row-${i}" class="nom-row" data-idx="${i}" style="cursor:pointer;${isBaja?'opacity:.5;':''}">
     <td style="padding:8px 12px;font-weight:600;font-size:.8rem">${escapeHtml(e.n)}${cambioLabel}</td>
     <td style="color:var(--muted);font-size:.76rem">${escapeHtml(e.r)}</td>
     <td><span style="color:${tipoColor};font-weight:600;font-size:.72rem">${e.tipo}</span></td>
@@ -251,11 +251,19 @@ function nomOpenDetail(i){
 
   // Action buttons
   html += `<div style="display:flex;gap:10px;justify-content:space-between;align-items:center;padding-top:12px;border-top:1px solid var(--border)">
-    <button onclick="if(confirm('Eliminar a ${escapeHtml(e.n)}?')){nomDelRow(${i});closeModal()}" style="background:none;border:1px solid var(--red);color:var(--red);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:.78rem">Eliminar Empleado</button>
-    <button onclick="nomSaveDetail(${i})" style="background:var(--blue);color:#fff;border:none;padding:8px 24px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600">Guardar Cambios</button>
+    <button class="nom-del-emp" data-idx="${i}" data-name="${escapeHtml(e.n)}" style="background:none;border:1px solid var(--red);color:var(--red);padding:6px 16px;border-radius:6px;cursor:pointer;font-size:.78rem">Eliminar Empleado</button>
+    <button class="nom-save-emp" data-idx="${i}" style="background:var(--blue);color:#fff;border:none;padding:8px 24px;border-radius:6px;cursor:pointer;font-size:.82rem;font-weight:600">Guardar Cambios</button>
   </div>`;
 
   openModal('nomina_detail', e.n + ' — Ficha de Empleado', html);
+  // ── Event delegation for modal buttons ──
+  var delBtn = document.querySelector('.nom-del-emp');
+  if(delBtn) delBtn.onclick = function(){
+    var idx = +this.dataset.idx;
+    if(confirm('Eliminar a '+this.dataset.name+'?')){ nomDelRow(idx); closeModal(); }
+  };
+  var saveBtn = document.querySelector('.nom-save-emp');
+  if(saveBtn) saveBtn.onclick = function(){ nomSaveDetail(+this.dataset.idx); };
 }
 
 function nomDetailUpdateTot(){
@@ -393,6 +401,10 @@ function rNomina(){
   const tbody=document.getElementById('nom-edit-tbody');
   if(!tbody) return;
   tbody.innerHTML=NOM_EDIT.map((e,i)=>nomRenderRow(e,i)).join('');
+  // ── Event delegation for row clicks ──
+  tbody.querySelectorAll('.nom-row').forEach(function(el){
+    el.onclick = function(){ nomOpenDetail(+this.dataset.idx); };
+  });
   nomUpdateFooter();
 }
 

@@ -160,10 +160,8 @@
       const proxMonto = c._prox ? fmtFull(c._prox.pago) : '—';
       const sl = c._statusLabel;
 
-      return `<div class="cobr-row" data-name="${_esc((c.cl||'').toLowerCase())}"
-        onclick="credOpenDetail('${_esc(c._ent)}','${_esc((c.cl||'').replace(/'/g,"\\'"))}',${origIdx})"
-        style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s"
-        onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+      return `<div class="cobr-row cobr-open" data-name="${_esc((c.cl||'').toLowerCase())}" data-ent="${escapeHtml(c._ent)}" data-client="${escapeHtml((c.cl||'').replace(/'/g,"\\'"))}" data-idx="${origIdx}"
+        style="display:flex;align-items:center;gap:14px;padding:12px 18px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .12s">
         <div style="width:36px;height:36px;border-radius:10px;background:${stBg[sl]||'var(--bg)'};display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0">${stIco[sl]||'📋'}</div>
         <div style="flex:1;min-width:0">
           <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
@@ -191,6 +189,16 @@
         <div style="color:var(--muted);font-size:.9rem;flex-shrink:0">›</div>
       </div>`;
     }).join('');
+
+    // Event delegation for cobranza list
+    if(!listEl._bound){
+      listEl._bound = true;
+      listEl.addEventListener('click', function(e){
+        const row = e.target.closest('.cobr-open');
+        if(!row) return;
+        credOpenDetail(row.dataset.ent, row.dataset.client, Number(row.dataset.idx));
+      });
+    }
   }
 
   function cobrFilter(q){

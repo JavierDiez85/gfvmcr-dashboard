@@ -763,9 +763,18 @@ async function rTPVUpload() {
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.row_count || 0).toLocaleString()}</td>
         <td style="font-size:.72rem">${periodo}</td>
-        <td>${h.strategy !== 'config' ? `<button class="btn btn-out" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" onclick="rollbackUpload('${h.id}')">🗑️ Deshacer</button>` : ''}</td>
+        <td>${h.strategy !== 'config' ? `<button class="btn btn-out upload-rollback-btn" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" data-hid="${h.id}">🗑️ Deshacer</button>` : ''}</td>
       </tr>`;
     }).join('');
+
+    // Event delegation for rollback buttons
+    if (!el._rollbackBound) {
+      el.addEventListener('click', function(e) {
+        const btn = e.target.closest('.upload-rollback-btn');
+        if (btn) rollbackUpload(btn.dataset.hid);
+      });
+      el._rollbackBound = true;
+    }
   } catch (e) { console.warn('[Upload UI] History error:', e.message); }
 }
 

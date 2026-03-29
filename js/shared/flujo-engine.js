@@ -424,7 +424,7 @@
   };
   var moInput = function(rowId, idx, v, isGas) {
     return '<input type="number" '+inS()+' value="'+(v||'')+'" placeholder="0" min="0" step="100"'+
-      ' oninput="flRowUpdate(\''+(isGas?'fg':'fi')+'\','+rowId+','+idx+',+this.value)"'+
+      ' class="fl-mo" data-type="'+(isGas?'fg':'fi')+'" data-rid="'+rowId+'" data-col="'+idx+'"'+
       ' style="width:100%;border:none;background:transparent;font-size:.75rem;text-align:right;padding:1px 2px;color:'+(isGas?'var(--orange)':'var(--green)')+'">';
   };
 

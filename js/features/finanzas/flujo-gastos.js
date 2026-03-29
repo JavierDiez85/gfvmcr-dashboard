@@ -55,38 +55,34 @@ function rFlujoGas(filterEnt){
 
     return `<tr id="fg-row-${r.id}" style="${sharedBg};border-bottom:1px solid var(--border)">
       <td style="padding:4px 8px">
-        <input ${inS('left')} value="${r.concepto}" onchange="FG_ROWS[${ri}].concepto=this.value;fgAutoDetect(${ri})" placeholder="Concepto...">
+        <input ${inS('left')} value="${r.concepto}" class="fg-concepto" data-ri="${ri}" placeholder="Concepto...">
       </td>
       <td style="padding:4px 6px">
-        <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.74rem;padding:2px 4px;background:var(--bg);color:${entC};font-weight:600"
-          onchange="FG_ROWS[${ri}].ent=this.value;this.style.color=ENT_COLOR[this.value]||'#555';FG_ROWS[${ri}].cat=catsGas(this.value)[0];fgUpdateKPIs()">
+        <select class="fg-ent" data-ri="${ri}" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.74rem;padding:2px 4px;background:var(--bg);color:${entC};font-weight:600">
           ${EMPRESAS.map(e=>`<option${e===r.ent?' selected':''} style="color:${ENT_COLOR[e]}">${e}</option>`).join('')}
         </select>
       </td>
       <td style="padding:4px 6px">
-        <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:2px 4px;background:var(--bg)"
-          onchange="FG_ROWS[${ri}].cat=this.value;fgAutoTipo(${ri})">
+        <select class="fg-cat" data-ri="${ri}" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.73rem;padding:2px 4px;background:var(--bg)">
           ${selOpts(catsGas(r.ent), r.cat)}
         </select>
       </td>
       <td style="padding:4px 6px">
-        <select style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.71rem;padding:2px 4px;background:${r.tipo==='costo'?'rgba(0,184,148,.08)':'rgba(231,76,60,.08)'};color:${r.tipo==='costo'?'#00b875':'#e74c3c'};font-weight:600"
-          onchange="FG_ROWS[${ri}].tipo=this.value;rFlujoGas(window._fgFilterEnt)">
+        <select class="fg-tipo" data-ri="${ri}" style="width:100%;border:1px solid var(--border);border-radius:4px;font-size:.71rem;padding:2px 4px;background:${r.tipo==='costo'?'rgba(0,184,148,.08)':'rgba(231,76,60,.08)'};color:${r.tipo==='costo'?'#00b875':'#e74c3c'};font-weight:600">
           <option value="costo"${r.tipo==='costo'?' selected':''}>📦 Costo</option>
           <option value="gasto"${r.tipo!=='costo'?' selected':''}>🏢 Gasto</option>
         </select>
       </td>
       <td style="padding:4px 6px;font-size:.73rem;color:var(--muted);text-align:center">${r.yr}</td>
       <td style="padding:4px 6px;text-align:center">
-        <div style="width:36px;height:20px;border-radius:10px;${toggleOn}position:relative;cursor:pointer;transition:background .15s;margin:auto"
-          onclick="fgToggleShared(${ri})" title="${isShared?'Compartido':'Solo esta empresa'}">
+        <div class="fg-shared" data-ri="${ri}" style="width:36px;height:20px;border-radius:10px;${toggleOn}position:relative;cursor:pointer;transition:background .15s;margin:auto"
+          title="${isShared?'Compartido':'Solo esta empresa'}">
           <div style="width:16px;height:16px;border-radius:50%;background:white;position:absolute;top:2px;${dotPos};transition:left .15s;box-shadow:0 1px 3px rgba(0,0,0,.25)"></div>
         </div>
       </td>
       <td style="padding:4px 6px">
         ${isShared
-          ? `<select style="width:100%;border:1px solid #ff7043;border-radius:4px;font-size:.71rem;padding:2px 4px;background:var(--bg);color:var(--orange)"
-              onchange="FG_ROWS[${ri}].gcConcept=this.value;fgUpdateKPIs()">
+          ? `<select class="fg-gc" data-ri="${ri}" style="width:100%;border:1px solid #ff7043;border-radius:4px;font-size:.71rem;padding:2px 4px;background:var(--bg);color:var(--orange)">
               <option value="">— Seleccionar —</option>${gcOpts}
             </select>`
           : `<span style="font-size:.7rem;color:var(--muted);padding-left:4px">—</span>`}
@@ -94,7 +90,7 @@ function rFlujoGas(filterEnt){
       ${r.vals.map((v,i)=>`<td style="padding:2px 3px">${moInput(r.id,i,v,true)}</td>`).join('')}
       <td class="mo neg bld" style="font-size:.78rem;font-weight:700" id="fg-rtot-${r.id}">${r.vals.some(v=>v)?fmt(r.vals.reduce((a,b)=>a+b,0)):'—'}</td>
       <td style="text-align:center;padding:2px">
-        ${!isViewer() ? `<button onclick="fgDelRow('${r.id}')" title="Eliminar"
+        ${!isViewer() ? `<button class="fg-del" data-rid="${r.id}" title="Eliminar"
           style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px"
           onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>` : ''}
       </td>
@@ -108,6 +104,38 @@ function rFlujoGas(filterEnt){
       </button>
     </td>
   </tr>`;
+
+  // ── Event delegation for data-* handlers ──
+  tbody.querySelectorAll('.fg-concepto').forEach(function(el){
+    el.onchange = function(){ var ri=+this.dataset.ri; FG_ROWS[ri].concepto=this.value; fgAutoDetect(ri); };
+  });
+  tbody.querySelectorAll('.fg-ent').forEach(function(el){
+    el.onchange = function(){
+      var ri=+this.dataset.ri;
+      FG_ROWS[ri].ent=this.value;
+      this.style.color=ENT_COLOR[this.value]||'#555';
+      FG_ROWS[ri].cat=catsGas(this.value)[0];
+      fgUpdateKPIs();
+    };
+  });
+  tbody.querySelectorAll('.fg-cat').forEach(function(el){
+    el.onchange = function(){ var ri=+this.dataset.ri; FG_ROWS[ri].cat=this.value; fgAutoTipo(ri); };
+  });
+  tbody.querySelectorAll('.fg-tipo').forEach(function(el){
+    el.onchange = function(){ FG_ROWS[+this.dataset.ri].tipo=this.value; rFlujoGas(window._fgFilterEnt); };
+  });
+  tbody.querySelectorAll('.fg-shared').forEach(function(el){
+    el.onclick = function(){ fgToggleShared(+this.dataset.ri); };
+  });
+  tbody.querySelectorAll('.fg-gc').forEach(function(el){
+    el.onchange = function(){ FG_ROWS[+this.dataset.ri].gcConcept=this.value; fgUpdateKPIs(); };
+  });
+  tbody.querySelectorAll('.fg-del').forEach(function(el){
+    el.onclick = function(){ fgDelRow(this.dataset.rid); };
+  });
+  tbody.querySelectorAll('.fl-mo').forEach(function(el){
+    el.oninput = function(){ flRowUpdate(this.dataset.type, +this.dataset.rid, +this.dataset.col, +this.value); };
+  });
 
   flUpdateFooter('fg');
   flUpdateKPIs('fg');

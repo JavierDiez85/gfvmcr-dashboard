@@ -140,10 +140,21 @@ async function rTPVPromotoresDetail(){
         <td class="mo r" style="color:${p._saldo>0.01?'var(--red)':'var(--green)'}">${p._saldo>0.01?fmtTPVFull(p._saldo,2):'✓ $0'}</td>
         <td>${est}</td>
         <td style="text-align:center;white-space:nowrap">
-          <button onclick="openHistorial(${p.id})" title="Historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px">🕐${histBadge}</button>
-          <button onclick="openPagoModal(${p.id})" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
+          <button class="prom-hist-btn" data-pid="${p.id}" title="Historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px">🕐${histBadge}</button>
+          <button class="prom-pago-btn" data-pid="${p.id}" style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:4px 10px;font-size:.68rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif">+ Pago</button>
         </td></tr>`;
     }).join(''):'<tr><td colspan="8" style="text-align:center;padding:20px;color:var(--muted)">Sin clientes con actividad en este periodo</td></tr>';
+
+    // Event delegation for promotor clients table
+    if (!tbody._promClientsBound) {
+      tbody.addEventListener('click', function(e) {
+        const histBtn = e.target.closest('.prom-hist-btn');
+        if (histBtn) { openHistorial(parseInt(histBtn.dataset.pid)); return; }
+        const pagoBtn = e.target.closest('.prom-pago-btn');
+        if (pagoBtn) { openPagoModal(parseInt(pagoBtn.dataset.pid)); return; }
+      });
+      tbody._promClientsBound = true;
+    }
   }
 
   // Comision del Promotor Section
@@ -168,8 +179,17 @@ async function rTPVPromotoresDetail(){
   const pagosTbody=document.getElementById('prom-pagos-tbody');
   if(pagosTbody){
     pagosTbody.innerHTML=pagos.length?pagos.map(p=>
-      `<tr><td class="bld">${p.fecha}</td><td class="mo r" style="color:var(--green)">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td><button onclick="deletePromPago('${selName.replace(/'/g,"\\'")}',${p.id})" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem" title="Eliminar">🗑</button></td></tr>`
+      `<tr><td class="bld">${p.fecha}</td><td class="mo r" style="color:var(--green)">${fmtTPVFull(p.monto)}</td><td style="color:var(--muted);font-size:.72rem">${p.ref||'—'}</td><td style="color:var(--muted);font-size:.66rem">${p.registrado}</td><td><button class="prom-del-pago-btn" data-name="${escapeHtml(selName)}" data-pid="${p.id}" style="background:none;border:none;cursor:pointer;color:var(--red);font-size:.75rem" title="Eliminar">🗑</button></td></tr>`
     ).join(''):'<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--muted);font-size:.8rem">Sin pagos registrados</td></tr>';
+
+    // Event delegation for promotor pago delete
+    if (!pagosTbody._promBound) {
+      pagosTbody.addEventListener('click', function(e) {
+        const btn = e.target.closest('.prom-del-pago-btn');
+        if (btn) deletePromPago(btn.dataset.name, parseInt(btn.dataset.pid));
+      });
+      pagosTbody._promBound = true;
+    }
   }
 
   // Resumen Consolidado

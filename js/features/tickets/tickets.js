@@ -109,7 +109,7 @@ function rTkPagosList(){
     const origenBadge = t.origen === 'cliente' ? ' <span style="font-size:.55rem;background:rgba(0,115,234,.1);color:var(--blue);padding:1px 5px;border-radius:8px">Externo</span>' : '';
     const pagosCount = Array.isArray(t.pagos) ? t.pagos.length : 0;
     const pagosHint = pagosCount > 1 ? ` <span style="font-size:.55rem;color:var(--muted)">(${pagosCount})</span>` : '';
-    return `<tr style="cursor:pointer;${rowBg}" onclick="openTkDetail('${t.id}')">
+    return `<tr style="cursor:pointer;${rowBg}" class="tk-row" data-tid="${t.id}">
     <td style="font-size:.7rem;color:var(--muted);font-weight:600">${unreadDot}#${t.id}</td>
     <td style="font-size:.75rem;font-weight:600">${t.cliente||'—'}${origenBadge}</td>
     <td style="font-size:.73rem">${t.asunto||'—'}</td>
@@ -117,9 +117,17 @@ function rTkPagosList(){
     <td>${statusBadge[t.estado]||'—'}</td>
     <td class="r" style="font-size:.75rem;font-weight:600">${_tkFmtMonto(t)}${pagosHint}</td>
     <td style="font-size:.68rem;color:var(--muted)">${t.creado ? new Date(t.creado).toLocaleDateString('es-MX',{day:'2-digit',month:'short',year:'2-digit'}) : '—'}</td>
-    <td><button class="btn btn-out" style="font-size:.6rem;padding:2px 8px" onclick="event.stopPropagation();changeTkStatus('${t.id}')">⋮</button></td>
+    <td><button class="btn btn-out tk-status-btn" style="font-size:.6rem;padding:2px 8px" data-tid="${t.id}">⋮</button></td>
   </tr>`;
   }).join('');
+
+  // Event delegation for ticket rows
+  tbody.addEventListener('click', function(e) {
+    const statusBtn = e.target.closest('.tk-status-btn');
+    if (statusBtn) { e.stopPropagation(); changeTkStatus(statusBtn.dataset.tid); return; }
+    const row = e.target.closest('.tk-row');
+    if (row) openTkDetail(row.dataset.tid);
+  });
 }
 
 // ═══════════════════════════════════════

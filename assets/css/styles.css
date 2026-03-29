@@ -285,3 +285,11 @@ body[data-role="viewer"] .admin-only { display:none !important; }
 .pbtn{font-size:.65rem;font-weight:600;padding:4px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--white);color:var(--muted);cursor:pointer;transition:all .12s;font-family:'Figtree',sans-serif;}
 .pbtn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
 .pbtn:hover:not(.active){background:var(--bg);color:var(--text);}
+
+/* Credit detail — delete button hover (replaces inline onmouseover/onmouseout) */
+.cred-del-hover-btn:hover{background:var(--red)!important;color:#fff!important;}
+
+/* Credit list rows — hover (replaces inline onmouseover/onmouseout) */
+.cred-dash-open:hover,.cred-ent-row:hover,.cobr-open:hover{background:var(--bg);}
+.cred-ent-detail-btn:hover{background:var(--btn-col)!important;color:#fff!important;}
+.cred-ent-delete-btn:hover{background:var(--red)!important;color:#fff!important;border-color:var(--red)!important;}
