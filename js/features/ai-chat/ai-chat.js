@@ -33,6 +33,7 @@ const _IC_CLOSE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" st
 // DOM INJECTION — Search Bar + Panel + Styles
 // ═══════════════════════════════════════
 function _chatInjectDOM() {
+  if (document.getElementById('ai-search-wrap')) return; // already injected
   const style = document.createElement('style');
   style.textContent = `
     /* ── Search Bar in Topbar ── */
