@@ -35,7 +35,7 @@ function rUsuarios(){
   el.innerHTML = USUARIOS.map(u => {
     const permsCount = Object.keys(u.perms||{}).filter(k=>u.perms[k]===true||u.perms[k]==='menu').length;
     const menuCount  = Object.keys(u.perms||{}).filter(k=>u.perms[k]==='menu').length;
-    return `<div style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s" onmouseover="this.style.background='var(--bg)'" onmouseout="this.style.background=''">
+    return `<div class="u-row" style="display:flex;align-items:center;gap:12px;padding:12px 18px;border-bottom:1px solid var(--border);transition:background .1s">
       <!-- Avatar -->
       <div style="width:36px;height:36px;border-radius:50%;background:${u.activo?'var(--blue-bg)':'var(--border)'};display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem;color:${u.activo?'var(--blue)':'var(--muted)'};flex-shrink:0">
         ${escapeHtml(u.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase())}
@@ -58,11 +58,31 @@ function rUsuarios(){
         <div style="font-size:.82rem;font-weight:700;color:var(--blue)">${menuCount} módulos</div>
       </div>
       <!-- Edit -->
-      <button onclick="uEditUser('${u.id}')" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:.72rem;color:var(--text2);flex-shrink:0" onmouseover="this.style.background='var(--blue-bg)';this.style.color='var(--blue)'" onmouseout="this.style.background='var(--bg)';this.style.color='var(--text2)'">
+      <button data-uid="${escapeHtml(u.id)}" class="u-edit-btn" style="background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 10px;cursor:pointer;font-size:.72rem;color:var(--text2);flex-shrink:0">
         ✏️ Editar
       </button>
     </div>`;
   }).join('');
+
+  // Event delegation for user list (bind once)
+  if(el._authBound) return;
+  el._authBound = true;
+  el.addEventListener('mouseover', function(e){
+    const row = e.target.closest('.u-row');
+    if(row) row.style.background = 'var(--bg)';
+    const btn = e.target.closest('.u-edit-btn');
+    if(btn){ btn.style.background='var(--blue-bg)'; btn.style.color='var(--blue)'; }
+  });
+  el.addEventListener('mouseout', function(e){
+    const row = e.target.closest('.u-row');
+    if(row) row.style.background = '';
+    const btn = e.target.closest('.u-edit-btn');
+    if(btn){ btn.style.background='var(--bg)'; btn.style.color='var(--text2)'; }
+  });
+  el.addEventListener('click', function(e){
+    const btn = e.target.closest('.u-edit-btn');
+    if(btn) uEditUser(btn.dataset.uid);
+  });
 }
 
 function uRenderPerms(perms){
@@ -73,7 +93,7 @@ function uRenderPerms(perms){
     return `<div style="background:var(--bg);border:1px solid ${menuOn?'var(--blue-lt)':'var(--border)'};border-radius:var(--r);overflow:hidden;transition:border-color .15s">
       <!-- Header del módulo -->
       <label style="display:flex;align-items:center;gap:8px;padding:9px 12px;cursor:pointer;background:${menuOn?'var(--blue-bg)':'transparent'};transition:background .15s">
-        <input type="checkbox" data-menu="${menuId}" ${menuOn?'checked':''} onchange="uToggleMenu('${menuId}',this)"
+        <input type="checkbox" data-menu="${menuId}" ${menuOn?'checked':''}
           style="width:14px;height:14px;accent-color:var(--blue);flex-shrink:0">
         <span style="font-size:.76rem;font-weight:700;color:${menuOn?'var(--blue)':'var(--text2)'}">${menu.label}</span>
       </label>
@@ -81,8 +101,8 @@ function uRenderPerms(perms){
       ${menu.subs.length ? `<div id="subperms-${menuId}" style="border-top:1px solid ${menuOn?'var(--blue-lt)':'var(--border)'};padding:6px 8px;display:${menuOn?'block':'none'}">
         ${menu.subs.map(s=>{
           const subOn = perms[s.id] !== false && menuOn;
-          return `<label style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;border-radius:5px" onmouseover="this.style.background='rgba(0,115,234,.06)'" onmouseout="this.style.background=''">
-            <input type="checkbox" data-sub="${s.id}" data-menu="${menuId}" ${subOn?'checked':''} onchange="uToggleSub('${s.id}','${menuId}',this)"
+          return `<label class="u-sub-label" style="display:flex;align-items:center;gap:6px;padding:4px 6px;cursor:pointer;border-radius:5px">
+            <input type="checkbox" data-sub="${s.id}" data-menu="${menuId}" ${subOn?'checked':''}
               style="width:13px;height:13px;accent-color:var(--blue);flex-shrink:0">
             <span style="font-size:.7rem;color:var(--text2)">${s.label}</span>
           </label>`;
@@ -90,6 +110,23 @@ function uRenderPerms(perms){
       </div>` : ''}
     </div>`;
   }).join('');
+
+  // Event delegation for perms (bind once)
+  if(el._permsBound) return;
+  el._permsBound = true;
+  el.addEventListener('change', function(e){
+    const cb = e.target;
+    if(cb.dataset.menu && !cb.dataset.sub) uToggleMenu(cb.dataset.menu, cb);
+    else if(cb.dataset.sub && cb.dataset.menu) uToggleSub(cb.dataset.sub, cb.dataset.menu, cb);
+  });
+  el.addEventListener('mouseover', function(e){
+    const lbl = e.target.closest('.u-sub-label');
+    if(lbl) lbl.style.background = 'rgba(0,115,234,.06)';
+  });
+  el.addEventListener('mouseout', function(e){
+    const lbl = e.target.closest('.u-sub-label');
+    if(lbl) lbl.style.background = '';
+  });
 }
 
 function uToggleMenu(menuId, cb){

@@ -552,7 +552,22 @@ async function expUploadDoc(categoria, file){
 
 // Actual upload to Supabase Storage + DB record
 async function _expUploadFileToStorage(clienteId, categoria, file){
-  // For single-doc categories, delete existing first
+  const ext = file.name.split('.').pop();
+  const ts = Date.now();
+  const storagePath = `${clienteId}/${categoria}/${ts}.${ext}`;
+
+  // Upload new file first — only delete old after success
+  const { error: uploadErr } = await _sb.storage.from('expedientes').upload(storagePath, file, {
+    contentType: file.type,
+    upsert: true
+  });
+
+  if(uploadErr){
+    console.warn('[Exp] Upload error:', uploadErr.message);
+    return;
+  }
+
+  // For single-doc categories, delete old AFTER successful upload
   const multiCats = ['contratos','anexos'];
   if(!multiCats.includes(categoria)){
     const { data: existing } = await _sb.from('exp_documentos')
@@ -566,20 +581,6 @@ async function _expUploadFileToStorage(clienteId, categoria, file){
         await _sb.from('exp_documentos').delete().eq('id', doc.id);
       }
     }
-  }
-
-  const ext = file.name.split('.').pop();
-  const ts = Date.now();
-  const storagePath = `${clienteId}/${categoria}/${ts}.${ext}`;
-
-  const { error: uploadErr } = await _sb.storage.from('expedientes').upload(storagePath, file, {
-    contentType: file.type,
-    upsert: true
-  });
-
-  if(uploadErr){
-    console.warn('[Exp] Upload error:', uploadErr.message);
-    return;
   }
 
   const { error: dbErr } = await _sb.from('exp_documentos').insert({

@@ -86,7 +86,7 @@ function startCleanup() {
       _rl[key] = _rl[key].filter(t => now - t < 60000);
       if (_rl[key].length === 0) delete _rl[key];
     }
-  }, 300000);
+  }, 60000);
 }
 
 /** Enviar respuesta JSON de error (DRY helper) */
