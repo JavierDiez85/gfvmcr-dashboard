@@ -8,9 +8,18 @@ let _gfPeriod = {}; // {ent: 'año'|'q1'|'q2'|'q3'|'q4'|'mes_0'..'mes_11'}
 let _gfCompare = false; // true cuando "vs Año Anterior" está activo
 
 // Return array of month indices [0..11] for the active period of an entity
+// Supports: 'año', 'todo', 'q1'-'q4', 'mes_N', 'rango_N_M'
 function _periodIdxs(ent) {
   var mode = (typeof _gfPeriod !== 'undefined' ? _gfPeriod[ent] : null) || 'año';
+  if(mode === 'todo') return [0,1,2,3,4,5,6,7,8,9,10,11]; // same as 'año' but signals multi-year
   if(mode.startsWith('mes_')) return [parseInt(mode.split('_')[1])];
+  if(mode.startsWith('rango_')){
+    var parts = mode.split('_');
+    var from = parseInt(parts[1]), to = parseInt(parts[2]);
+    var idxs = [];
+    for(var i = from; i <= to; i++) idxs.push(i);
+    return idxs;
+  }
   var qMap = { q1:[0,1,2], q2:[3,4,5], q3:[6,7,8], q4:[9,10,11] };
   if(qMap[mode]) return qMap[mode];
   return [0,1,2,3,4,5,6,7,8,9,10,11];
