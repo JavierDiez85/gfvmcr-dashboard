@@ -114,7 +114,7 @@ http.createServer(async (req, res) => {
       });
       res.writeHead(200, {
         'Content-Type': 'application/json',
-        'Set-Cookie': `gf_token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400`
+        'Set-Cookie': `gf_token=${token}; HttpOnly; SameSite=Strict; Path=/; Max-Age=86400${process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT ? '; Secure' : ''}`
       });
       res.end(JSON.stringify({
         user: { id: user.id, nombre: user.nombre, email: user.email, rol: user.rol || 'viewer', perms: user.perms || {} },
@@ -131,7 +131,7 @@ http.createServer(async (req, res) => {
   if (req.method === 'POST' && req.url === '/api/logout') {
     res.writeHead(200, {
       'Content-Type': 'application/json',
-      'Set-Cookie': 'gf_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0'
+      'Set-Cookie': `gf_token=; HttpOnly; SameSite=Strict; Path=/; Max-Age=0${process.env.NODE_ENV === 'production' || process.env.RAILWAY_ENVIRONMENT ? '; Secure' : ''}`
     });
     res.end(JSON.stringify({ ok: true }));
     return;
