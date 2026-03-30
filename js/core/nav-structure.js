@@ -415,7 +415,7 @@ function selectCross(crossId, targetView){
   const viewRow = document.getElementById('hnav-views');
 
   secRow.innerHTML = cc.views.map(v =>
-    `<div class="hnav-tab" data-sec="${v.id}" onclick="selectCrossView('${v.id}')">${v.icon} ${v.label}</div>`
+    `<div class="hnav-tab" data-sec="${v.id}">${v.icon} ${v.label}</div>`
   ).join('');
   viewRow.innerHTML = '';
   hnav.style.display = '';
@@ -467,7 +467,7 @@ function renderHNav(co){
   });
 
   secRow.innerHTML = visibleSections.map(sec =>
-    `<div class="hnav-tab" data-sec="${sec.id}" onclick="selectSection('${sec.id}')">${sec.icon} ${sec.label}</div>`
+    `<div class="hnav-tab" data-sec="${sec.id}">${sec.icon} ${sec.label}</div>`
   ).join('');
 
   viewRow.innerHTML = '';
@@ -508,13 +508,13 @@ function renderHNavViews(sec){
         html += `<div class="hnav-group-toggle" onclick="toggleHNavGroup(this, event)">${grp.label} <span class="hnav-arrow">&#9662;</span></div>`;
         html += `<div class="hnav-group-items">`;
         for(const v of grp.views){
-          html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+          html += `<div class="hnav-view" data-view="${v.id}" >${v.label}</div>`;
         }
         html += `</div></div>`;
       } else {
         // No label — render flat
         for(const v of grp.views){
-          html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+          html += `<div class="hnav-view" data-view="${v.id}" >${v.label}</div>`;
         }
       }
     }
@@ -522,7 +522,7 @@ function renderHNavViews(sec){
     // All groups without labels — flat rendering (original behavior)
     for(const grp of visibleGroups){
       for(const v of grp.views){
-        html += `<div class="hnav-view" data-view="${v.id}" onclick="selectView('${v.id}')">${v.label}</div>`;
+        html += `<div class="hnav-view" data-view="${v.id}" >${v.label}</div>`;
       }
     }
   }

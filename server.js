@@ -52,9 +52,16 @@ http.createServer(async (req, res) => {
 
   // ── API: Health check ──
   if (req.method === 'GET' && req.url === '/api/health') {
-    // Require admin auth — don't expose env info publicly
-    const authUser = requireAuth(req);
-    if (!authUser || authUser.rol !== 'admin') {
+    // Verify admin auth without sendError (health must always respond)
+    let jwt = null;
+    const cookies = req.headers.cookie || '';
+    const m = cookies.match(/(?:^|;\s*)gf_token=([^;]+)/);
+    if (m) jwt = verifyToken(m[1]);
+    if (!jwt) {
+      const auth = req.headers.authorization;
+      if (auth && auth.startsWith('Bearer ') && auth.length >= 30) jwt = verifyToken(auth.slice(7));
+    }
+    if (!jwt || jwt.rol !== 'admin') {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ ok: true }));
       return;
