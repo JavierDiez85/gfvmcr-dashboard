@@ -568,6 +568,26 @@ function selectView(viewId){
   sv(viewId, null);
 }
 
+// Event delegation for hnav tabs and views
+document.addEventListener('click', function(e){
+  const tab = e.target.closest('.hnav-tab[data-sec]');
+  if(tab){
+    const sec = tab.dataset.sec;
+    // Determine if cross-cutting or regular section
+    if(typeof selectCrossView === 'function' && tab.closest('#hnav-sections') &&
+       document.querySelector('.hnav-tab[data-sec="'+sec+'"]') === tab &&
+       typeof NAV_STRUCTURE !== 'undefined' && NAV_STRUCTURE.crossCutting &&
+       NAV_STRUCTURE.crossCutting.some(cc => cc.views && cc.views.some(v => v.id === sec))) {
+      selectCrossView(sec);
+    } else {
+      selectSection(sec);
+    }
+    return;
+  }
+  const view = e.target.closest('.hnav-view[data-view]');
+  if(view){ selectView(view.dataset.view); return; }
+});
+
 // Close dropdown groups when clicking outside
 document.addEventListener('click', function(e){
   if(!e.target.closest('.hnav-group') && !e.target.closest('.hnav-view')){

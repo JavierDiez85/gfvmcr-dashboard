@@ -39,7 +39,12 @@ ANTHROPIC_API_KEY=sk-ant-...
 SESSION_SECRET=<min_64_chars_para_jwt>
 ```
 
-**No hay tests unitarios automatizados.** Verificar cambios manualmente en el navegador.
+**Tests unitarios** disponibles en `tests/`:
+```bash
+node tests/credit-engine.test.js    # Lógica de créditos
+node tests/amort-formula.test.js    # Fórmulas de amortización
+```
+Verificar cambios de UI manualmente en el navegador.
 
 ---
 

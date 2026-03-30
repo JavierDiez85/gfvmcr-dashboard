@@ -290,7 +290,7 @@ function rEntSummary(){
   const entC   = {Salem:'#0073ea', Endless:'#00b875', Dynamo:'#ff7043', Wirebit:'#9b51e0'};
   const entBg  = {Salem:'var(--blue-bg)', Endless:'var(--green-bg)', Dynamo:'var(--orange-bg)', Wirebit:'var(--purple-bg)'};
   const entIco = {Salem:'💳', Endless:'🏦', Dynamo:'🏦', Wirebit:'⛓', Stellaris:'🔴'};
-  const entNav = {Salem:"navTo('sal_res')", Endless:"navTo('end_res')", Dynamo:"navTo('dyn_res')", Wirebit:"navTo('wb_res')", Stellaris:"navTo('stel_res')"};
+  const entNav = {Salem:'sal_res', Endless:'end_res', Dynamo:'dyn_res', Wirebit:'wb_res', Stellaris:'stel_res'};
 
   const _sCmpOn = typeof cmpActive === 'function' && cmpActive();
   const _sPy = _sCmpOn ? cmpPrevYear() : 0;
@@ -327,7 +327,7 @@ function rEntSummary(){
       </div>`;
     }
 
-    return `<div onclick="${entNav[e]}" style="background:var(--white);border:1px solid var(--border);border-top:3px solid ${entC[e]};border-radius:var(--rlg);padding:12px 14px;cursor:pointer;transition:box-shadow .12s" onmouseover="this.style.boxShadow='var(--shm)'" onmouseout="this.style.boxShadow=''">
+    return `<div class="ent-summary-card" data-nav="${entNav[e]}" style="background:var(--white);border:1px solid var(--border);border-top:3px solid ${entC[e]};border-radius:var(--rlg);padding:12px 14px;cursor:pointer;transition:box-shadow .12s">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
         <span style="font-family:'Poppins',sans-serif;font-weight:700;font-size:.8rem;color:${entC[e]}">${entIco[e]} ${e}</span>
         <span style="font-size:.6rem;color:var(--muted)">ver P&L →</span>
@@ -355,6 +355,23 @@ function rEntSummary(){
   });
 
   el.innerHTML = cards.join('');
+
+  // Event delegation for entity summary cards
+  if(!el._entBound){
+    el._entBound = true;
+    el.addEventListener('click', function(e){
+      const card = e.target.closest('.ent-summary-card');
+      if(card && card.dataset.nav) navTo(card.dataset.nav);
+    });
+    el.addEventListener('mouseover', function(e){
+      const card = e.target.closest('.ent-summary-card');
+      if(card) card.style.boxShadow = 'var(--shm)';
+    });
+    el.addEventListener('mouseout', function(e){
+      const card = e.target.closest('.ent-summary-card');
+      if(card) card.style.boxShadow = '';
+    });
+  }
 }
 
 function rEDO(){
