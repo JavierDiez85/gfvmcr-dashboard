@@ -93,7 +93,7 @@
         el = document.createElement('div');
         el.id = containerId;
         el.style.cssText = 'margin-bottom:10px';
-        if(tw) viewEl.insertBefore(el, tw);
+        if(tw && tw.parentNode === viewEl) viewEl.insertBefore(el, tw);
         else viewEl.appendChild(el);
       }
     }
