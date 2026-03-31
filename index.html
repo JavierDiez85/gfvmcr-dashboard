@@ -4658,7 +4658,17 @@
   <!-- ── PWA Service Worker ── -->
   <script>
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('/service-worker.js').catch(function(){});
+      navigator.serviceWorker.register('/service-worker.js').then(function(reg){
+        // Auto-reload when new SW is available
+        reg.addEventListener('updatefound', function(){
+          var newSW = reg.installing;
+          if(newSW) newSW.addEventListener('statechange', function(){
+            if(newSW.state === 'activated' && navigator.serviceWorker.controller){
+              window.location.reload();
+            }
+          });
+        });
+      }).catch(function(){});
     }
   </script>
 
