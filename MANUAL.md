@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.0 | **Fecha**: 2026-03-30 | **Código**: ~36,000 líneas
+> **Versión**: 1.1 | **Fecha**: 2026-03-31 | **Código**: ~36,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -114,8 +114,9 @@ INGRESOS TOTALES
 = UTILIDAD NETA
 ```
 
-**Filtros de periodo**: Año completo, trimestre (Q1-Q4), mes individual.
-**Comparativa**: Toggle "vs año anterior" para ver variación.
+**Filtros de periodo**: Año completo, trimestre (Q1-Q4), mes individual, **"Todo"** (sin restricción), **rango de meses** (Shift+Click para seleccionar inicio y fin).
+**Rango de meses**: Al hacer Shift+Click en un mes se selecciona el rango entre el mes activo y el clickeado (ej. Mar-Ago). El rango aparece resaltado y etiquetado.
+**Comparativa**: Toggle "vs año anterior" para ver variación. (Oculto en modo Todo/Rango).
 **Gráficas**: Evolución mensual (barras + línea EBITDA), composición de gastos (donut).
 
 ### 1.4.2 Flujo de Ingresos
@@ -1137,4 +1138,4 @@ Antes de hacer deploy:
 
 ---
 
-*Última actualización: 2026-03-30*
+*Última actualización: 2026-03-31*
