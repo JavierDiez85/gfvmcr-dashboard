@@ -13,6 +13,12 @@ Thumbs.db
 # Temp
 *.tmp
 *.bak
+~$*
+
+# Data files
+*.xlsx
+*.xls
+*.csv
 
 # Dependencies
 node_modules/
