@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.1 | **Fecha**: 2026-03-31 | **Código**: ~36,000 líneas
+> **Versión**: 1.2 | **Fecha**: 2026-03-31 | **Código**: ~37,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -11,6 +11,8 @@
 - [Parte 1: Manual Operativo](#parte-1-manual-operativo)
 - [Parte 2: Arquitectura Técnica](#parte-2-arquitectura-técnica)
 - [Parte 3: Guía de Desarrollo](#parte-3-guía-de-desarrollo)
+  - [3.11 Troubleshooting](#311-troubleshooting)
+  - [3.12 Backup y Recovery](#312-backup-y-recovery)
 - [Parte 4: Referencia Rápida](#parte-4-referencia-rápida)
 
 ---
@@ -98,6 +100,8 @@ Cards con ingresos, gastos, nómina/mes y margen por cada entidad. Link a "ver P
 ---
 
 ## 1.4 Finanzas
+
+Para entender cómo fluyen los datos entre módulos (Créditos→P&L, TPV→P&L, Nómina→P&L), ver secciones 3.6-3.8.
 
 ### 1.4.1 Resumen P&L (por entidad)
 **Vistas**: `sal_res`, `end_res`, `dyn_res`, `wb_res`, `stel_res`
@@ -210,6 +214,8 @@ Al hacer click en un crédito:
 
 **REGLA ABSOLUTA**: Un periodo con fecha futura NUNCA puede estar vencido.
 
+La tolerancia de 0.05 MXN es una constante en `credit-engine.js` y `tool-executors.js`. Si necesita ajustarse, buscar `- 0.05` en ambos archivos.
+
 ---
 
 ## 1.6 TPV (Terminales Punto de Venta)
@@ -264,6 +270,23 @@ Upload de Excel con transacciones:
 - Validación y preview antes de confirmar
 - Rollback disponible (deshacer última carga)
 - Historial de cargas
+
+### 1.6.9 Fórmulas de Comisiones TPV
+
+Cada transacción genera 4 comisiones calculadas por la RPC `tpv_client_commissions`:
+
+| Entidad | Fórmula | Descripción |
+|---------|---------|-------------|
+| Efevoo | `monto × rate_efevoo_{tarjeta}` | Comisión del procesador |
+| Salem | `monto × rate_salem_{tarjeta}` | Comisión de Salem |
+| Convenia | `monto × rate_convenia_{tarjeta}` | Comisión de Convenia (si aplica) |
+| Comisionista | `monto × rate_comisionista_{tarjeta}` | Comisión del promotor/agente |
+
+Donde `{tarjeta}` = TC, TD, Amex, o TI según el tipo de tarjeta.
+
+Para MSI (Meses Sin Intereses), las tasas se leen de `tpv_client_msi_rates` por plazo (3/6/9/12 meses).
+
+Las tasas se configuran por cliente en la sección de Comisiones.
 
 ---
 
@@ -487,10 +510,15 @@ Solo 2 dependencias. Todo lo demás es vanilla o CDN.
 
 ### JWT
 - Algoritmo: HMAC-SHA256
-- Secret: `SESSION_SECRET` env var (fallback: `SUPABASE_SERVICE_KEY`)
+- Secret: `SESSION_SECRET` env var (OBLIGATORIO, mínimo 32 caracteres). Si no está configurado, el servidor falla al arrancar.
 - Expiry: 24 horas
 - Payload: `{id, nombre, email, rol, perms, iat, exp}`
 - Cookie flags: `HttpOnly; SameSite=Strict; Path=/; Secure` (en producción)
+
+### Nota sobre hashing client-side
+El hashing PBKDF2 se realiza client-side para que el servidor nunca vea la contraseña en texto plano. El salt se obtiene vía `/api/login/salt` (siempre retorna 200 para prevenir enumeración de usuarios). El hash viaja por HTTPS y se compara server-side contra el hash almacenado.
+
+**Limitaciones conocidas**: Si el hash es interceptado (MitM sin HTTPS), podría reenviarse (replay). Por eso la cookie JWT es `SameSite=Strict` y `Secure` en producción. Railway fuerza HTTPS automáticamente con redirect 301 de HTTP→HTTPS.
 
 ### Timeout de inactividad
 - 30 minutos sin actividad → logout automático
@@ -516,7 +544,16 @@ DB.set(key, data)
 4. **Cola offline**: Si no hay conexión, las keys pendientes se acumulan en `_pendingPush`
 5. **Conflicto**: Last-write-wins por key. Se ignoran cambios propios (`updated_by === CLIENT_ID`)
 
+**⚠ Riesgo de conflicto**: Si dos usuarios editan la misma key simultáneamente (ej: nómina), el último en guardar sobreescribe al otro sin aviso. Mitigación actual: el background pull cada 30s detecta cambios remotos y refresca. Para datos críticos, se recomienda que solo un usuario edite a la vez.
+
+**Límite de localStorage**: ~5-10MB según navegador. Con el volumen actual de datos (~2MB promedio), hay margen, pero se recomienda monitorear si crece significativamente.
+
 ### APP_KEYS (keys sincronizadas)
+
+| Key | Descripción |
+|-----|-------------|
+| `gf4` | Registros P&L manuales (legacy). Contiene S.recs filtrados sin datos auto-inyectados (TPV, créditos). Se mantiene por compatibilidad. |
+
 ```javascript
 ['gf4','gf_fi','gf_fg','gf_cred_end','gf_cred_dyn','gf_cc_hist',
  'gf_usuarios','gf_theme','gf_tesoreria','gf_bancos','gf_tpv_pagos',
@@ -561,6 +598,8 @@ DB.set(key, data)
 | DELETE | `/api/upload/tarjetas/batch/:id` | JWT | — | Rollback upload tarjetas |
 | GET | `/*` | — | — | Archivos estáticos |
 
+Nota: `/api/config` expone el anon key de Supabase (público por diseño). RLS (Row Level Security) en Supabase protege los datos — el anon key solo permite operaciones permitidas por las políticas RLS.
+
 ---
 
 ## 2.5 Seguridad
@@ -586,6 +625,9 @@ Sliding window de 60 segundos por IP + ruta. Cleanup cada 60s.
 
 ### Rutas Bloqueadas
 `.env`, `server.js`, `security.js`, `package.json`, `lib/`, `node_modules/`, `.git/`, `.claude/`, archivos `.md`
+
+### HTTPS
+Railway fuerza HTTPS automáticamente (redirect 301 HTTP→HTTPS). La cookie `gf_token` tiene flag `Secure` en producción, garantizando que solo se envía por HTTPS.
 
 ### CORS
 Whitelist explícita: localhost + `CORS_ORIGIN` env var.
@@ -652,7 +694,7 @@ SESSION_SECRET=<min_64_chars>
 CORS_ORIGIN=https://mi-dominio.com    # whitelist CORS
 TRUST_PROXY=1                          # para Railway (X-Forwarded-For)
 NODE_ENV=production                    # activa Secure flag en cookies
-IVA_RATE=0.16                          # tasa IVA (default 0.16)
+IVA_RATE=0.16                          # Tasa IVA (default 0.16 = 16%). Para zona fronteriza norte usar 0.08. No hay soporte actual para productos exentos.
 TERMINAL_INACTIVITY_DAYS=15            # días para alerta de terminal inactiva
 PORT=8080                              # puerto (default 8080)
 ```
@@ -966,23 +1008,80 @@ Antes de hacer deploy:
 
 ---
 
+## 3.11 Troubleshooting
+
+### La sincronización falla
+- Verificar conexión a internet
+- Abrir consola (F12) → buscar errores `[SB]` o `[sync]`
+- El indicador de sync en el topbar muestra: 🟢 ok, 🔴 error, 🟠 offline
+- Si persiste: recargar página (F5). Los datos locales se mantienen en localStorage
+
+### Un chart no renderiza
+- Verificar que el canvas element existe (`document.getElementById('c-xxx')`)
+- Verificar que el chart anterior fue destruido: `if(CH['key']) CH['key'].destroy()`
+- Abrir consola → buscar errores de Chart.js
+- Causa común: el view no está visible cuando se intenta renderizar
+
+### Los datos del P&L no cuadran
+- Verificar que `syncFlujoToRecs()` se ejecutó (console: `S.recs.length`)
+- Verificar inyecciones: `fiInjectTPV()`, `fiInjectCredits()`, `ceInjectGastos()`
+- Verificar año activo: `_year` debe coincidir con el año de los datos
+- Verificar periodo activo: `_gfPeriod[ent]` puede estar filtrando meses
+
+### El bot IA no responde
+- Verificar que `ANTHROPIC_API_KEY` está configurado en el servidor
+- Verificar la cookie JWT: si expiró (24h), hacer logout/login
+- Abrir consola → buscar errores `[AI Chat]`
+- Verificar rate limiting: máximo 15 requests/minuto
+
+### Error "Error procesando solicitud" en el bot
+- El servidor ahora devuelve el mensaje de error real
+- Causas comunes: Supabase no configurado, API key inválida, timeout (>60s)
+- Verificar logs del servidor en Railway
+
+### Un cliente no aparece en TPV
+- Verificar que existe en `tpv_clients` (Comisiones → buscar)
+- Verificar que sus transacciones tienen `cliente_id` correcto (no NULL)
+- Si el nombre cambió, las transacciones antiguas mantienen el nombre original
+
+---
+
+## 3.12 Backup y Recovery
+
+### Supabase
+- **Backups automáticos**: Supabase Pro incluye daily backups con 7 días de retención
+- **Point-in-time recovery**: Disponible en plan Pro (restore a cualquier punto en las últimas 24h)
+- **Export manual**: Dashboard de Supabase → SQL Editor → `SELECT * FROM app_data` → Export CSV
+
+### localStorage
+- Los datos locales son una **copia** de Supabase. Si se corrompen, borrar localStorage del navegador y recargar — `SB.pullAll()` restaura todo desde Supabase
+- Para borrar: F12 → Application → Local Storage → click derecho → Clear
+
+### Auditoría de cambios
+- `app_data.updated_at`: timestamp del último cambio por key
+- `app_data.updated_by`: CLIENT_ID del dispositivo que hizo el cambio
+- No hay historial de versiones por key (solo último estado)
+- **Recomendación futura**: Implementar tabla `app_data_history` con trigger para auditoría completa
+
+---
+
 # Parte 4: Referencia Rápida
 
 ## 4.1 Mapa de Archivos
 
 ```
 /
-├── index.html                 # SPA (4,649 líneas)
-├── server.js                  # Backend HTTP (432 líneas)
-├── security.js                # Seguridad (280 líneas)
+├── index.html                 # SPA (4,650 líneas)
+├── server.js                  # Backend HTTP (438 líneas)
+├── security.js                # Seguridad (279 líneas)
 ├── package.json               # 2 dependencias
 ├── Dockerfile                 # Node 18 Alpine
 ├── AGENTS.md                  # Guía para agentes IA
 ├── MANUAL.md                  # Este archivo
 │
 ├── lib/                       # Backend (NO servido)
-│   ├── ai-chat.js             # Anthropic integration (152)
-│   ├── tools.js               # 20 tool definitions (179)
+│   ├── ai-chat.js             # Anthropic integration (151)
+│   ├── tools.js               # 20 tool definitions (178)
 │   ├── tool-executors.js      # Tool execution (454)
 │   ├── permissions.js         # RBAC (77)
 │   └── supabase-helpers.js    # REST helpers (82)
@@ -997,21 +1096,49 @@ Antes de hacer deploy:
 │   └── auth.js                # Gestión usuarios
 │
 ├── js/shared/                 # Código compartido
-│   ├── ui-components.js       # Modal, toast, exports (872)
-│   ├── ui-kit.js              # KPI cards, tables, pills
-│   ├── chart-helpers.js       # P&L charts, evo charts
+│   ├── chart-helpers.js       # Charts P&L y evolución (378)
+│   ├── compare-engine.js      # Motor de comparación periodos (101)
+│   ├── data-constants.js      # Constantes (NOM, GCOMP, WB) (189)
+│   ├── flujo-engine.js        # Motor flujo de caja (478)
+│   ├── period-filter.js       # Filtros de periodo (210)
 │   ├── pl-engine.js           # Motor P&L (1,249)
-│   ├── flujo-engine.js        # Motor flujo de caja
-│   ├── data-constants.js      # NOM, GCOMP, WB_*, CATS
-│   └── period-filter.js       # Filtros de periodo
+│   ├── ui-components.js       # Modal, toast, exports (881)
+│   └── ui-kit.js              # KPI cards, tables (308)
 │
 ├── js/features/               # Un directorio por módulo
+│   ├── creditos/
+│   │   ├── credit-carga.js        # Carga de créditos PDF (390)
+│   │   ├── credit-cobranza.js     # Cobranza (231)
+│   │   ├── credit-dashboard.js    # Dashboard créditos (569)
+│   │   ├── credit-detail.js       # Detalle de crédito (646)
+│   │   └── credit-engine.js       # Motor de cálculo (149)
+│   ├── tpv/
+│   │   ├── tpv-agentes.js         # Comisiones agentes (367)
+│   │   ├── tpv-comisiones.js      # Config comisiones (474)
+│   │   ├── tpv-dashboard.js       # Dashboard por periodo (295)
+│   │   ├── tpv-data.js            # Data layer TPV (603)
+│   │   ├── tpv-facturacion.js     # Facturación TPV (1,084)
+│   │   ├── tpv-general.js         # Dashboard general (415)
+│   │   ├── tpv-pagos.js           # Control de pagos (730)
+│   │   ├── tpv-promotores.js      # Promotores (307)
+│   │   ├── tpv-resumen.js         # Resumen por cliente (224)
+│   │   ├── tpv-terminales.js      # Terminales (185)
+│   │   └── tpv-upload.js          # Carga de datos (908)
+│   ├── tarjetas/
+│   │   ├── tarjetas-charts.js     # Charts y categorías (728)
+│   │   ├── tarjetas-data.js       # Data layer tarjetas (137)
+│   │   └── tarjetas-upload.js     # Carga de datos (441)
+│   ├── wirebit/
+│   │   ├── wirebit-data.js        # Fees y datos (777)
+│   │   ├── wirebit-upload.js      # Carga de fees (421)
+│   │   └── wirebit-views.js       # Vistas cripto/tarjetas (139)
+│   ├── finanzas/
+│   │   ├── carga-masiva.js        # Upload masivo CSV (397)
+│   │   ├── flujo-gastos.js        # Flujo de gastos (242)
+│   │   ├── flujo-ingresos.js      # Flujo de ingresos (165)
+│   │   ├── gastos-comp.js         # Gastos compartidos (144)
+│   │   └── nomina.js              # Nómina (452)
 │   ├── dashboard/             # inicio.js, resumen.js, inversiones.js
-│   ├── finanzas/              # flujo-ingresos.js, flujo-gastos.js, nomina.js, gastos-comp.js
-│   ├── creditos/              # credit-dashboard.js, credit-detail.js, credit-cobranza.js, credit-engine.js
-│   ├── tpv/                   # tpv-data.js, tpv-pagos.js, tpv-agentes.js, tpv-comisiones.js, tpv-terminales.js, tpv-promotores.js, tpv-facturacion.js, tpv-upload.js
-│   ├── tarjetas/              # tarjetas-charts.js, tarjetas-upload.js
-│   ├── wirebit/               # wirebit-data.js
 │   ├── tesoreria/             # tesoreria.js
 │   ├── facturacion/           # facturacion-empresa.js, facturacion-egresos.js
 │   ├── expedientes/           # expedientes.js

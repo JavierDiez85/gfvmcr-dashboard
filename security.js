@@ -166,10 +166,10 @@ function validateSbConfig(url, key) {
 const crypto = require('crypto');
 
 function _jwtSecret() {
-  const secret = process.env.SESSION_SECRET || process.env.SUPABASE_SERVICE_KEY;
-  if (!secret) {
-    console.error('[SECURITY] ❌ No SESSION_SECRET nor SUPABASE_SERVICE_KEY — JWT signing is insecure!');
-    throw new Error('Server misconfigured: no JWT secret available');
+  const secret = process.env.SESSION_SECRET;
+  if (!secret || secret.length < 32) {
+    console.error('[SECURITY] ❌ SESSION_SECRET no configurado o demasiado corto (min 32 chars). El servidor NO puede firmar JWTs.');
+    throw new Error('Server misconfigured: SESSION_SECRET required (min 32 chars)');
   }
   return secret;
 }
