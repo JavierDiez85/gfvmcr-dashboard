@@ -1,9 +1,6 @@
 // GF Dashboard — Service Worker (PWA)
-const CACHE_NAME = 'gf-dash-v1';
+const CACHE_NAME = 'gf-dash-v2';
 const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/assets/css/styles.css',
   '/assets/img/icon-192.png',
   '/assets/img/icon-512.png',
   '/manifest.json'
@@ -27,35 +24,26 @@ self.addEventListener('activate', event => {
   self.clients.claim();
 });
 
-// Fetch: network-first for API, cache-first for assets
+// Fetch: network-first for everything, cache only icons/manifest
 self.addEventListener('fetch', event => {
   const url = new URL(event.request.url);
 
-  // API calls: always network-first (datos frescos)
-  if (url.pathname.startsWith('/api/')) {
+  // Only cache icons and manifest — everything else goes to network
+  if (url.pathname.startsWith('/assets/img/icon-') || url.pathname === '/manifest.json') {
     event.respondWith(
-      fetch(event.request).catch(() =>
-        new Response(JSON.stringify({ error: 'Sin conexión' }), {
-          headers: { 'Content-Type': 'application/json' }
+      caches.match(event.request).then(cached =>
+        cached || fetch(event.request).then(response => {
+          if (response.ok) {
+            const clone = response.clone();
+            caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
+          }
+          return response;
         })
       )
     );
     return;
   }
 
-  // Static assets: cache-first, fallback to network
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      const networkFetch = fetch(event.request).then(response => {
-        // Update cache with fresh version
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then(cache => cache.put(event.request, clone));
-        }
-        return response;
-      }).catch(() => cached);
-
-      return cached || networkFetch;
-    })
-  );
+  // Everything else: network only (no cache interference)
+  // This prevents stale JS/CSS/HTML from being served
 });
