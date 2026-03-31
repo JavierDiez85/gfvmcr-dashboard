@@ -16,6 +16,8 @@ let _chatLoading = false;
 // INIT — llamado desde main.js post-login
 // ═══════════════════════════════════════
 function initAIChat() {
+  // Bot temporalmente desactivado — reactivar cuando se indique
+  return;
   if (!isLoggedIn()) return;
   _chatLoadSession();
   _chatInjectDOM();
