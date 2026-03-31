@@ -678,21 +678,58 @@
   // ═══════════════════════════════════════
   // SIDEBAR TOGGLE (from creditos.js)
   // ═══════════════════════════════════════
+  function _isMobile(){ return window.innerWidth <= 480; }
+
   function toggleSidebar(){
     const shell = document.getElementById('sb-shell');
     const main  = document.getElementById('main');
-    const collapsed = shell.classList.toggle('collapsed');
-    main.classList.toggle('sb-hidden', collapsed);
+    const overlay = document.getElementById('sb-overlay');
+
+    if(_isMobile()){
+      // Mobile: drawer with overlay
+      const isOpen = shell.classList.toggle('mobile-open');
+      if(overlay) overlay.classList.toggle('show', isOpen);
+    } else {
+      // Desktop: collapse
+      const collapsed = shell.classList.toggle('collapsed');
+      main.classList.toggle('sb-hidden', collapsed);
+    }
     updateToggleBtn();
     setTimeout(resizeCharts, 250);
   }
 
+  // Close sidebar when clicking overlay (mobile)
+  document.addEventListener('click', function(e){
+    if(e.target.id === 'sb-overlay'){
+      const shell = document.getElementById('sb-shell');
+      shell.classList.remove('mobile-open');
+      e.target.classList.remove('show');
+      updateToggleBtn();
+    }
+  });
+
+  // Close sidebar after selecting a company on mobile
+  function _closeMobileSidebar(){
+    if(!_isMobile()) return;
+    const shell = document.getElementById('sb-shell');
+    const overlay = document.getElementById('sb-overlay');
+    if(shell) shell.classList.remove('mobile-open');
+    if(overlay) overlay.classList.remove('show');
+  }
+
   function updateToggleBtn(){
     const btn = document.getElementById('sb-toggle');
-    const collapsed = document.getElementById('sb-shell').classList.contains('collapsed');
-    btn.style.left = collapsed ? '8px' : '80px';
-    btn.textContent = collapsed ? '\u203a' : '\u2039';
-    btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
+    if(!btn) return;
+    const shell = document.getElementById('sb-shell');
+    if(_isMobile()){
+      btn.textContent = shell.classList.contains('mobile-open') ? '\u2715' : '\u2630';
+      btn.title = shell.classList.contains('mobile-open') ? 'Cerrar' : 'Menu';
+    } else {
+      const collapsed = shell.classList.contains('collapsed');
+      btn.style.left = collapsed ? '8px' : '80px';
+      btn.textContent = collapsed ? '\u203a' : '\u2039';
+      btn.title = collapsed ? 'Mostrar menu' : 'Ocultar menu';
+    }
   }
 
   function resizeCharts(){
@@ -861,6 +898,7 @@
   window.customConfirm = customConfirm;
   window.loadFile = loadFile;
   window.toggleSidebar = toggleSidebar;
+  window._closeMobileSidebar = _closeMobileSidebar;
   window.updateToggleBtn = updateToggleBtn;
   window.resizeCharts = resizeCharts;
   window.exportHTML = exportHTML;

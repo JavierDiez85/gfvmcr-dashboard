@@ -48,7 +48,7 @@ const BLOCKED_PATTERNS = [
 ];
 
 // ── Directorios permitidos para archivos estáticos ──
-const ALLOWED_DIRS = ['/index.html', '/ticket.html', '/js/', '/css/', '/assets/', '/img/', '/favicon'];
+const ALLOWED_DIRS = ['/index.html', '/ticket.html', '/manifest.json', '/service-worker.js', '/js/', '/css/', '/assets/', '/img/', '/favicon'];
 
 /** Verificar si una ruta está bloqueada */
 function isBlockedPath(urlPath) {

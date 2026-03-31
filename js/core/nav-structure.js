@@ -354,6 +354,7 @@ function navGenerateMenuPerms(){
 function selectCompany(companyId, targetSection, targetView){
   const co = navGetCompany(companyId);
   if(!co) return;
+  if(typeof _closeMobileSidebar === 'function') _closeMobileSidebar();
 
   _activeCross = null;
   _activeCompany = companyId;
@@ -460,7 +461,12 @@ function renderHNav(co){
   const isAdmin = user?.rol === 'admin';
   const hasCustom = Object.keys(perms).length > 0;
 
+  // Mobile: hide Carga de Datos and Facturación
+  const isMobile = window.innerWidth <= 480;
+  const MOBILE_HIDDEN_SECTIONS = ['carga', 'facturacion'];
+
   const visibleSections = co.sections.filter(sec => {
+    if(isMobile && MOBILE_HIDDEN_SECTIONS.includes(sec.id)) return false;
     if(isAdmin && !hasCustom) return true;
     // Section visible if at least one view is permitted
     return sec.groups.some(grp => grp.views.some(v => _navViewAllowed(v.id, co.id, perms, isAdmin)));
