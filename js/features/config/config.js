@@ -18,8 +18,10 @@ function applyTheme(t){
   // Update chart defaults
   const textColor = t === 'dark' ? '#9da0c5' : '#8b8fb5';
   const gridColor = t === 'dark' ? 'rgba(255,255,255,.06)' : 'rgba(228,232,244,.7)';
-  Chart.defaults.color = textColor;
-  Chart.defaults.borderColor = gridColor;
+  if(typeof Chart !== 'undefined'){
+    Chart.defaults.color = textColor;
+    Chart.defaults.borderColor = gridColor;
+  }
   // Re-render active charts
   setTimeout(()=>{ const v = document.querySelector('.view.active'); if(v) render(v.id.replace('view-','')); }, 50);
 }
