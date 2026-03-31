@@ -179,12 +179,12 @@ function tkModalAddPago(){
   const canDel = container.children.length > 0;
   div.innerHTML =
     '<span style="position:absolute;top:6px;left:10px;font-size:.58rem;font-weight:700;color:var(--muted);background:var(--white);padding:1px 6px;border-radius:10px;border:1px solid var(--border2)">Pago ' + (container.children.length + 1) + '</span>' +
-    (canDel ? '<button type="button" onclick="tkModalRemovePago(' + idx + ')" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;width:auto" title="Eliminar pago">✕</button>' : '') +
+    (canDel ? '<button type="button" class="tk-remove-pago" data-idx="' + idx + '" style="position:absolute;top:6px;right:8px;background:none;border:none;color:var(--muted);cursor:pointer;font-size:.9rem;padding:2px 6px;width:auto" title="Eliminar pago">✕</button>' : '') +
     '<div style="margin-top:18px">' +
       '<div style="display:flex;gap:8px;margin-bottom:8px">' +
         '<div style="flex:1">' +
           '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Destino *</label>' +
-          '<select data-field="tipo" onchange="tkModalToggleBanco(this)" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
+          '<select data-field="tipo" class="tk-toggle-banco" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
             '<option value="banco">Banco</option>' +
             '<option value="tarjetas_centum">Tarjetas Centum</option>' +
           '</select>' +
@@ -197,7 +197,7 @@ function tkModalAddPago(){
       '<div style="display:flex;gap:8px;margin-bottom:8px">' +
         '<div style="flex:1">' +
           '<label style="font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Tipo de monto</label>' +
-          '<select data-field="monto_tipo" onchange="tkToggleMontoInput(this)" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
+          '<select data-field="monto_tipo" class="tk-toggle-monto" style="width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">' +
             '<option value="fijo">$ Monto fijo</option>' +
             '<option value="porcentaje">% Porcentaje</option>' +
           '</select>' +
@@ -262,7 +262,7 @@ function tkToggleMontoInput(sel){
   const labelStyle = 'font-size:.65rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px';
   const inputStyle = 'width:100%;padding:6px 8px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text);box-sizing:border-box';
   if(sel.value === 'porcentaje'){
-    montoField.innerHTML = `<label style="${labelStyle}">Valor *</label><select data-field="monto" onchange="tkUpdatePctBar()" style="${inputStyle}">${_tkPctOptions()}</select>`;
+    montoField.innerHTML = `<label style="${labelStyle}">Valor *</label><select data-field="monto" class="tk-update-pct" style="${inputStyle}">${_tkPctOptions()}</select>`;
   } else {
     montoField.innerHTML = `<label style="${labelStyle}">Valor *</label><input type="number" data-field="monto" placeholder="0.00" step="0.01" min="0" style="${inputStyle}">`;
   }
@@ -539,6 +539,17 @@ function openTkDetail(id){
   window.saveTkPago = saveTkPago;
   window.changeTkStatus = changeTkStatus;
   window.openTkDetail = openTkDetail;
+
+  // ── Event delegation for ticket modal pago controls ──
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.tk-remove-pago');
+    if(btn){ tkModalRemovePago(btn.dataset.idx); }
+  });
+  document.addEventListener('change', function(e){
+    if(e.target.matches('.tk-toggle-banco')){ tkModalToggleBanco(e.target); }
+    else if(e.target.matches('.tk-toggle-monto')){ tkToggleMontoInput(e.target); }
+    else if(e.target.matches('.tk-update-pct')){ tkUpdatePctBar(); }
+  });
 
   // Register views
   if(typeof registerView === 'function'){

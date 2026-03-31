@@ -169,10 +169,12 @@ function _viewError(viewId, error) {
     var msg = String(error.message || error).replace(/</g,'&lt;');
     var isSbErr = msg.toLowerCase().includes('supabase') || msg.toLowerCase().includes('no disponible');
     var extra = isSbErr
-      ? '<br><button onclick="location.reload()" style="margin-top:6px;padding:4px 12px;background:#b91c1c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.8rem">🔄 Recargar página</button>'
+      ? '<br><button class="view-error-reload" style="margin-top:6px;padding:4px 12px;background:#b91c1c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:.8rem">🔄 Recargar página</button>'
       : '<br><small>Revisa la consola del navegador (F12) para más detalles.</small>';
     banner.innerHTML = '⚠️ Error cargando datos: <b>' + msg + '</b>' + extra;
     el.insertBefore(banner, el.firstChild && el.firstChild.nextSibling ? el.firstChild.nextSibling : el.firstChild);
+    var reloadBtn = banner.querySelector('.view-error-reload');
+    if(reloadBtn) reloadBtn.addEventListener('click', function(){ location.reload(); });
   }
 }
 

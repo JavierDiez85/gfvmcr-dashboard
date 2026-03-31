@@ -318,18 +318,26 @@ function _chatInjectDOM() {
     <div id="ai-chat-header">
       <div id="ai-chat-header-title">${_IC_SPARKLE} Asistente IA</div>
       <div id="ai-chat-header-actions">
-        <button onclick="_chatClear()" title="Limpiar chat">${_IC_TRASH}</button>
-        <button onclick="_chatClose()" title="Cerrar">${_IC_CLOSE}</button>
+        <button class="chat-clear-btn" title="Limpiar chat">${_IC_TRASH}</button>
+        <button class="chat-close-btn" title="Cerrar">${_IC_CLOSE}</button>
       </div>
     </div>
     <div id="ai-chat-messages"></div>
     <div id="ai-chat-input-area">
-      <input id="ai-chat-input" type="text" placeholder="Escribe tu pregunta..."
-        onkeydown="if(event.key==='Enter')_chatSend();if(event.key==='Escape')_chatClose();" />
-      <button id="ai-chat-send" onclick="_chatSend()">${_IC_SEND}</button>
+      <input id="ai-chat-input" type="text" placeholder="Escribe tu pregunta..." />
+      <button id="ai-chat-send">${_IC_SEND}</button>
     </div>
   `;
   document.body.appendChild(panel);
+
+  // ── Event listeners for chat panel buttons ──
+  panel.querySelector('.chat-clear-btn').addEventListener('click', _chatClear);
+  panel.querySelector('.chat-close-btn').addEventListener('click', _chatClose);
+  document.getElementById('ai-chat-send').addEventListener('click', _chatSend);
+  document.getElementById('ai-chat-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') _chatSend();
+    if (e.key === 'Escape') _chatClose();
+  });
 
   // Click outside to close
   document.addEventListener('click', e => {
@@ -387,13 +395,16 @@ function _chatRenderMessages() {
         Soy el asistente inteligente del dashboard.<br>
         Pregunta lo que necesites sobre el grupo financiero.
         <div id="ai-chat-welcome-skills">
-          <span onclick="_chatQuickQ('Dame un resumen ejecutivo')">Resumen Ejecutivo</span>
-          <span onclick="_chatQuickQ('¿Qué alertas hay?')">Alertas</span>
-          <span onclick="_chatQuickQ('¿Cómo está el riesgo de la cartera?')">Riesgo Crediticio</span>
-          <span onclick="_chatQuickQ('Compara este mes vs el anterior')">Comparativo</span>
-          <span onclick="_chatQuickQ('¿Cómo van las tendencias?')">Tendencias</span>
+          <span class="chat-quick-q" data-q="Dame un resumen ejecutivo">Resumen Ejecutivo</span>
+          <span class="chat-quick-q" data-q="¿Qué alertas hay?">Alertas</span>
+          <span class="chat-quick-q" data-q="¿Cómo está el riesgo de la cartera?">Riesgo Crediticio</span>
+          <span class="chat-quick-q" data-q="Compara este mes vs el anterior">Comparativo</span>
+          <span class="chat-quick-q" data-q="¿Cómo van las tendencias?">Tendencias</span>
         </div>
       </div>`;
+    el.querySelectorAll('.chat-quick-q').forEach(function(btn) {
+      btn.addEventListener('click', function() { _chatQuickQ(this.dataset.q); });
+    });
     return;
   }
 

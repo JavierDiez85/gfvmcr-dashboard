@@ -121,9 +121,8 @@
     var roiColor = roi === null ? 'var(--text2)' : (roi >= 0 ? '#00b875' : '#e53935');
     var roiBg    = roi === null ? 'var(--bg)' : (roi >= 0 ? '#00b87514' : '#e5393514');
     var pendBadge = pend.count > 0
-      ? '<div style="margin-top:10px;font-size:.68rem;color:#ff9500;background:#ff950018;'
-        + 'border-radius:6px;padding:5px 8px;cursor:pointer" onclick="event.stopPropagation();navTo(\''
-        + e.ppNav + '\')">⏳ ' + pend.count + ' CxP · ' + _fmtK(pend.total) + '</div>'
+      ? '<div class="nav-btn-stop" data-nav="' + e.ppNav + '" style="margin-top:10px;font-size:.68rem;color:#ff9500;background:#ff950018;'
+        + 'border-radius:6px;padding:5px 8px;cursor:pointer">⏳ ' + pend.count + ' CxP · ' + _fmtK(pend.total) + '</div>'
       : '';
     // ROI badge — full-width, prominent
     var roiBadge = '<div style="margin-top:10px;background:' + roiBg + ';border:1.5px solid '
@@ -133,8 +132,7 @@
       + '<div style="font-size:1.25rem;font-weight:700;color:' + roiColor + ';line-height:1">' + roiStr + '</div>'
       + (roi === null ? '<div style="font-size:.6rem;color:var(--muted);margin-top:2px">Sin inversión registrada</div>' : '')
       + '</div>';
-    return '<div class="cc" style="padding:16px;border-top:3px solid ' + e.color + ';cursor:pointer" '
-         + 'onclick="navTo(\'' + e.nav + '\')">'
+    return '<div class="cc nav-btn" data-nav="' + e.nav + '" style="padding:16px;border-top:3px solid ' + e.color + ';cursor:pointer">'
          + '<div style="font-size:.9rem;font-weight:700;color:' + e.color + ';margin-bottom:10px;letter-spacing:.1px">'
          + e.icon + ' ' + e.name + '</div>'
          + '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px">'
@@ -148,8 +146,8 @@
   }
 
   function _pendCard(e, p) {
-    return '<div class="cc" style="padding:14px 20px;min-width:180px;cursor:pointer;border-left:3px solid '
-         + e.color + '" onclick="navTo(\'' + e.ppNav + '\')">'
+    return '<div class="cc nav-btn" data-nav="' + e.ppNav + '" style="padding:14px 20px;min-width:180px;cursor:pointer;border-left:3px solid '
+         + e.color + '">'
          + '<div style="font-size:.75rem;font-weight:700;color:' + e.color + '">' + e.icon + ' ' + e.name + '</div>'
          + '<div style="font-size:1.05rem;font-weight:700;color:#e53935;margin:4px 0">' + _fmtM(p.total) + '</div>'
          + '<div style="font-size:.72rem;font-weight:600;color:var(--text2)">'
@@ -202,12 +200,12 @@
     h += '<div style="margin-bottom:24px">';
     h += _sectionLabel('Accesos Rápidos');
     h += '<div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center">';
-    h += '<button onclick="navTo(\'resumen\')"  style="' + _pillStyle('#0073ea') + '">💹 Grupo</button>';
+    h += '<button class="nav-btn" data-nav="resumen" style="' + _pillStyle('#0073ea') + '">💹 Grupo</button>';
     _ENTS.forEach(function(e) {
-      h += '<button onclick="navTo(\'' + e.nav + '\')" style="' + _pillStyle(e.color) + '">' + e.icon + ' ' + e.name + '</button>';
+      h += '<button class="nav-btn" data-nav="' + e.nav + '" style="' + _pillStyle(e.color) + '">' + e.icon + ' ' + e.name + '</button>';
     });
-    h += '<button onclick="navTo(\'tes_flujo\')" style="' + _pillStyle('#00b875') + '">🏛️ Tesorería</button>';
-    h += '<button onclick="navTo(\'cred_dash\')" style="' + _pillStyle('#ff9500') + '">🏦 Créditos</button>';
+    h += '<button class="nav-btn" data-nav="tes_flujo" style="' + _pillStyle('#00b875') + '">🏛️ Tesorería</button>';
+    h += '<button class="nav-btn" data-nav="cred_dash" style="' + _pillStyle('#ff9500') + '">🏦 Créditos</button>';
     h += '</div>';
     h += '</div>';
 
@@ -270,9 +268,8 @@
     h += '<div style="padding:12px">';
     h += '<div style="display:flex;gap:6px;margin-bottom:10px">';
     h += '<input id="inicio-tarea-input" type="text" placeholder="Nueva tarea..." '
-       + 'onkeydown="if(event.key===\'Enter\')addTarea()" '
        + 'style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text)">';
-    h += '<button class="btn btn-blue edit-action" style="font-size:.7rem;white-space:nowrap" onclick="addTarea()">+ Agregar</button>';
+    h += '<button class="btn btn-blue edit-action inicio-add-tarea" style="font-size:.7rem;white-space:nowrap">+ Agregar</button>';
     h += '</div>';
     h += '<div id="inicio-tareas-body"></div>';
     h += '</div>';
@@ -302,11 +299,11 @@
       var mesIng  = thisMon.filter(function(m) { return m.tipo === 'Ingreso'; }).reduce(function(s, m) { return s + m.monto; }, 0);
       var mesGas  = thisMon.filter(function(m) { return m.tipo === 'Gasto';   }).reduce(function(s, m) { return s + m.monto; }, 0);
       if (mesIng - mesGas < 0)
-        alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : _fmtMS(mesIng - mesGas)), color: 'var(--red)', action: "navTo('tes_flujo')" });
+        alertas.push({ icon: '🔴', text: 'Flujo neto del mes es negativo: ' + (typeof tesFmtSigned === 'function' ? tesFmtSigned(mesIng - mesGas) : _fmtMS(mesIng - mesGas)), color: 'var(--red)', nav: 'tes_flujo' });
 
       // 2. Sin movimientos de tesorería este mes
       if (thisMon.length === 0 && data.length > 0)
-        alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', action: "navTo('tes_flujo')" });
+        alertas.push({ icon: '📅', text: 'Sin movimientos de tesorería registrados este mes', color: 'var(--muted)', nav: 'tes_flujo' });
 
       // 3. Créditos vencidos
       var vencidos = 0;
@@ -315,7 +312,7 @@
       if (typeof DYN_CREDITS !== 'undefined' && Array.isArray(DYN_CREDITS))
         vencidos += DYN_CREDITS.filter(function(c) { return c.st === 'Vencido'; }).length;
       if (vencidos > 0)
-        alertas.push({ icon: '⚠️', text: vencidos + ' créditos vencidos en cartera', color: 'var(--red)', action: "navTo('cred_cobr')" });
+        alertas.push({ icon: '⚠️', text: vencidos + ' créditos vencidos en cartera', color: 'var(--red)', nav: 'cred_cobr' });
 
       // 4. Cobranza: pagos vencidos y próximos
       try {
@@ -342,9 +339,9 @@
         });
 
         if (pagosProximos > 0)
-          alertas.push({ icon: '🔔', text: pagosProximos + ' pagos vencen en los próximos 7 días', color: 'var(--orange)', action: "navTo('cred_cobr')" });
+          alertas.push({ icon: '🔔', text: pagosProximos + ' pagos vencen en los próximos 7 días', color: 'var(--orange)', nav: 'cred_cobr' });
         if (pagosVencidos > 0)
-          alertas.push({ icon: '🚨', text: pagosVencidos + ' pagos vencidos por ' + (typeof fmtK === 'function' ? fmtK(montoVencido) : _fmtM(montoVencido)) + ' total', color: 'var(--red)', action: "navTo('cred_cobr')" });
+          alertas.push({ icon: '🚨', text: pagosVencidos + ' pagos vencidos por ' + (typeof fmtK === 'function' ? fmtK(montoVencido) : _fmtM(montoVencido)) + ' total', color: 'var(--red)', nav: 'cred_cobr' });
       } catch(e) { console.warn('[Inicio] Cobranza alertas error:', e); }
 
       // 5. CxP pendientes globales
@@ -355,14 +352,14 @@
         countCxP += p.count;
       });
       if (countCxP > 0)
-        alertas.push({ icon: '🧾', text: countCxP + ' facturas por pagar · ' + _fmtM(totalCxP) + ' total pendiente', color: '#ff9500', action: "navTo('pp_salem')" });
+        alertas.push({ icon: '🧾', text: countCxP + ' facturas por pagar · ' + _fmtM(totalCxP) + ' total pendiente', color: '#ff9500', nav: 'pp_salem' });
 
       // 6. Tickets pendientes de lectura
       try {
         var tkData = DB.get('gf_tickets_pagos_tpv') || [];
         var tkPend = tkData.filter(function(t) { return t.leido === false; }).length;
         if (tkPend > 0)
-          alertas.push({ icon: '🎫', text: tkPend + ' ticket' + (tkPend > 1 ? 's' : '') + ' pendiente' + (tkPend > 1 ? 's' : '') + ' de lectura', color: '#9c27b0', action: "navTo('tk_pagos_tpv')" });
+          alertas.push({ icon: '🎫', text: tkPend + ' ticket' + (tkPend > 1 ? 's' : '') + ' pendiente' + (tkPend > 1 ? 's' : '') + ' de lectura', color: '#9c27b0', nav: 'tk_pagos_tpv' });
       } catch(e) { console.warn('[Inicio] Tickets alertas error:', e); }
 
     } catch(e) { console.warn('[Inicio] Alertas error:', e); }
@@ -371,8 +368,8 @@
       container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--green);font-size:.75rem">✅ Todo en orden — sin alertas pendientes</div>';
     } else {
       container.innerHTML = alertas.map(function(a) {
-        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;cursor:pointer;'
-             + 'background:' + a.color + '12;border-left:3px solid ' + a.color + '" onclick="' + a.action + '">'
+        return '<div class="nav-btn" data-nav="' + a.nav + '" style="display:flex;align-items:center;gap:8px;padding:8px 10px;margin-bottom:4px;border-radius:8px;cursor:pointer;'
+             + 'background:' + a.color + '12;border-left:3px solid ' + a.color + '">'
              + '<span style="font-size:1rem">' + a.icon + '</span>'
              + '<span style="font-size:.72rem;color:var(--text);flex:1">' + a.text + '</span>'
              + '<span style="font-size:.62rem;color:var(--muted)">ver →</span>'
@@ -432,9 +429,9 @@
 
     container.innerHTML = sorted.map(function(t) {
       return '<div style="display:flex;align-items:center;gap:8px;padding:6px 4px;border-bottom:1px solid var(--border);' + (t.done ? 'opacity:.5' : '') + '">'
-           + '<input type="checkbox" ' + (t.done ? 'checked' : '') + ' onchange="toggleTarea(' + t.id + ')" style="cursor:pointer;accent-color:var(--green)">'
+           + '<input type="checkbox" class="tarea-toggle" data-id="' + t.id + '" ' + (t.done ? 'checked' : '') + ' style="cursor:pointer;accent-color:var(--green)">'
            + '<span style="flex:1;font-size:.72rem;' + (t.done ? 'text-decoration:line-through;color:var(--muted)' : 'color:var(--text)') + '">' + t.text + '</span>'
-           + (!isViewer() ? '<button onclick="deleteTarea(' + t.id + ')" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>' : '')
+           + (!isViewer() ? '<button class="tarea-delete" data-id="' + t.id + '" style="background:none;border:none;cursor:pointer;font-size:.7rem;color:var(--muted);padding:2px 4px" title="Eliminar">✕</button>' : '')
            + '</div>';
     }).join('');
   }
@@ -449,6 +446,31 @@
   window.toggleTarea      = toggleTarea;
   window.deleteTarea      = deleteTarea;
   window.renderTareas     = renderTareas;
+
+  // ── Event delegation for inicio ──
+  document.addEventListener('click', function(e){
+    // nav-btn: navTo with data-nav
+    var navEl = e.target.closest('.nav-btn');
+    if(navEl && navEl.dataset.nav){ navTo(navEl.dataset.nav); return; }
+    // nav-btn-stop: stopPropagation + navTo (for nested clickable areas)
+    var navStop = e.target.closest('.nav-btn-stop');
+    if(navStop && navStop.dataset.nav){ e.stopPropagation(); navTo(navStop.dataset.nav); return; }
+    // Add tarea
+    if(e.target.closest('.inicio-add-tarea')){ addTarea(); return; }
+    // Delete tarea
+    var del = e.target.closest('.tarea-delete');
+    if(del){ deleteTarea(Number(del.dataset.id)); return; }
+  });
+  document.addEventListener('change', function(e){
+    if(e.target.matches('.tarea-toggle')){
+      toggleTarea(Number(e.target.dataset.id));
+    }
+  });
+  document.addEventListener('keydown', function(e){
+    if(e.target.id === 'inicio-tarea-input' && e.key === 'Enter'){
+      addTarea();
+    }
+  });
 
   // Register view
   if (typeof registerView === 'function') {

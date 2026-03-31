@@ -59,16 +59,13 @@ function rFlujoIng(filterEnt){
       ${r.vals.map((v,i)=>`<td style="padding:2px 3px">${moInput(r.id,i,v,false)}</td>`).join('')}
       <td class="mo pos bld" style="font-size:.78rem;font-weight:700" id="fi-rtot-${r.id}">${fmt(r.vals.reduce((a,b)=>a+b,0))}</td>
       <td style="text-align:center;padding:2px">
-        ${!isAuto && !isViewer() ? `<button class="fi-del" data-rid="${r.id}" title="Eliminar"
-          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px"
-          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>` : ''}
+        ${!isAuto && !isViewer() ? `<button class="fi-del fi-del-hover" data-rid="${r.id}" title="Eliminar"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px">✕</button>` : ''}
       </td>
     </tr>`;
   }).join('') + `<tr>
     <td colspan="17" style="padding:8px 12px">
-      <button onclick="fiAddRow()" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:5px 16px;font-size:.75rem;color:var(--muted);cursor:pointer;width:100%;transition:all .12s"
-        onmouseover="this.style.borderColor='var(--green)';this.style.color='var(--green)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      <button class="fi-add-row-btn fi-add-hover" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:5px 16px;font-size:.75rem;color:var(--muted);cursor:pointer;width:100%;transition:all .12s">
         + Agregar fila de ingreso
       </button>
     </td>
@@ -96,6 +93,9 @@ function rFlujoIng(filterEnt){
   tbody.querySelectorAll('.fl-mo').forEach(function(el){
     el.oninput = function(){ flRowUpdate(this.dataset.type, +this.dataset.rid, +this.dataset.col, +this.value); };
   });
+  // ── Add row button ──
+  var addBtn = tbody.querySelector('.fi-add-row-btn');
+  if(addBtn) addBtn.addEventListener('click', fiAddRow);
 
   flUpdateFooter('fi');
   flUpdateKPIs('fi');

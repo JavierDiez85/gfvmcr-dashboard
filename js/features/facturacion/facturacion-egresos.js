@@ -74,7 +74,7 @@ function _ceLineasTableHTML(conceptos, editable){
   var html = '<div style="margin-top:6px;margin-bottom:14px">';
   html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">';
   html += '<span style="font-size:.68rem;font-weight:600;color:var(--muted)">Conceptos de la Factura (' + conceptos.length + ' líneas)</span>';
-  if(editable) html += '<button class="btn btn-out" style="font-size:.62rem;padding:2px 8px" onclick="ceAddManualLinea()">+ Línea</button>';
+  if(editable) html += '<button class="btn btn-out ce-add-linea-btn" style="font-size:.62rem;padding:2px 8px">+ Línea</button>';
   html += '</div>';
   html += '<table class="bt" style="font-size:.74rem"><thead><tr>';
   html += '<th>Descripción</th><th class="r" style="width:110px">Importe</th><th style="width:150px">Categoría P&L</th>';
@@ -84,15 +84,22 @@ function _ceLineasTableHTML(conceptos, editable){
     var suggested = ceSuggestCategory(c.descripcion || c.concepto || '');
     html += '<tr class="ce-linea-row">';
     html += '<td><input type="text" class="fi ce-linea-desc" value="'+_esc(c.descripcion || c.concepto || '')+'" style="width:100%;font-size:.73rem;padding:4px 6px"></td>';
-    html += '<td class="r"><input type="number" class="fi ce-linea-importe" value="'+(c.importe||0)+'" step="0.01" min="0" oninput="ceRecalcFromLineas()" style="width:100%;font-size:.73rem;padding:4px 6px;text-align:right"></td>';
+    html += '<td class="r"><input type="number" class="fi ce-linea-importe" value="'+(c.importe||0)+'" step="0.01" min="0" style="width:100%;font-size:.73rem;padding:4px 6px;text-align:right"></td>';
     html += '<td><select class="ce-linea-cat" style="width:100%;padding:5px 6px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
     html += '<option value="">—</option>' + _catOptions(suggested);
     html += '</select></td>';
-    if(editable) html += '<td>'+(i > 0 ? '<button class="btn btn-out" style="font-size:.6rem;padding:2px 5px" onclick="ceRemoveLinea(this)">✕</button>' : '')+'</td>';
+    if(editable) html += '<td>'+(i > 0 ? '<button class="btn btn-out ce-remove-linea-btn" style="font-size:.6rem;padding:2px 5px">✕</button>' : '')+'</td>';
     html += '</tr>';
   });
   html += '</tbody></table></div>';
   return html;
+}
+
+// Wire events on lineas table (call after innerHTML that includes lineas table)
+function _ceWireLineasEvents(container){
+  container.querySelectorAll('.ce-add-linea-btn').forEach(function(b){ b.onclick = ceAddManualLinea; });
+  container.querySelectorAll('.ce-linea-importe').forEach(function(inp){ inp.oninput = ceRecalcFromLineas; });
+  container.querySelectorAll('.ce-remove-linea-btn').forEach(function(b){ b.onclick = function(){ ceRemoveLinea(this); }; });
 }
 
 // Add a new blank line to the lineas table
@@ -102,10 +109,15 @@ function ceAddManualLinea(){
   var tr = document.createElement('tr');
   tr.className = 'ce-linea-row';
   tr.innerHTML = '<td><input type="text" class="fi ce-linea-desc" placeholder="Concepto..." style="width:100%;font-size:.73rem;padding:4px 6px"></td>'
-    + '<td class="r"><input type="number" class="fi ce-linea-importe" step="0.01" min="0" placeholder="0" oninput="ceRecalcFromLineas()" style="width:100%;font-size:.73rem;padding:4px 6px;text-align:right"></td>'
+    + '<td class="r"><input type="number" class="fi ce-linea-importe" step="0.01" min="0" placeholder="0" style="width:100%;font-size:.73rem;padding:4px 6px;text-align:right"></td>'
     + '<td><select class="ce-linea-cat" style="width:100%;padding:5px 6px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)"><option value="">—</option>' + _catOptions() + '</select></td>'
-    + '<td><button class="btn btn-out" style="font-size:.6rem;padding:2px 5px" onclick="ceRemoveLinea(this)">✕</button></td>';
+    + '<td><button class="btn btn-out ce-remove-linea-btn" style="font-size:.6rem;padding:2px 5px">✕</button></td>';
   tbody.appendChild(tr);
+  // Wire events on the new row
+  var imp = tr.querySelector('.ce-linea-importe');
+  if(imp) imp.oninput = ceRecalcFromLineas;
+  var rmBtn = tr.querySelector('.ce-remove-linea-btn');
+  if(rmBtn) rmBtn.onclick = function(){ ceRemoveLinea(this); };
 }
 
 // Remove a line item row
@@ -173,8 +185,8 @@ function rCargaEgresos(){
   html += '<div class="tw" style="margin-bottom:14px">';
   html += '<div class="tw-h"><div class="tw-ht">📄 Registrar Factura de Egreso</div>';
   html += '<div style="display:flex;gap:8px">';
-  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="ceSetMode(\'manual\')">✏️ Captura Manual</button>';
-  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="ceSetMode(\'efectivo\')">💵 Pago en Efectivo</button>';
+  html += '<button class="btn btn-out ce-mode-btn" style="font-size:.7rem" data-mode="manual">✏️ Captura Manual</button>';
+  html += '<button class="btn btn-out ce-mode-btn" style="font-size:.7rem" data-mode="efectivo">💵 Pago en Efectivo</button>';
   html += '</div></div>';
 
   html += '<div style="padding:16px;display:flex;flex-direction:column;gap:14px">';
@@ -183,7 +195,7 @@ function rCargaEgresos(){
   html += '<div style="display:flex;gap:12px;flex-wrap:wrap">';
   html += _selField('ce-empresa','Empresa que paga','<option value="">— Seleccionar —</option>'+_EMPRESAS.map(function(e){ return '<option value="'+e+'">'+e+'</option>'; }).join(''));
   html += _selField('ce-categoria','Categoría P&L','<option value="">— Seleccionar —</option>'+_catOptions());
-  html += _selField('ce-moneda','Moneda','<option value="MXN">MXN</option><option value="USD">USD</option>','onchange="ceOnMonedaChange()"');
+  html += _selField('ce-moneda','Moneda','<option value="MXN">MXN</option><option value="USD">USD</option>');
   html += '<div id="ce-tc-wrap" style="flex:0 0 100px;display:none">';
   html += '<label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Tipo de Cambio</label>';
   html += '<input type="number" id="ce-tc" class="fi" step="0.01" value="1" min="0" style="width:100%;font-size:.78rem;padding:7px 10px">';
@@ -192,11 +204,11 @@ function rCargaEgresos(){
 
   // Drop zone (for CFDI PDFs)
   html += '<div id="ce-dropzone-wrap">';
-  html += '<div id="ce-dropzone" ondrop="ceHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'ce-file-input\').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
+  html += '<div id="ce-dropzone" style="border:2px dashed var(--border2);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
   html += '<div style="font-size:1.6rem;margin-bottom:6px">📎</div>';
   html += '<div style="font-size:.78rem;font-weight:600;color:var(--text)">Arrastra la factura PDF aquí</div>';
   html += '<div style="font-size:.68rem;color:var(--muted);margin-top:4px">CFDI mexicano — se extraerán datos automáticamente</div>';
-  html += '<input type="file" id="ce-file-input" accept=".pdf" style="display:none" onchange="ceLoadFile(this.files[0])">';
+  html += '<input type="file" id="ce-file-input" accept=".pdf" style="display:none">';
   html += '</div></div>';
 
   // Status
@@ -214,7 +226,7 @@ function rCargaEgresos(){
   html += '<div class="tw">';
   html += '<div class="tw-h"><div class="tw-ht">📋 Facturas de Egreso Registradas</div>';
   html += '<div style="display:flex;gap:8px;align-items:center">';
-  html += '<input type="text" id="ce-search" placeholder="Buscar..." oninput="ceFilterHistory(this.value)" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '<input type="text" id="ce-search" placeholder="Buscar..." style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
   html += '</div></div>';
   html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
   html += '<th>Fecha</th><th>Proveedor</th><th>Empresa</th><th>Categoría</th><th>Concepto</th><th class="r">Total</th><th>Status</th><th>Origen</th><th style="width:60px"></th>';
@@ -222,6 +234,23 @@ function rCargaEgresos(){
   html += '</div>';
 
   el.innerHTML = html;
+
+  // ── Wire events ──
+  el.querySelectorAll('.ce-mode-btn').forEach(function(b){ b.onclick = function(){ ceSetMode(b.dataset.mode); }; });
+  var ceMoneda = document.getElementById('ce-moneda');
+  if(ceMoneda) ceMoneda.onchange = ceOnMonedaChange;
+  var ceDz = document.getElementById('ce-dropzone');
+  if(ceDz){
+    ceDz.ondrop = function(e){ ceHandleDrop(e); };
+    ceDz.ondragover = function(e){ e.preventDefault(); this.style.borderColor='var(--blue)'; };
+    ceDz.ondragleave = function(){ this.style.borderColor='var(--border2)'; };
+    ceDz.onclick = function(){ document.getElementById('ce-file-input').click(); };
+  }
+  var ceFI = document.getElementById('ce-file-input');
+  if(ceFI) ceFI.onchange = function(){ ceLoadFile(this.files[0]); };
+  var ceSearch = document.getElementById('ce-search');
+  if(ceSearch) ceSearch.oninput = function(){ ceFilterHistory(this.value); };
+
   _ceMode = 'idle';
   _cePreview = null;
   _cePdfData = null;
@@ -248,11 +277,26 @@ function ceSetMode(mode){
 
   if(mode === 'manual' || mode === 'efectivo'){
     if(dz) dz.style.display = 'none';
-    if(fa){ fa.style.display = 'block'; fa.innerHTML = _ceManualFormHTML(mode); }
+    if(fa){ fa.style.display = 'block'; fa.innerHTML = _ceManualFormHTML(mode); _ceWireManualForm(fa); }
   } else {
     if(dz) dz.style.display = '';
     if(fa){ fa.style.display = 'none'; fa.innerHTML = ''; }
   }
+}
+
+function _ceWireManualForm(container){
+  container.querySelectorAll('.ce-cancel-btn').forEach(function(b){ b.onclick = ceClearForm; });
+  container.querySelectorAll('.ce-save-btn').forEach(function(b){ b.onclick = ceSave; });
+  _ceWireLineasEvents(container);
+  var mdz = document.getElementById('ce-manual-dropzone');
+  if(mdz){
+    mdz.ondrop = function(e){ ceManualDrop(e); };
+    mdz.ondragover = function(e){ e.preventDefault(); this.style.borderColor='var(--blue)'; };
+    mdz.ondragleave = function(){ this.style.borderColor='var(--border2)'; };
+    mdz.onclick = function(){ document.getElementById('ce-manual-file').click(); };
+  }
+  var mf = document.getElementById('ce-manual-file');
+  if(mf) mf.onchange = function(){ ceManualAttach(this.files[0]); };
 }
 
 function ceOnMonedaChange(){
@@ -381,13 +425,16 @@ function ceRenderPreview(){
 
   // Actions
   html += '<div style="display:flex;justify-content:flex-end;gap:10px">';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="ceClearForm()">Cancelar</button>';
-  html += '<button class="btn" style="font-size:.72rem" onclick="ceSave()">💾 Registrar Cuenta por Pagar</button>';
+  html += '<button class="btn btn-out ce-cancel-btn" style="font-size:.72rem">Cancelar</button>';
+  html += '<button class="btn ce-save-btn" style="font-size:.72rem">💾 Registrar Cuenta por Pagar</button>';
   html += '</div>';
 
   html += '</div>';
   fa.style.display = 'block';
   fa.innerHTML = html;
+  fa.querySelectorAll('.ce-cancel-btn').forEach(function(b){ b.onclick = ceClearForm; });
+  fa.querySelectorAll('.ce-save-btn').forEach(function(b){ b.onclick = ceSave; });
+  _ceWireLineasEvents(fa);
 
   // Pre-fill date field
   if(d.fecha_emision){
@@ -462,9 +509,9 @@ function _ceManualFormHTML(mode){
   // Drop zone for foreign PDF (optional attachment)
   if(!isEfectivo){
     html += '<div style="margin-bottom:14px">';
-    html += '<div id="ce-manual-dropzone" ondrop="ceManualDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'ce-manual-file\').click()" style="border:1px dashed var(--border2);border-radius:var(--r);padding:14px;text-align:center;cursor:pointer;font-size:.72rem;color:var(--muted)">';
+    html += '<div id="ce-manual-dropzone" style="border:1px dashed var(--border2);border-radius:var(--r);padding:14px;text-align:center;cursor:pointer;font-size:.72rem;color:var(--muted)">';
     html += '📎 Adjuntar PDF como respaldo (opcional)';
-    html += '<input type="file" id="ce-manual-file" accept=".pdf" style="display:none" onchange="ceManualAttach(this.files[0])">';
+    html += '<input type="file" id="ce-manual-file" accept=".pdf" style="display:none">';
     html += '</div>';
     html += '<div id="ce-manual-pdf-name" style="display:none;font-size:.7rem;color:var(--green);margin-top:4px"></div>';
     html += '</div>';
@@ -472,8 +519,8 @@ function _ceManualFormHTML(mode){
 
   // Actions
   html += '<div style="display:flex;justify-content:flex-end;gap:10px">';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="ceClearForm()">Cancelar</button>';
-  html += '<button class="btn" style="font-size:.72rem" onclick="ceSave()">💾 Registrar Cuenta por Pagar</button>';
+  html += '<button class="btn btn-out ce-cancel-btn" style="font-size:.72rem">Cancelar</button>';
+  html += '<button class="btn ce-save-btn" style="font-size:.72rem">💾 Registrar Cuenta por Pagar</button>';
   html += '</div>';
 
   html += '</div>';
@@ -652,9 +699,10 @@ function ceRenderHistory(filter){
       + '<td class="r mo" style="font-weight:600">'+_fmt(c.total_mxn)+'</td>'
       + '<td>'+_statusPill(c.status)+'</td>'
       + '<td>'+_origenPill(c.origen)+'</td>'
-      + '<td><button class="btn btn-out" style="font-size:.62rem;padding:3px 8px" onclick="ceDeleteCxp(\''+c.id+'\')">🗑️</button></td>'
+      + '<td><button class="btn btn-out ce-delete-btn" style="font-size:.62rem;padding:3px 8px" data-id="'+_esc(c.id)+'">🗑️</button></td>'
       + '</tr>';
   }).join('');
+  tb.querySelectorAll('.ce-delete-btn').forEach(function(b){ b.onclick = function(){ ceDeleteCxp(b.dataset.id); }; });
 }
 
 function ceFilterHistory(v){ ceRenderHistory(v); }
@@ -688,15 +736,15 @@ function rPagosPendientes(){
 
   // Filters
   html += '<div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center">';
-  html += '<select id="pp-f-empresa" onchange="ppFilter()" style="padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">';
+  html += '<select id="pp-f-empresa" style="padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">';
   html += '<option value="">Todas las empresas</option>';
   _EMPRESAS.forEach(function(e){ html += '<option value="'+e+'">'+e+'</option>'; });
   html += '</select>';
-  html += '<select id="pp-f-status" onchange="ppFilter()" style="padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">';
+  html += '<select id="pp-f-status" style="padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;background:var(--white);color:var(--text)">';
   html += '<option value="">Todos los status</option>';
   html += '<option value="pendiente">Pendiente</option><option value="parcial">Parcial</option><option value="pagada">Pagada</option><option value="cancelada">Cancelada</option>';
   html += '</select>';
-  html += '<input type="text" id="pp-search" placeholder="Buscar proveedor..." oninput="ppFilter()" style="padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;width:180px;background:var(--white);color:var(--text)">';
+  html += '<input type="text" id="pp-search" placeholder="Buscar proveedor..." style="padding:6px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.75rem;width:180px;background:var(--white);color:var(--text)">';
   html += '</div>';
 
   // KPIs
@@ -722,6 +770,15 @@ function rPagosPendientes(){
   html += '</div>';
 
   el.innerHTML = html;
+
+  // ── Wire pp events ──
+  var ppFEmpresa = document.getElementById('pp-f-empresa');
+  if(ppFEmpresa) ppFEmpresa.onchange = ppFilter;
+  var ppFStatus = document.getElementById('pp-f-status');
+  if(ppFStatus) ppFStatus.onchange = ppFilter;
+  var ppSearch = document.getElementById('pp-search');
+  if(ppSearch) ppSearch.oninput = ppFilter;
+
   _ppFiltroEmp = '';
   _ppFiltroSt = '';
   ppRenderAll();
@@ -802,10 +859,10 @@ function ppRenderCxpTable(search){
     var vencStyle = vencida ? 'color:#b02020;font-weight:600' : '';
     var actions = '';
     if(c.status==='pendiente'||c.status==='parcial'){
-      actions += '<button class="btn" style="font-size:.62rem;padding:3px 8px" onclick="ppOpenPago(\''+c.id+'\')">💳 Pagar</button>';
+      actions += '<button class="btn pp-pagar-btn" style="font-size:.62rem;padding:3px 8px" data-id="'+_esc(c.id)+'">💳 Pagar</button>';
     }
     if(c.pdf_base64){
-      actions += ' <button class="btn btn-out" style="font-size:.62rem;padding:3px 8px" onclick="ppViewPDF(\''+c.id+'\')">📄</button>';
+      actions += ' <button class="btn btn-out pp-viewpdf-btn" style="font-size:.62rem;padding:3px 8px" data-id="'+_esc(c.id)+'">📄</button>';
     }
     return '<tr>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
@@ -819,6 +876,8 @@ function ppRenderCxpTable(search){
       + '<td style="white-space:nowrap">'+actions+'</td>'
       + '</tr>';
   }).join('');
+  tb.querySelectorAll('.pp-pagar-btn').forEach(function(b){ b.onclick = function(){ ppOpenPago(b.dataset.id); }; });
+  tb.querySelectorAll('.pp-viewpdf-btn').forEach(function(b){ b.onclick = function(){ ppViewPDF(b.dataset.id); }; });
 }
 
 // ── Register Payment Modal ──
@@ -859,13 +918,15 @@ function ppOpenPago(cxpId){
 
   // Actions
   html += '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">';
-  html += '<button class="btn btn-out" onclick="closeModal()">Cancelar</button>';
-  html += '<button class="btn" onclick="ppSavePago(\''+cxp.id+'\')">💾 Registrar Pago</button>';
+  html += '<button class="btn btn-out pp-close-modal-btn">Cancelar</button>';
+  html += '<button class="btn pp-save-pago-btn" data-id="'+_esc(cxp.id)+'">💾 Registrar Pago</button>';
   html += '</div>';
 
   html += '</div>';
 
   openModal('pago_modal', 'Registrar Pago', html);
+  document.querySelectorAll('.pp-close-modal-btn').forEach(function(b){ b.onclick = closeModal; });
+  document.querySelectorAll('.pp-save-pago-btn').forEach(function(b){ b.onclick = function(){ ppSavePago(b.dataset.id); }; });
 }
 
 function ppSavePago(cxpId){

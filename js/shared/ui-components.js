@@ -507,7 +507,7 @@
           ${gasRows}
           <tr style="border-top:2px solid var(--border2)"><td class="bld">TOTAL</td><td></td><td class="mo bld neg">${fmt(total)}/mes</td><td class="mo bld neg">${fmt(total*12)}/a\u00f1o</td></tr>
         </tbody></table>
-        <div style="margin-top:12px;text-align:right"><button class="btn btn-blue" onclick="closeModal();navTo('sal_res')" style="font-size:.73rem">Ver P&L completo \u2192</button></div>`;
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-blue modal-nav-btn" data-nav="sal_res" style="font-size:.73rem">Ver P&L completo \u2192</button></div>`;
         }
       },
       // ── Endless detalle
@@ -523,7 +523,7 @@
         <table class="mbt"><thead><tr><th>Cliente</th><th class="r">Monto</th><th>Plazo</th><th>Tasa</th><th>Comisi\u00f3n</th><th class="r">Int/Mes</th><th class="r">Ing. Anual</th><th>Status</th></tr></thead><tbody>
           ${END_CREDITS.map(c=>{const im=credIntMes(c),ia=credIngAnual(c),sp=spill(c.st);return`<tr><td class="bld">${c.cl}</td><td class="mo bld">${fmt(c.monto)}</td><td>${c.plazo} ${c.vencimiento||''}</td><td>${c.tasa}%</td><td>${c.com||0}%</td><td class="mo ${im?'pos':''}">${im?fmt(im):'\u2014'}</td><td class="mo ${ia?'pos':''}">${ia?fmt(ia):'\u2014'}</td><td>${sp}</td></tr>`;}).join('')}
         </tbody></table>
-        <div style="margin-top:12px;text-align:right"><button class="btn btn-green" onclick="closeModal();navTo('end_res')" style="font-size:.73rem">Ver P&L completo \u2192</button></div>`
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-green modal-nav-btn" data-nav="end_res" style="font-size:.73rem">Ver P&L completo \u2192</button></div>`
       },
       // ── Dynamo detalle
       dynamo_kpi:{
@@ -541,7 +541,7 @@
         <table class="mbt"><thead><tr><th>Cliente</th><th class="r">Monto</th><th>Plazo</th><th>Tasa</th><th>Comisi\u00f3n</th><th class="r">Int/Mes</th><th class="r">Ing. Anual</th><th>Status</th></tr></thead><tbody>
           ${DYN_CREDITS.map(c=>{const im=credIntMes(c),ia=credIngAnual(c),sp=spill(c.st);return`<tr><td class="bld">${c.cl}</td><td class="mo bld">${fmt(c.monto)}</td><td>${c.plazo} ${c.vencimiento||''}</td><td>${c.tasa}%</td><td>${c.com||0}%</td><td class="mo ${im?'pos':''}">${im?fmt(im):'\u2014'}</td><td class="mo ${ia?'pos':''}">${ia?fmt(ia):'\u2014'}</td><td>${sp}</td></tr>`;}).join('')}
         </tbody></table>
-        <div style="margin-top:12px;text-align:right"><button class="btn btn-out" style="border-color:#ff7043;color:#ff7043;font-size:.73rem" onclick="closeModal();navTo('dyn_res')">Ver P&L completo \u2192</button></div>`
+        <div style="margin-top:12px;text-align:right"><button class="btn btn-out modal-nav-btn" data-nav="dyn_res" style="border-color:#ff7043;color:#ff7043;font-size:.73rem">Ver P&L completo \u2192</button></div>`
       },
       // ── Wirebit detalle
       wirebit_kpi:{
@@ -565,7 +565,7 @@
           </div>
           ${canv}
           <div style="overflow-x:auto"><table class="mbt"><thead><tr><th>Mes</th><th class="r">Ingresos</th><th class="r">Costos Directos</th><th class="r">N\u00f3mina</th><th class="r">EBITDA</th></tr></thead><tbody>${rows}</tbody></table></div>
-          <div style="margin-top:12px;text-align:right"><button class="btn btn-blue" onclick="closeModal();navTo('wb_res')" style="font-size:.73rem;background:#9b51e0;border-color:#9b51e0">Ver P&L completo \u2192</button></div>`;
+          <div style="margin-top:12px;text-align:right"><button class="btn btn-blue modal-nav-btn" data-nav="wb_res" style="font-size:.73rem;background:#9b51e0;border-color:#9b51e0">Ver P&L completo \u2192</button></div>`;
         }
       },
       // ── WB Ingresos chart
@@ -868,5 +868,14 @@
   window.openTopGastos = openTopGastos;
   window.closeTopGastos = closeTopGastos;
   window.selOpts = selOpts;
+
+  // ── Event delegation: modal nav buttons (closeModal + navTo) ──
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('.modal-nav-btn');
+    if(btn && btn.dataset.nav){
+      closeModal();
+      navTo(btn.dataset.nav);
+    }
+  });
 
 })(window);

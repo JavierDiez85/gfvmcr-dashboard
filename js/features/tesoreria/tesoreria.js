@@ -220,7 +220,7 @@ function tesOpenModal(id){
     <div style="background:var(--white);border-radius:12px;width:500px;max-width:96vw;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.28)">
       <div style="background:linear-gradient(135deg,#0073ea,#0060c7);padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
         <div style="font-family:Poppins,sans-serif;font-weight:700;color:#fff;font-size:.92rem">${isNew?'📥 Nuevo Movimiento':'✏️ Editar Movimiento'}</div>
-        <button onclick="document.getElementById('confirm-overlay').style.display='none'" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer">✕</button>
+        <button class="tes-overlay-close" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer">✕</button>
       </div>
       <div style="padding:20px 22px">
         <div class="fg2" style="margin-bottom:12px">
@@ -230,19 +230,19 @@ function tesOpenModal(id){
           </div>
           <div class="fg">
             <label class="fl">Tipo</label>
-            <select id="tm-tipo" class="fs" onchange="tesModalActualizar()">${tipoOptions}</select>
+            <select id="tm-tipo" class="fs tes-modal-update">${tipoOptions}</select>
           </div>
         </div>
         <div class="fg2" style="margin-bottom:12px">
           <div class="fg">
             <label class="fl">Empresa</label>
-            <select id="tm-empresa" class="fs" onchange="tesModalActualizar()">${empOptions}</select>
+            <select id="tm-empresa" class="fs tes-modal-update">${empOptions}</select>
           </div>
           <div class="fg">
             <label class="fl">Cuenta Bancaria</label>
             <select id="tm-cuenta" class="fs">${cuentaOpts}</select>
             <div style="font-size:.62rem;color:var(--muted);margin-top:3px">
-              <a href="#" onclick="sv('cfg_bancos',null);document.getElementById('confirm-overlay').style.display='none';return false" style="color:#0073ea">+ Gestionar cuentas</a>
+              <a href="#" class="tes-manage-banks" style="color:#0073ea">+ Gestionar cuentas</a>
             </div>
           </div>
         </div>
@@ -259,8 +259,8 @@ function tesOpenModal(id){
           <input type="number" id="tm-monto" class="fi n" value="${item?.monto||''}" placeholder="0.00" min="0" step="0.01">
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="document.getElementById('confirm-overlay').style.display='none'" class="btn btn-out">Cancelar</button>
-          <button onclick="tesGuardarMov()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer">✅ Guardar</button>
+          <button class="btn btn-out tes-overlay-close">Cancelar</button>
+          <button class="tes-guardar-mov" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer">✅ Guardar</button>
         </div>
       </div>
     </div>`;
@@ -268,6 +268,14 @@ function tesOpenModal(id){
   const ov = document.getElementById('confirm-overlay');
   ov.style.display = 'flex';
   ov.innerHTML = html;
+
+  // Bind delegated events after innerHTML
+  ov.querySelectorAll('.tes-overlay-close').forEach(function(el){ el.addEventListener('click', function(){ ov.style.display='none'; }); });
+  ov.querySelectorAll('.tes-modal-update').forEach(function(el){ el.addEventListener('change', function(){ tesModalActualizar(); }); });
+  var manageLink = ov.querySelector('.tes-manage-banks');
+  if (manageLink) manageLink.addEventListener('click', function(e){ e.preventDefault(); sv('cfg_bancos',null); ov.style.display='none'; });
+  var guardarBtn = ov.querySelector('.tes-guardar-mov');
+  if (guardarBtn) guardarBtn.addEventListener('click', function(){ tesGuardarMov(); });
 }
 
 function tesModalActualizar(){
@@ -672,13 +680,14 @@ function rDashTesoreria(){
       const fmtV = absV>=1000000 ? sign+'$'+(absV/1000000).toFixed(1)+'M'
                  : absV>=1000    ? sign+'$'+(absV/1000).toFixed(0)+'K'
                  : sign+'$'+absV.toLocaleString('es-MX');
-      return `<div class="kpi-card kpi-clickable" style="--ac:${col};cursor:pointer" onclick="navTo('tes_individual')">
+      return `<div class="kpi-card kpi-clickable tes-nav-individual" style="--ac:${col};cursor:pointer">
         <div class="kpi-hint">ver empresa →</div>
         <div class="kpi-top"><div class="kpi-lbl" style="font-size:.65rem">${e}</div><div class="kpi-ico" style="background:${col}15;color:${col};font-size:.8rem">🏢</div></div>
         <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700;color:${neto>=0?'var(--green)':'var(--red)'}">${fmtV}</div>
         <div style="font-size:.62rem;color:var(--muted);margin-top:2px">flujo neto</div>
       </div>`;
     }).join('');
+    empCont.querySelectorAll('.tes-nav-individual').forEach(function(el){ el.addEventListener('click', function(){ navTo('tes_individual'); }); });
   }
 
   // Mini chart: flujo mensual del grupo
@@ -803,7 +812,7 @@ function rBancosView(){
         <div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700">🏦 Bancos y Cuentas</div>
         <div style="font-size:.68rem;color:var(--muted);margin-top:2px">Configura las cuentas disponibles · Asigna cada una a sus empresas · Se usan en Flujo de Caja</div>
       </div>
-      ${!isViewer() ? '<button onclick="bancosNewModal()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:600;cursor:pointer">+ Nueva Cuenta</button>' : ''}
+      ${!isViewer() ? '<button class="bancos-new-btn" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:.72rem;font-weight:600;cursor:pointer">+ Nueva Cuenta</button>' : ''}
     </div>
     <div class="kpi-row c3" style="margin-bottom:14px">
       <div class="kpi-card" style="--ac:#0073ea">
@@ -846,6 +855,8 @@ function rBancosView(){
     if(edit){ bancosEditModal(+edit.dataset.idx); return; }
     const del = e.target.closest('.banco-del-btn');
     if(del){ bancosDelete(+del.dataset.idx); return; }
+    const newBtn = e.target.closest('.bancos-new-btn');
+    if(newBtn){ bancosNewModal(); return; }
   });
 }
 
@@ -892,7 +903,7 @@ function bancosShowModal(idx){
     <div style="background:var(--white);border-radius:12px;width:420px;max-width:96vw;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.28)">
       <div style="background:linear-gradient(135deg,#0073ea,#0060c7);padding:16px 22px;display:flex;align-items:center;justify-content:space-between">
         <div style="font-family:Poppins,sans-serif;font-weight:700;color:#fff;font-size:.92rem">${idx===null?'🏦 Nueva Cuenta':'✏️ Editar Cuenta'}</div>
-        <button onclick="document.getElementById('confirm-overlay').style.display='none'" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer">✕</button>
+        <button class="tes-overlay-close" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer">✕</button>
       </div>
       <div style="padding:20px 22px">
         <div class="fg" style="margin-bottom:12px">
@@ -910,8 +921,8 @@ function bancosShowModal(idx){
           </div>
         </div>
         <div style="display:flex;gap:8px;justify-content:flex-end">
-          <button onclick="document.getElementById('confirm-overlay').style.display='none'" class="btn btn-out">Cancelar</button>
-          <button onclick="bancosGuardar()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer">✅ Guardar</button>
+          <button class="btn btn-out tes-overlay-close">Cancelar</button>
+          <button class="bancos-guardar-btn" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer">✅ Guardar</button>
         </div>
       </div>
     </div>`;
@@ -919,6 +930,11 @@ function bancosShowModal(idx){
   const ov = document.getElementById('confirm-overlay');
   ov.style.display = 'flex';
   ov.innerHTML = html;
+
+  // Bind delegated events after innerHTML
+  ov.querySelectorAll('.tes-overlay-close').forEach(function(el){ el.addEventListener('click', function(){ ov.style.display='none'; }); });
+  var guardarBtn = ov.querySelector('.bancos-guardar-btn');
+  if (guardarBtn) guardarBtn.addEventListener('click', function(){ bancosGuardar(); });
 }
 
 function bancosGuardar(){

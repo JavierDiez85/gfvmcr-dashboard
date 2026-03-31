@@ -233,10 +233,12 @@ function openPromPagoModal(){
       </div>
       <div style="margin-bottom:14px"><label style="font-size:.68rem;color:var(--muted)">Referencia</label><input type="text" id="prom-pago-ref" placeholder="Transferencia, cheque..." style="width:100%;padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;background:var(--bg);color:var(--text)"></div>
       <div style="display:flex;gap:8px;justify-content:flex-end">
-        <button class="btn btn-out" onclick="document.getElementById('prom-pago-overlay').style.display='none'" style="font-size:.75rem">Cancelar</button>
-        <button class="btn btn-blue edit-action" onclick="submitPromPago()" style="font-size:.75rem">✅ Registrar</button>
+        <button class="btn btn-out prom-pago-cancel" style="font-size:.75rem">Cancelar</button>
+        <button class="btn btn-blue edit-action prom-pago-submit" style="font-size:.75rem">✅ Registrar</button>
       </div>
     </div>`;
+    d.querySelector('.prom-pago-cancel').addEventListener('click', function(){ document.getElementById('prom-pago-overlay').style.display='none'; });
+    d.querySelector('.prom-pago-submit').addEventListener('click', function(){ submitPromPago(); });
     document.body.appendChild(d);
   }
   document.getElementById('prom-pago-overlay').style.display='flex';

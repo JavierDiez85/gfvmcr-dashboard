@@ -96,8 +96,8 @@ function rFactEmpresa(empresa){
   html += '<div class="tw" style="margin-bottom:14px">';
   html += '<div class="tw-h"><div class="tw-ht">📄 Registrar Factura de Egreso</div>';
   html += '<div style="display:flex;gap:8px">';
-  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="feSetMode(\'manual\')">✏️ Captura Manual</button>';
-  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="feSetMode(\'efectivo\')">💵 Pago en Efectivo</button>';
+  html += '<button class="btn btn-out fe-mode-btn" style="font-size:.7rem" data-mode="manual">✏️ Captura Manual</button>';
+  html += '<button class="btn btn-out fe-mode-btn" style="font-size:.7rem" data-mode="efectivo">💵 Pago en Efectivo</button>';
   html += '</div></div>';
 
   html += '<div style="padding:16px;display:flex;flex-direction:column;gap:14px">';
@@ -110,7 +110,7 @@ function rFactEmpresa(empresa){
   html += '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:'+color+';margin-right:6px"></span>'+_esc(empresa)+'</div>';
   html += '</div>';
   html += _selField('fe-categoria','Categoría P&L','<option value="">— Seleccionar —</option>'+_catOptions());
-  html += _selField('fe-moneda','Moneda','<option value="MXN">MXN</option><option value="USD">USD</option>','onchange="feOnMonedaChange()"');
+  html += _selField('fe-moneda','Moneda','<option value="MXN">MXN</option><option value="USD">USD</option>');
   html += '<div id="fe-tc-wrap" style="flex:0 0 100px;display:none">';
   html += '<label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Tipo de Cambio</label>';
   html += '<input type="number" id="fe-tc" class="fi" step="0.01" value="1" min="0" style="width:100%;font-size:.78rem;padding:7px 10px">';
@@ -119,11 +119,11 @@ function rFactEmpresa(empresa){
 
   // Drop zone (for CFDI PDFs)
   html += '<div id="fe-dropzone-wrap">';
-  html += '<div id="fe-dropzone" ondrop="feHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'fe-file-input\').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
+  html += '<div id="fe-dropzone" style="border:2px dashed var(--border2);border-radius:var(--r);padding:32px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
   html += '<div style="font-size:1.6rem;margin-bottom:6px">📎</div>';
   html += '<div style="font-size:.78rem;font-weight:600;color:var(--text)">Arrastra la factura PDF aquí</div>';
   html += '<div style="font-size:.68rem;color:var(--muted);margin-top:4px">CFDI mexicano — se extraerán datos automáticamente</div>';
-  html += '<input type="file" id="fe-file-input" accept=".pdf" style="display:none" onchange="feLoadFile(this.files[0])">';
+  html += '<input type="file" id="fe-file-input" accept=".pdf" style="display:none">';
   html += '</div></div>';
 
   // Status
@@ -141,9 +141,9 @@ function rFactEmpresa(empresa){
   html += '<div class="tw" style="margin-bottom:16px">';
   html += '<div class="tw-h"><div class="tw-ht">📋 Cuentas por Pagar — '+_esc(empresa)+'</div>';
   html += '<div style="display:flex;gap:8px;align-items:center">';
-  html += '<select id="fe-f-status" onchange="feFilter()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
+  html += '<select id="fe-f-status" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
   html += '<option value="">Todos</option><option value="pendiente">Pendientes</option><option value="parcial">Parciales</option><option value="pagada">Pagadas</option><option value="cancelada">Canceladas</option></select>';
-  html += '<input type="text" id="fe-search" placeholder="Buscar..." oninput="feFilter()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '<input type="text" id="fe-search" placeholder="Buscar..." style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
   html += '</div></div>';
   html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
   html += '<th>Fecha</th><th>Proveedor</th><th>Categoría</th><th>Concepto</th><th class="r">Total</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Vencimiento</th><th>Status</th><th>Origen</th><th style="width:100px"></th>';
@@ -162,6 +162,25 @@ function rFactEmpresa(empresa){
   html += '</div>';
 
   el.innerHTML = html;
+
+  // ── Wire events (no inline handlers) ──
+  el.querySelectorAll('.fe-mode-btn').forEach(function(b){ b.onclick = function(){ feSetMode(b.dataset.mode); }; });
+  var feMoneda = document.getElementById('fe-moneda');
+  if(feMoneda) feMoneda.onchange = feOnMonedaChange;
+  var feDropzone = document.getElementById('fe-dropzone');
+  if(feDropzone){
+    feDropzone.ondrop = function(e){ feHandleDrop(e); };
+    feDropzone.ondragover = function(e){ e.preventDefault(); this.style.borderColor='var(--blue)'; };
+    feDropzone.ondragleave = function(){ this.style.borderColor='var(--border2)'; };
+    feDropzone.onclick = function(){ document.getElementById('fe-file-input').click(); };
+  }
+  var feFileInput = document.getElementById('fe-file-input');
+  if(feFileInput) feFileInput.onchange = function(){ feLoadFile(this.files[0]); };
+  var feFStatus = document.getElementById('fe-f-status');
+  if(feFStatus) feFStatus.onchange = feFilter;
+  var feSearch = document.getElementById('fe-search');
+  if(feSearch) feSearch.oninput = feFilter;
+
   feRenderAll();
 }
 
@@ -359,11 +378,19 @@ function feSetMode(mode){
 
   if(mode === 'manual' || mode === 'efectivo'){
     if(dz) dz.style.display = 'none';
-    if(fa){ fa.style.display = 'block'; fa.innerHTML = _feManualFormHTML(mode); }
+    if(fa){ fa.style.display = 'block'; fa.innerHTML = _feManualFormHTML(mode); _feWireManualForm(fa); }
   } else {
     if(dz) dz.style.display = '';
     if(fa){ fa.style.display = 'none'; fa.innerHTML = ''; }
   }
+}
+
+function _feWireManualForm(container){
+  container.querySelectorAll('.fe-calc-input').forEach(function(inp){ inp.oninput = feCalcTotal; });
+  var mf = container.querySelector('#fe-manual-file');
+  if(mf) mf.onchange = function(){ feManualAttach(this.files[0]); };
+  container.querySelectorAll('.fe-cancel-btn').forEach(function(b){ b.onclick = feClearForm; });
+  container.querySelectorAll('.fe-save-btn').forEach(function(b){ b.onclick = feSave; });
 }
 
 function feOnMonedaChange(){
@@ -390,10 +417,10 @@ function _feManualFormHTML(mode){
   html += '<input type="text" id="fe-f-concepto" class="fi" placeholder="Descripción del gasto" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
 
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
-  html += '<input type="number" id="fe-f-subtotal" class="fi" step="0.01" min="0" oninput="feCalcTotal()" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="number" id="fe-f-subtotal" class="fi fe-calc-input" step="0.01" min="0" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
 
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA</label>';
-  html += '<input type="number" id="fe-f-iva" class="fi" step="0.01" min="0" oninput="feCalcTotal()" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="number" id="fe-f-iva" class="fi fe-calc-input" step="0.01" min="0" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
 
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
   html += '<input type="number" id="fe-f-total" class="fi" step="0.01" min="0" style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700"></div>';
@@ -410,7 +437,7 @@ function _feManualFormHTML(mode){
   html += '<div style="grid-column:1/-1">';
   html += '<label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Adjuntar PDF (opcional)</label>';
   html += '<div style="display:flex;gap:8px;align-items:center">';
-  html += '<input type="file" id="fe-manual-file" accept=".pdf" onchange="feManualAttach(this.files[0])" style="font-size:.72rem">';
+  html += '<input type="file" id="fe-manual-file" accept=".pdf" style="font-size:.72rem">';
   html += '<div id="fe-manual-pdf-name" style="display:none;font-size:.72rem;color:#007a48"></div>';
   html += '</div></div>';
 
@@ -418,8 +445,8 @@ function _feManualFormHTML(mode){
 
   // Actions
   html += '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">';
-  html += '<button class="btn btn-out" onclick="feClearForm()">Cancelar</button>';
-  html += '<button class="btn" onclick="feSave()">💾 Guardar</button>';
+  html += '<button class="btn btn-out fe-cancel-btn">Cancelar</button>';
+  html += '<button class="btn fe-save-btn">💾 Guardar</button>';
   html += '</div>';
 
   html += '</div>';
@@ -466,13 +493,15 @@ function _feRenderPreview(){
 
   // Actions
   html += '<div style="display:flex;justify-content:flex-end;gap:10px">';
-  html += '<button class="btn btn-out" onclick="feClearForm()">Cancelar</button>';
-  html += '<button class="btn" onclick="feSave()">💾 Guardar CxP</button>';
+  html += '<button class="btn btn-out fe-cancel-btn">Cancelar</button>';
+  html += '<button class="btn fe-save-btn">💾 Guardar CxP</button>';
   html += '</div>';
 
   html += '</div>';
   fa.style.display = 'block';
   fa.innerHTML = html;
+  fa.querySelectorAll('.fe-cancel-btn').forEach(function(b){ b.onclick = feClearForm; });
+  fa.querySelectorAll('.fe-save-btn').forEach(function(b){ b.onclick = feSave; });
 }
 
 function _pvField(label, value, inputId, editable, type){
@@ -563,7 +592,7 @@ function _feAnalyzePDF(dataUrl, filename){
       _feSetStatus('error','Error leyendo PDF: '+err.message);
       _feMode = 'manual';
       var fa = document.getElementById('fe-form-area');
-      if(fa){ fa.style.display='block'; fa.innerHTML = _feManualFormHTML('manual'); }
+      if(fa){ fa.style.display='block'; fa.innerHTML = _feManualFormHTML('manual'); _feWireManualForm(fa); }
     });
   }catch(err){
     _feSetStatus('error','Error al analizar: '+err.message);
@@ -754,12 +783,13 @@ function feOpenPago(cxpId){
   html += '</div>';
 
   html += '<div style="display:flex;justify-content:flex-end;gap:10px;margin-top:16px">';
-  html += '<button class="btn btn-out" onclick="closeModal()">Cancelar</button>';
+  html += '<button class="btn btn-out fe-close-modal-btn">Cancelar</button>';
   html += '<button class="btn fe-save-pago" data-id="'+escapeHtml(cxp.id)+'">💾 Registrar Pago</button>';
   html += '</div>';
   html += '</div>';
 
   openModal('fe_pago_modal', 'Registrar Pago', html);
+  document.querySelectorAll('.fe-close-modal-btn').forEach(function(b){ b.onclick = closeModal; });
 }
 
 function feSavePago(cxpId){
@@ -898,9 +928,9 @@ function rFactEmitidas(empresa){
 
   // Period buttons
   html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
-  html += '<button id="emit-p-mes" class="btn" style="font-size:.68rem;padding:4px 14px" onclick="emitSetPeriodo(\'mes\')">Mes</button>';
-  html += '<button id="emit-p-trimestre" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="emitSetPeriodo(\'trimestre\')">Trimestre</button>';
-  html += '<button id="emit-p-anual" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="emitSetPeriodo(\'anual\')">Año</button>';
+  html += '<button id="emit-p-mes" class="btn emit-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="mes">Mes</button>';
+  html += '<button id="emit-p-trimestre" class="btn btn-out emit-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="trimestre">Trimestre</button>';
+  html += '<button id="emit-p-anual" class="btn btn-out emit-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="anual">Año</button>';
   html += '</div>';
 
   // KPIs
@@ -909,16 +939,16 @@ function rFactEmitidas(empresa){
   // Upload section
   html += '<div class="tw" style="margin-bottom:14px">';
   html += '<div class="tw-h"><div class="tw-ht">📤 Subir Factura Emitida</div>';
-  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="emitSetManual()">✏️ Registro Manual</button>';
+  html += '<button class="btn btn-out emit-manual-btn" style="font-size:.7rem">✏️ Registro Manual</button>';
   html += '</div>';
   html += '<div style="padding:16px">';
 
   // Drop zone
-  html += '<div id="emit-dropzone" ondrop="emitHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'emit-file-input\').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
+  html += '<div id="emit-dropzone" style="border:2px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
   html += '<div style="font-size:1.4rem;margin-bottom:4px">📎</div>';
   html += '<div style="font-size:.78rem;font-weight:600">Arrastra factura CFDI (PDF)</div>';
   html += '<div style="font-size:.68rem;color:var(--muted);margin-top:3px">Se extraerán datos automáticamente del XML embebido</div>';
-  html += '<input type="file" id="emit-file-input" accept=".pdf" style="display:none" onchange="emitLoadFile(this.files[0])">';
+  html += '<input type="file" id="emit-file-input" accept=".pdf" style="display:none">';
   html += '</div>';
 
   // Status + preview
@@ -930,7 +960,7 @@ function rFactEmitidas(empresa){
   // History table
   html += '<div class="tw">';
   html += '<div class="tw-h"><div class="tw-ht">📋 Historial de Facturas Emitidas — '+_esc(empresa)+'</div>';
-  html += '<input type="text" id="emit-search" placeholder="Buscar..." oninput="emitRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '<input type="text" id="emit-search" placeholder="Buscar..." style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
   html += '</div>';
   html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
   html += '<th>Fecha</th><th>Folio</th><th>Cliente</th><th>RFC</th><th class="r">Subtotal</th><th class="r">IVA</th><th class="r">Total</th><th>UUID</th><th style="width:60px"></th>';
@@ -938,6 +968,22 @@ function rFactEmitidas(empresa){
   html += '</div>';
 
   el.innerHTML = html;
+
+  // ── Wire emit events ──
+  el.querySelectorAll('.emit-periodo-btn').forEach(function(b){ b.onclick = function(){ emitSetPeriodo(b.dataset.periodo); }; });
+  el.querySelectorAll('.emit-manual-btn').forEach(function(b){ b.onclick = emitSetManual; });
+  var emitDz = document.getElementById('emit-dropzone');
+  if(emitDz){
+    emitDz.ondrop = function(e){ emitHandleDrop(e); };
+    emitDz.ondragover = function(e){ e.preventDefault(); this.style.borderColor='var(--blue)'; };
+    emitDz.ondragleave = function(){ this.style.borderColor='var(--border2)'; };
+    emitDz.onclick = function(){ document.getElementById('emit-file-input').click(); };
+  }
+  var emitFI = document.getElementById('emit-file-input');
+  if(emitFI) emitFI.onchange = function(){ emitLoadFile(this.files[0]); };
+  var emitSearch = document.getElementById('emit-search');
+  if(emitSearch) emitSearch.oninput = emitRenderAll;
+
   emitRenderAll();
 }
 
@@ -1103,10 +1149,12 @@ function _emitShowPreview(data){
   html += '<div><b>UUID:</b> <span style="font-size:.65rem;color:var(--muted)">'+_esc(data.uuid||'—')+'</span></div>';
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin-top:12px">';
-  html += '<button class="btn" style="font-size:.72rem" onclick="emitSaveFromPreview()">💾 Guardar</button>';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="emitClearForm()">Cancelar</button>';
+  html += '<button class="btn emit-save-preview-btn" style="font-size:.72rem">💾 Guardar</button>';
+  html += '<button class="btn btn-out emit-clear-btn" style="font-size:.72rem">Cancelar</button>';
   html += '</div></div>';
   fa.innerHTML = html;
+  fa.querySelectorAll('.emit-save-preview-btn').forEach(function(b){ b.onclick = emitSaveFromPreview; });
+  fa.querySelectorAll('.emit-clear-btn').forEach(function(b){ b.onclick = emitClearForm; });
 }
 
 function emitSetManual(){
@@ -1125,19 +1173,28 @@ function emitSetManual(){
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha</label>';
   html += '<input type="date" id="emit-f-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
-  html += '<input type="text" id="emit-f-subtotal" class="fi" placeholder="$0.00" oninput="facSubInput(\'emit\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="emit-f-subtotal" class="fi emit-currency-input" placeholder="$0.00" data-role="subtotal" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA <span style="font-weight:400;color:var(--muted)">(auto 16%)</span></label>';
-  html += '<input type="text" id="emit-f-iva" class="fi" placeholder="$0.00" oninput="facIvaInput(\'emit\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="emit-f-iva" class="fi emit-currency-input" placeholder="$0.00" data-role="iva" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
   html += '<input type="text" id="emit-f-total" class="fi" placeholder="$0.00" readonly style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700;background:var(--blue-bg);color:var(--blue);cursor:default"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
   html += '<input type="text" id="emit-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin-top:12px">';
-  html += '<button class="btn" style="font-size:.72rem" onclick="emitSaveManual()">💾 Guardar</button>';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="emitClearForm()">Cancelar</button>';
+  html += '<button class="btn emit-save-manual-btn" style="font-size:.72rem">💾 Guardar</button>';
+  html += '<button class="btn btn-out emit-clear-btn" style="font-size:.72rem">Cancelar</button>';
   html += '</div></div>';
   fa.innerHTML = html;
+
+  // ── Wire emit manual form events ──
+  fa.querySelectorAll('.emit-currency-input').forEach(function(inp){
+    inp.onfocus = function(){ facFocus(this); };
+    inp.onblur = function(){ facBlur(this); };
+    inp.oninput = inp.dataset.role === 'subtotal' ? function(){ facSubInput('emit'); } : function(){ facIvaInput('emit'); };
+  });
+  fa.querySelectorAll('.emit-save-manual-btn').forEach(function(b){ b.onclick = emitSaveManual; });
+  fa.querySelectorAll('.emit-clear-btn').forEach(function(b){ b.onclick = emitClearForm; });
 }
 
 function emitSaveFromPreview(){
@@ -1242,9 +1299,9 @@ function rFactRecibidas(empresa){
 
   // Period buttons
   html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
-  html += '<button id="recv-p-mes" class="btn" style="font-size:.68rem;padding:4px 14px" onclick="recvSetPeriodo(\'mes\')">Mes</button>';
-  html += '<button id="recv-p-trimestre" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="recvSetPeriodo(\'trimestre\')">Trimestre</button>';
-  html += '<button id="recv-p-anual" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="recvSetPeriodo(\'anual\')">Año</button>';
+  html += '<button id="recv-p-mes" class="btn recv-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="mes">Mes</button>';
+  html += '<button id="recv-p-trimestre" class="btn btn-out recv-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="trimestre">Trimestre</button>';
+  html += '<button id="recv-p-anual" class="btn btn-out recv-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="anual">Año</button>';
   html += '</div>';
 
   // KPIs
@@ -1253,16 +1310,16 @@ function rFactRecibidas(empresa){
   // Upload section — drop zone PDF CFDI
   html += '<div class="tw" style="margin-bottom:14px">';
   html += '<div class="tw-h"><div class="tw-ht">📥 Registrar Factura Recibida</div>';
-  html += '<button class="btn btn-out" style="font-size:.7rem" onclick="recvSetManual()">✏️ Registro Manual</button>';
+  html += '<button class="btn btn-out recv-manual-btn" style="font-size:.7rem">✏️ Registro Manual</button>';
   html += '</div>';
   html += '<div style="padding:16px">';
 
   // Drop zone
-  html += '<div id="recv-dropzone" ondrop="recvHandleDrop(event)" ondragover="event.preventDefault();this.style.borderColor=\'var(--blue)\'" ondragleave="this.style.borderColor=\'var(--border2)\'" onclick="document.getElementById(\'recv-file-input\').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
+  html += '<div id="recv-dropzone" style="border:2px dashed var(--border2);border-radius:var(--r);padding:28px 20px;text-align:center;cursor:pointer;transition:border-color .2s">';
   html += '<div style="font-size:1.4rem;margin-bottom:4px">📎</div>';
   html += '<div style="font-size:.78rem;font-weight:600">Arrastra factura CFDI de proveedor (PDF)</div>';
   html += '<div style="font-size:.68rem;color:var(--muted);margin-top:3px">Se extraerán datos automáticamente del XML embebido</div>';
-  html += '<input type="file" id="recv-file-input" accept=".pdf" style="display:none" onchange="recvLoadFile(this.files[0])">';
+  html += '<input type="file" id="recv-file-input" accept=".pdf" style="display:none">';
   html += '</div>';
 
   // Status + preview
@@ -1275,9 +1332,9 @@ function rFactRecibidas(empresa){
   html += '<div class="tw">';
   html += '<div class="tw-h"><div class="tw-ht">📋 Facturas Recibidas — '+_esc(empresa)+'</div>';
   html += '<div style="display:flex;gap:8px;align-items:center">';
-  html += '<select id="recv-f-status" onchange="recvRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
+  html += '<select id="recv-f-status" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;background:var(--white);color:var(--text)">';
   html += '<option value="">Todos</option><option value="pendiente">Pendientes</option><option value="parcial">Parciales</option><option value="pagada">Pagadas</option><option value="cancelada">Canceladas</option></select>';
-  html += '<input type="text" id="recv-search" placeholder="Buscar..." oninput="recvRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '<input type="text" id="recv-search" placeholder="Buscar..." style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
   html += '</div></div>';
   html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
   html += '<th>Fecha</th><th>Proveedor</th><th>Categoría</th><th>Concepto</th><th class="r">Total</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Vencimiento</th><th>Status</th><th>Origen</th>';
@@ -1285,6 +1342,24 @@ function rFactRecibidas(empresa){
   html += '</div>';
 
   el.innerHTML = html;
+
+  // ── Wire recv events ──
+  el.querySelectorAll('.recv-periodo-btn').forEach(function(b){ b.onclick = function(){ recvSetPeriodo(b.dataset.periodo); }; });
+  el.querySelectorAll('.recv-manual-btn').forEach(function(b){ b.onclick = recvSetManual; });
+  var recvDz = document.getElementById('recv-dropzone');
+  if(recvDz){
+    recvDz.ondrop = function(e){ recvHandleDrop(e); };
+    recvDz.ondragover = function(e){ e.preventDefault(); this.style.borderColor='var(--blue)'; };
+    recvDz.ondragleave = function(){ this.style.borderColor='var(--border2)'; };
+    recvDz.onclick = function(){ document.getElementById('recv-file-input').click(); };
+  }
+  var recvFI = document.getElementById('recv-file-input');
+  if(recvFI) recvFI.onchange = function(){ recvLoadFile(this.files[0]); };
+  var recvFStatus = document.getElementById('recv-f-status');
+  if(recvFStatus) recvFStatus.onchange = recvRenderAll;
+  var recvSearch = document.getElementById('recv-search');
+  if(recvSearch) recvSearch.oninput = recvRenderAll;
+
   recvRenderAll();
 }
 
@@ -1467,10 +1542,12 @@ function _recvShowPreview(data){
   html += '<input type="date" id="recv-prev-venc" class="fi" style="width:100%;padding:7px 10px;font-size:.78rem"></div>';
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin-top:12px">';
-  html += '<button class="btn" style="font-size:.72rem" onclick="recvSaveFromPreview()">💾 Guardar como CxP</button>';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="recvClearForm()">Cancelar</button>';
+  html += '<button class="btn recv-save-preview-btn" style="font-size:.72rem">💾 Guardar como CxP</button>';
+  html += '<button class="btn btn-out recv-clear-btn" style="font-size:.72rem">Cancelar</button>';
   html += '</div></div>';
   fa.innerHTML = html;
+  fa.querySelectorAll('.recv-save-preview-btn').forEach(function(b){ b.onclick = recvSaveFromPreview; });
+  fa.querySelectorAll('.recv-clear-btn').forEach(function(b){ b.onclick = recvClearForm; });
 }
 
 function recvSetManual(){
@@ -1489,26 +1566,37 @@ function recvSetManual(){
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Folio</label>';
   html += '<input type="text" id="recv-f-folio" class="fi" placeholder="Folio factura" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Tipo de Gasto</label>';
-  html += '<select id="recv-f-tipo" class="fi" onchange="recvTipoChanged()" style="width:100%;font-size:.78rem;padding:7px 10px">';
+  html += '<select id="recv-f-tipo" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px">';
   html += '<option value="">— Seleccionar —</option><option value="Operativo">Costo Directo / Operativo</option><option value="Administrativo">Gasto Administrativo</option></select></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Categoría</label>';
   html += '<select id="recv-f-cat" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"><option value="">Primero selecciona tipo</option></select></div>';
   html += '<div style="grid-column:1/-1"><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto</label>';
   html += '<input type="text" id="recv-f-concepto" class="fi" placeholder="Descripción" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Subtotal</label>';
-  html += '<input type="text" id="recv-f-subtotal" class="fi" placeholder="$0.00" oninput="facSubInput(\'recv\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="recv-f-subtotal" class="fi recv-currency-input" placeholder="$0.00" data-role="subtotal" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">IVA <span style="font-weight:400;color:var(--muted)">(auto 16%)</span></label>';
-  html += '<input type="text" id="recv-f-iva" class="fi" placeholder="$0.00" oninput="facIvaInput(\'recv\')" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<input type="text" id="recv-f-iva" class="fi recv-currency-input" placeholder="$0.00" data-role="iva" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Total</label>';
   html += '<input type="text" id="recv-f-total" class="fi" placeholder="$0.00" readonly style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700;background:var(--blue-bg);color:var(--blue);cursor:default"></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha Vencimiento</label>';
   html += '<input type="date" id="recv-f-venc" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
   html += '</div>';
   html += '<div style="display:flex;gap:8px;margin-top:12px">';
-  html += '<button class="btn" style="font-size:.72rem" onclick="recvSaveManual()">💾 Guardar como CxP</button>';
-  html += '<button class="btn btn-out" style="font-size:.72rem" onclick="recvClearForm()">Cancelar</button>';
+  html += '<button class="btn recv-save-manual-btn" style="font-size:.72rem">💾 Guardar como CxP</button>';
+  html += '<button class="btn btn-out recv-clear-btn" style="font-size:.72rem">Cancelar</button>';
   html += '</div></div>';
   fa.innerHTML = html;
+
+  // ── Wire recv manual form events ──
+  var recvTipo = document.getElementById('recv-f-tipo');
+  if(recvTipo) recvTipo.onchange = recvTipoChanged;
+  fa.querySelectorAll('.recv-currency-input').forEach(function(inp){
+    inp.onfocus = function(){ facFocus(this); };
+    inp.onblur = function(){ facBlur(this); };
+    inp.oninput = inp.dataset.role === 'subtotal' ? function(){ facSubInput('recv'); } : function(){ facIvaInput('recv'); };
+  });
+  fa.querySelectorAll('.recv-save-manual-btn').forEach(function(b){ b.onclick = recvSaveManual; });
+  fa.querySelectorAll('.recv-clear-btn').forEach(function(b){ b.onclick = recvClearForm; });
 }
 
 // ── Helpers de formato moneda para formularios ──────────────────────────────
@@ -1669,9 +1757,9 @@ function rPagosPendientesEmp(empresa){
 
   // Period buttons
   html += '<div style="display:flex;gap:6px;margin-bottom:14px">';
-  html += '<button id="pp-p-mes" class="btn" style="font-size:.68rem;padding:4px 14px" onclick="ppSetPeriodo(\'mes\')">Mes</button>';
-  html += '<button id="pp-p-trimestre" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="ppSetPeriodo(\'trimestre\')">Trimestre</button>';
-  html += '<button id="pp-p-anual" class="btn btn-out" style="font-size:.68rem;padding:4px 14px" onclick="ppSetPeriodo(\'anual\')">Año</button>';
+  html += '<button id="pp-p-mes" class="btn pp-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="mes">Mes</button>';
+  html += '<button id="pp-p-trimestre" class="btn btn-out pp-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="trimestre">Trimestre</button>';
+  html += '<button id="pp-p-anual" class="btn btn-out pp-periodo-btn" style="font-size:.68rem;padding:4px 14px" data-periodo="anual">Año</button>';
   html += '</div>';
 
   // KPIs
@@ -1680,7 +1768,7 @@ function rPagosPendientesEmp(empresa){
   // CxP Table
   html += '<div class="tw" style="margin-bottom:16px">';
   html += '<div class="tw-h"><div class="tw-ht">💳 Cuentas por Pagar Pendientes — '+_esc(empresa)+'</div>';
-  html += '<input type="text" id="pp-search" placeholder="Buscar..." oninput="ppRenderAll()" style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
+  html += '<input type="text" id="pp-search" placeholder="Buscar..." style="padding:5px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.72rem;width:160px;background:var(--white);color:var(--text)">';
   html += '</div>';
   html += '<div style="overflow-x:auto"><table class="bt"><thead><tr>';
   html += '<th>Fecha</th><th>Proveedor</th><th>Concepto</th><th class="r">Total</th><th class="r">Pagado</th><th class="r">Saldo</th><th>Vencimiento</th><th>Status</th><th style="width:80px"></th>';
@@ -1699,6 +1787,12 @@ function rPagosPendientesEmp(empresa){
   html += '</div>';
 
   el.innerHTML = html;
+
+  // ── Wire pp events ──
+  el.querySelectorAll('.pp-periodo-btn').forEach(function(b){ b.onclick = function(){ ppSetPeriodo(b.dataset.periodo); }; });
+  var ppSearch = document.getElementById('pp-search');
+  if(ppSearch) ppSearch.oninput = ppRenderAll;
+
   ppRenderAll();
 }
 
@@ -1906,6 +2000,17 @@ function _emOpen(inner){
   m.style.cssText='position:fixed;inset:0;z-index:9500;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:16px';
   m.innerHTML=inner;
   m.onclick=function(e){if(e.target===m)_emClose();};
+  // Wire modal events
+  m.querySelectorAll('.em-close-btn').forEach(function(b){ b.onclick=_emClose; });
+  m.querySelectorAll('.em-currency-input').forEach(function(inp){
+    inp.onfocus=function(){ facFocus(this); };
+    inp.onblur=function(){ facBlur(this); };
+    inp.oninput=_emCalc;
+  });
+  m.querySelectorAll('.em-focusblur-input').forEach(function(inp){
+    inp.onfocus=function(){ facFocus(this); };
+    inp.onblur=function(){ facBlur(this); };
+  });
 }
 function _emF(id,lbl,val,type,full){
   return '<div'+(full?' style="grid-column:1/-1"':'')+'><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">'+lbl+'</label>'
@@ -1914,7 +2019,7 @@ function _emF(id,lbl,val,type,full){
 function _emC(id,lbl,val,ro){
   var fmtd=val>0?_facFmt(val):'';
   var xtra=ro?'readonly style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700;background:var(--blue-bg);color:var(--blue);cursor:default"'
-              :'onfocus="facFocus(this)" onblur="facBlur(this)" oninput="_emCalc()" style="width:100%;font-size:.78rem;padding:7px 10px"';
+              :'class="em-currency-input" style="width:100%;font-size:.78rem;padding:7px 10px"';
   return '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">'+lbl+'</label>'
     +'<input type="text" id="em-'+id+'" class="fi" value="'+fmtd+'" '+xtra+'></div>';
 }
@@ -1936,7 +2041,7 @@ function cxpEditRow(id){
   _emOpen('<div style="background:var(--white);border-radius:var(--rlg);padding:20px;max-width:540px;width:100%;box-shadow:var(--shm);max-height:90vh;overflow-y:auto">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     +'<div style="font-size:.85rem;font-weight:700">✏️ Editar Factura Recibida</div>'
-    +'<button onclick="_emClose()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
+    +'<button class="em-close-btn" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px">'
     +_emF('prov','Proveedor',c.proveedor)
     +_emF('rfc','RFC Proveedor',c.rfc_proveedor)
@@ -1951,7 +2056,7 @@ function cxpEditRow(id){
     +_emF('venc','Fecha Vencimiento',c.fecha_vencimiento,'date')
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
-    +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
+    +'<button class="btn btn-out" style="font-size:.72rem" class="em-close-btn">Cancelar</button>'
     +'<button class="btn cxp-save-edit" style="font-size:.72rem" data-id="'+escapeHtml(id)+'">💾 Guardar cambios</button>'
     +'</div></div>');
 }
@@ -1982,7 +2087,7 @@ function emitEditRow(id){
   _emOpen('<div style="background:var(--white);border-radius:var(--rlg);padding:20px;max-width:540px;width:100%;box-shadow:var(--shm);max-height:90vh;overflow-y:auto">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     +'<div style="font-size:.85rem;font-weight:700">✏️ Editar Factura Emitida</div>'
-    +'<button onclick="_emClose()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
+    +'<button class="em-close-btn" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px">'
     +_emF('cliente','Cliente',u.receptor_nombre||u.cliente||'')
     +_emF('rfc','RFC Cliente',u.receptor_rfc||'')
@@ -1994,7 +2099,7 @@ function emitEditRow(id){
     +_emC('tot','Total',u.total||0,true)
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
-    +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
+    +'<button class="btn btn-out" style="font-size:.72rem" class="em-close-btn">Cancelar</button>'
     +'<button class="btn emit-save-edit" style="font-size:.72rem" data-id="'+escapeHtml(id)+'">💾 Guardar cambios</button>'
     +'</div></div>');
 }
@@ -2027,18 +2132,18 @@ function pagoEditRow(id){
   _emOpen('<div style="background:var(--white);border-radius:var(--rlg);padding:20px;max-width:440px;width:100%;box-shadow:var(--shm)">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     +'<div style="font-size:.85rem;font-weight:700">✎ Editar Pago</div>'
-    +'<button onclick="_emClose()" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
+    +'<button class="em-close-btn" style="background:none;border:none;font-size:1.1rem;cursor:pointer;color:var(--muted);padding:2px 6px">✕</button></div>'
     +(cxp?'<div style="font-size:.75rem;color:var(--muted);margin-bottom:12px;padding:8px 10px;background:var(--bg);border-radius:6px">📄 <strong>'+_esc(cxp.proveedor)+'</strong> — '+_esc(cxp.concepto||'')+'</div>':'')
     +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px">'
     +_emF('pfecha','Fecha del Pago',p.fecha,'date')
     +'<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Monto (MXN)</label>'
-    +'<input type="text" id="em-pmonto" class="fi" value="'+_facFmt(p.monto_mxn)+'" onfocus="facFocus(this)" onblur="facBlur(this)" style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700"></div>'
+    +'<input type="text" id="em-pmonto" class="fi em-focusblur-input" value="'+_facFmt(p.monto_mxn)+'" style="width:100%;font-size:.78rem;padding:7px 10px;font-weight:700"></div>'
     +'<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Método</label>'
     +'<select id="em-pmetodo" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px">'+metOpts+'</select></div>'
     +_emF('pref','Referencia',p.referencia||'')
     +'</div>'
     +'<div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end">'
-    +'<button class="btn btn-out" style="font-size:.72rem" onclick="_emClose()">Cancelar</button>'
+    +'<button class="btn btn-out" style="font-size:.72rem" class="em-close-btn">Cancelar</button>'
     +'<button class="btn pago-save-edit" style="font-size:.72rem" data-id="'+escapeHtml(id)+'">💾 Guardar cambios</button>'
     +'</div></div>');
 }

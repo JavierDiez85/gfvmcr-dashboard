@@ -174,8 +174,11 @@ async function rTPVPagos() {
     if (banner) banner.innerHTML = `<div style="margin-top:10px;padding:8px 14px;background:var(--purple-bg);border-radius:8px;font-size:.7rem;color:var(--purple);display:flex;align-items:center;gap:8px">
       <span>📊</span>
       <span><b>${correctedCount} cliente${correctedCount > 1 ? 's' : ''}</b> con comisiones ajustadas por cambios de tasa históricos.</span>
-      <button onclick="openRateChanges()" style="background:var(--purple);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif;white-space:nowrap">Ver Historial</button>
+      <button class="rate-changes-btn" style="background:var(--purple);color:#fff;border:none;border-radius:5px;padding:3px 10px;font-size:.65rem;font-weight:700;cursor:pointer;font-family:'Figtree',sans-serif;white-space:nowrap">Ver Historial</button>
     </div>`;
+    // Bind rate-changes-btn after innerHTML
+    const rcBtn = banner.querySelector('.rate-changes-btn');
+    if (rcBtn) rcBtn.addEventListener('click', function(){ openRateChanges(); });
   } else if (banner) {
     banner.innerHTML = '';
   }
@@ -324,7 +327,7 @@ function openHistorial(clienteId) {
       <div class="tw" style="margin-bottom:0">
         <div class="tw-h" style="display:flex;align-items:center;justify-content:space-between">
           <div class="tw-ht">Pagos registrados</div>
-          <button onclick="deletePagoConfirm=true" style="font-size:.65rem;color:var(--red);background:none;border:none;cursor:pointer">eliminar pago</button>
+          <button class="del-pago-confirm-btn" style="font-size:.65rem;color:var(--red);background:none;border:none;cursor:pointer">eliminar pago</button>
         </div>
         <table class="bt">
           <thead><tr><th>Fecha</th><th>Destino</th><th class="r">Monto</th><th>Referencia</th><th>Registrado</th><th></th></tr></thead>
@@ -353,6 +356,8 @@ function openHistorial(clienteId) {
       if (firstBtn) { closeHistorial(); openPagoModal(parseInt(firstBtn.dataset.cid)); return; }
       const delBtn = e.target.closest('.hist-del-pago-btn');
       if (delBtn) { deletePago(parseInt(delBtn.dataset.cid), parseInt(delBtn.dataset.pid)); return; }
+      const confirmBtn = e.target.closest('.del-pago-confirm-btn');
+      if (confirmBtn) { deletePagoConfirm=true; return; }
     });
     histOverlay._bound = true;
   }

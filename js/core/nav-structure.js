@@ -505,7 +505,7 @@ function renderHNavViews(sec){
       if(grp.label){
         // Dropdown group
         html += `<div class="hnav-group" data-group="${grp.label}">`;
-        html += `<div class="hnav-group-toggle" onclick="toggleHNavGroup(this, event)">${grp.label} <span class="hnav-arrow">&#9662;</span></div>`;
+        html += `<div class="hnav-group-toggle">${grp.label} <span class="hnav-arrow">&#9662;</span></div>`;
         html += `<div class="hnav-group-items">`;
         for(const v of grp.views){
           html += `<div class="hnav-view" data-view="${v.id}" >${v.label}</div>`;
@@ -528,6 +528,11 @@ function renderHNavViews(sec){
   }
 
   viewRow.innerHTML = html;
+
+  // ── Event listeners for group toggles ──
+  viewRow.querySelectorAll('.hnav-group-toggle').forEach(function(el){
+    el.addEventListener('click', function(e){ toggleHNavGroup(this, e); });
+  });
 }
 
 /** Toggle a dropdown group in hnav (accordion: close others) */

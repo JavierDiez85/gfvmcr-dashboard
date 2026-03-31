@@ -65,10 +65,10 @@
 
     // Monto
     h += '<div><label style="font-size:.7rem;font-weight:600;color:var(--muted);display:block;margin-bottom:4px">Monto (MXN)</label>';
-    h += '<input type="text" id="inv-f-monto" placeholder="$0.00" onfocus="invFocus(this)" onblur="invBlur(this)" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)"></div>';
+    h += '<input type="text" id="inv-f-monto" placeholder="$0.00" class="inv-monto-input" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)"></div>';
 
     h += '</div>'; // grid
-    h += '<button class="btn btn-blue" style="font-size:.75rem" onclick="invAdd()">➕ Agregar Inversión</button>';
+    h += '<button class="btn btn-blue inv-add-btn" style="font-size:.75rem">➕ Agregar Inversión</button>';
     h += '</div></div>'; // form + tw
 
     // Table
@@ -89,10 +89,8 @@
            + '<td style="font-size:.72rem">'+_esc(i.concepto||'—')+'</td>'
            + '<td style="text-align:right;font-weight:700;font-size:.78rem;color:var(--blue)">'+_fmt(i.monto)+'</td>'
            + '<td style="text-align:center">'
-           + '<button onclick="invDelete(\''+i.id+'\')" title="Eliminar" '
-           + 'style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center" '
-           + 'onmouseover="this.style.background=\'#e53935\';this.style.color=\'#fff\'" '
-           + 'onmouseout="this.style.background=\'rgba(229,57,53,.12)\';this.style.color=\'#e53935\'">✕</button>'
+           + '<button class="inv-del-btn" data-id="'+i.id+'" title="Eliminar" '
+           + 'style="width:22px;height:22px;border-radius:50%;background:rgba(229,57,53,.12);border:1.5px solid #e53935;color:#e53935;cursor:pointer;font-size:.68rem;font-weight:900;display:inline-flex;align-items:center;justify-content:center">✕</button>'
            + '</td>'
            + '</tr>';
       });
@@ -164,6 +162,27 @@
   window.invDelete    = invDelete;
   window.invFocus     = invFocus;
   window.invBlur      = invBlur;
+
+  // ── Event delegation for inversiones ──
+  document.addEventListener('click', function(e){
+    if(e.target.closest('.inv-add-btn')){ invAdd(); return; }
+    var del = e.target.closest('.inv-del-btn');
+    if(del){ invDelete(del.dataset.id); return; }
+  });
+  document.addEventListener('focus', function(e){
+    if(e.target.matches('.inv-monto-input')){ invFocus(e.target); }
+  }, true);
+  document.addEventListener('blur', function(e){
+    if(e.target.matches('.inv-monto-input')){ invBlur(e.target); }
+  }, true);
+  document.addEventListener('mouseover', function(e){
+    var btn = e.target.closest('.inv-del-btn');
+    if(btn){ btn.style.background='#e53935'; btn.style.color='#fff'; }
+  });
+  document.addEventListener('mouseout', function(e){
+    var btn = e.target.closest('.inv-del-btn');
+    if(btn){ btn.style.background='rgba(229,57,53,.12)'; btn.style.color='#e53935'; }
+  });
 
   // Register view
   if (typeof registerView === 'function') {

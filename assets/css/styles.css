@@ -293,3 +293,8 @@ body[data-role="viewer"] .admin-only { display:none !important; }
 .cred-dash-open:hover,.cred-ent-row:hover,.cobr-open:hover{background:var(--bg);}
 .cred-ent-detail-btn:hover{background:var(--btn-col)!important;color:#fff!important;}
 .cred-ent-delete-btn:hover{background:var(--red)!important;color:#fff!important;border-color:var(--red)!important;}
+
+/* Flujo ingresos/gastos — delete & add button hover (replaces inline onmouseover/onmouseout) */
+.fi-del-hover:hover,.fg-del-hover:hover{color:var(--red)!important;}
+.fi-add-hover:hover{border-color:var(--green)!important;color:var(--green)!important;}
+.fg-add-hover:hover{border-color:var(--orange)!important;color:var(--orange)!important;}

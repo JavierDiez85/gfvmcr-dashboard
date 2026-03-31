@@ -391,9 +391,9 @@
 
       <!-- Botones de accion -->
       <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap">
-        <button onclick="credGenerarAmort()" style="padding:8px 18px;border-radius:8px;background:${col};color:#fff;border:none;font-size:.78rem;font-weight:600;cursor:pointer">📊 Generar Tabla</button>
-        <button onclick="credSaveForm()" style="padding:8px 18px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:600;cursor:pointer">💾 Guardar Credito</button>
-        <button onclick="closeModal()" style="padding:8px 18px;border-radius:8px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:.78rem;cursor:pointer">Cancelar</button>
+        <button class="cred-generar-btn" style="padding:8px 18px;border-radius:8px;background:${col};color:#fff;border:none;font-size:.78rem;font-weight:600;cursor:pointer">📊 Generar Tabla</button>
+        <button class="cred-save-btn" style="padding:8px 18px;border-radius:8px;background:var(--blue);color:#fff;border:none;font-size:.78rem;font-weight:600;cursor:pointer">💾 Guardar Credito</button>
+        <button class="cred-cancel-btn" style="padding:8px 18px;border-radius:8px;background:transparent;color:var(--muted);border:1px solid var(--border);font-size:.78rem;cursor:pointer">Cancelar</button>
       </div>
 
       <!-- Contenedor de la tabla de amortizacion -->
@@ -401,6 +401,14 @@
     `;
 
     openModal(null, title, html);
+
+    // ── Event listeners for modal action buttons ──
+    var genBtn = document.querySelector('.cred-generar-btn');
+    if(genBtn) genBtn.addEventListener('click', credGenerarAmort);
+    var saveBtn = document.querySelector('.cred-save-btn');
+    if(saveBtn) saveBtn.addEventListener('click', credSaveForm);
+    var cancelBtn = document.querySelector('.cred-cancel-btn');
+    if(cancelBtn) cancelBtn.addEventListener('click', closeModal);
 
     // Si es edicion y ya tiene tabla, cargarla
     if(isEdit && c && c.amort && c.amort.length > 1){

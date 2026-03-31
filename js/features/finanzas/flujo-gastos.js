@@ -90,16 +90,13 @@ function rFlujoGas(filterEnt){
       ${r.vals.map((v,i)=>`<td style="padding:2px 3px">${moInput(r.id,i,v,true)}</td>`).join('')}
       <td class="mo neg bld" style="font-size:.78rem;font-weight:700" id="fg-rtot-${r.id}">${r.vals.some(v=>v)?fmt(r.vals.reduce((a,b)=>a+b,0)):'—'}</td>
       <td style="text-align:center;padding:2px">
-        ${!isViewer() ? `<button class="fg-del" data-rid="${r.id}" title="Eliminar"
-          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px"
-          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted)'">✕</button>` : ''}
+        ${!isViewer() ? `<button class="fg-del fg-del-hover" data-rid="${r.id}" title="Eliminar"
+          style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:.85rem;padding:2px 5px">✕</button>` : ''}
       </td>
     </tr>`;
   }).join('') + `<tr>
     <td colspan="20" style="padding:8px 12px">
-      <button onclick="fgAddRow()" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:5px 16px;font-size:.75rem;color:var(--muted);cursor:pointer;width:100%;transition:all .12s"
-        onmouseover="this.style.borderColor='var(--orange)';this.style.color='var(--orange)'"
-        onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">
+      <button class="fg-add-row-btn fg-add-hover" style="background:none;border:1px dashed var(--border);border-radius:6px;padding:5px 16px;font-size:.75rem;color:var(--muted);cursor:pointer;width:100%;transition:all .12s">
         + Agregar fila de gasto
       </button>
     </td>
@@ -130,6 +127,9 @@ function rFlujoGas(filterEnt){
   tbody.querySelectorAll('.fg-gc').forEach(function(el){
     el.onchange = function(){ FG_ROWS[+this.dataset.ri].gcConcept=this.value; fgUpdateKPIs(); };
   });
+  // ── Add row button ──
+  var addBtn = tbody.querySelector('.fg-add-row-btn');
+  if(addBtn) addBtn.addEventListener('click', fgAddRow);
   tbody.querySelectorAll('.fg-del').forEach(function(el){
     el.onclick = function(){ fgDelRow(this.dataset.rid); };
   });

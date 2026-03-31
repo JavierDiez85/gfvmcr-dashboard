@@ -201,11 +201,11 @@ function nomOpenDetail(i){
       <input type="text" value="${c.s}" placeholder="Monto" class="nd-cambio-s" style="width:120px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--bg);color:var(--blue);font-weight:600">
       <span style="font-size:.72rem;color:var(--muted)">desde</span>
       <input type="date" value="${c.desde||''}" class="nd-cambio-d" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.78rem;font-family:inherit;background:var(--bg);color:var(--text)">
-      <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px" title="Eliminar cambio">✕</button>
+      <button class="nd-remove-cambio" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px" title="Eliminar cambio">✕</button>
     </div>`;
   });
   html+=`</div>
-    <button onclick="nomAddCambio()" style="background:none;border:1px dashed var(--border);color:var(--blue);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.72rem;margin-top:4px">+ Agregar cambio de sueldo</button>
+    <button class="nd-add-cambio" style="background:none;border:1px dashed var(--border);color:var(--blue);padding:4px 12px;border-radius:6px;cursor:pointer;font-size:.72rem;margin-top:4px">+ Agregar cambio de sueldo</button>
   </div>`;
 
   // Section 3: Distribución %
@@ -215,7 +215,7 @@ function nomOpenDetail(i){
     html+=`<div style="text-align:center">
       <label style="font-size:.68rem;color:${en.c};font-weight:600;display:block;margin-bottom:4px">${en.k}</label>
       <input id="nd-${en.f}" type="number" min="0" max="100" step="5" value="${e[en.f]||0}"
-        oninput="nomDetailUpdateTot()"
+        class="nd-dist-input"
         style="width:100%;border:1px solid var(--border);border-radius:6px;padding:6px;font-size:.9rem;text-align:center;font-weight:700;color:${en.c};background:var(--bg);font-family:inherit">
     </div>`;
   });
@@ -264,6 +264,17 @@ function nomOpenDetail(i){
   };
   var saveBtn = document.querySelector('.nom-save-emp');
   if(saveBtn) saveBtn.onclick = function(){ nomSaveDetail(+this.dataset.idx); };
+  // ── Cambio remove buttons ──
+  document.querySelectorAll('.nd-remove-cambio').forEach(function(btn){
+    btn.addEventListener('click', function(){ this.parentElement.remove(); });
+  });
+  // ── Add cambio button ──
+  var addCambioBtn = document.querySelector('.nd-add-cambio');
+  if(addCambioBtn) addCambioBtn.addEventListener('click', nomAddCambio);
+  // ── Distribution inputs ──
+  document.querySelectorAll('.nd-dist-input').forEach(function(el){
+    el.addEventListener('input', nomDetailUpdateTot);
+  });
 }
 
 function nomDetailUpdateTot(){
@@ -281,7 +292,8 @@ function nomAddCambio(){
   div.innerHTML=`<input type="text" placeholder="Monto" class="nd-cambio-s" style="width:120px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.82rem;font-family:inherit;background:var(--bg);color:var(--blue);font-weight:600">
     <span style="font-size:.72rem;color:var(--muted)">desde</span>
     <input type="date" class="nd-cambio-d" style="border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:.78rem;font-family:inherit;background:var(--bg);color:var(--text)">
-    <button onclick="this.parentElement.remove()" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px">✕</button>`;
+    <button class="nd-remove-cambio" style="background:none;border:none;color:var(--red);cursor:pointer;font-size:.9rem;padding:2px 6px">✕</button>`;
+  div.querySelector('.nd-remove-cambio').addEventListener('click', function(){ this.parentElement.remove(); });
   list.appendChild(div);
 }
 

@@ -467,7 +467,7 @@
         </div>
 
         <!-- Actions -->
-        <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0" onclick="event.stopPropagation()">
+        <div class="cred-actions-stop" style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">
           <button class="cred-ent-detail-btn" data-ent="${escapeHtml(entKey)}" data-client="${escapeHtml(c.cl.replace(/'/g,"\\'"))}" data-idx="${credits.indexOf(c)}" style="--btn-col:${col};font-size:.62rem;padding:4px 10px;border:1px solid ${col};color:${col};background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">📋 Ver tabla</button>
           <button class="cred-ent-delete-btn" data-ent="${escapeHtml(entKey)}" data-idx="${credits.indexOf(c)}" style="font-size:.62rem;padding:4px 10px;border:1px solid var(--border2);color:var(--red);background:transparent;border-radius:6px;cursor:pointer;font-weight:600;white-space:nowrap">🗑 Eliminar</button>
         </div>
@@ -490,6 +490,8 @@
           credDeleteFromList(delBtn.dataset.ent, Number(delBtn.dataset.idx));
           return;
         }
+        // Actions container — stop row click from firing
+        if(e.target.closest('.cred-actions-stop')) return;
         // Row click
         const row = e.target.closest('.cred-ent-row');
         if(row){

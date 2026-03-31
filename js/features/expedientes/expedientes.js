@@ -460,10 +460,7 @@ function _expDocCardHTML(cat, docs, pendingFiles){
       ${badge}
     </div>
     <div class="exp-doc-files">${filesHTML}${pendingHTML}</div>
-    <div class="exp-doc-drop" onclick="this.querySelector('input').click()"
-      ondragover="event.preventDefault();this.classList.add('dragover')"
-      ondragleave="this.classList.remove('dragover')"
-      ondrop="expHandleDrop(event,'${cat.key}')">
+    <div class="exp-doc-drop" data-cat="${cat.key}">
       <div style="font-size:.72rem;color:var(--muted)">${hasDoc?'+ Reemplazar':'Arrastra o haz clic'}</div>
       <input type="file" accept=".pdf,.png,.jpg,.jpeg" hidden data-cat="${cat.key}" class="exp-file-input">
     </div>
@@ -651,13 +648,10 @@ function expAddOtroDoc(){
   card.className = 'exp-doc-card';
   card.innerHTML = `<div class="exp-doc-header">
       <span class="exp-doc-icon">📎</span>
-      <input type="text" class="exp-doc-title-edit" value="Otro documento" placeholder="Nombre de categoría..." onblur="this.closest('.exp-doc-header').querySelector('.exp-doc-title-edit').dataset.key='${key}'">
+      <input type="text" class="exp-doc-title-edit" value="Otro documento" placeholder="Nombre de categoría..." data-key="${key}">
     </div>
     <div class="exp-doc-files"></div>
-    <div class="exp-doc-drop" onclick="this.querySelector('input').click()"
-      ondragover="event.preventDefault();this.classList.add('dragover')"
-      ondragleave="this.classList.remove('dragover')"
-      ondrop="expHandleDrop(event,'${key}')">
+    <div class="exp-doc-drop" data-cat="${key}">
       <div style="font-size:.72rem;color:var(--muted)">Arrastra o haz clic</div>
       <input type="file" accept=".pdf,.png,.jpg,.jpeg" hidden data-cat="${key}" class="exp-file-input">
     </div>`;
@@ -668,14 +662,34 @@ function expAddOtroDoc(){
 }
 
 // ══════════════════════════════════════
-// EVENT DELEGATION: Doc view/delete + file inputs
+// EVENT DELEGATION: Doc view/delete + file inputs + drop zones
 // ══════════════════════════════════════
 document.addEventListener('click', e => {
   const viewBtn = e.target.closest('.exp-view-doc-btn');
   if (viewBtn) { expViewDoc(parseInt(viewBtn.dataset.did)); return; }
   const delBtn = e.target.closest('.exp-del-doc-btn');
   if (delBtn) { expDeleteDoc(parseInt(delBtn.dataset.did)); return; }
+  // Click-to-upload on drop zones
+  const drop = e.target.closest('.exp-doc-drop');
+  if (drop) { const inp = drop.querySelector('input'); if(inp) inp.click(); return; }
 });
+document.addEventListener('dragover', e => {
+  const drop = e.target.closest('.exp-doc-drop');
+  if (drop) { e.preventDefault(); drop.classList.add('dragover'); }
+});
+document.addEventListener('dragleave', e => {
+  const drop = e.target.closest('.exp-doc-drop');
+  if (drop) { drop.classList.remove('dragover'); }
+});
+document.addEventListener('drop', e => {
+  const drop = e.target.closest('.exp-doc-drop');
+  if (drop) { expHandleDrop(e, drop.dataset.cat); }
+});
+document.addEventListener('blur', e => {
+  if (e.target.matches('.exp-doc-title-edit[data-key]')) {
+    e.target.dataset.key = e.target.dataset.key; // preserves key attribute
+  }
+}, true);
 document.addEventListener('change', e => {
   if (e.target.matches('.exp-file-input[data-cat]')) {
     expFileSelected(e.target, e.target.dataset.cat);

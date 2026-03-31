@@ -517,7 +517,7 @@ function rCatView(){
         const col = empCols2[e];
         const chk = emps.includes(e) ? 'checked' : '';
         return '<label style="display:inline-flex;align-items:center;gap:3px;cursor:pointer;padding:3px 7px;border-radius:6px;border:1px solid '+col+'33;background:'+col+'11">'
-          +'<input type="checkbox" '+chk+' onchange="catToggleEmp('+i+',\''+sec+'\',\''+e+'\',this.checked)" style="accent-color:'+col+';width:11px;height:11px">'
+          +'<input type="checkbox" '+chk+' class="cat-toggle-emp" data-idx="'+i+'" data-sec="'+sec+'" data-emp="'+e+'" style="accent-color:'+col+';width:11px;height:11px">'
           +'<span style="font-size:.6rem;font-weight:700;color:'+col+'">'+e.substring(0,3)+'</span>'
           +'</label>';
       }).join('');
@@ -527,8 +527,8 @@ function rCatView(){
         +'<td><div style="display:flex;gap:3px;flex-wrap:wrap">'+boxes+'</div></td>'
         +'<td style="text-align:right">'+pp+'</td>'
         +'<td style="text-align:center;white-space:nowrap">'
-          +(!isViewer() ? '<button onclick="catEdit('+i+',\''+sec+'\')" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:6px;padding:5px 12px;font-size:.7rem;cursor:pointer;margin-right:4px;font-weight:600">Editar</button>'
-          +'<button onclick="catDel('+i+',\''+sec+'\')" style="background:#fde8e8;color:#c62828;border:none;border-radius:6px;padding:5px 12px;font-size:.7rem;cursor:pointer;font-weight:600">Eliminar</button>' : '')
+          +(!isViewer() ? '<button class="cat-edit-btn" data-idx="'+i+'" data-sec="'+sec+'" style="background:var(--blue-bg);color:#0073ea;border:none;border-radius:6px;padding:5px 12px;font-size:.7rem;cursor:pointer;margin-right:4px;font-weight:600">Editar</button>'
+          +'<button class="cat-del-btn" data-idx="'+i+'" data-sec="'+sec+'" style="background:#fde8e8;color:#c62828;border:none;border-radius:6px;padding:5px 12px;font-size:.7rem;cursor:pointer;font-weight:600">Eliminar</button>' : '')
         +'</td></tr>';
     }).join('');
   }
@@ -598,7 +598,7 @@ function catShowModal(idx, sec){
     '<div style="background:var(--white);border-radius:12px;width:420px;max-width:95vw;overflow:hidden;box-shadow:0 16px 48px rgba(0,0,0,.25)">'
     +'<div style="background:linear-gradient(135deg,#0073ea,#0060c7);padding:16px 22px;display:flex;align-items:center;justify-content:space-between">'
       +'<div style="font-family:Poppins,sans-serif;font-weight:700;color:#fff;font-size:.9rem">'+(isNew?'+ Nueva Categoría':'✏️ Editar Categoría')+'</div>'
-      +'<button onclick="document.getElementById(\'confirm-overlay\').style.display=\'none\'" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.9rem">✕</button>'
+      +'<button class="cat-modal-close" style="background:rgba(255,255,255,.15);border:none;color:#fff;width:28px;height:28px;border-radius:7px;cursor:pointer;font-size:.9rem">✕</button>'
     +'</div>'
     +'<div style="padding:20px 22px">'
       +'<div style="margin-bottom:12px"><label class="fl">Nombre</label>'
@@ -609,8 +609,8 @@ function catShowModal(idx, sec){
         +'<input type="number" id="cm-ppto" class="fi n" value="'+(item.ppto||0)+'" min="0"></div>'
       + wbRow
       +'<div style="display:flex;gap:8px;justify-content:flex-end;margin-top:6px">'
-        +'<button onclick="document.getElementById(\'confirm-overlay\').style.display=\'none\'" class="btn btn-out">Cancelar</button>'
-        +'<button onclick="catSaveModal()" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer">✅ Guardar</button>'
+        +'<button class="cat-modal-close btn btn-out">Cancelar</button>'
+        +'<button class="cat-modal-save" style="background:#0073ea;color:#fff;border:none;border-radius:8px;padding:7px 16px;font-size:.8rem;font-weight:600;cursor:pointer">✅ Guardar</button>'
       +'</div>'
     +'</div>'
   +'</div>';
@@ -650,7 +650,7 @@ function catToggleEmp(idx, sec, empresa, checked){
   if(!emps.length){ 
     toast('⚠️ Debe quedar al menos una empresa'); 
     // Revert checkbox
-    const cb = document.querySelector('#cat-row-'+sec+'-'+idx+' input[onchange*=\''+empresa+'\']');
+    const cb = document.querySelector('#cat-row-'+sec+'-'+idx+' input.cat-toggle-emp[data-emp="'+empresa+'"]');
     if(cb) cb.checked = true;
     return; 
   }
@@ -664,6 +664,29 @@ function catToggleEmp(idx, sec, empresa, checked){
   if(kex) kex.textContent = excl;
   toast('✅ Guardado');
 }
+
+// ── Event delegation for categorías tables + modal ──
+document.addEventListener('change', function(e){
+  if(e.target.matches('.cat-toggle-emp')){
+    var idx = parseInt(e.target.dataset.idx, 10);
+    var sec = e.target.dataset.sec;
+    var emp = e.target.dataset.emp;
+    catToggleEmp(idx, sec, emp, e.target.checked);
+  }
+});
+document.addEventListener('click', function(e){
+  var btn;
+  if((btn = e.target.closest('.cat-edit-btn'))){
+    catEdit(parseInt(btn.dataset.idx, 10), btn.dataset.sec);
+  } else if((btn = e.target.closest('.cat-del-btn'))){
+    catDel(parseInt(btn.dataset.idx, 10), btn.dataset.sec);
+  } else if(e.target.closest('.cat-modal-close')){
+    var ov = document.getElementById('confirm-overlay');
+    if(ov) ov.style.display = 'none';
+  } else if(e.target.closest('.cat-modal-save')){
+    catSaveModal();
+  }
+});
 
   // Expose on window
   window.TAR_CHARTS = TAR_CHARTS;

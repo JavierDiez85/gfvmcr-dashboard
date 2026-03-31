@@ -32,8 +32,9 @@ async function rTPVTerminales(){
       + 'border-radius:10px;margin-bottom:16px;font-size:.82rem;display:flex;align-items:center;justify-content:space-between;gap:12px';
     banner.innerHTML = '<span>⚠️ <b>No se pudieron cargar los datos de terminales.</b> Error de conexión con Supabase.<br>'
       + '<small style="color:#9b1c1c;margin-top:4px;display:block">Detalle: ' + TPV._lastError + '</small></span>'
-      + '<button onclick="rTPVTerminalesView()" style="background:#b91c1c;color:#fff;border:none;border-radius:6px;'
+      + '<button class="term-retry-btn" style="background:#b91c1c;color:#fff;border:none;border-radius:6px;'
       + 'padding:7px 14px;cursor:pointer;font-weight:600;font-size:.78rem;white-space:nowrap;font-family:inherit">🔄 Reintentar</button>';
+    banner.querySelector('.term-retry-btn').addEventListener('click', function(){ rTPVTerminalesView(); });
     if (kEl && kEl.parentNode) kEl.parentNode.insertBefore(banner, kEl);
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:32px;color:var(--muted);font-size:.82rem">'
       + '⚠️ Sin datos — revisa la conexión y reintenta</td></tr>';
@@ -47,8 +48,9 @@ async function rTPVTerminales(){
     banner.style.cssText = 'background:#fff8e1;border:1px solid #ffe082;color:#856404;padding:10px 16px;'
       + 'border-radius:8px;margin-bottom:14px;font-size:.78rem;display:flex;align-items:center;justify-content:space-between;gap:12px';
     banner.innerHTML = '<span>⚡ Mostrando datos en caché — no se pudo conectar con Supabase. Los datos pueden estar desactualizados.</span>'
-      + '<button onclick="TPV.invalidateAll();rTPVTerminalesView()" style="background:#856404;color:#fff;border:none;border-radius:6px;'
+      + '<button class="term-refresh-btn" style="background:#856404;color:#fff;border:none;border-radius:6px;'
       + 'padding:5px 12px;cursor:pointer;font-weight:600;font-size:.75rem;font-family:inherit">🔄 Actualizar</button>';
+    banner.querySelector('.term-refresh-btn').addEventListener('click', function(){ TPV.invalidateAll(); rTPVTerminalesView(); });
     if (kEl && kEl.parentNode) kEl.parentNode.insertBefore(banner, kEl);
   }
   // Populate client dropdown + search cache
