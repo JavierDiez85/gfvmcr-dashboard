@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.2 | **Fecha**: 2026-03-31 | **Código**: ~37,000 líneas
+> **Versión**: 1.3 | **Fecha**: 2026-04-01 | **Código**: ~37,500 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -26,10 +26,16 @@
 - URL producción: `https://gfvmcr-dashboard-production.up.railway.app`
 
 ### Proceso de Login
-1. Ingresar email y contraseña
+1. Ingresar email y contraseña (botón 👁 para mostrar/ocultar contraseña)
 2. El sistema hashea la contraseña con PBKDF2 (client-side)
 3. El servidor valida el hash y emite un JWT como cookie httpOnly
 4. La sesión dura 24 horas (JWT) con timeout de inactividad de 30 minutos
+
+### Mensajes de error de login
+- **429**: "Demasiados intentos. Espera un momento e intenta de nuevo." (rate limit server-side)
+- **Credenciales incorrectas**: "Correo o contraseña incorrectos"
+- **Sin red**: "Sin conexión al servidor. Verifica tu internet."
+- **Rate limit local**: "Demasiados intentos. Espera 5 minutos." (5 intentos en 5 min)
 
 ### Roles
 | Rol | Permisos |
@@ -433,6 +439,8 @@ Gestión de categorías de ingresos y gastos para el P&L.
 
 ## 1.14 Bot IA (Asistente)
 
+> **Estado actual**: Bot temporalmente desactivado (`initAIChat()` retorna inmediatamente). Para reactivar, eliminar el `return` al inicio de `initAIChat()` en `js/features/ai-chat/ai-chat.js`.
+
 ### Acceso
 - Escribir en la barra de búsqueda del topbar y presionar Enter
 - Se abre panel de chat lateral
@@ -466,8 +474,9 @@ El bot respeta los permisos del usuario. Si un usuario no tiene acceso a crédit
 | Backend | Node.js vanilla (`http` module, SIN Express) |
 | Base de datos | Supabase (PostgreSQL + RLS + REST API) |
 | Auth | PBKDF2 + JWT (httpOnly cookie, SameSite=Strict) |
-| IA | Anthropic Claude API (Sonnet 4) |
+| IA | Anthropic Claude API (Sonnet 4) — actualmente desactivado |
 | Deploy | Railway.app + Docker |
+| PWA | Service Worker (cache solo icons/manifest) + manifest.json |
 
 ### Dependencias (package.json)
 ```json
@@ -698,6 +707,33 @@ IVA_RATE=0.16                          # Tasa IVA (default 0.16 = 16%). Para zon
 TERMINAL_INACTIVITY_DAYS=15            # días para alerta de terminal inactiva
 PORT=8080                              # puerto (default 8080)
 ```
+
+---
+
+## 2.8 PWA y Versión Móvil
+
+### Soporte PWA (Progressive Web App)
+- `manifest.json`: nombre, iconos 192px y 512px, `start_url: "/"`, `display: "standalone"`
+- `service-worker.js`: cachea solo `icon-192.png`, `icon-512.png` y `manifest.json`
+- HTML/JS/CSS NO se cachean → siempre se sirve código fresco desde el servidor
+- Auto-reload: cuando un nuevo SW se activa, la página recarga automáticamente
+- En iOS: instalar desde Safari → "Agregar a pantalla de inicio"
+
+### Rutas permitidas (security.js)
+`manifest.json` y `service-worker.js` están en `ALLOWED_DIRS` para acceso público sin auth.
+
+### Vista Móvil (breakpoint 480px)
+- KPIs: grid 2 columnas, tipografía compacta
+- Topbar: 34px de altura, sin toggle de tema
+- Tablas: fuentes 0.5–0.6rem, padding 4px
+- Entity cards: scroll horizontal con snap
+- Charts: max-height 150px
+- Scrollbars: 3px de ancho
+- Search bar: 100px mínimo
+
+### Limitaciones actuales móvil
+- Bot IA desactivado en móvil (también desactivado globalmente al 2026-04-01)
+- Algunas vistas complejas (créditos, TPV detalle) pueden requerir scroll horizontal
 
 ---
 
