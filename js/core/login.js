@@ -3,6 +3,23 @@
 
 let CURRENT_USER = null;
 
+// ── Password visibility toggle ──
+document.addEventListener('DOMContentLoaded', function(){
+  const toggle = document.getElementById('pw-toggle');
+  if(toggle) toggle.addEventListener('click', function(){
+    const inp = document.getElementById('login-password');
+    const show = document.getElementById('pw-eye-show');
+    const hide = document.getElementById('pw-eye-hide');
+    if(!inp) return;
+    const isHidden = inp.type === 'password';
+    inp.type = isHidden ? 'text' : 'password';
+    if(show) show.style.display = isHidden ? 'none' : '';
+    if(hide) hide.style.display = isHidden ? '' : 'none';
+    toggle.title = isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña';
+    inp.focus();
+  });
+});
+
 // ── Hashing ──
 // Legacy SHA-256 (sin salt) — solo para migración
 async function hashPasswordLegacy(plain){
@@ -214,10 +231,15 @@ async function doLogin(){
       sessionStorage.setItem('gf_session', JSON.stringify(CURRENT_USER));
     } else {
       _recordAttempt(email);
-      errEl.textContent = 'Correo o contraseña incorrectos'; errEl.style.display = 'block'; return;
+      if (loginResp.status === 429) {
+        errEl.textContent = 'Demasiados intentos. Espera un momento e intenta de nuevo.';
+      } else {
+        errEl.textContent = 'Correo o contraseña incorrectos';
+      }
+      errEl.style.display = 'block'; return;
     }
   } catch(e) {
-    errEl.textContent = 'Error de conexión con el servidor'; errEl.style.display = 'block'; return;
+    errEl.textContent = 'Sin conexión al servidor. Verifica tu internet.'; errEl.style.display = 'block'; return;
   }
 
   // Ocultar login, iniciar app

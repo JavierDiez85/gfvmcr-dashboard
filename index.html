@@ -43,8 +43,14 @@
     <div style="font-size:2rem;margin-bottom:4px">📊</div>
     <div style="font-family:'Poppins',sans-serif;font-size:1.1rem;font-weight:700;margin-bottom:2px">Grupo Financiero</div>
     <div style="font-size:.72rem;color:#8b8fb5;margin-bottom:24px">Iniciar sesión</div>
-    <input id="login-email" class="fi" type="email" placeholder="Correo electrónico" style="margin-bottom:10px;width:100%;box-sizing:border-box">
-    <input id="login-password" class="fi" type="password" placeholder="Contraseña" style="margin-bottom:16px;width:100%;box-sizing:border-box" onkeydown="if(event.key==='Enter')doLogin()">
+    <input id="login-email" class="fi" type="email" placeholder="Correo electrónico" autocapitalize="none" autocorrect="off" spellcheck="false" style="margin-bottom:10px;width:100%;box-sizing:border-box">
+    <div style="position:relative;margin-bottom:16px">
+      <input id="login-password" class="fi" type="password" placeholder="Contraseña" style="width:100%;box-sizing:border-box;padding-right:40px" onkeydown="if(event.key==='Enter')doLogin()">
+      <button type="button" id="pw-toggle" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#8b8fb5;padding:4px;display:flex;align-items:center" title="Mostrar contraseña">
+        <svg id="pw-eye-show" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <svg id="pw-eye-hide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;display:none"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+      </button>
+    </div>
     <button id="login-btn" onclick="doLogin()" style="width:100%;padding:10px;background:#0073ea;color:#fff;border:none;border-radius:8px;font-weight:700;font-size:.82rem;cursor:pointer;font-family:'Figtree',sans-serif">Entrar</button>
     <div id="login-error" style="color:#e53935;font-size:.72rem;margin-top:10px;display:none"></div>
   </div>
