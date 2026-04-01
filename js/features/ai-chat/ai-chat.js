@@ -16,7 +16,9 @@ let _chatLoading = false;
 // INIT — llamado desde main.js post-login
 // ═══════════════════════════════════════
 function initAIChat() {
-  // Bot temporalmente desactivado — reactivar cuando se indique
+  // Bot temporalmente desactivado (2026-03-31) — desactivado para mejorar UX móvil.
+  // Para reactivar: eliminar las 2 líneas siguientes (return + este comentario).
+  // El endpoint /api/chat sigue activo server-side (con auth JWT).
   return;
   if (!isLoggedIn()) return;
   _chatLoadSession();

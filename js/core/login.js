@@ -3,8 +3,9 @@
 
 let CURRENT_USER = null;
 
-// ── Password visibility toggle ──
+// ── Login form event delegation (password toggle + Enter key) ──
 document.addEventListener('DOMContentLoaded', function(){
+  // Password visibility toggle
   const toggle = document.getElementById('pw-toggle');
   if(toggle) toggle.addEventListener('click', function(){
     const inp = document.getElementById('login-password');
@@ -17,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function(){
     if(hide) hide.style.display = isHidden ? '' : 'none';
     toggle.title = isHidden ? 'Ocultar contraseña' : 'Mostrar contraseña';
     inp.focus();
+  });
+  // Enter key on password field → login
+  const pwInput = document.getElementById('login-password');
+  if(pwInput) pwInput.addEventListener('keydown', function(e){
+    if(e.key === 'Enter') doLogin();
   });
 });
 
