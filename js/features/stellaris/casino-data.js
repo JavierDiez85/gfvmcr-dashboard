@@ -209,7 +209,8 @@
     } else if (timeTo) {
       corte.turno = `8:00 AM - ${timeTo[1]}`;
     }
-    corte.id = `corte_${corte.fecha}_${(corte.turno || '').replace(/[^0-9AMP]/gi, '')}`;
+    // ID based on date only — one corte per day (cierre replaces intraday)
+    corte.id = `corte_${corte.fecha}`;
 
     // Caja
     corte.entradas = findAmount('Total Entradas');
