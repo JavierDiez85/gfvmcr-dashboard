@@ -172,18 +172,31 @@
   // Read PDF text using PDF.js (already loaded via CDN)
   async function _readPDFAsText(file) {
     if (typeof pdfjsLib === 'undefined') {
-      // Fallback: read as raw text (works for text-based PDFs from email)
       return await file.text();
     }
-    const ab = await file.arrayBuffer();
-    const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
-    let text = '';
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      text += content.items.map(item => item.str).join(' ') + '\n';
+    try {
+      const ab = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: ab }).promise;
+      let text = '';
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        // Reconstruct text with line breaks based on Y position
+        let lastY = null;
+        for (const item of content.items) {
+          const y = Math.round(item.transform[5]);
+          if (lastY !== null && Math.abs(y - lastY) > 5) text += '\n';
+          else if (lastY !== null) text += ' ';
+          text += item.str;
+          lastY = y;
+        }
+        text += '\n\n';
+      }
+      return text;
+    } catch (e) {
+      console.warn('[Casino] PDF.js falló, intentando file.text():', e.message);
+      return await file.text();
     }
-    return text;
   }
 
   function _showCasinoPreview(corte, filename) {

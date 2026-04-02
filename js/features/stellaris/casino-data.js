@@ -136,25 +136,62 @@
       if (sm) { corte.sala = sm[1].trim(); break; }
     }
 
-    // Dates
+    // Dates — search multiple patterns for robustness
     let desde = '', hasta = '';
+
+    // Strategy 1: Look for "Desde:" and "Hasta:" with date nearby (up to 3 lines ahead)
     for (let i = 0; i < lines.length; i++) {
-      if (lines[i].match(/^Desde:/i) && i + 1 < lines.length) {
-        desde = lines[i + 1].trim() || lines[i].replace(/Desde:\s*/i, '').trim();
+      if (lines[i].match(/Desde:/i)) {
+        // Check same line and next 3 lines for a date
+        for (let j = i; j < Math.min(i + 4, lines.length); j++) {
+          const dm = lines[j].match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+\d{1,2}:\d{2}/);
+          if (dm) { desde = lines[j]; break; }
+        }
       }
-      if (lines[i].match(/^Hasta:/i) && i + 1 < lines.length) {
-        hasta = lines[i + 1].trim() || lines[i].replace(/Hasta:\s*/i, '').trim();
+      if (lines[i].match(/Hasta:/i)) {
+        for (let j = i; j < Math.min(i + 4, lines.length); j++) {
+          const dm = lines[j].match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+\d{1,2}:\d{2}/);
+          if (dm) { hasta = lines[j]; break; }
+        }
       }
     }
-    // Parse date from "4/1/2026 8:00 AM" format
-    const dateMatch = desde.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+
+    // Strategy 2: If no Desde/Hasta found, extract from title/subject line
+    if (!desde) {
+      const fullText = text;
+      // Look for "Site: 175 - Grand Tuxtla Casino 4/1/2026 8:00 PM" pattern
+      const titleMatch = fullText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)/i);
+      if (titleMatch) {
+        hasta = `${titleMatch[1]}/${titleMatch[2]}/${titleMatch[3]} ${titleMatch[4]}`;
+        // Infer desde as same day 8:00 AM
+        desde = `${titleMatch[1]}/${titleMatch[2]}/${titleMatch[3]} 8:00 AM`;
+      }
+    }
+
+    // Strategy 3: Find ANY date in M/D/YYYY format in the first 30 lines
+    if (!desde) {
+      for (let i = 0; i < Math.min(30, lines.length); i++) {
+        const dm = lines[i].match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+        if (dm && parseInt(dm[3]) >= 2024) {
+          desde = lines[i];
+          break;
+        }
+      }
+    }
+
+    // Parse date from "4/1/2026 8:00 AM" or "4/1/2026" format
+    const dateMatch = (desde || hasta).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/);
     if (dateMatch) {
-      corte.fecha = `${dateMatch[3]}-${dateMatch[1].padStart(2, '0')}-${dateMatch[2].padStart(2, '0')}`;
+      const m = dateMatch[1].padStart(2, '0');
+      const d = dateMatch[2].padStart(2, '0');
+      corte.fecha = `${dateMatch[3]}-${m}-${d}`;
     }
-    const timeFrom = desde.match(/\d{1,2}:\d{2}\s*[AP]M/i);
-    const timeTo = hasta.match(/\d{1,2}:\d{2}\s*[AP]M/i);
+    const timeFrom = desde.match(/(\d{1,2}:\d{2}\s*[AP]M)/i);
+    const timeTo = hasta.match(/(\d{1,2}:\d{2}\s*[AP]M)/i);
     if (timeFrom && timeTo) {
-      corte.turno = `${timeFrom[0]} - ${timeTo[0]}`;
+      corte.turno = `${timeFrom[1]} - ${timeTo[1]}`;
+    } else if (timeTo) {
+      corte.turno = `8:00 AM - ${timeTo[1]}`;
     }
     corte.id = `corte_${corte.fecha}_${(corte.turno || '').replace(/[^0-9AMP]/gi, '')}`;
 
