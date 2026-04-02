@@ -72,7 +72,9 @@ const APP_KEYS = [
   // Nómina y gastos compartidos
   'gf_nomina','gf_gc',
   // Facturación CxP
-  'gf_cxp'
+  'gf_cxp',
+  // Stellaris Casino
+  'gf_casino'
 ];
 
 // Estado de sync

@@ -233,11 +233,17 @@ const NAV_STRUCTURE = {
             {id:'stel_nom',label:'Nómina',icon:'👥'},
           ]}]
         },
+        { id:'operacion', label:'Operación', icon:'🎰', defaultView:'stel_casino',
+          groups:[{ label:null, views:[
+            {id:'stel_casino',label:'Dashboard Casino',icon:'🎰'},
+          ]}]
+        },
         { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva_stel',
           groups:[{ label:null, views:[
             {id:'carga_masiva_stel',label:'Carga Masiva',icon:'📊'},
             {id:'flujo_ing_stel',label:'Flujo de Ingresos',icon:'💰'},
             {id:'flujo_gas_stel',label:'Flujo de Gastos',icon:'💸'},
+            {id:'stel_casino_upload',label:'Casino (PDF/Excel)',icon:'🎰'},
           ]}]
         },
         { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes_stel',

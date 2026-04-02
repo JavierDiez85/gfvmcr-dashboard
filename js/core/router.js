@@ -29,6 +29,7 @@ const VT = {
   centum:'Centum Capital',grupo:'Grupo Financiero',cfg_usuarios:'Configuración — Usuarios',cfg_apariencia:'Configuración — Apariencia',cfg_permisos:'Configuración — Permisos',cfg_categorias:'Configuración — Categorías P&L',cfg_bancos:'Configuración — Bancos y Cuentas',tes_flujo:'Tesorería — Flujo de Caja',tes_individual:'Tesorería — Por Empresa',tes_grupo:'Tesorería — Consolidado Grupo',carga_creditos:'Carga — Créditos PDF',
   fact_terminales:'Facturación — Terminales',fact_tarjetas:'Facturación — Tarjetas',fact_endless:'Facturación — Endless',fact_dynamo:'Facturación — Dynamo',fact_wirebit:'Facturación — Wirebit',fact_stellaris:'Facturación — Stellaris',
   stel_res:'Stellaris — P&L',stel_ing:'Stellaris — Ingresos',stel_gas:'Stellaris — Costes y Gastos',stel_nom:'Stellaris — Nómina',
+  stel_casino:'Stellaris — Dashboard Casino',stel_casino_upload:'Stellaris — Carga Casino',
   carga_facturas:'Facturación — Carga de Facturas',
   carga_egresos:'Facturación — Facturas Recibidas',pagos_pendientes:'Facturación — Pagos Pendientes',
   emit_salem:'Facturación — Emitidas Salem',emit_endless:'Facturación — Emitidas Endless',emit_dynamo:'Facturación — Emitidas Dynamo',emit_wirebit:'Facturación — Emitidas Wirebit',emit_stellaris:'Facturación — Emitidas Stellaris',
@@ -151,6 +152,7 @@ async function _syncAll(){
     }
   }
   fiInjectTPV(); fiInjectCredits();
+  if(typeof fiInjectCasino === 'function') fiInjectCasino();
   if(typeof ceInjectGastos === 'function') ceInjectGastos();
   syncFlujoToRecs();
 }
