@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.3 | **Fecha**: 2026-04-01 | **Código**: ~37,500 líneas
+> **Versión**: 1.4 | **Fecha**: 2026-04-02 | **Código**: ~38,500 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -11,8 +11,8 @@
 - [Parte 1: Manual Operativo](#parte-1-manual-operativo)
 - [Parte 2: Arquitectura Técnica](#parte-2-arquitectura-técnica)
 - [Parte 3: Guía de Desarrollo](#parte-3-guía-de-desarrollo)
-  - [3.11 Troubleshooting](#311-troubleshooting)
-  - [3.12 Backup y Recovery](#312-backup-y-recovery)
+  - [3.12 Troubleshooting](#312-troubleshooting)
+  - [3.13 Backup y Recovery](#313-backup-y-recovery)
 - [Parte 4: Referencia Rápida](#parte-4-referencia-rápida)
 
 ---
@@ -58,7 +58,7 @@ Barra vertical de 72px con iconos de las entidades:
 - **E** (Endless) — Créditos Endless
 - **D** (Dynamo) — Créditos Dynamo
 - **W** (Wirebit) — Crypto exchange
-- **St** (Stellaris) — Nueva entidad
+- **St** (Stellaris) — Casino Grand Tuxtla (módulo operación)
 - **Config** (engrane) — Usuarios, permisos, apariencia
 
 ### Topbar (arriba)
@@ -316,26 +316,76 @@ Upload de Excel con transacciones de tarjetas. Similar al TPV upload.
 
 ---
 
-## 1.8 Wirebit
+## 1.8 Stellaris — Casino
 
-### 1.8.1 P&L Wirebit
+### 1.8.1 Dashboard Casino
+**Vista**: `stel_casino`
+
+KPIs del período seleccionado, calculados con todos los cortes cargados:
+
+| KPI | Fuente |
+|-----|--------|
+| Netwin Total | Suma de netwin de todos los cortes |
+| Resultado | Netwin − gastos operativos del corte |
+| Hold% promedio | Promedio ponderado por jugado |
+| Jugado Total | Suma de `caja.maqJugado` |
+| Ocupación | Promedio de ocupación diaria |
+| Altas | Suma de altas del período |
+| Cortes | Número de cortes cargados |
+
+**Charts**:
+- Netwin por proveedor (barras verticales)
+- Hold% por proveedor (barras horizontales)
+
+**Tablas**:
+- Desglose por proveedor: jugado, netwin, hold%, terminales
+- Control de cajeros (solo si hay Excel cargado): entradas, salidas, impuestos, resultado por cajero
+
+**Integración P&L**: `fiInjectCasino()` inyecta automáticamente el netwin mensual en el P&L de Stellaris vía `_syncAll`.
+
+### 1.8.2 Carga de Datos Casino
+**Vista**: `stel_casino_upload`
+
+Soporta dos tipos de documentos del sistema Wigos:
+
+**PDF — Resumen de Caja**
+- Arrastra o selecciona el PDF del corte diario
+- Extrae: fecha, turno, sala, caja (jugado/netwin/hold), máquinas por proveedor, ocupación, aforo, cuentas de altas/bajas
+- Preview con datos parseados antes de guardar
+- Parser dual: PDF.js inline primero, fallback a líneas pdftotext
+- Proveedores reconocidos: AGS, EGT, FBM, MERKUR, ORTIZ, ZITRO, ARISTOCRAT, IGT, BALLY, KONAMI, SCIENTIFIC, NOVOMATIC, EVERI
+
+**Excel — Sesiones de Caja**
+- Sube el Excel de sesiones de cajero
+- Extrae: nombre del cajero, entradas, salidas, impuestos, resultado por sesión
+- Se asocia al último corte PDF cargado
+
+**Historial**: Tabla de cortes guardados con botón de eliminar por corte.
+
+**Storage**: Clave `gf_casino` en Supabase. Estructura: `{ cortes: [ ...corteObjects ] }`.
+
+---
+
+## 1.9 Wirebit
+
+### 1.9.1 P&L Wirebit
 **Vista**: `wb_res`
 
 Estado de resultados: fees de exchange, costos operativos, margen.
 
-### 1.8.2 Transacciones
+### 1.9.2 Transacciones
 - `wb_cripto` — Transacciones de criptomonedas
 - `wb_tarjetas` — Transacciones de tarjetas Wirebit
 
-### 1.8.3 Carga de Datos
+### 1.9.3 Carga de Datos
 - `wb_upload` — Upload de fees de exchange
 - `wb_tar_upload` — Upload de transacciones de tarjetas
 
 ---
 
-## 1.9 Tesorería
+## 1.10 Tesorería
 
-### 1.9.1 Flujo de Caja
+### 1.10.1 Flujo de Caja
 **Vista**: `tes_flujo`
 
 Tabla de movimientos: fecha, empresa, tipo (ingreso/gasto), categoría, concepto, cuenta, monto.
@@ -343,17 +393,17 @@ Tabla de movimientos: fecha, empresa, tipo (ingreso/gasto), categoría, concepto
 - Agregar/editar/eliminar movimientos
 - Selección múltiple para operaciones batch
 
-### 1.9.2 Por Empresa
+### 1.10.2 Por Empresa
 **Vista**: `tes_individual`
 
 KPIs por empresa: ingresos, gastos, flujo neto. Gráfica mensual. Últimos movimientos.
 
-### 1.9.3 Consolidado Grupo
+### 1.10.3 Consolidado Grupo
 **Vista**: `tes_grupo`
 
 Vista consolidada de todas las empresas.
 
-### 1.9.4 Bancos y Cuentas
+### 1.10.4 Bancos y Cuentas
 **Vista**: `cfg_bancos`
 
 Configurar cuentas bancarias: nombre, tipo, empresas asignadas.
@@ -362,9 +412,9 @@ Configurar cuentas bancarias: nombre, tipo, empresas asignadas.
 
 ---
 
-## 1.10 Facturación
+## 1.11 Facturación
 
-### 1.10.1 Por Empresa
+### 1.11.1 Por Empresa
 **Vistas**: `fact_tarjetas` (Salem), `fact_endless`, `fact_dynamo`, `fact_wirebit`, `fact_stellaris`
 
 Tres sub-secciones por empresa:
@@ -372,19 +422,19 @@ Tres sub-secciones por empresa:
 - **Recibidas**: Facturas que recibimos (CxP)
 - **Pagos Pendientes**: Facturas sin cobrar/pagar
 
-### 1.10.2 Carga de Facturas
+### 1.11.2 Carga de Facturas
 **Vista**: `carga_facturas`
 
 Upload de XML CFDI. Parseo automático de datos del comprobante.
 
-### 1.10.3 Carga de Egresos
+### 1.11.3 Carga de Egresos
 **Vista**: `carga_egresos`
 
 Captura manual o por archivo de facturas de egreso. Drag & drop de PDFs. Modo efectivo.
 
 ---
 
-## 1.11 Expedientes
+## 1.12 Expedientes
 
 **Vistas**: `expedientes`, `expedientes_sal`, `expedientes_end`, etc.
 
@@ -397,9 +447,9 @@ Gestión de documentos por cliente:
 
 ---
 
-## 1.12 Tickets
+## 1.13 Tickets
 
-### 1.12.1 Panel Interno
+### 1.13.1 Panel Interno
 **Vista**: `tk_pagos_tpv`
 
 KPIs: total, pendientes, abiertos, en proceso, resueltos.
@@ -407,7 +457,7 @@ Tabla de tickets con filtros por estado, prioridad, búsqueda.
 - Click en ticket abre detalle
 - Cambiar estado (pendiente → abierto → en_proceso → resuelto → cerrado)
 
-### 1.12.2 Formulario Público
+### 1.13.2 Formulario Público
 **URL**: `/ticket.html`
 
 Formulario para que clientes envíen tickets de pago:
@@ -417,27 +467,27 @@ Formulario para que clientes envíen tickets de pago:
 
 ---
 
-## 1.13 Configuración
+## 1.14 Configuración
 
-### 1.13.1 Usuarios
+### 1.14.1 Usuarios
 **Vista**: `cfg_usuarios`
 
 CRUD de usuarios: nombre, email, contraseña, teléfono, empresa, rol, activo.
 Asignación de permisos por módulo con checkboxes.
 
-### 1.13.2 Apariencia
+### 1.14.2 Apariencia
 **Vista**: `cfg_apariencia`
 
 Tema claro/oscuro. Se persiste en `gf_theme`.
 
-### 1.13.3 Categorías P&L
+### 1.14.3 Categorías P&L
 **Vista**: `cfg_categorias`
 
 Gestión de categorías de ingresos y gastos para el P&L.
 
 ---
 
-## 1.14 Bot IA (Asistente)
+## 1.15 Bot IA (Asistente)
 
 > **Estado actual**: Bot temporalmente desactivado (`initAIChat()` retorna inmediatamente). Para reactivar, eliminar el `return` al inicio de `initAIChat()` en `js/features/ai-chat/ai-chat.js`.
 
@@ -1010,7 +1060,30 @@ gf_nomina (localStorage)
 
 ---
 
-## 3.9 Anti-Patrones (NO hacer)
+## 3.9 Flujo de Datos: Casino → P&L
+
+```
+PDF Wigos (Resumen de Caja) — upload client-side
+  ↓ PDF.js text extraction (inline) o file.text() fallback
+  ↓ parseCasinoPDF() [casino-data.js]
+  ↓  · regex dual strategy: full-text first, line-by-line fallback
+  ↓  · extrae: fecha, turno, sala, caja (jugado/netwin/hold), máquinas, proveedores
+  ↓ guardado en gf_casino.cortes[] → Supabase sync
+
+Excel Wigos (Sesiones de Caja) — upload client-side
+  ↓ SheetJS (CDN) parseado a JSON
+  ↓ parseCasinoExcel() — extrae cajeros con entradas/salidas/impuestos/resultado
+  ↓ merge en último corte del gf_casino
+
+fiInjectCasino() [casino-dashboard.js] llamado desde _syncAll()
+  ↓ casinoMonthlyNetwin(mes, año) — agrega netwin de todos los cortes del mes
+  ↓ inyecta en P&L Stellaris como ingreso de 'Casino — Netwin'
+  ↓ Afecta Ingresos Brutos → Margen Bruto → EBITDA de Stellaris
+```
+
+---
+
+## 3.10 Anti-Patrones (NO hacer)
 
 1. **NO usar frameworks** (React, Vue, Angular)
 2. **NO usar npm para frontend** — las libs se cargan por CDN
@@ -1027,7 +1100,7 @@ gf_nomina (localStorage)
 
 ---
 
-## 3.10 Checklist de Calidad
+## 3.11 Checklist de Calidad
 
 Antes de hacer deploy:
 - [ ] `escapeHtml()` en todo dato de usuario insertado en HTML
@@ -1044,7 +1117,7 @@ Antes de hacer deploy:
 
 ---
 
-## 3.11 Troubleshooting
+## 3.12 Troubleshooting
 
 ### La sincronización falla
 - Verificar conexión a internet
@@ -1082,7 +1155,7 @@ Antes de hacer deploy:
 
 ---
 
-## 3.12 Backup y Recovery
+## 3.13 Backup y Recovery
 
 ### Supabase
 - **Backups automáticos**: Supabase Pro incluye daily backups con 7 días de retención
@@ -1168,6 +1241,10 @@ Antes de hacer deploy:
 │   │   ├── wirebit-data.js        # Fees y datos (777)
 │   │   ├── wirebit-upload.js      # Carga de fees (421)
 │   │   └── wirebit-views.js       # Vistas cripto/tarjetas (139)
+│   ├── stellaris/
+│   │   ├── casino-data.js         # Parser PDF/Excel + storage gf_casino (~500)
+│   │   ├── casino-upload.js       # UI carga PDF/Excel cortes casino (~310)
+│   │   └── casino-dashboard.js    # KPIs, charts, fiInjectCasino (~250)
 │   ├── finanzas/
 │   │   ├── carga-masiva.js        # Upload masivo CSV (397)
 │   │   ├── flujo-gastos.js        # Flujo de gastos (242)
