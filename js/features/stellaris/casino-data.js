@@ -327,23 +327,21 @@
         }
         for (const prov of provNames) {
           const p = { nombre: prov.name, jugado: 0, netwin: 0, hold: 0, terminales: 0, netwin_terminal: 0 };
-          for (let j = prov.idx + 1; j < Math.min(prov.idx + 12, provLines.length); j++) {
+          for (let j = prov.idx + 1; j < Math.min(prov.idx + 15, provLines.length); j++) {
             const line = provLines[j];
-            if (line.match(/^Jugado$/i) && j + 1 < provLines.length) {
-              const m = provLines[j + 1].match(/\$?([\d,]+\.?\d*)/); if (m) p.jugado = parseFloat(m[1].replace(/,/g, ''));
-            }
-            if (line.match(/^Netwin$/i) && j + 1 < provLines.length) {
-              const m = provLines[j + 1].match(/\$?([\d,]+\.?\d*)/); if (m) p.netwin = parseFloat(m[1].replace(/,/g, ''));
-            }
-            if (line.match(/^Hold$/i) && j + 1 < provLines.length) {
-              const m = provLines[j + 1].match(/(-?[\d.]+)%/); if (m) p.hold = parseFloat(m[1]);
-            }
-            if (line.match(/^Num\.?\s*Terminales$/i) && j + 1 < provLines.length) {
-              p.terminales = parseInt(provLines[j + 1]) || 0;
-            }
-            if (line.match(/^Netwin\/Term\.$/i) && j + 1 < provLines.length) {
-              const m = provLines[j + 1].match(/\$?([\d,]+\.?\d*)/); if (m) p.netwin_terminal = parseFloat(m[1].replace(/,/g, ''));
-            }
+            if (KNOWN_PROVS.includes(line) || line === 'Total:') break;
+            // Same-line: "Jugado   $136,292.30"
+            let m;
+            if ((m = line.match(/^Jugado\s+\(?\$?([\d,]+\.?\d*)/i))) { p.jugado = parseFloat(m[1].replace(/,/g, '')); continue; }
+            if ((m = line.match(/^Netwin\s+\(?\$?([\d,]+\.?\d*)/i)) && !line.match(/Term/i)) { p.netwin = parseFloat(m[1].replace(/,/g, '')); if(line.includes('(')) p.netwin=-p.netwin; continue; }
+            if ((m = line.match(/^Hold\s+(-?[\d.]+)%/i))) { p.hold = parseFloat(m[1]); continue; }
+            if ((m = line.match(/^Num\.?\s*Terminales\s+(\d+)/i))) { p.terminales = parseInt(m[1]); continue; }
+            if ((m = line.match(/^Netwin\/Term\.?\s+\(?\$?([\d,]+\.?\d*)/i))) { p.netwin_terminal = parseFloat(m[1].replace(/,/g, '')); if(line.includes('(')) p.netwin_terminal=-p.netwin_terminal; continue; }
+            // Separate lines: "Jugado\n$136,292"
+            if (line.match(/^Jugado$/i) && j+1<provLines.length) { m=provLines[j+1].match(/\$?([\d,]+\.?\d*)/); if(m) p.jugado=parseFloat(m[1].replace(/,/g,'')); continue; }
+            if (line.match(/^Netwin$/i) && !line.match(/Term/i) && j+1<provLines.length) { m=provLines[j+1].match(/\(?\$?([\d,]+\.?\d*)/); if(m) p.netwin=parseFloat(m[1].replace(/,/g,'')); if(provLines[j+1].includes('(')) p.netwin=-p.netwin; continue; }
+            if (line.match(/^Hold$/i) && j+1<provLines.length) { m=provLines[j+1].match(/(-?[\d.]+)%/); if(m) p.hold=parseFloat(m[1]); continue; }
+            if (line.match(/^Num\.?\s*Terminales$/i) && j+1<provLines.length) { p.terminales=parseInt(provLines[j+1])||0; continue; }
           }
           if (p.jugado > 0 || p.netwin !== 0) corte.proveedores.push(p);
         }
