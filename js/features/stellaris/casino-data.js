@@ -85,28 +85,43 @@
 
     const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
 
-    // Helper: find $ amounts near a label
+    // Helper: find $ amounts near a label — handles ($123.45) negative and same-line values
     const findAmount = (label) => {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toLowerCase().includes(label.toLowerCase())) {
-          // Check same line for $amount
-          const m = lines[i].match(/\$[\d,]+\.?\d*/);
-          if (m) return parseFloat(m[0].replace(/[$,]/g, ''));
+          // Check same line for $amount or ($amount) or negative
+          const m = lines[i].match(/\(?\$?([\d,]+\.?\d*)\)?/g);
+          if (m) {
+            for (const match of m) {
+              const cleaned = match.replace(/[$,()]/g, '');
+              const val = parseFloat(cleaned);
+              if (val > 0 || match.includes('$')) {
+                return match.includes('(') ? -val : val;
+              }
+            }
+          }
           // Check next line
           if (i + 1 < lines.length) {
-            const m2 = lines[i + 1].match(/\$[\d,]+\.?\d*/);
-            if (m2) return parseFloat(m2[0].replace(/[$,]/g, ''));
+            const m2 = lines[i + 1].match(/\(?\$?([\d,]+\.?\d*)\)?/);
+            if (m2) {
+              const val = parseFloat(m2[1].replace(/,/g, ''));
+              return lines[i + 1].includes('(') ? -val : val;
+            }
           }
         }
       }
       return 0;
     };
 
+    // Helper: find a number after a label — handles "Label:   123" on same line
     const findNumber = (label) => {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toLowerCase().includes(label.toLowerCase())) {
-          const m = lines[i].match(/[\d,]+\.?\d*/);
-          if (m) return parseFloat(m[0].replace(/,/g, ''));
+          // Extract number from AFTER the label on same line
+          const afterLabel = lines[i].substring(lines[i].toLowerCase().indexOf(label.toLowerCase()) + label.length);
+          const m = afterLabel.match(/[\d,]+\.?\d*/);
+          if (m && parseFloat(m[0].replace(/,/g, '')) > 0) return parseFloat(m[0].replace(/,/g, ''));
+          // Check next line
           if (i + 1 < lines.length) {
             const m2 = lines[i + 1].match(/[\d,]+\.?\d*/);
             if (m2) return parseFloat(m2[0].replace(/,/g, ''));
@@ -116,6 +131,7 @@
       return 0;
     };
 
+    // Helper: find percentage after a label — handles "Label:   12.5%" on same line
     const findPct = (label) => {
       for (let i = 0; i < lines.length; i++) {
         if (lines[i].toLowerCase().includes(label.toLowerCase())) {
@@ -241,41 +257,40 @@
     corte.pasivo_redimible = findAmount('Redimible');
     corte.pasivo_no_redimible = findAmount('No Redimible');
 
-    // Ocupacion
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].match(/^Sesiones:/i)) {
-        if (i + 1 < lines.length) corte.sesiones = parseInt(lines[i + 1]) || 0;
-      }
-      if (lines[i].match(/^Actual:/i)) {
-        if (i + 1 < lines.length) { const m = lines[i + 1].match(/([\d.]+)%/); if (m) corte.ocupacion_actual = parseFloat(m[1]); }
-      }
-      if (lines[i].match(/^En el periodo:/i)) {
-        if (i + 1 < lines.length) { const m = lines[i + 1].match(/([\d.]+)%/); if (m) corte.ocupacion_periodo = parseFloat(m[1]); }
-      }
-    }
+    // Ocupacion — use findNumber/findPct (handles "Label:  value" on same line)
+    corte.sesiones = findNumber('Sesiones:');
+    corte.ocupacion_actual = findPct('Actual:');
+    corte.ocupacion_periodo = findPct('En el periodo:');
+    // If "Actual" is 0 but "En el periodo" has value, use it
+    if (!corte.ocupacion_actual && corte.ocupacion_periodo) corte.ocupacion_actual = corte.ocupacion_periodo;
 
     // Aforo
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].match(/^Hombres:/i)) {
-        if (i + 1 < lines.length) corte.aforo_hombres = parseInt(lines[i + 1]) || 0;
-      }
-      if (lines[i].match(/^Mujeres:/i)) {
-        if (i + 1 < lines.length) corte.aforo_mujeres = parseInt(lines[i + 1]) || 0;
-      }
-      if (lines[i].match(/^Total:/i) && i > 5) { // skip early "Total" matches
-        const nextVal = parseInt(lines[i + 1]);
-        if (nextVal > 0 && nextVal < 10000 && !corte.aforo_total) corte.aforo_total = nextVal;
+    corte.aforo_hombres = findNumber('Hombres:');
+    corte.aforo_mujeres = findNumber('Mujeres:');
+    corte.aforo_total = corte.aforo_hombres + corte.aforo_mujeres;
+    // Fallback: look for "Total:" after "Anónimos:" (aforo section)
+    if (!corte.aforo_total) {
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].match(/An[oó]nimos:/i)) {
+          // Next "Total:" is aforo total
+          for (let j = i + 1; j < Math.min(i + 3, lines.length); j++) {
+            if (lines[j].match(/Total:/i)) {
+              const afterT = lines[j].substring(lines[j].indexOf(':') + 1);
+              const val = parseInt(afterT.replace(/,/g, ''));
+              if (val > 0) { corte.aforo_total = val; break; }
+            }
+          }
+          break;
+        }
       }
     }
 
     // Cuentas
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].match(/^Altas:/i) && i + 1 < lines.length) corte.altas = parseInt(lines[i + 1]) || 0;
-      if (lines[i].match(/^Activo <= 30:/i) && i + 1 < lines.length) corte.cuentas_activas_30 = parseInt(lines[i + 1]) || 0;
-      if (lines[i].match(/^Activo <= 90:/i) && i + 1 < lines.length) corte.cuentas_activas_90 = parseInt(lines[i + 1]) || 0;
-      if (lines[i].match(/^Activo <= 180:/i) && i + 1 < lines.length) corte.cuentas_activas_180 = parseInt(lines[i + 1]) || 0;
-      if (lines[i].match(/^Inactivo:/i) && i + 1 < lines.length) corte.cuentas_inactivas = parseInt(lines[i + 1].replace(/,/g, '')) || 0;
-    }
+    corte.altas = findNumber('Altas:');
+    corte.cuentas_activas_30 = findNumber('Activo <= 30:');
+    corte.cuentas_activas_90 = findNumber('Activo <= 90:');
+    corte.cuentas_activas_180 = findNumber('Activo <= 180:');
+    corte.cuentas_inactivas = findNumber('Inactivo:');
     corte.cuentas_total = corte.altas + corte.cuentas_activas_30 + corte.cuentas_activas_90 + corte.cuentas_activas_180 + corte.cuentas_inactivas;
 
     // Proveedores — multiple strategies
