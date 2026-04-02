@@ -145,7 +145,9 @@
         const text = await _readPDFAsText(file);
         if (!text || text.length < 50) throw new Error('No se pudo leer el PDF. Verifica que no esté protegido.');
 
+        console.log('[Casino] PDF text extracted (' + text.length + ' chars):\n' + text.substring(0, 1000));
         const corte = parseCasinoPDF(text);
+        console.log('[Casino] Parsed corte:', JSON.stringify(corte, null, 2));
         if (!corte.fecha) throw new Error('No se encontró la fecha en el PDF.');
 
         _showCasinoPreview(corte, file.name);
