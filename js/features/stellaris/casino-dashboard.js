@@ -123,6 +123,112 @@
         </div>
       </div>
 
+      <!-- Flujo de Dinero -->
+      <div class="tw" style="margin-bottom:14px">
+        <div class="tw-h"><div class="tw-ht">💸 Flujo de Dinero</div></div>
+        <div style="overflow-x:auto">
+          <table class="bt">
+            <thead><tr><th colspan="2" style="text-align:left">ENTRADAS</th></tr></thead>
+            <tbody>
+              <tr><td>Deposito de Juego</td><td class="mo pos">${fmt(kpis.total_deposito_juego_in || 0)}</td></tr>
+              <tr><td>Acceso e Instalaciones</td><td class="mo pos">${fmt(kpis.total_acceso_instalaciones || 0)}</td></tr>
+              <tr><td>Tarjeta Bancaria</td><td class="mo pos">${fmt(kpis.total_tarjeta_bancaria || 0)}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= TOTAL ENTRADAS</td><td class="mo pos">${fmt(kpis.total_entradas || 0)}</td></tr>
+            </tbody>
+            <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">SALIDAS</th></tr></thead>
+            <tbody>
+              <tr><td>Devolucion Depositos</td><td class="mo neg">${fmt(kpis.total_deposito_juego_out || 0)}</td></tr>
+              <tr><td>Pago de Premios</td><td class="mo neg">${fmt(kpis.total_pago_premios || 0)}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= TOTAL SALIDAS</td><td class="mo neg">${fmt(kpis.total_salidas || 0)}</td></tr>
+            </tbody>
+            <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">IMPUESTOS</th></tr></thead>
+            <tbody>
+              <tr><td>Federal (1%)</td><td class="mo">${fmt(kpis.total_imp_federal || 0)}</td></tr>
+              <tr><td>Estatal (6%)</td><td class="mo">${fmt(kpis.total_imp_estatal || 0)}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= RETENCION</td><td class="mo">${fmt(kpis.total_retencion || 0)}</td></tr>
+            </tbody>
+            <tfoot>
+              <tr style="font-weight:700;font-size:1.05em;border-top:3px solid var(--border2);background:var(--bg2)">
+                <td>RESULTADO</td>
+                <td class="mo ${(kpis.total_resultado || 0) >= 0 ? 'pos' : 'neg'}">${fmt(kpis.total_resultado || 0)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
+
+      <!-- Impuestos KPIs -->
+      <div class="kpi-row c3" style="margin-bottom:14px">
+        <div class="kpi-card" style="--ac:var(--blue)">
+          <div class="kpi-top"><div class="kpi-lbl">Impuesto Federal</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🏛️</div></div>
+          <div class="kpi-val" style="color:var(--blue)">${fmt(kpis.total_imp_federal || 0)}</div>
+          <div class="kpi-d dnu">1% sobre premios brutos</div>
+        </div>
+        <div class="kpi-card" style="--ac:var(--orange)">
+          <div class="kpi-top"><div class="kpi-lbl">Impuesto Estatal</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🏢</div></div>
+          <div class="kpi-val" style="color:var(--orange)">${fmt(kpis.total_imp_estatal || 0)}</div>
+          <div class="kpi-d dnu">6% sobre premios brutos</div>
+        </div>
+        <div class="kpi-card" style="--ac:#e53935">
+          <div class="kpi-top"><div class="kpi-lbl">Retencion Total</div><div class="kpi-ico" style="background:var(--red-bg);color:#e53935">💲</div></div>
+          <div class="kpi-val" style="color:#e53935">${fmt(kpis.total_retencion || 0)}</div>
+          <div class="kpi-d dnu">7% sobre premios brutos</div>
+        </div>
+      </div>
+
+      <!-- Premios y Promociones -->
+      <div class="tw" style="margin-bottom:14px">
+        <div class="tw-h"><div class="tw-ht">🎁 Premios y Promociones</div></div>
+        <div style="overflow-x:auto">
+          <table class="bt">
+            <thead><tr><th colspan="2" style="text-align:left">PREMIOS</th></tr></thead>
+            <tbody>
+              <tr><td>Premios Maquinas</td><td class="mo">${fmt(kpis.total_premios_maquinas || 0)}</td></tr>
+              <tr><td>Premios Sorteo</td><td class="mo">${fmt(kpis.total_premio_sorteo || 0)}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>Premios Brutos</td><td class="mo">${fmt((kpis.total_premios_maquinas || 0) + (kpis.total_premio_sorteo || 0))}</td></tr>
+            </tbody>
+            <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">PROMOCIONES</th></tr></thead>
+            <tbody>
+              <tr><td>Redimibles (cobrables)</td><td class="mo">${fmt(kpis.total_promo_redimible || 0)}</td></tr>
+              <tr><td>No Redimibles (solo jugar)</td><td class="mo">${fmt(kpis.total_promo_no_redimible || 0)}</td></tr>
+              <tr><td>Cancelaciones NR</td><td class="mo neg">-${fmt(kpis.total_cancel_promo_nr || 0)}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= Neto Promociones</td><td class="mo">${fmt(kpis.neto_promociones || 0)}</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Analisis de Rentabilidad -->
+      <div class="tw" style="margin-bottom:14px">
+        <div class="tw-h"><div class="tw-ht">📈 Analisis de Rentabilidad</div></div>
+        <div style="overflow-x:auto">
+          <table class="bt">
+            <tbody>
+              <tr>
+                <td class="bld">Ganancia Maquinas (Netwin)</td>
+                <td class="mo pos bld">${fmt(kpis.total_netwin || 0)}</td>
+              </tr>
+              <tr>
+                <td class="bld">Costo Promociones Redimibles</td>
+                <td class="mo neg bld">-${fmt(kpis.total_promo_redimible || 0)}</td>
+              </tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)">
+                <td>Ganancia Neta Real</td>
+                <td class="mo ${((kpis.total_netwin || 0) - (kpis.total_promo_redimible || 0)) >= 0 ? 'pos' : 'neg'} bld">${fmt((kpis.total_netwin || 0) - (kpis.total_promo_redimible || 0))}</td>
+              </tr>
+              <tr>
+                <td>Impuestos Pagados</td>
+                <td class="mo neg">${fmt(kpis.total_retencion || 0)}</td>
+              </tr>
+              <tr style="font-weight:700;border-top:3px solid var(--border2);background:var(--bg2);font-size:1.05em">
+                <td>Resultado de Caja</td>
+                <td class="mo ${(kpis.total_resultado || 0) >= 0 ? 'pos' : 'neg'} bld">${fmt(kpis.total_resultado || 0)}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
       <!-- Charts row -->
       <div class="g2" style="margin-bottom:14px">
         <div class="cc">

@@ -45,29 +45,53 @@
       fecha: '',
       turno: '',
       sala: '',
-      // Caja
+      // ── Caja (totales) ──
       entradas: 0,
       salidas: 0,
       retencion_premios: 0,
       resultado_caja: 0,
-      // Maquinas
+      // ── Desglose Entradas ──
+      deposito_juego_in: 0,      // Depósito de Juego (entrada)
+      acceso_instalaciones: 0,    // Acceso y uso de instalaciones
+      tarjeta_bancaria_in: 0,     // Operaciones con Tarjeta Bancaria
+      // ── Desglose Salidas ──
+      deposito_juego_out: 0,      // Depósito de Juego (salida/devolución)
+      pago_premios: 0,            // Pago de Premios total
+      // ── Premios (desglose) ──
+      premios_maquinas: 0,        // Premios (de máquinas)
+      premio_sorteo: 0,           // Pago de premio sorteo
+      // ── Impuestos ──
+      imp_federal: 0,             // Impuesto Federal (1%)
+      imp_estatal: 0,             // Impuesto Estatal (6%)
+      // ── Promociones ──
+      promo_redimible: 0,         // Promoción Redimible
+      promo_no_redimible: 0,      // Promoción No Redimible
+      cancel_promo_nr: 0,         // Cancelación Promo NR
+      // ── Pagos manuales ──
+      pagos_manuales: 0,
+      // ── Maquinas ──
       jugado: 0,
       netwin: 0,
       hold_pct: 0,
       terminales: 0,
       netwin_terminal: 0,
-      // Pasivo
+      // ── Pasivo ──
       pasivo_redimible: 0,
       pasivo_no_redimible: 0,
-      // Ocupacion
+      // ── Balance efectivo ──
+      efectivo_caja: 0,
+      efectivo_entregado: 0,
+      efectivo_faltante: 0,
+      efectivo_sobrante: 0,
+      // ── Ocupacion ──
       sesiones: 0,
       ocupacion_actual: 0,
       ocupacion_periodo: 0,
-      // Aforo
+      // ── Aforo ──
       aforo_hombres: 0,
       aforo_mujeres: 0,
       aforo_total: 0,
-      // Cuentas
+      // ── Cuentas ──
       altas: 0,
       cuentas_activas_30: 0,
       cuentas_activas_90: 0,
@@ -215,8 +239,50 @@
     // Caja
     corte.entradas = findAmount('Total Entradas');
     corte.salidas = findAmount('Total Salidas');
-    corte.retencion_premios = findAmount('Retención Premios');
+    corte.retencion_premios = findAmount('Retención Premios') || findAmount('Retención sobre Premios');
     corte.resultado_caja = findAmount('Resultado de Caja');
+
+    // ── Desglose Entradas ──
+    corte.deposito_juego_in = findAmount('Depósito de Juego');
+    corte.acceso_instalaciones = findAmount('Acceso y uso de instalaciones');
+    corte.tarjeta_bancaria_in = findAmount('Operaciones con Tarjeta Bancaria') || findAmount('Tarjeta Bancaria');
+
+    // ── Desglose Salidas (buscar en sección Salidas) ──
+    // deposito_juego_out se calcula: Total Salidas - Pago Premios
+    corte.pago_premios = findAmount('Pago de Premios');
+    if (corte.pago_premios && corte.salidas) corte.deposito_juego_out = +(corte.salidas - corte.pago_premios).toFixed(2);
+
+    // ── Premios desglose ──
+    corte.premios_maquinas = findAmount('Premios');
+    corte.premio_sorteo = findAmount('Pago de premio sorteo');
+    // Si premios_maquinas incluye el sorteo, ajustar
+    if (corte.premios_maquinas > 0 && corte.premio_sorteo > 0 && corte.premios_maquinas > corte.premio_sorteo) {
+      // "Premios" en el reporte es solo máquinas, separado del sorteo
+    }
+
+    // ── Impuestos (calculados: Federal 1%, Estatal 6% sobre premios brutos) ──
+    corte.imp_federal = findAmount('Impuesto Federal');
+    corte.imp_estatal = findAmount('Impuesto Estatal');
+    // Si no se encontraron, calcular desde premios brutos
+    if (!corte.imp_federal && corte.premios_maquinas) {
+      const base_impuesto = corte.premios_maquinas + corte.premio_sorteo;
+      corte.imp_federal = +(base_impuesto * 0.01).toFixed(2);
+      corte.imp_estatal = +(base_impuesto * 0.06).toFixed(2);
+    }
+
+    // ── Promociones ──
+    corte.promo_redimible = findAmount('Promoción Redimible');
+    corte.promo_no_redimible = findAmount('Promoción No Redimible');
+    corte.cancel_promo_nr = findAmount('Cancelación Promoción No Redimible');
+
+    // ── Pagos manuales ──
+    corte.pagos_manuales = findNumber('Pago manual') || findAmount('Pagos manuales');
+
+    // ── Balance efectivo ──
+    corte.efectivo_caja = findAmount('Efectivo en caja');
+    corte.efectivo_entregado = findAmount('Entregado');
+    corte.efectivo_faltante = findAmount('Faltante');
+    corte.efectivo_sobrante = findAmount('Sobrante');
 
     // Maquinas — search using multiple strategies for PDF.js compatibility
     // Strategy A: Full-text regex (handles PDF.js single-line extraction)
@@ -465,18 +531,45 @@
   function casinoKPIs(from, to) {
     const cortes = casinoCortes(from, to);
     if (!cortes.length) return null;
+    const sum = (field) => cortes.reduce((s, c) => s + (c[field] || 0), 0);
+    const avg = (field) => sum(field) / cortes.length;
     return {
       num_cortes: cortes.length,
-      total_entradas: cortes.reduce((s, c) => s + (c.entradas || 0), 0),
-      total_salidas: cortes.reduce((s, c) => s + (c.salidas || 0), 0),
-      total_resultado: cortes.reduce((s, c) => s + (c.resultado_caja || 0), 0),
-      total_jugado: cortes.reduce((s, c) => s + (c.jugado || 0), 0),
-      total_netwin: cortes.reduce((s, c) => s + (c.netwin || 0), 0),
-      avg_hold: cortes.reduce((s, c) => s + (c.hold_pct || 0), 0) / cortes.length,
+      // Totales caja
+      total_entradas: sum('entradas'),
+      total_salidas: sum('salidas'),
+      total_resultado: sum('resultado_caja'),
+      // Desglose entradas
+      total_deposito_juego_in: sum('deposito_juego_in'),
+      total_acceso_instalaciones: sum('acceso_instalaciones'),
+      total_tarjeta_bancaria: sum('tarjeta_bancaria_in'),
+      // Desglose salidas
+      total_deposito_juego_out: sum('deposito_juego_out'),
+      total_pago_premios: sum('pago_premios'),
+      // Premios
+      total_premios_maquinas: sum('premios_maquinas'),
+      total_premio_sorteo: sum('premio_sorteo'),
+      // Impuestos
+      total_imp_federal: sum('imp_federal'),
+      total_imp_estatal: sum('imp_estatal'),
+      total_retencion: sum('retencion_premios'),
+      // Promociones
+      total_promo_redimible: sum('promo_redimible'),
+      total_promo_no_redimible: sum('promo_no_redimible'),
+      total_cancel_promo_nr: sum('cancel_promo_nr'),
+      neto_promociones: sum('promo_redimible') + sum('promo_no_redimible') - sum('cancel_promo_nr'),
+      // Maquinas
+      total_jugado: sum('jugado'),
+      total_netwin: sum('netwin'),
+      avg_hold: avg('hold_pct'),
       total_terminales: Math.max(...cortes.map(c => c.terminales || 0)),
-      avg_ocupacion: cortes.reduce((s, c) => s + (c.ocupacion_actual || 0), 0) / cortes.length,
-      total_aforo: cortes.reduce((s, c) => s + (c.aforo_total || 0), 0),
-      total_altas: cortes.reduce((s, c) => s + (c.altas || 0), 0),
+      // Ocupacion
+      avg_ocupacion: avg('ocupacion_actual'),
+      total_aforo: sum('aforo_total'),
+      total_altas: sum('altas'),
+      // Balance
+      total_efectivo_caja: sum('efectivo_caja'),
+      total_pagos_manuales: sum('pagos_manuales'),
     };
   }
 
