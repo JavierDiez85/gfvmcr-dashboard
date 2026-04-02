@@ -201,26 +201,39 @@
     corte.retencion_premios = findAmount('Retención Premios');
     corte.resultado_caja = findAmount('Resultado de Caja');
 
-    // Maquinas — search for main stats block
-    for (let i = 0; i < lines.length; i++) {
-      if (lines[i].match(/^Jugado$/i) && i + 1 < lines.length) {
-        const m = lines[i + 1].match(/\$[\d,]+\.?\d*/);
-        if (m) corte.jugado = parseFloat(m[0].replace(/[$,]/g, ''));
-      }
-      if (lines[i].match(/^Netwin$/i) && i + 1 < lines.length) {
-        const m = lines[i + 1].match(/\$[\d,]+\.?\d*/);
-        if (m) corte.netwin = parseFloat(m[0].replace(/[$,]/g, ''));
-      }
-      if (lines[i].match(/^Hold$/i) && i + 1 < lines.length) {
-        const m = lines[i + 1].match(/([\d.]+)%/);
-        if (m) corte.hold_pct = parseFloat(m[1]);
-      }
-      if (lines[i].match(/^Num\. Terminales$/i) && i + 1 < lines.length) {
-        corte.terminales = parseInt(lines[i + 1]) || 0;
-      }
-      if (lines[i].match(/^Netwin\/Term\.$/i) && i + 1 < lines.length) {
-        const m = lines[i + 1].match(/\$[\d,]+\.?\d*/);
-        if (m) corte.netwin_terminal = parseFloat(m[0].replace(/[$,]/g, ''));
+    // Maquinas — search using multiple strategies for PDF.js compatibility
+    // Strategy A: Full-text regex (handles PDF.js single-line extraction)
+    const fullText = text;
+    const jugadoMatch = fullText.match(/Jugado\s*\$?([\d,]+\.?\d*)/i);
+    const netwinMatch = fullText.match(/Netwin\s*\$?([\d,]+\.?\d*)/i);
+    const holdMatch = fullText.match(/Hold\s*([\d.]+)%/i);
+    const termMatch = fullText.match(/Num\.?\s*Terminales\s*(\d+)/i);
+    const nwtMatch = fullText.match(/Netwin\/Term\.?\s*\$?([\d,]+\.?\d*)/i);
+
+    if (jugadoMatch) corte.jugado = parseFloat(jugadoMatch[1].replace(/,/g, ''));
+    if (netwinMatch) corte.netwin = parseFloat(netwinMatch[1].replace(/,/g, ''));
+    if (holdMatch) corte.hold_pct = parseFloat(holdMatch[1]);
+    if (termMatch) corte.terminales = parseInt(termMatch[1]);
+    if (nwtMatch) corte.netwin_terminal = parseFloat(nwtMatch[1].replace(/,/g, ''));
+
+    // Strategy B: Line-by-line (handles pdftotext format where label and value are on separate lines)
+    if (!corte.jugado) {
+      for (let i = 0; i < lines.length; i++) {
+        if (lines[i].match(/^Jugado$/i) && i + 1 < lines.length) {
+          const m = lines[i + 1].match(/\$?([\d,]+\.?\d*)/);
+          if (m) corte.jugado = parseFloat(m[1].replace(/,/g, ''));
+        }
+        if (lines[i].match(/^Netwin$/i) && !lines[i].match(/Term/i) && i + 1 < lines.length) {
+          const m = lines[i + 1].match(/\$?([\d,]+\.?\d*)/);
+          if (m && !corte.netwin) corte.netwin = parseFloat(m[1].replace(/,/g, ''));
+        }
+        if (lines[i].match(/^Hold$/i) && i + 1 < lines.length) {
+          const m = lines[i + 1].match(/([\d.]+)%/);
+          if (m && !corte.hold_pct) corte.hold_pct = parseFloat(m[1]);
+        }
+        if (lines[i].match(/^Num\.?\s*Terminales$/i) && i + 1 < lines.length) {
+          if (!corte.terminales) corte.terminales = parseInt(lines[i + 1]) || 0;
+        }
       }
     }
 
@@ -265,48 +278,67 @@
     }
     corte.cuentas_total = corte.altas + corte.cuentas_activas_30 + corte.cuentas_activas_90 + corte.cuentas_activas_180 + corte.cuentas_inactivas;
 
-    // Proveedores — look for "Estadísticas por Proveedor" section
-    const provSection = text.indexOf('Estad');
-    if (provSection >= 0) {
-      const provText = text.substring(provSection);
-      const provLines = provText.split('\n').map(l => l.trim()).filter(Boolean);
-      // Known providers pattern: name followed by Jugado/Netwin/Hold/etc
-      const provNames = [];
-      for (let i = 0; i < provLines.length; i++) {
-        // Provider name is a line that's all uppercase and short
-        if (provLines[i].match(/^[A-Z]{2,20}$/) && provLines[i] !== 'Total:') {
-          provNames.push({ name: provLines[i], idx: i });
-        }
-      }
+    // Proveedores — multiple strategies
+    const KNOWN_PROVS = ['AGS','EGT','FBM','MERKUR','ORTIZ','ZITRO','AINSWORTH','ARISTOCRAT','IGT','KONAMI','NOVOMATIC','SG','WMS'];
 
-      for (const prov of provNames) {
-        const p = { nombre: prov.name, jugado: 0, netwin: 0, hold: 0, terminales: 0, netwin_terminal: 0 };
-        // Search next ~10 lines for values
-        for (let j = prov.idx + 1; j < Math.min(prov.idx + 12, provLines.length); j++) {
-          const line = provLines[j];
-          if (line.match(/^Jugado$/i) && j + 1 < provLines.length) {
-            const m = provLines[j + 1].match(/\$[\d,]+\.?\d*/);
-            if (m) p.jugado = parseFloat(m[0].replace(/[$,]/g, ''));
-          }
-          if (line.match(/^Netwin$/i) && j + 1 < provLines.length) {
-            const m = provLines[j + 1].match(/\$[\d,]+\.?\d*/);
-            if (m) p.netwin = parseFloat(m[0].replace(/[$,]/g, ''));
-          }
-          if (line.match(/^Hold$/i) && j + 1 < provLines.length) {
-            const m = provLines[j + 1].match(/([\d.]+)%/);
-            if (m) p.hold = parseFloat(m[1]);
-          }
-          if (line.match(/^Num\. Terminales$/i) && j + 1 < provLines.length) {
-            p.terminales = parseInt(provLines[j + 1]) || 0;
-          }
-          if (line.match(/^Netwin\/Term\.$/i) && j + 1 < provLines.length) {
-            const m = provLines[j + 1].match(/\$[\d,]+\.?\d*/);
-            if (m) p.netwin_terminal = parseFloat(m[0].replace(/[$,]/g, ''));
-          }
-        }
-        if (p.jugado > 0 || p.netwin > 0) corte.proveedores.push(p);
+    // Strategy A: Regex on full text (handles PDF.js inline format)
+    // Pattern: "PROVNAME Jugado $X Netwin $Y Hold Z% Num. Terminales N"
+    for (const provName of KNOWN_PROVS) {
+      const provRx = new RegExp(provName + '\\s+Jugado\\s+\\$?([\\d,]+\\.?\\d*)\\s+Netwin\\s+\\(?\\$?([\\d,]+\\.?\\d*)\\)?\\s+.*?Hold\\s+(-?[\\d.]+)%\\s+.*?(?:Num\\.?\\s*Terminales)\\s+(\\d+)', 'i');
+      const pm = fullText.match(provRx);
+      if (pm) {
+        corte.proveedores.push({
+          nombre: provName,
+          jugado: parseFloat(pm[1].replace(/,/g, '')),
+          netwin: parseFloat(pm[2].replace(/,/g, '')),
+          hold: parseFloat(pm[3]),
+          terminales: parseInt(pm[4]),
+          netwin_terminal: 0
+        });
       }
     }
+
+    // Strategy B: Line-by-line (pdftotext format)
+    if (!corte.proveedores.length) {
+      const provSection = text.indexOf('Estad');
+      if (provSection >= 0) {
+        const provText = text.substring(provSection);
+        const provLines = provText.split('\n').map(l => l.trim()).filter(Boolean);
+        const provNames = [];
+        for (let i = 0; i < provLines.length; i++) {
+          if (provLines[i].match(/^[A-Z]{2,20}$/) && provLines[i] !== 'Total:' && KNOWN_PROVS.includes(provLines[i])) {
+            provNames.push({ name: provLines[i], idx: i });
+          }
+        }
+        for (const prov of provNames) {
+          const p = { nombre: prov.name, jugado: 0, netwin: 0, hold: 0, terminales: 0, netwin_terminal: 0 };
+          for (let j = prov.idx + 1; j < Math.min(prov.idx + 12, provLines.length); j++) {
+            const line = provLines[j];
+            if (line.match(/^Jugado$/i) && j + 1 < provLines.length) {
+              const m = provLines[j + 1].match(/\$?([\d,]+\.?\d*)/); if (m) p.jugado = parseFloat(m[1].replace(/,/g, ''));
+            }
+            if (line.match(/^Netwin$/i) && j + 1 < provLines.length) {
+              const m = provLines[j + 1].match(/\$?([\d,]+\.?\d*)/); if (m) p.netwin = parseFloat(m[1].replace(/,/g, ''));
+            }
+            if (line.match(/^Hold$/i) && j + 1 < provLines.length) {
+              const m = provLines[j + 1].match(/(-?[\d.]+)%/); if (m) p.hold = parseFloat(m[1]);
+            }
+            if (line.match(/^Num\.?\s*Terminales$/i) && j + 1 < provLines.length) {
+              p.terminales = parseInt(provLines[j + 1]) || 0;
+            }
+            if (line.match(/^Netwin\/Term\.$/i) && j + 1 < provLines.length) {
+              const m = provLines[j + 1].match(/\$?([\d,]+\.?\d*)/); if (m) p.netwin_terminal = parseFloat(m[1].replace(/,/g, ''));
+            }
+          }
+          if (p.jugado > 0 || p.netwin !== 0) corte.proveedores.push(p);
+        }
+      }
+    }
+
+    // Calculate netwin/terminal for providers that don't have it
+    corte.proveedores.forEach(p => {
+      if (!p.netwin_terminal && p.terminales > 0) p.netwin_terminal = +(p.netwin / p.terminales).toFixed(2);
+    });
 
     return corte;
   }
