@@ -4,23 +4,80 @@
 
   const CASINO_CHARTS = {};
 
+  let _casinoFilter = 'todo'; // active filter
+
+  function _casinoDateRange(filter) {
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const fmt2 = d => d.toISOString().slice(0,10);
+    const to = fmt2(today);
+
+    switch(filter) {
+      case 'hoy': return { from: to, to, label: 'Hoy' };
+      case 'ayer': {
+        const y = new Date(today); y.setDate(y.getDate()-1);
+        return { from: fmt2(y), to: fmt2(y), label: 'Ayer' };
+      }
+      case 'semana': {
+        const w = new Date(today); w.setDate(w.getDate()-6);
+        return { from: fmt2(w), to, label: 'Últimos 7 días' };
+      }
+      case 'mes': {
+        const m = new Date(today.getFullYear(), today.getMonth(), 1);
+        return { from: fmt2(m), to, label: 'Este mes' };
+      }
+      case 'trimestre': {
+        const q = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1);
+        return { from: fmt2(q), to, label: 'Este trimestre' };
+      }
+      case 'semestre': {
+        const s = new Date(today.getFullYear(), today.getMonth() < 6 ? 0 : 6, 1);
+        return { from: fmt2(s), to, label: 'Este semestre' };
+      }
+      case 'anual': {
+        const a = new Date(today.getFullYear(), 0, 1);
+        return { from: fmt2(a), to, label: String(today.getFullYear()) };
+      }
+      default: return { from: null, to: null, label: 'Todo el historial' };
+    }
+  }
+
+  function _setCasinoFilter(filter) {
+    _casinoFilter = filter;
+    rCasinoDashboard();
+  }
+
   function rCasinoDashboard() {
     const el = document.getElementById('view-stel_casino');
     if (!el) return;
 
+    const range = _casinoDateRange(_casinoFilter);
     const data = casinoLoad();
-    const cortes = data.cortes || [];
-    const kpis = casinoKPIs(null, null) || {};
+    const allCortes = data.cortes || [];
+    const cortes = casinoCortes(range.from, range.to);
+    const kpis = casinoKPIs(range.from, range.to) || {};
 
-    // Last corte for "current" display
+    // Last corte in filtered range
     const last = cortes[0] || {};
 
+    // Filter bar
+    const filters = [
+      {id:'hoy',label:'Hoy'},{id:'ayer',label:'Ayer'},{id:'semana',label:'Semana'},
+      {id:'mes',label:'Mes'},{id:'trimestre',label:'Trimestre'},{id:'semestre',label:'Semestre'},
+      {id:'anual',label:'Año'},{id:'todo',label:'Todo'}
+    ];
+    const filterBar = filters.map(f => {
+      const isActive = _casinoFilter === f.id;
+      return `<button class="pbtn casino-filter-btn${isActive?' active':''}" data-filter="${f.id}" style="${isActive?'background:#e53935;color:white;border-color:#e53935;':''}font-size:.68rem;padding:3px 10px">${f.label}</button>`;
+    }).join('');
+
     el.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🎰 Casino Stellaris — Dashboard</div>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${last.sala || 'Grand Tuxtla Casino'} · ${cortes.length} cortes cargados</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${last.sala || 'Grand Tuxtla Casino'} · ${range.label} · ${cortes.length} corte${cortes.length!==1?'s':''}</div>
         </div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap">${filterBar}</div>
       </div>
 
       <!-- KPIs -->
@@ -137,6 +194,11 @@
       ` : ''}
     `;
 
+    // Wire filter buttons
+    el.querySelectorAll('.casino-filter-btn').forEach(btn => {
+      btn.addEventListener('click', function(){ _setCasinoFilter(this.dataset.filter); });
+    });
+
     // Render charts
     if (last.proveedores && last.proveedores.length) {
       setTimeout(() => _renderCasinoCharts(last), 80);
@@ -237,6 +299,7 @@
   // EXPOSE + REGISTER
   // ═══════════════════════════════════════
   window.rCasinoDashboard = rCasinoDashboard;
+  window._setCasinoFilter = _setCasinoFilter;
   window.fiInjectCasino = fiInjectCasino;
   window.CASINO_CHARTS = CASINO_CHARTS;
 
