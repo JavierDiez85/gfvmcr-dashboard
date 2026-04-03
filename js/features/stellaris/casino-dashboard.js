@@ -126,6 +126,15 @@
         </div>
       </div>
 
+      <!-- Explicacion general -->
+      <div style="background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;margin-bottom:14px;font-size:.7rem;color:var(--text);line-height:1.5">
+        <b>Resumen del periodo:</b> El casino recibio ${fmt(kpis.total_entradas || 0)} en entradas y pago ${fmt(kpis.total_salidas || 0)} en salidas.
+        Las maquinas generaron ${fmt(kpis.total_netwin || 0)} de netwin (${kpis.avg_hold ? kpis.avg_hold.toFixed(2)+'%' : '—'} hold).
+        ${(kpis.total_resultado || 0) < 0 && (kpis.total_promo_redimible || 0) > 0
+          ? 'El resultado de caja es negativo (' + fmt(kpis.total_resultado) + ') porque se entregaron ' + fmt(kpis.total_promo_redimible) + ' en promociones redimibles (sorteos) que se pagaron como premios reales. Sin estas promociones, el resultado hubiera sido ' + fmt(kpis.resultado_sin_promos || 0) + '.'
+          : 'El resultado de caja es ' + fmt(kpis.total_resultado || 0) + '.'}
+      </div>
+
       <!-- Flujo de Dinero -->
       <div class="tw" style="margin-bottom:14px">
         <div class="tw-h"><div class="tw-ht">💸 Flujo de Dinero</div></div>
@@ -160,6 +169,11 @@
               <tr><td colspan="3" style="font-size:.58rem;color:var(--muted);padding:4px 8px">Formula: Entradas - Salidas - Retencion = Resultado</td></tr>
             </tfoot>
           </table>
+        </div>
+        <div style="font-size:.65rem;color:var(--muted);padding:8px 10px;line-height:1.5;border-top:1px solid var(--border)">
+          <b>¿Como entra el dinero?</b> Los clientes pagan Deposito de Juego para jugar y Acceso e Instalaciones como cover.
+          <b>¿Como sale?</b> Se devuelven depositos y se pagan premios a ganadores.
+          <b>Impuestos:</b> Se retiene 7% sobre premios brutos (1% federal ISR Art. 137-139 LISR + 6% estatal Chiapas, max permitido antes de que la tasa federal suba a 21%).
         </div>
       </div>
 
@@ -200,10 +214,12 @@
               <tr><td>Cancelaciones NR</td><td class="mo neg">${fmt(-(kpis.total_cancel_promo_nr || 0))}</td></tr>
               <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= Neto Promociones</td><td class="mo">${fmt(kpis.neto_promociones || 0)}</td></tr>
             </tbody>
-            <tfoot>
-              <tr><td colspan="2" style="font-size:.58rem;color:var(--muted);padding:4px 8px">Nota: Promo Redimible = Premio Sorteo (fichas gratis cobradas como premios reales)</td></tr>
-            </tfoot>
           </table>
+        </div>
+        <div style="font-size:.65rem;color:var(--muted);padding:8px 10px;line-height:1.5;border-top:1px solid var(--border)">
+          <b>¿Que son las promociones?</b> El casino regala fichas a traves de sorteos. Las <b>redimibles</b> se pueden cobrar como efectivo
+          (por eso Promo Redimible = Premio Sorteo: ${fmt(kpis.total_promo_redimible || 0)}). Las <b>no redimibles</b> solo sirven para jugar y no se cobran.
+          Las cancelaciones son fichas no redimibles que no se usaron.
         </div>
       </div>
 
@@ -212,9 +228,10 @@
         <div class="tw-h"><div class="tw-ht">📈 Analisis de Rentabilidad</div></div>
         <div style="overflow-x:auto">
           <table class="bt">
+            <thead><tr><th colspan="2" style="text-align:left">RENTABILIDAD DE MAQUINAS</th></tr></thead>
             <tbody>
               <tr>
-                <td class="bld">Ganancia Maquinas (Netwin)</td>
+                <td class="bld">Ganancia Bruta (Netwin)</td>
                 <td class="mo pos bld">${fmt(kpis.total_netwin || 0)}</td>
               </tr>
               <tr><td style="font-size:.6rem;color:var(--muted);padding-left:16px">Hold ${kpis.avg_hold ? kpis.avg_hold.toFixed(2)+'%' : '—'} · ${kpis.total_terminales || 0} terminales · ${fmt(kpis.netwin_por_terminal || 0)}/terminal</td><td></td></tr>
@@ -222,16 +239,27 @@
                 <td class="bld">Costo Promociones Redimibles</td>
                 <td class="mo neg bld">${fmt(-(kpis.total_promo_redimible || 0))}</td>
               </tr>
-              <tr style="font-weight:700;border-top:2px solid var(--border2)">
-                <td>Ganancia Neta Real</td>
+              <tr style="font-weight:700;border-top:2px solid var(--border2);background:var(--bg2)">
+                <td>= Ganancia Neta Real</td>
                 <td class="mo ${(kpis.ganancia_neta_real || 0) >= 0 ? 'pos' : 'neg'} bld">${fmt(kpis.ganancia_neta_real || 0)}</td>
               </tr>
+            </tbody>
+            <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">RESULTADO DE CAJA <span style="font-weight:400;font-size:.6rem;color:var(--muted)">(formula distinta)</span></th></tr></thead>
+            <tbody>
               <tr>
-                <td>Impuestos Pagados (7%)</td>
+                <td>Entradas</td>
+                <td class="mo pos">${fmt(kpis.total_entradas || 0)}</td>
+              </tr>
+              <tr>
+                <td>Salidas</td>
+                <td class="mo neg">${fmt(-(kpis.total_salidas || 0))}</td>
+              </tr>
+              <tr>
+                <td>Retencion Impuestos (7%)</td>
                 <td class="mo neg">${fmt(-(kpis.total_retencion || 0))}</td>
               </tr>
               <tr style="font-weight:700;border-top:3px solid var(--border2);background:var(--bg2);font-size:1.05em">
-                <td>Resultado de Caja</td>
+                <td>= Resultado de Caja</td>
                 <td class="mo ${(kpis.total_resultado || 0) >= 0 ? 'pos' : 'neg'} bld">${fmt(kpis.total_resultado || 0)}</td>
               </tr>
               <tr style="border-top:2px dashed var(--border2)">
@@ -239,10 +267,15 @@
                 <td class="mo pos" style="font-size:.72rem">${fmt(kpis.resultado_sin_promos || 0)}</td>
               </tr>
             </tbody>
-            <tfoot>
-              <tr><td colspan="2" style="font-size:.58rem;color:var(--muted);padding:4px 8px">El resultado es negativo cuando las promociones redimibles (sorteos) superan el netwin de maquinas</td></tr>
-            </tfoot>
           </table>
+        </div>
+        <div style="font-size:.65rem;color:var(--muted);padding:8px 10px;line-height:1.5;border-top:1px solid var(--border)">
+          <b>¿Por que hay dos resultados?</b> Son metricas distintas.
+          La <b>Ganancia Neta Real</b> (${fmt(kpis.ganancia_neta_real || 0)}) mide cuanto gano el casino en maquinas despues de descontar lo que regalo en sorteos.
+          El <b>Resultado de Caja</b> (${fmt(kpis.total_resultado || 0)}) es el flujo real de efectivo: Entradas - Salidas - Impuestos.
+          ${(kpis.total_resultado || 0) < 0
+            ? 'El resultado es negativo porque las promociones redimibles (sorteos cobrables) se pagan como premios reales, aumentando las salidas. Sin promociones, el resultado hubiera sido ' + fmt(kpis.resultado_sin_promos || 0) + '.'
+            : ''}
         </div>
       </div>
 

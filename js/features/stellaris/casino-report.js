@@ -215,27 +215,46 @@
 
     // ─── RENTABILIDAD ───
     sectionTitle('>', 'Analisis de Rentabilidad');
+
+    // Tabla 1: Rentabilidad de maquinas
     doc.autoTable({
       startY: Y, margin: { left: ML, right: MR },
       theme: 'plain',
       styles: { fontSize: 8, cellPadding: 2.2, lineColor: BORDER, lineWidth: 0.2 },
       body: [
-        [{ content: 'Ganancia Maquinas (Netwin)', styles: { fontStyle: 'bold' } }, { content: _fmtR(kpis.total_netwin), styles: { fontStyle: 'bold', textColor: GREEN } }],
+        [{ content: 'RENTABILIDAD DE MAQUINAS', colSpan: 2, styles: { fontStyle: 'bold', fillColor: LIGHT_BG, fontSize: 7.5 } }],
+        [{ content: 'Ganancia Bruta (Netwin)', styles: { fontStyle: 'bold' } }, { content: _fmtR(kpis.total_netwin), styles: { fontStyle: 'bold', textColor: GREEN } }],
         [{ content: '  Hold ' + (kpis.avg_hold ? kpis.avg_hold.toFixed(2)+'%' : '--') + ' | ' + (kpis.total_terminales||0) + ' terminales | ' + _fmtR(kpis.netwin_por_terminal) + '/terminal', colSpan: 2, styles: { fontSize: 6, textColor: MUTED } }],
         [{ content: 'Costo Promociones Redimibles', styles: { fontStyle: 'bold' } }, { content: '-' + _fmtR(kpis.total_promo_redimible), styles: { fontStyle: 'bold', textColor: RED } }],
         [{ content: '= Ganancia Neta Real', styles: { fontStyle: 'bold', fillColor: '#e8edf3' } }, { content: _fmtR(kpis.ganancia_neta_real), styles: { fontStyle: 'bold', fillColor: '#e8edf3', textColor: (kpis.ganancia_neta_real||0) >= 0 ? GREEN : RED } }],
-        ['Impuestos Pagados (7%)', { content: '-' + _fmtR(kpis.total_retencion), styles: { textColor: RED } }],
-        [{ content: 'RESULTADO DE CAJA', styles: { fontStyle: 'bold', fillColor: DARK, textColor: '#fff', fontSize: 9.5 } },
+        [{ content: '', colSpan: 2, styles: { cellPadding: 1 } }],
+        [{ content: 'RESULTADO DE CAJA (formula distinta)', colSpan: 2, styles: { fontStyle: 'bold', fillColor: LIGHT_BG, fontSize: 7.5 } }],
+        ['Entradas', { content: _fmtR(kpis.total_entradas), styles: { textColor: GREEN } }],
+        ['Salidas', { content: '-' + _fmtR(kpis.total_salidas), styles: { textColor: RED } }],
+        ['Retencion Impuestos (7%)', { content: '-' + _fmtR(kpis.total_retencion), styles: { textColor: RED } }],
+        [{ content: '= RESULTADO DE CAJA', styles: { fontStyle: 'bold', fillColor: DARK, textColor: '#fff', fontSize: 9.5 } },
          { content: _fmtR(kpis.total_resultado), styles: { fontStyle: 'bold', fillColor: DARK, textColor: '#fff', fontSize: 9.5 } }],
         [{ content: 'Sin promociones seria', styles: { fillColor: '#f0fdf4' } },
          { content: _fmtR(kpis.resultado_sin_promos), styles: { fillColor: '#f0fdf4', textColor: GREEN, fontStyle: 'bold' } }],
       ],
       columnStyles: { 0: { cellWidth: CW * 0.65 }, 1: { cellWidth: CW * 0.35, halign: 'right' } },
     });
-    Y = doc.lastAutoTable.finalY + 2;
-    doc.setFontSize(5.5); doc.setTextColor(MUTED);
-    doc.text('El resultado es negativo cuando las promos redimibles (sorteos) superan el netwin de maquinas', ML, Y);
-    Y += 8;
+    Y = doc.lastAutoTable.finalY + 4;
+
+    // Explicacion escrita
+    doc.setFontSize(7); doc.setFont('helvetica', 'normal'); doc.setTextColor(DARK);
+    var expLines = [
+      'Explicacion: La Ganancia Neta Real (' + _fmtR(kpis.ganancia_neta_real) + ') mide cuanto gano el casino en maquinas despues de descontar',
+      'los sorteos. El Resultado de Caja (' + _fmtR(kpis.total_resultado) + ') es el flujo real: Entradas - Salidas - Impuestos. Son formulas distintas.',
+    ];
+    if ((kpis.total_resultado || 0) < 0 && (kpis.total_promo_redimible || 0) > (kpis.total_netwin || 0)) {
+      expLines.push('El resultado es negativo porque las promociones redimibles (' + _fmtR(kpis.total_promo_redimible) + ') superan el netwin');
+      expLines.push('(' + _fmtR(kpis.total_netwin) + '). Sin promociones, el resultado hubiera sido ' + _fmtR(kpis.resultado_sin_promos) + '.');
+    }
+    expLines.forEach(function(line) {
+      doc.text(line, ML, Y); Y += 3.5;
+    });
+    Y += 4;
 
     // ─── OCUPACION KPIs ───
     checkPage(18);
