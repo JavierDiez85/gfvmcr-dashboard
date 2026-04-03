@@ -77,7 +77,10 @@
           <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🎰 Casino Stellaris — Dashboard</div>
           <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${last.sala || 'Grand Tuxtla Casino'} · ${range.label} · ${cortes.length} corte${cortes.length!==1?'s':''}</div>
         </div>
-        <div style="display:flex;gap:3px;flex-wrap:wrap">${filterBar}</div>
+        <div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">
+          ${filterBar}
+          <button class="pbtn casino-download-btn" style="font-size:.68rem;padding:3px 10px;background:var(--blue);color:white;border-color:var(--blue);margin-left:4px" title="Descargar informe PDF">📄 PDF</button>
+        </div>
       </div>
 
       <!-- KPIs -->
@@ -323,6 +326,15 @@
     el.querySelectorAll('.casino-filter-btn').forEach(btn => {
       btn.addEventListener('click', function(){ _setCasinoFilter(this.dataset.filter); });
     });
+
+    // Wire PDF download button
+    const dlBtn = el.querySelector('.casino-download-btn');
+    if (dlBtn) {
+      dlBtn.addEventListener('click', function() {
+        if (typeof casinoGenerateReport === 'function') casinoGenerateReport(_casinoFilter);
+        else toast && toast('Modulo de reportes no cargado');
+      });
+    }
 
     // Render charts
     if (last.proveedores && last.proveedores.length) {
