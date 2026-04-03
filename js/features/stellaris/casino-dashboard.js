@@ -4,7 +4,7 @@
 
   const CASINO_CHARTS = {};
 
-  let _casinoFilter = 'todo'; // active filter
+  let _casinoFilter = 'ultimo'; // active filter — default to last corte
 
   function _casinoDateRange(filter) {
     const today = new Date();
@@ -13,10 +13,15 @@
     const to = fmt2(today);
 
     switch(filter) {
-      case 'hoy': return { from: to, to, label: 'Hoy' };
-      case 'ayer': {
-        const y = new Date(today); y.setDate(y.getDate()-1);
-        return { from: fmt2(y), to: fmt2(y), label: 'Ayer' };
+      case 'ultimo': {
+        // Last corte = most recent day with data (typically yesterday's close)
+        const data = casinoLoad();
+        const cortes = data.cortes || [];
+        if (cortes.length) {
+          const lastFecha = cortes[0].fecha;
+          return { from: lastFecha, to: lastFecha, label: 'Último corte (' + lastFecha + ')' };
+        }
+        return { from: to, to, label: 'Último corte (sin datos)' };
       }
       case 'semana': {
         const w = new Date(today); w.setDate(w.getDate()-6);
@@ -62,9 +67,9 @@
 
     // Filter bar
     const filters = [
-      {id:'hoy',label:'Hoy'},{id:'ayer',label:'Ayer'},{id:'semana',label:'Semana'},
+      {id:'ultimo',label:'Último Corte'},{id:'semana',label:'Semana'},
       {id:'mes',label:'Mes'},{id:'trimestre',label:'Trimestre'},{id:'semestre',label:'Semestre'},
-      {id:'anual',label:'Año'},{id:'todo',label:'Todo'}
+      {id:'anual',label:'Año'}
     ];
     const filterBar = filters.map(f => {
       const isActive = _casinoFilter === f.id;

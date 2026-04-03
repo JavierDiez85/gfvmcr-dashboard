@@ -36,26 +36,27 @@
     const CW = W - ML - MR;
     let Y = 14;
 
-    // Get data for the period
-    const range = typeof _casinoDateRange === 'function'
-      ? (window._casinoDateRange || window.rCasinoDashboard, _casinoDateRange(filter || 'todo'))
-      : { from: null, to: null, label: 'Todo' };
-
-    // Try using dashboard's internal function
+    // Get date range — reuse dashboard function if available, otherwise compute locally
     let dateRange;
     try {
-      const today = new Date(); today.setHours(0,0,0,0);
-      const fmt2 = d => d.toISOString().slice(0,10);
-      const to = fmt2(today);
-      const f = filter || 'todo';
-      if (f === 'hoy') dateRange = { from: to, to, label: 'Hoy' };
-      else if (f === 'ayer') { const y = new Date(today); y.setDate(y.getDate()-1); dateRange = { from: fmt2(y), to: fmt2(y), label: 'Ayer' }; }
-      else if (f === 'semana') { const w = new Date(today); w.setDate(w.getDate()-6); dateRange = { from: fmt2(w), to, label: 'Ultimos 7 dias' }; }
-      else if (f === 'mes') { const m = new Date(today.getFullYear(), today.getMonth(), 1); dateRange = { from: fmt2(m), to, label: 'Este mes' }; }
-      else if (f === 'trimestre') { const q = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1); dateRange = { from: fmt2(q), to, label: 'Este trimestre' }; }
-      else if (f === 'semestre') { const s = new Date(today.getFullYear(), today.getMonth()<6?0:6, 1); dateRange = { from: fmt2(s), to, label: 'Este semestre' }; }
-      else if (f === 'anual') { const a = new Date(today.getFullYear(), 0, 1); dateRange = { from: fmt2(a), to, label: String(today.getFullYear()) }; }
-      else dateRange = { from: null, to: null, label: 'Todo el historial' };
+      if (typeof _casinoDateRange === 'function') {
+        dateRange = _casinoDateRange(filter || 'ultimo');
+      } else {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const fmt2 = d => d.toISOString().slice(0,10);
+        const to = fmt2(today);
+        const f = filter || 'ultimo';
+        if (f === 'ultimo') {
+          const d = casinoLoad(); const c = d.cortes || [];
+          dateRange = c.length ? { from: c[0].fecha, to: c[0].fecha, label: 'Ultimo corte (' + c[0].fecha + ')' } : { from: to, to, label: 'Ultimo corte' };
+        }
+        else if (f === 'semana') { const w = new Date(today); w.setDate(w.getDate()-6); dateRange = { from: fmt2(w), to, label: 'Ultimos 7 dias' }; }
+        else if (f === 'mes') { const m = new Date(today.getFullYear(), today.getMonth(), 1); dateRange = { from: fmt2(m), to, label: 'Este mes' }; }
+        else if (f === 'trimestre') { const q = new Date(today.getFullYear(), Math.floor(today.getMonth()/3)*3, 1); dateRange = { from: fmt2(q), to, label: 'Este trimestre' }; }
+        else if (f === 'semestre') { const s = new Date(today.getFullYear(), today.getMonth()<6?0:6, 1); dateRange = { from: fmt2(s), to, label: 'Este semestre' }; }
+        else if (f === 'anual') { const a = new Date(today.getFullYear(), 0, 1); dateRange = { from: fmt2(a), to, label: String(today.getFullYear()) }; }
+        else dateRange = { from: null, to: null, label: 'Todo' };
+      }
     } catch(e) { dateRange = { from: null, to: null, label: 'Todo' }; }
 
     const cortes = casinoCortes(dateRange.from, dateRange.to);
