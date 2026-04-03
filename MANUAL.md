@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.4 | **Fecha**: 2026-04-02 | **Código**: ~38,500 líneas
+> **Versión**: 1.5 | **Fecha**: 2026-04-03 | **Código**: ~40,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -321,25 +321,39 @@ Upload de Excel con transacciones de tarjetas. Similar al TPV upload.
 ### 1.8.1 Dashboard Casino
 **Vista**: `stel_casino`
 
-KPIs del período seleccionado, calculados con todos los cortes cargados:
+**Filtro de período** (barra superior): Hoy · Ayer · Semana · Mes · Trimestre · Semestre · Año · Todo. Todos los KPIs, charts y tablas recalculan con los cortes del rango seleccionado.
+
+KPIs del período seleccionado:
 
 | KPI | Fuente |
 |-----|--------|
 | Netwin Total | Suma de netwin de todos los cortes |
-| Resultado | Netwin − gastos operativos del corte |
+| Premios Brutos | pago_premios de todos los cortes |
+| Ganancia Neta Real | Netwin − Promo Redimible |
+| Resultado de Caja | Suma de resultado de cajeros (del Excel) |
 | Hold% promedio | Promedio ponderado por jugado |
 | Jugado Total | Suma de `caja.maqJugado` |
+| Impuestos Totales | Federal 1% + Estatal 6% = 7% sobre premios brutos |
 | Ocupación | Promedio de ocupación diaria |
 | Altas | Suma de altas del período |
 | Cortes | Número de cortes cargados |
+
+**Secciones del dashboard**:
+
+1. **Flujo de Dinero** — tabla completa: entradas (depósito juego, acceso instalaciones, TPV) → salidas (depósito juego out, pago premios) → resultado bruto → impuestos → resultado neto. Con base legal (Art. 137-139 LISR + Chiapas 6%).
+2. **Impuestos** — KPIs: ISR Federal (1%), Estatal (6%), Retención Total (7%), Base Imponible.
+3. **Premios y Promociones** — Máquinas vs Sorteo, Promo Redimible vs No Redimible, nota "Redimible = Premio Sorteo".
+4. **Rentabilidad** — dos métricas separadas: Ganancia Neta Real (netwin − promo redimible) y Resultado de Caja (cajeros).
+5. **Proveedores** — tabla con semáforo hold%: ⭐≥10% · ✅≥5% · ⚠️0-5% · 🔴negativo.
+6. **Balance** — efectivo caja, entregado, faltante/sobrante, alerta de errores.
+7. **Pasivo** — saldo pendiente de cajeros.
+8. **Cajeros** — control por cajero (solo con Excel cargado).
 
 **Charts**:
 - Netwin por proveedor (barras verticales)
 - Hold% por proveedor (barras horizontales)
 
-**Tablas**:
-- Desglose por proveedor: jugado, netwin, hold%, terminales
-- Control de cajeros (solo si hay Excel cargado): entradas, salidas, impuestos, resultado por cajero
+**PDF Export**: Botón 📄 en el header genera reporte ejecutivo completo del período activo (6 páginas con todas las secciones + glosario). Generado client-side con jsPDF + AutoTable.
 
 **Integración P&L**: `fiInjectCasino()` inyecta automáticamente el netwin mensual en el P&L de Stellaris vía `_syncAll`.
 
@@ -355,12 +369,13 @@ Soporta dos tipos de documentos del sistema Wigos:
 - Parser dual: PDF.js inline primero, fallback a líneas pdftotext
 - Proveedores reconocidos: AGS, EGT, FBM, MERKUR, ORTIZ, ZITRO, ARISTOCRAT, IGT, BALLY, KONAMI, SCIENTIFIC, NOVOMATIC, EVERI
 
-**Excel — Sesiones de Caja**
-- Sube el Excel de sesiones de cajero
-- Extrae: nombre del cajero, entradas, salidas, impuestos, resultado por sesión
-- Se asocia al último corte PDF cargado
+**Excel — Dos tipos, auto-detectados**:
+1. **Resumen de Cajas** (`parseCasinoResumenExcel`): Excel de resumen financiero completo. Extrae: desglose entradas (depósito juego, acceso, TPV), desglose salidas, premios, impuestos, promociones, balance de caja. Parser usa `findVal`/`findValN` para manejar etiquetas duplicadas.
+2. **Sesiones de Caja** (`parseCasinoExcel`): Excel de sesiones de cajero. Extrae: nombre cajero, entradas, salidas, impuestos, resultado por sesión.
 
-**Historial**: Tabla de cortes guardados con botón de eliminar por corte.
+**Merge en upload**: Al subir un Excel, `casinoAddCorte()` FUSIONA con el corte existente del mismo día. Preserva datos de máquinas (netwin, hold, proveedores) del PDF. Solo sobreescribe campos no-cero. Source tracking: `"pdf"` · `"excel-sesiones"` · `"pdf+excel-resumen"`.
+
+**Historial**: Tabla de cortes con columna de fuente (📄 PDF / 📊 Excel) y botón eliminar por corte.
 
 **Storage**: Clave `gf_casino` en Supabase. Estructura: `{ cortes: [ ...corteObjects ] }`.
 
@@ -1068,17 +1083,27 @@ PDF Wigos (Resumen de Caja) — upload client-side
   ↓ parseCasinoPDF() [casino-data.js]
   ↓  · regex dual strategy: full-text first, line-by-line fallback
   ↓  · extrae: fecha, turno, sala, caja (jugado/netwin/hold), máquinas, proveedores
-  ↓ guardado en gf_casino.cortes[] → Supabase sync
+  ↓ casinoAddCorte() → crea/fusiona corte en gf_casino.cortes[] → Supabase sync
 
-Excel Wigos (Sesiones de Caja) — upload client-side
+Excel Wigos (auto-detección de tipo) — upload client-side
   ↓ SheetJS (CDN) parseado a JSON
-  ↓ parseCasinoExcel() — extrae cajeros con entradas/salidas/impuestos/resultado
-  ↓ merge en último corte del gf_casino
+  ↓ [tipo A] parseCasinoResumenExcel() — desglose financiero completo:
+  ↓    entradas, salidas, premios, impuestos, promociones, balance
+  ↓    usa findVal/findValN para etiquetas duplicadas
+  ↓ [tipo B] parseCasinoExcel() — sesiones de cajero:
+  ↓    cajeros con entradas/salidas/impuestos/resultado por sesión
+  ↓ casinoAddCorte() → MERGE con corte existente (preserva datos PDF)
+  ↓    source tracking: "pdf+excel-resumen" o "pdf+excel-sesiones"
 
 fiInjectCasino() [casino-dashboard.js] llamado desde _syncAll()
   ↓ casinoMonthlyNetwin(mes, año) — agrega netwin de todos los cortes del mes
   ↓ inyecta en P&L Stellaris como ingreso de 'Casino — Netwin'
   ↓ Afecta Ingresos Brutos → Margen Bruto → EBITDA de Stellaris
+
+casinoGeneratePDFReport() [casino-report.js] — browser-side
+  ↓ Lee estado actual del dashboard (cortes filtrados)
+  ↓ jsPDF + AutoTable → PDF ejecutivo 6 páginas
+  ↓ blob URL → descarga directa (sin servidor)
 ```
 
 ---
@@ -1242,9 +1267,10 @@ Antes de hacer deploy:
 │   │   ├── wirebit-upload.js      # Carga de fees (421)
 │   │   └── wirebit-views.js       # Vistas cripto/tarjetas (139)
 │   ├── stellaris/
-│   │   ├── casino-data.js         # Parser PDF/Excel + storage gf_casino (~500)
-│   │   ├── casino-upload.js       # UI carga PDF/Excel cortes casino (~310)
-│   │   └── casino-dashboard.js    # KPIs, charts, fiInjectCasino (~250)
+│   │   ├── casino-data.js         # Parser PDF/Excel + storage gf_casino (~800)
+│   │   ├── casino-upload.js       # UI carga PDF/Excel cortes casino (~320)
+│   │   ├── casino-dashboard.js    # KPIs, charts, fiInjectCasino (~520)
+│   │   └── casino-report.js       # PDF ejecutivo client-side (jsPDF, ~380)
 │   ├── finanzas/
 │   │   ├── carga-masiva.js        # Upload masivo CSV (397)
 │   │   ├── flujo-gastos.js        # Flujo de gastos (242)
