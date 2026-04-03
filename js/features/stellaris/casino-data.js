@@ -18,11 +18,27 @@
 
   function casinoAddCorte(corte) {
     const data = casinoLoad();
-    // Replace if same id exists (re-upload)
     const idx = data.cortes.findIndex(c => c.id === corte.id);
-    if (idx >= 0) data.cortes[idx] = corte;
-    else data.cortes.push(corte);
-    // Sort by date desc
+    if (idx >= 0) {
+      // MERGE: keep existing non-zero values for fields the new corte doesn't have
+      const existing = data.cortes[idx];
+      const merged = Object.assign({}, existing);
+      for (const key of Object.keys(corte)) {
+        const newVal = corte[key];
+        // Overwrite if new value is truthy, non-zero, or non-empty array
+        if (Array.isArray(newVal)) {
+          if (newVal.length > 0) merged[key] = newVal;
+        } else if (newVal !== 0 && newVal !== '' && newVal !== null && newVal !== undefined) {
+          merged[key] = newVal;
+        }
+      }
+      // Always update metadata
+      merged.uploaded_at = corte.uploaded_at;
+      if (corte.source) merged.source = (existing.source || '') + '+' + corte.source;
+      data.cortes[idx] = merged;
+    } else {
+      data.cortes.push(corte);
+    }
     data.cortes.sort((a, b) => (b.fecha + b.turno).localeCompare(a.fecha + a.turno));
     casinoSave(data);
     return data;
@@ -431,19 +447,22 @@
     const ws = workbook.Sheets[workbook.SheetNames[0]];
     const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-    // Helper: find value by label in column 1 or 2, value in column 4
+    // Helper: find value by scanning all rows for a label match
+    // Looks in cols 0-3 for the label, returns the numeric value from the rightmost col
     const findVal = (label) => {
+      const lbl = label.toLowerCase();
       for (let i = 0; i < data.length; i++) {
         const row = data[i] || [];
-        for (let c = 0; c < 4; c++) {
-          const cell = String(row[c] || '').trim();
-          if (cell.toLowerCase() === label.toLowerCase()) {
-            // Value is in the rightmost populated column (usually col 4)
+        for (let c = 0; c < Math.min(4, row.length); c++) {
+          const cell = String(row[c] == null ? '' : row[c]).trim();
+          if (cell.toLowerCase() === lbl) {
             for (let v = row.length - 1; v > c; v--) {
-              if (row[v] !== null && row[v] !== undefined && row[v] !== '') {
-                const raw = String(row[v]).replace(/[$,()]/g, '').trim();
+              if (row[v] != null && String(row[v]).trim() !== '') {
+                const s = String(row[v]);
+                const raw = s.replace(/[$,\s()]/g, '');
                 const val = parseFloat(raw);
-                if (!isNaN(val)) return String(row[v]).includes('(') ? -val : val;
+                if (!isNaN(val) && val !== 0) return s.includes('(') ? -val : val;
+                if (!isNaN(val)) return val;
               }
             }
           }
@@ -452,161 +471,162 @@
       return 0;
     };
 
-    // Extract dates from "Desde:" and "Hasta:" rows
-    let fecha = '', turno = '', sala = '';
-    for (let i = 0; i < Math.min(15, data.length); i++) {
-      const row = data[i] || [];
-      const rowStr = row.join(' ');
-      // Sala
-      const salaMatch = rowStr.match(/\d+\s*-\s*(.+CASINO.*)/i);
-      if (salaMatch) sala = salaMatch[0].trim();
-      // Desde/Hasta
-      for (let c = 0; c < row.length; c++) {
-        const cell = String(row[c] || '').trim();
-        if (cell.match(/^Desde:?$/i)) {
-          const dateVal = row[c + 1] || row[c + 2];
-          if (dateVal) {
-            const dm = String(dateVal).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}:\d{2})/);
-            if (dm) {
-              fecha = `${dm[3]}-${dm[1].padStart(2,'0')}-${dm[2].padStart(2,'0')}`;
-              turno = dm[4];
+    // Helper: find the Nth occurrence of a label (for duplicate labels in different sections)
+    const findValN = (label, nth) => {
+      const lbl = label.toLowerCase();
+      let count = 0;
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i] || [];
+        for (let c = 0; c < Math.min(4, row.length); c++) {
+          const cell = String(row[c] == null ? '' : row[c]).trim();
+          if (cell.toLowerCase() === lbl) {
+            count++;
+            if (count === nth) {
+              for (let v = row.length - 1; v > c; v--) {
+                if (row[v] != null && String(row[v]).trim() !== '') {
+                  const s = String(row[v]);
+                  const raw = s.replace(/[$,\s()]/g, '');
+                  const val = parseFloat(raw);
+                  if (!isNaN(val)) return s.includes('(') ? -val : val;
+                }
+              }
             }
           }
         }
+      }
+      return 0;
+    };
+
+    // Extract dates
+    let fecha = '', turno = '', sala = '';
+    for (let i = 0; i < Math.min(15, data.length); i++) {
+      const row = data[i] || [];
+      const rowStr = row.map(c => c == null ? '' : String(c)).join(' ');
+      const salaMatch = rowStr.match(/\d+\s*-\s*(.+CASINO.*)/i);
+      if (salaMatch) sala = salaMatch[0].trim();
+      for (let c = 0; c < row.length; c++) {
+        const cell = String(row[c] == null ? '' : row[c]).trim();
+        if (cell.match(/^Desde:?$/i)) {
+          for (let d = c+1; d < Math.min(c+3, row.length); d++) {
+            if (row[d]) { const dm = String(row[d]).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}:\d{2})/); if(dm){fecha=`${dm[3]}-${dm[1].padStart(2,'0')}-${dm[2].padStart(2,'0')}`;turno=dm[4];break;} }
+          }
+        }
         if (cell.match(/^Hasta:?$/i)) {
-          const dateVal = row[c + 1] || row[c + 2];
-          if (dateVal) {
-            const dm = String(dateVal).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}:\d{2})/);
-            if (dm && turno) turno += ' - ' + dm[4];
+          for (let d = c+1; d < Math.min(c+3, row.length); d++) {
+            if (row[d]) { const dm = String(row[d]).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}:\d{2})/); if(dm&&turno){turno+=' - '+dm[4];break;} }
           }
         }
       }
     }
 
-    const corte = {
-      id: `corte_${fecha}`,
-      fecha,
-      turno,
-      sala,
-      // Caja totals
-      entradas: findVal('Total') || 0, // First "Total" in Entradas section
-      salidas: 0,
-      retencion_premios: findVal('Retención sobre Premios'),
-      resultado_caja: 0,
-      // Desglose Entradas
-      deposito_juego_in: findVal('Depósito de Juego'),
-      acceso_instalaciones: findVal('Acceso y uso de instalaciones y máquinas') || findVal('Acceso y uso de instalaciones'),
-      tarjeta_bancaria_in: findVal('Operaciones con Tarjeta Bancaria'),
-      // Premios
-      premios_maquinas: findVal('Premios'),
-      premio_sorteo: findVal('Pago de premio sorteo'),
-      // Impuestos
-      imp_federal: findVal('Impuesto Federal'),
-      imp_estatal: findVal('Impuesto Estatal'),
-      // Promociones
-      promo_redimible: findVal('Promoción Redimible'),
-      promo_no_redimible: findVal('Promoción No Redimible'),
-      cancel_promo_nr: findVal('Cancelación Promoción No Redimible'),
-      // Pagos manuales
-      pagos_manuales: 0,
-      // Balance
-      efectivo_caja: findVal('Efectivo en caja') || findVal('Peso Mexicano'),
-      efectivo_entregado: 0,
-      efectivo_faltante: findVal('Faltante'),
-      efectivo_sobrante: findVal('Sobrante'),
-      // Pasivo
-      pasivo_redimible: 0,
-      pasivo_no_redimible: 0,
-      // Otros
-      bancos_moviles: findVal('Entregado Bancos Móviles/Validadores'),
-      depositos_caja: findVal('Depósitos de caja'),
-      // Maquinas (not in this report — comes from PDF or will be 0)
+    // Use findVal for ALL fields — no section tracking needed
+    // Entradas: first occurrence of "Depósito de Juego" is the entry (row 22)
+    const deposito_juego_in = findVal('Depósito de Juego');
+    const acceso = findVal('Acceso y uso de instalaciones y máquinas') || findVal('Acceso y uso de instalaciones');
+    const tarjeta_in = findVal('Operaciones con Tarjeta Bancaria');
+
+    // Salidas: "Depósito de Juego" appears twice (row 22 = entradas, row 33 = salidas)
+    const deposito_juego_out = findValN('Depósito de Juego', 2);
+    const pago_premios = findVal('Pago de Premios');
+
+    // Totals: "Entradas" and "Salidas" appear as labels with values (rows 49, 50, 76, 77)
+    const total_entradas = findValN('Entradas', 2) || findValN('Entradas', 3) || (deposito_juego_in + acceso);
+    const total_salidas = findValN('Salidas', 2) || findValN('Salidas', 3) || (deposito_juego_out + pago_premios);
+    const resultado_caja = findVal('Resultado de Caja');
+
+    // Premios
+    const premios_maq = findVal('Premios');
+    const premio_sorteo = findVal('Pago de premio sorteo');
+    const retencion = findVal('Retención sobre Premios');
+
+    // Impuestos
+    const imp_fed = findVal('Impuesto Federal');
+    const imp_est = findVal('Impuesto Estatal');
+
+    // Promociones
+    const promo_red = findVal('Promoción Redimible');
+    const promo_nr = findVal('Promoción No Redimible');
+    const cancel_nr = findVal('Cancelación Promoción No Redimible');
+
+    // Balance
+    const efectivo = findVal('Peso Mexicano') || findVal('Efectivo en caja');
+    const entregado = findVal('Entregado');
+    const faltante = findVal('Faltante');
+    const sobrante = findVal('Sobrante');
+
+    // Pagos manuales: find "Total" after "Pagos manuales" section
+    let pagos_man = 0;
+    for (let i = 0; i < data.length; i++) {
+      const c1 = String(data[i]?.[1] == null ? '' : data[i][1]).trim();
+      if (c1 === 'Pagos manuales') {
+        for (let j = i+1; j < Math.min(i+5, data.length); j++) {
+          const t = String(data[j]?.[1] == null ? '' : data[j][1]).trim();
+          if (t === 'Total') { const v = data[j]?.[4]; if (v != null) pagos_man = parseFloat(String(v).replace(/[$,()]/g,''))||0; break; }
+        }
+        break;
+      }
+    }
+
+    // Pasivo Final
+    let pasivo_red = 0, pasivo_nr = 0;
+    for (let i = 0; i < data.length; i++) {
+      const c1 = String(data[i]?.[1] == null ? '' : data[i][1]).trim();
+      if (c1 === 'Pasivo Final') {
+        for (let j = i+1; j < Math.min(i+6, data.length); j++) {
+          const c2 = String(data[j]?.[2] == null ? '' : data[j][2]).trim();
+          const v = data[j]?.[4];
+          const val = v != null ? parseFloat(String(v).replace(/[$,()]/g,''))||0 : 0;
+          if (c2 === 'Redimible') pasivo_red = val;
+          if (c2 === 'Promo. NR' || c2 === 'Promo. RE') pasivo_nr = val;
+          if (c1 === 'Incremento de Pasivo' || String(data[j]?.[1]||'').trim() === 'Incremento de Pasivo') break;
+        }
+        break;
+      }
+    }
+
+    // Bancos
+    const bancos = findVal('Entregado Bancos Móviles/Validadores');
+    const depositos_caja = findVal('Depósitos de caja');
+
+    // Calculate impuestos if missing
+    const premios_brutos = premios_maq + premio_sorteo;
+    const imp_federal = imp_fed || (premios_brutos > 0 ? +(premios_brutos * 0.01).toFixed(2) : 0);
+    const imp_estatal = imp_est || (premios_brutos > 0 ? +(premios_brutos * 0.06).toFixed(2) : 0);
+    const retencion_final = retencion || (imp_federal + imp_estatal);
+
+    console.log('[Casino] Excel Resumen parsed:', {
+      fecha, entradas: total_entradas, salidas: total_salidas, resultado: resultado_caja,
+      deposito_in: deposito_juego_in, deposito_out: deposito_juego_out, premios: pago_premios,
+      imp_fed: imp_federal, imp_est: imp_estatal, retencion: retencion_final,
+      promo_red, promo_nr, premios_maq, premio_sorteo
+    });
+
+    return {
+      id: `corte_${fecha}`, fecha, turno, sala,
+      entradas: total_entradas,
+      salidas: total_salidas,
+      retencion_premios: retencion_final,
+      resultado_caja: resultado_caja || (total_entradas - total_salidas - retencion_final),
+      deposito_juego_in, acceso_instalaciones: acceso, tarjeta_bancaria_in: tarjeta_in,
+      deposito_juego_out: deposito_juego_out || (total_salidas - pago_premios),
+      pago_premios: pago_premios || (premios_maq + premio_sorteo - retencion_final),
+      premios_maquinas: premios_maq, premio_sorteo,
+      imp_federal, imp_estatal,
+      promo_redimible: promo_red, promo_no_redimible: promo_nr, cancel_promo_nr: cancel_nr,
+      pagos_manuales: pagos_man,
+      efectivo_caja: efectivo, efectivo_entregado: entregado,
+      efectivo_faltante: faltante, efectivo_sobrante: sobrante,
+      pasivo_redimible: pasivo_red, pasivo_no_redimible: pasivo_nr,
+      bancos_moviles: bancos, depositos_caja,
+      // Machine data NOT in this report — will be merged from existing corte
       jugado: 0, netwin: 0, hold_pct: 0, terminales: 0, netwin_terminal: 0,
-      // Ocupacion (not in this report)
       sesiones: 0, ocupacion_actual: 0, ocupacion_periodo: 0,
       aforo_hombres: 0, aforo_mujeres: 0, aforo_total: 0,
       altas: 0, cuentas_activas_30: 0, cuentas_activas_90: 0,
       cuentas_activas_180: 0, cuentas_inactivas: 0, cuentas_total: 0,
-      proveedores: [],
-      cajeros: [],
-      source: 'excel-resumen',
-      uploaded_at: new Date().toISOString()
+      proveedores: [], cajeros: [],
+      source: 'excel-resumen', uploaded_at: new Date().toISOString()
     };
-
-    // Parse Entradas/Salidas/Resultado more carefully by section
-    let section = '';
-    let entradas_total = 0, salidas_total = 0, resultado_val = 0;
-    let pagos_pago = 0, pagos_anulacion = 0;
-    let pasivo_section = '';
-    let entregado_first = 0;
-
-    for (let i = 0; i < data.length; i++) {
-      const row = data[i] || [];
-      const c1 = String(row[1] || '').trim();
-      const c2 = String(row[2] || '').trim();
-      const c4raw = row[4];
-      const c4 = (c4raw !== null && c4raw !== undefined) ? parseFloat(String(c4raw).replace(/[$,()]/g, '')) : NaN;
-      const c4neg = String(c4raw || '').includes('(');
-
-      // Track sections
-      if (c1 === 'Entradas' && !section) section = 'entradas';
-      if (c1 === 'Salidas' && section === 'entradas') section = 'salidas';
-      if (c1 === 'Resultado de Caja') {
-        resultado_val = c4neg ? -c4 : c4;
-        section = 'post';
-      }
-      if (c1 === 'Pagos manuales') section = 'pagos';
-      if (c1 === 'Pasivo Inicial') pasivo_section = 'inicial';
-      if (c1 === 'Pasivo Final') pasivo_section = 'final';
-      if (c1 === 'Incremento de Pasivo') pasivo_section = 'incremento';
-
-      // Totals
-      if (c1 === 'Total' && !isNaN(c4)) {
-        if (section === 'entradas') entradas_total = c4;
-        if (section === 'salidas') salidas_total = c4;
-      }
-
-      // Entregado (first occurrence is efectivo, second is tarjeta)
-      if (c2 === 'Entregado' && !isNaN(c4) && !entregado_first) {
-        entregado_first = c4;
-        corte.efectivo_entregado = c4;
-      }
-
-      // Salidas breakdown
-      if (section === 'salidas') {
-        if (c2 === 'Depósito de Juego' && !isNaN(c4)) corte.deposito_juego_out = c4;
-        if (c2 === 'Pago de Premios' && !isNaN(c4)) corte.pago_premios = c4;
-      }
-
-      // Pagos manuales
-      if (section === 'pagos') {
-        if (c2 === 'Pago' && !isNaN(c4)) pagos_pago = c4;
-        if (c2 === 'Anulación' && !isNaN(c4)) pagos_anulacion = c4;
-        if (c1 === 'Total' && !isNaN(c4)) corte.pagos_manuales = c4;
-      }
-
-      // Pasivo final
-      if (pasivo_section === 'final') {
-        if (c2 === 'Redimible' && !isNaN(c4)) corte.pasivo_redimible = c4;
-        if (c2 === 'Promo. NR' && !isNaN(c4)) corte.pasivo_no_redimible = c4;
-      }
-    }
-
-    corte.entradas = entradas_total || corte.deposito_juego_in + corte.acceso_instalaciones;
-    corte.salidas = salidas_total || (corte.deposito_juego_out || 0) + (corte.pago_premios || 0);
-    corte.resultado_caja = resultado_val || (corte.entradas - corte.salidas - corte.retencion_premios);
-    if (!corte.deposito_juego_out) corte.deposito_juego_out = corte.salidas - (corte.pago_premios || 0);
-    if (!corte.pago_premios) corte.pago_premios = corte.premios_maquinas + corte.premio_sorteo - corte.retencion_premios;
-
-    // Calculate impuestos if missing (1% federal + 6% estatal on premios brutos)
-    const premios_brutos = corte.premios_maquinas + corte.premio_sorteo;
-    if (!corte.imp_federal && premios_brutos > 0) {
-      corte.imp_federal = +(premios_brutos * 0.01).toFixed(2);
-      corte.imp_estatal = +(premios_brutos * 0.06).toFixed(2);
-    }
-    if (!corte.retencion_premios) corte.retencion_premios = corte.imp_federal + corte.imp_estatal;
-
-    return corte;
   }
 
   /** Detect Excel type: 'resumen' or 'sesiones' */

@@ -254,10 +254,6 @@
       casinoAddCorte(corte);
       toast('✅ Corte guardado: ' + corte.fecha + ' ' + (corte.turno||''));
       rCasinoUpload();
-      // Auto-generate daily PDF report
-      if (typeof casinoGenerateReport === 'function') {
-        setTimeout(function() { casinoGenerateReport('hoy'); }, 500);
-      }
     });
     previewEl.querySelector('.casino-cancel-btn')?.addEventListener('click', function() {
       previewEl.style.display = 'none';
