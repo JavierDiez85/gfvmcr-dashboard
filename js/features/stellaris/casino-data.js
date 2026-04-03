@@ -424,6 +424,210 @@
   }
 
   // ═══════════════════════════════════════
+  // EXCEL PARSER — Resumen de Cajas (full corte from Excel)
+  // ═══════════════════════════════════════
+
+  function parseCasinoResumenExcel(workbook) {
+    const ws = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+
+    // Helper: find value by label in column 1 or 2, value in column 4
+    const findVal = (label) => {
+      for (let i = 0; i < data.length; i++) {
+        const row = data[i] || [];
+        for (let c = 0; c < 4; c++) {
+          const cell = String(row[c] || '').trim();
+          if (cell.toLowerCase() === label.toLowerCase()) {
+            // Value is in the rightmost populated column (usually col 4)
+            for (let v = row.length - 1; v > c; v--) {
+              if (row[v] !== null && row[v] !== undefined && row[v] !== '') {
+                const raw = String(row[v]).replace(/[$,()]/g, '').trim();
+                const val = parseFloat(raw);
+                if (!isNaN(val)) return String(row[v]).includes('(') ? -val : val;
+              }
+            }
+          }
+        }
+      }
+      return 0;
+    };
+
+    // Extract dates from "Desde:" and "Hasta:" rows
+    let fecha = '', turno = '', sala = '';
+    for (let i = 0; i < Math.min(15, data.length); i++) {
+      const row = data[i] || [];
+      const rowStr = row.join(' ');
+      // Sala
+      const salaMatch = rowStr.match(/\d+\s*-\s*(.+CASINO.*)/i);
+      if (salaMatch) sala = salaMatch[0].trim();
+      // Desde/Hasta
+      for (let c = 0; c < row.length; c++) {
+        const cell = String(row[c] || '').trim();
+        if (cell.match(/^Desde:?$/i)) {
+          const dateVal = row[c + 1] || row[c + 2];
+          if (dateVal) {
+            const dm = String(dateVal).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}:\d{2})/);
+            if (dm) {
+              fecha = `${dm[3]}-${dm[1].padStart(2,'0')}-${dm[2].padStart(2,'0')}`;
+              turno = dm[4];
+            }
+          }
+        }
+        if (cell.match(/^Hasta:?$/i)) {
+          const dateVal = row[c + 1] || row[c + 2];
+          if (dateVal) {
+            const dm = String(dateVal).match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s*(\d{1,2}:\d{2})/);
+            if (dm && turno) turno += ' - ' + dm[4];
+          }
+        }
+      }
+    }
+
+    const corte = {
+      id: `corte_${fecha}`,
+      fecha,
+      turno,
+      sala,
+      // Caja totals
+      entradas: findVal('Total') || 0, // First "Total" in Entradas section
+      salidas: 0,
+      retencion_premios: findVal('Retención sobre Premios'),
+      resultado_caja: 0,
+      // Desglose Entradas
+      deposito_juego_in: findVal('Depósito de Juego'),
+      acceso_instalaciones: findVal('Acceso y uso de instalaciones y máquinas') || findVal('Acceso y uso de instalaciones'),
+      tarjeta_bancaria_in: findVal('Operaciones con Tarjeta Bancaria'),
+      // Premios
+      premios_maquinas: findVal('Premios'),
+      premio_sorteo: findVal('Pago de premio sorteo'),
+      // Impuestos
+      imp_federal: findVal('Impuesto Federal'),
+      imp_estatal: findVal('Impuesto Estatal'),
+      // Promociones
+      promo_redimible: findVal('Promoción Redimible'),
+      promo_no_redimible: findVal('Promoción No Redimible'),
+      cancel_promo_nr: findVal('Cancelación Promoción No Redimible'),
+      // Pagos manuales
+      pagos_manuales: 0,
+      // Balance
+      efectivo_caja: findVal('Efectivo en caja') || findVal('Peso Mexicano'),
+      efectivo_entregado: 0,
+      efectivo_faltante: findVal('Faltante'),
+      efectivo_sobrante: findVal('Sobrante'),
+      // Pasivo
+      pasivo_redimible: 0,
+      pasivo_no_redimible: 0,
+      // Otros
+      bancos_moviles: findVal('Entregado Bancos Móviles/Validadores'),
+      depositos_caja: findVal('Depósitos de caja'),
+      // Maquinas (not in this report — comes from PDF or will be 0)
+      jugado: 0, netwin: 0, hold_pct: 0, terminales: 0, netwin_terminal: 0,
+      // Ocupacion (not in this report)
+      sesiones: 0, ocupacion_actual: 0, ocupacion_periodo: 0,
+      aforo_hombres: 0, aforo_mujeres: 0, aforo_total: 0,
+      altas: 0, cuentas_activas_30: 0, cuentas_activas_90: 0,
+      cuentas_activas_180: 0, cuentas_inactivas: 0, cuentas_total: 0,
+      proveedores: [],
+      cajeros: [],
+      source: 'excel-resumen',
+      uploaded_at: new Date().toISOString()
+    };
+
+    // Parse Entradas/Salidas/Resultado more carefully by section
+    let section = '';
+    let entradas_total = 0, salidas_total = 0, resultado_val = 0;
+    let pagos_pago = 0, pagos_anulacion = 0;
+    let pasivo_section = '';
+    let entregado_first = 0;
+
+    for (let i = 0; i < data.length; i++) {
+      const row = data[i] || [];
+      const c1 = String(row[1] || '').trim();
+      const c2 = String(row[2] || '').trim();
+      const c4raw = row[4];
+      const c4 = (c4raw !== null && c4raw !== undefined) ? parseFloat(String(c4raw).replace(/[$,()]/g, '')) : NaN;
+      const c4neg = String(c4raw || '').includes('(');
+
+      // Track sections
+      if (c1 === 'Entradas' && !section) section = 'entradas';
+      if (c1 === 'Salidas' && section === 'entradas') section = 'salidas';
+      if (c1 === 'Resultado de Caja') {
+        resultado_val = c4neg ? -c4 : c4;
+        section = 'post';
+      }
+      if (c1 === 'Pagos manuales') section = 'pagos';
+      if (c1 === 'Pasivo Inicial') pasivo_section = 'inicial';
+      if (c1 === 'Pasivo Final') pasivo_section = 'final';
+      if (c1 === 'Incremento de Pasivo') pasivo_section = 'incremento';
+
+      // Totals
+      if (c1 === 'Total' && !isNaN(c4)) {
+        if (section === 'entradas') entradas_total = c4;
+        if (section === 'salidas') salidas_total = c4;
+      }
+
+      // Entregado (first occurrence is efectivo, second is tarjeta)
+      if (c2 === 'Entregado' && !isNaN(c4) && !entregado_first) {
+        entregado_first = c4;
+        corte.efectivo_entregado = c4;
+      }
+
+      // Salidas breakdown
+      if (section === 'salidas') {
+        if (c2 === 'Depósito de Juego' && !isNaN(c4)) corte.deposito_juego_out = c4;
+        if (c2 === 'Pago de Premios' && !isNaN(c4)) corte.pago_premios = c4;
+      }
+
+      // Pagos manuales
+      if (section === 'pagos') {
+        if (c2 === 'Pago' && !isNaN(c4)) pagos_pago = c4;
+        if (c2 === 'Anulación' && !isNaN(c4)) pagos_anulacion = c4;
+        if (c1 === 'Total' && !isNaN(c4)) corte.pagos_manuales = c4;
+      }
+
+      // Pasivo final
+      if (pasivo_section === 'final') {
+        if (c2 === 'Redimible' && !isNaN(c4)) corte.pasivo_redimible = c4;
+        if (c2 === 'Promo. NR' && !isNaN(c4)) corte.pasivo_no_redimible = c4;
+      }
+    }
+
+    corte.entradas = entradas_total || corte.deposito_juego_in + corte.acceso_instalaciones;
+    corte.salidas = salidas_total || (corte.deposito_juego_out || 0) + (corte.pago_premios || 0);
+    corte.resultado_caja = resultado_val || (corte.entradas - corte.salidas - corte.retencion_premios);
+    if (!corte.deposito_juego_out) corte.deposito_juego_out = corte.salidas - (corte.pago_premios || 0);
+    if (!corte.pago_premios) corte.pago_premios = corte.premios_maquinas + corte.premio_sorteo - corte.retencion_premios;
+
+    // Calculate impuestos if missing (1% federal + 6% estatal on premios brutos)
+    const premios_brutos = corte.premios_maquinas + corte.premio_sorteo;
+    if (!corte.imp_federal && premios_brutos > 0) {
+      corte.imp_federal = +(premios_brutos * 0.01).toFixed(2);
+      corte.imp_estatal = +(premios_brutos * 0.06).toFixed(2);
+    }
+    if (!corte.retencion_premios) corte.retencion_premios = corte.imp_federal + corte.imp_estatal;
+
+    return corte;
+  }
+
+  /** Detect Excel type: 'resumen' or 'sesiones' */
+  function detectCasinoExcelType(workbook) {
+    const ws = workbook.Sheets[workbook.SheetNames[0]];
+    const data = XLSX.utils.sheet_to_json(ws, { header: 1 });
+    for (let i = 0; i < Math.min(10, data.length); i++) {
+      const rowStr = (data[i] || []).join(' ').toLowerCase();
+      if (rowStr.includes('resumen de caja')) return 'resumen';
+      if (rowStr.includes('sesiones de caja')) return 'sesiones';
+    }
+    // Fallback: if has "Balance de caja" → resumen, if has "Usuario" → sesiones
+    for (let i = 0; i < Math.min(15, data.length); i++) {
+      const rowStr = (data[i] || []).join(' ').toLowerCase();
+      if (rowStr.includes('balance de caja')) return 'resumen';
+      if (rowStr.includes('usuario') && rowStr.includes('apertura')) return 'sesiones';
+    }
+    return 'unknown';
+  }
+
+  // ═══════════════════════════════════════
   // EXCEL PARSER — Sesiones de Caja
   // ═══════════════════════════════════════
 
@@ -533,43 +737,93 @@
     if (!cortes.length) return null;
     const sum = (field) => cortes.reduce((s, c) => s + (c[field] || 0), 0);
     const avg = (field) => sum(field) / cortes.length;
+
+    const total_entradas = sum('entradas');
+    const total_salidas = sum('salidas');
+    const total_premios_maquinas = sum('premios_maquinas');
+    const total_premio_sorteo = sum('premio_sorteo');
+    const total_promo_redimible = sum('promo_redimible');
+    const total_promo_no_redimible = sum('promo_no_redimible');
+    const total_cancel_promo_nr = sum('cancel_promo_nr');
+    const total_netwin = sum('netwin');
+    const total_retencion = sum('retencion_premios');
+    const total_imp_federal = sum('imp_federal');
+    const total_imp_estatal = sum('imp_estatal');
+
+    // Confirmed formulas
+    const premios_brutos = total_premios_maquinas + total_premio_sorteo;
+    const neto_promociones = total_promo_redimible + total_promo_no_redimible - total_cancel_promo_nr;
+    const ganancia_neta_real = total_netwin - total_promo_redimible;
+    const resultado_sin_promos = sum('resultado_caja') + total_promo_redimible;
+    const total_terminales = Math.max(...cortes.map(c => c.terminales || 0), 0);
+    const netwin_por_terminal = total_terminales > 0 ? total_netwin / total_terminales : 0;
+    const pct_deposito = total_entradas > 0 ? (sum('deposito_juego_in') / total_entradas * 100) : 0;
+    const pct_acceso = total_entradas > 0 ? (sum('acceso_instalaciones') / total_entradas * 100) : 0;
+    const pct_tarjeta = total_entradas > 0 ? (sum('tarjeta_bancaria_in') / total_entradas * 100) : 0;
+    // Pasivo
+    const total_pasivo_redimible = sum('pasivo_redimible');
+    const total_pasivo_no_redimible = sum('pasivo_no_redimible');
+    // Balance
+    const total_efectivo_caja = sum('efectivo_caja');
+    const total_efectivo_entregado = sum('efectivo_entregado');
+    const total_faltante = sum('efectivo_faltante');
+    const total_sobrante = sum('efectivo_sobrante');
+
     return {
       num_cortes: cortes.length,
       // Totales caja
-      total_entradas: sum('entradas'),
-      total_salidas: sum('salidas'),
+      total_entradas,
+      total_salidas,
       total_resultado: sum('resultado_caja'),
       // Desglose entradas
       total_deposito_juego_in: sum('deposito_juego_in'),
       total_acceso_instalaciones: sum('acceso_instalaciones'),
       total_tarjeta_bancaria: sum('tarjeta_bancaria_in'),
+      pct_deposito, pct_acceso, pct_tarjeta,
       // Desglose salidas
       total_deposito_juego_out: sum('deposito_juego_out'),
       total_pago_premios: sum('pago_premios'),
       // Premios
-      total_premios_maquinas: sum('premios_maquinas'),
-      total_premio_sorteo: sum('premio_sorteo'),
-      // Impuestos
-      total_imp_federal: sum('imp_federal'),
-      total_imp_estatal: sum('imp_estatal'),
-      total_retencion: sum('retencion_premios'),
+      total_premios_maquinas,
+      total_premio_sorteo,
+      premios_brutos,
+      // Impuestos — Federal 1% + Estatal 6% = 7% sobre premios brutos (Art. 137-139 LISR + Chiapas)
+      total_imp_federal,
+      total_imp_estatal,
+      total_retencion,
+      base_imponible: premios_brutos,
+      pct_imp_efectivo: premios_brutos > 0 ? (total_retencion / premios_brutos * 100) : 0,
       // Promociones
-      total_promo_redimible: sum('promo_redimible'),
-      total_promo_no_redimible: sum('promo_no_redimible'),
-      total_cancel_promo_nr: sum('cancel_promo_nr'),
-      neto_promociones: sum('promo_redimible') + sum('promo_no_redimible') - sum('cancel_promo_nr'),
+      total_promo_redimible,
+      total_promo_no_redimible,
+      total_cancel_promo_nr,
+      neto_promociones,
+      // Rentabilidad
+      ganancia_neta_real,
+      resultado_sin_promos,
       // Maquinas
       total_jugado: sum('jugado'),
-      total_netwin: sum('netwin'),
+      total_netwin,
       avg_hold: avg('hold_pct'),
-      total_terminales: Math.max(...cortes.map(c => c.terminales || 0)),
+      total_terminales,
+      netwin_por_terminal,
       // Ocupacion
       avg_ocupacion: avg('ocupacion_actual'),
       total_aforo: sum('aforo_total'),
       total_altas: sum('altas'),
       // Balance
-      total_efectivo_caja: sum('efectivo_caja'),
+      total_efectivo_caja,
+      total_efectivo_entregado,
+      total_faltante,
+      total_sobrante,
       total_pagos_manuales: sum('pagos_manuales'),
+      // Pasivo
+      total_pasivo_redimible,
+      total_pasivo_no_redimible,
+      total_pasivo: total_pasivo_redimible + total_pasivo_no_redimible,
+      // Bancos moviles
+      total_bancos_moviles: sum('bancos_moviles'),
+      total_depositos_caja: sum('depositos_caja'),
     };
   }
 
@@ -582,6 +836,8 @@
   window.casinoAddCorte = casinoAddCorte;
   window.casinoDeleteCorte = casinoDeleteCorte;
   window.parseCasinoPDF = parseCasinoPDF;
+  window.parseCasinoResumenExcel = parseCasinoResumenExcel;
+  window.detectCasinoExcelType = detectCasinoExcelType;
   window.parseCasinoExcel = parseCasinoExcel;
   window.casinoCortes = casinoCortes;
   window.casinoMonthlyNetwin = casinoMonthlyNetwin;

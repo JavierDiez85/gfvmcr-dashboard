@@ -154,15 +154,26 @@
         _showCasinoPreview(corte, file.name);
 
       } else if (ext === 'xlsx' || ext === 'xls') {
-        // Parse Excel
         const ab = await file.arrayBuffer();
         const wb = XLSX.read(ab, { type: 'array' });
-        const cajeros = parseCasinoExcel(wb);
+        const excelType = detectCasinoExcelType(wb);
 
-        if (!cajeros.length) throw new Error('No se encontraron sesiones de caja en el Excel.');
+        if (excelType === 'resumen') {
+          // Resumen de Cajas → full corte with all financial data
+          const corte = parseCasinoResumenExcel(wb);
+          if (!corte.fecha) throw new Error('No se encontró la fecha en el Excel.');
+          console.log('[Casino] Resumen de Cajas parsed:', JSON.stringify(corte, null, 2));
+          _showCasinoPreview(corte, file.name);
 
-        // Show cajeros preview and allow merge into existing corte
-        _showCajerosPreview(cajeros, file.name);
+        } else if (excelType === 'sesiones') {
+          // Sesiones de Caja → cajeros breakdown
+          const cajeros = parseCasinoExcel(wb);
+          if (!cajeros.length) throw new Error('No se encontraron sesiones de caja en el Excel.');
+          _showCajerosPreview(cajeros, file.name);
+
+        } else {
+          throw new Error('Formato de Excel no reconocido. Usa "Resumen de Cajas" o "Sesiones de Caja" de Wigos.');
+        }
 
       } else {
         throw new Error('Formato no soportado. Usa PDF o Excel.');

@@ -128,30 +128,33 @@
         <div class="tw-h"><div class="tw-ht">💸 Flujo de Dinero</div></div>
         <div style="overflow-x:auto">
           <table class="bt">
-            <thead><tr><th colspan="2" style="text-align:left">ENTRADAS</th></tr></thead>
+            <thead><tr><th colspan="3" style="text-align:left">ENTRADAS</th></tr></thead>
             <tbody>
-              <tr><td>Deposito de Juego</td><td class="mo pos">${fmt(kpis.total_deposito_juego_in || 0)}</td></tr>
-              <tr><td>Acceso e Instalaciones</td><td class="mo pos">${fmt(kpis.total_acceso_instalaciones || 0)}</td></tr>
-              <tr><td>Tarjeta Bancaria</td><td class="mo pos">${fmt(kpis.total_tarjeta_bancaria || 0)}</td></tr>
-              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= TOTAL ENTRADAS</td><td class="mo pos">${fmt(kpis.total_entradas || 0)}</td></tr>
+              <tr><td>Deposito de Juego</td><td class="mo pos">${fmt(kpis.total_deposito_juego_in || 0)}</td><td style="font-size:.6rem;color:var(--muted);width:50px">${kpis.pct_deposito ? kpis.pct_deposito.toFixed(1)+'%' : ''}</td></tr>
+              <tr><td>Acceso e Instalaciones</td><td class="mo pos">${fmt(kpis.total_acceso_instalaciones || 0)}</td><td style="font-size:.6rem;color:var(--muted)">${kpis.pct_acceso ? kpis.pct_acceso.toFixed(1)+'%' : ''}</td></tr>
+              <tr><td>Tarjeta Bancaria</td><td class="mo pos">${fmt(kpis.total_tarjeta_bancaria || 0)}</td><td style="font-size:.6rem;color:var(--muted)">${kpis.pct_tarjeta ? kpis.pct_tarjeta.toFixed(1)+'%' : ''}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= TOTAL ENTRADAS</td><td class="mo pos">${fmt(kpis.total_entradas || 0)}</td><td></td></tr>
             </tbody>
-            <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">SALIDAS</th></tr></thead>
+            <thead><tr><th colspan="3" style="text-align:left;padding-top:10px">SALIDAS</th></tr></thead>
             <tbody>
-              <tr><td>Devolucion Depositos</td><td class="mo neg">${fmt(kpis.total_deposito_juego_out || 0)}</td></tr>
-              <tr><td>Pago de Premios</td><td class="mo neg">${fmt(kpis.total_pago_premios || 0)}</td></tr>
-              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= TOTAL SALIDAS</td><td class="mo neg">${fmt(kpis.total_salidas || 0)}</td></tr>
+              <tr><td>Devolucion Depositos</td><td class="mo neg">${fmt(kpis.total_deposito_juego_out || 0)}</td><td></td></tr>
+              <tr><td>Pago de Premios</td><td class="mo neg">${fmt(kpis.total_pago_premios || 0)}</td><td></td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= TOTAL SALIDAS</td><td class="mo neg">${fmt(kpis.total_salidas || 0)}</td><td></td></tr>
             </tbody>
-            <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">IMPUESTOS</th></tr></thead>
+            <thead><tr><th colspan="3" style="text-align:left;padding-top:10px">IMPUESTOS <span style="font-weight:400;font-size:.6rem;color:var(--muted)">Art. 137-139 LISR + Chiapas</span></th></tr></thead>
             <tbody>
-              <tr><td>Federal (1%)</td><td class="mo">${fmt(kpis.total_imp_federal || 0)}</td></tr>
-              <tr><td>Estatal (6%)</td><td class="mo">${fmt(kpis.total_imp_estatal || 0)}</td></tr>
-              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= RETENCION</td><td class="mo">${fmt(kpis.total_retencion || 0)}</td></tr>
+              <tr><td>Federal ISR (1%)</td><td class="mo">${fmt(kpis.total_imp_federal || 0)}</td><td></td></tr>
+              <tr><td>Estatal Chiapas (6%)</td><td class="mo">${fmt(kpis.total_imp_estatal || 0)}</td><td></td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= RETENCION (7%)</td><td class="mo">${fmt(kpis.total_retencion || 0)}</td><td></td></tr>
+              <tr><td style="font-size:.6rem;color:var(--muted)">Base imponible (premios brutos)</td><td class="mo" style="font-size:.6rem;color:var(--muted)">${fmt(kpis.premios_brutos || 0)}</td><td></td></tr>
             </tbody>
             <tfoot>
               <tr style="font-weight:700;font-size:1.05em;border-top:3px solid var(--border2);background:var(--bg2)">
                 <td>RESULTADO</td>
                 <td class="mo ${(kpis.total_resultado || 0) >= 0 ? 'pos' : 'neg'}">${fmt(kpis.total_resultado || 0)}</td>
+                <td></td>
               </tr>
+              <tr><td colspan="3" style="font-size:.58rem;color:var(--muted);padding:4px 8px">Formula: Entradas - Salidas - Retencion = Resultado</td></tr>
             </tfoot>
           </table>
         </div>
@@ -162,17 +165,17 @@
         <div class="kpi-card" style="--ac:var(--blue)">
           <div class="kpi-top"><div class="kpi-lbl">Impuesto Federal</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🏛️</div></div>
           <div class="kpi-val" style="color:var(--blue)">${fmt(kpis.total_imp_federal || 0)}</div>
-          <div class="kpi-d dnu">1% sobre premios brutos</div>
+          <div class="kpi-d dnu">1% ISR · Art. 137-139 LISR</div>
         </div>
         <div class="kpi-card" style="--ac:var(--orange)">
           <div class="kpi-top"><div class="kpi-lbl">Impuesto Estatal</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🏢</div></div>
           <div class="kpi-val" style="color:var(--orange)">${fmt(kpis.total_imp_estatal || 0)}</div>
-          <div class="kpi-d dnu">6% sobre premios brutos</div>
+          <div class="kpi-d dnu">6% Chiapas (max antes de 21% fed)</div>
         </div>
         <div class="kpi-card" style="--ac:#e53935">
           <div class="kpi-top"><div class="kpi-lbl">Retencion Total</div><div class="kpi-ico" style="background:var(--red-bg);color:#e53935">💲</div></div>
           <div class="kpi-val" style="color:#e53935">${fmt(kpis.total_retencion || 0)}</div>
-          <div class="kpi-d dnu">7% sobre premios brutos</div>
+          <div class="kpi-d dnu">7% s/ ${fmt(kpis.premios_brutos || 0)} premios brutos</div>
         </div>
       </div>
 
@@ -185,15 +188,18 @@
             <tbody>
               <tr><td>Premios Maquinas</td><td class="mo">${fmt(kpis.total_premios_maquinas || 0)}</td></tr>
               <tr><td>Premios Sorteo</td><td class="mo">${fmt(kpis.total_premio_sorteo || 0)}</td></tr>
-              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>Premios Brutos</td><td class="mo">${fmt((kpis.total_premios_maquinas || 0) + (kpis.total_premio_sorteo || 0))}</td></tr>
+              <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>Premios Brutos (base imponible)</td><td class="mo">${fmt(kpis.premios_brutos || 0)}</td></tr>
             </tbody>
             <thead><tr><th colspan="2" style="text-align:left;padding-top:10px">PROMOCIONES</th></tr></thead>
             <tbody>
-              <tr><td>Redimibles (cobrables)</td><td class="mo">${fmt(kpis.total_promo_redimible || 0)}</td></tr>
+              <tr><td>Redimibles (sorteos cobrables)</td><td class="mo">${fmt(kpis.total_promo_redimible || 0)}</td></tr>
               <tr><td>No Redimibles (solo jugar)</td><td class="mo">${fmt(kpis.total_promo_no_redimible || 0)}</td></tr>
-              <tr><td>Cancelaciones NR</td><td class="mo neg">-${fmt(kpis.total_cancel_promo_nr || 0)}</td></tr>
+              <tr><td>Cancelaciones NR</td><td class="mo neg">${fmt(-(kpis.total_cancel_promo_nr || 0))}</td></tr>
               <tr style="font-weight:700;border-top:2px solid var(--border2)"><td>= Neto Promociones</td><td class="mo">${fmt(kpis.neto_promociones || 0)}</td></tr>
             </tbody>
+            <tfoot>
+              <tr><td colspan="2" style="font-size:.58rem;color:var(--muted);padding:4px 8px">Nota: Promo Redimible = Premio Sorteo (fichas gratis cobradas como premios reales)</td></tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -208,23 +214,31 @@
                 <td class="bld">Ganancia Maquinas (Netwin)</td>
                 <td class="mo pos bld">${fmt(kpis.total_netwin || 0)}</td>
               </tr>
+              <tr><td style="font-size:.6rem;color:var(--muted);padding-left:16px">Hold ${kpis.avg_hold ? kpis.avg_hold.toFixed(2)+'%' : '—'} · ${kpis.total_terminales || 0} terminales · ${fmt(kpis.netwin_por_terminal || 0)}/terminal</td><td></td></tr>
               <tr>
                 <td class="bld">Costo Promociones Redimibles</td>
-                <td class="mo neg bld">-${fmt(kpis.total_promo_redimible || 0)}</td>
+                <td class="mo neg bld">${fmt(-(kpis.total_promo_redimible || 0))}</td>
               </tr>
               <tr style="font-weight:700;border-top:2px solid var(--border2)">
                 <td>Ganancia Neta Real</td>
-                <td class="mo ${((kpis.total_netwin || 0) - (kpis.total_promo_redimible || 0)) >= 0 ? 'pos' : 'neg'} bld">${fmt((kpis.total_netwin || 0) - (kpis.total_promo_redimible || 0))}</td>
+                <td class="mo ${(kpis.ganancia_neta_real || 0) >= 0 ? 'pos' : 'neg'} bld">${fmt(kpis.ganancia_neta_real || 0)}</td>
               </tr>
               <tr>
-                <td>Impuestos Pagados</td>
-                <td class="mo neg">${fmt(kpis.total_retencion || 0)}</td>
+                <td>Impuestos Pagados (7%)</td>
+                <td class="mo neg">${fmt(-(kpis.total_retencion || 0))}</td>
               </tr>
               <tr style="font-weight:700;border-top:3px solid var(--border2);background:var(--bg2);font-size:1.05em">
                 <td>Resultado de Caja</td>
                 <td class="mo ${(kpis.total_resultado || 0) >= 0 ? 'pos' : 'neg'} bld">${fmt(kpis.total_resultado || 0)}</td>
               </tr>
+              <tr style="border-top:2px dashed var(--border2)">
+                <td style="color:var(--muted);font-size:.72rem">Sin promociones seria</td>
+                <td class="mo pos" style="font-size:.72rem">${fmt(kpis.resultado_sin_promos || 0)}</td>
+              </tr>
             </tbody>
+            <tfoot>
+              <tr><td colspan="2" style="font-size:.58rem;color:var(--muted);padding:4px 8px">El resultado es negativo cuando las promociones redimibles (sorteos) superan el netwin de maquinas</td></tr>
+            </tfoot>
           </table>
         </div>
       </div>
@@ -249,17 +263,21 @@
             <table class="bt">
               <thead><tr>
                 <th>Proveedor</th><th class="r">Jugado</th><th class="r">Netwin</th>
-                <th class="r">Hold%</th><th class="r">Terminales</th><th class="r">Netwin/Term.</th>
+                <th class="r">Hold%</th><th class="r">Terminales</th><th class="r">Netwin/Term.</th><th></th>
               </tr></thead>
               <tbody>
-                ${(last.proveedores||[]).map(p => `<tr>
-                  <td class="bld">${escapeHtml(p.nombre)}</td>
+                ${(last.proveedores||[]).map(p => {
+                  const sem = p.hold >= 10 ? '⭐' : p.hold >= 5 ? '✅' : p.hold >= 0 ? '⚠️' : '🔴';
+                  const semLabel = p.hold >= 10 ? 'Excelente' : p.hold >= 5 ? 'Bueno' : p.hold >= 0 ? 'Hold bajo' : 'Perdida';
+                  return `<tr>
+                  <td class="bld">${sem} ${escapeHtml(p.nombre)}</td>
                   <td class="mo">${fmt(p.jugado)}</td>
-                  <td class="mo pos bld">${fmt(p.netwin)}</td>
-                  <td class="mo">${p.hold.toFixed(2)}%</td>
+                  <td class="mo ${p.netwin >= 0 ? 'pos' : 'neg'} bld">${fmt(p.netwin)}</td>
+                  <td class="mo" style="color:${p.hold >= 10 ? 'var(--green)' : p.hold >= 5 ? 'var(--blue)' : p.hold >= 0 ? 'var(--orange)' : 'var(--red)'}">${p.hold.toFixed(2)}%</td>
                   <td class="mo">${p.terminales}</td>
                   <td class="mo">${fmt(p.netwin_terminal || (p.terminales ? p.netwin/p.terminales : 0))}</td>
-                </tr>`).join('')}
+                  <td style="font-size:.55rem;color:var(--muted)">${semLabel}</td>
+                </tr>`;}).join('')}
                 <tr style="font-weight:700;border-top:2px solid var(--border2)">
                   <td>TOTAL</td>
                   <td class="mo">${fmt(last.jugado)}</td>
@@ -267,6 +285,7 @@
                   <td class="mo">${last.hold_pct ? last.hold_pct.toFixed(2)+'%' : '—'}</td>
                   <td class="mo">${last.terminales}</td>
                   <td class="mo">${fmt(last.netwin_terminal)}</td>
+                  <td></td>
                 </tr>
               </tbody>
             </table>
