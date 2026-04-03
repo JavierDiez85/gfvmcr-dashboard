@@ -215,12 +215,24 @@
     // Strategy 2: If no Desde/Hasta found, extract from title/subject line
     if (!desde) {
       const fullText = text;
-      // Look for "Site: 175 - Grand Tuxtla Casino 4/1/2026 8:00 PM" pattern
+      // Look for "Site: 175 - Grand Tuxtla Casino 4/3/2026 5:00 AM" pattern
       const titleMatch = fullText.match(/(\d{1,2})\/(\d{1,2})\/(\d{4})\s+(\d{1,2}:\d{2}\s*[AP]M)/i);
       if (titleMatch) {
         hasta = `${titleMatch[1]}/${titleMatch[2]}/${titleMatch[3]} ${titleMatch[4]}`;
-        // Infer desde as same day 8:00 AM
-        desde = `${titleMatch[1]}/${titleMatch[2]}/${titleMatch[3]} 8:00 AM`;
+        // Check if this is an early morning close (before 8AM) — operation date is PREVIOUS day
+        const hourStr = titleMatch[4];
+        const isAM = /AM/i.test(hourStr);
+        const hour = parseInt(hourStr);
+        if (isAM && hour < 8) {
+          // 5:00 AM close = previous day's operation
+          const closeDate = new Date(parseInt(titleMatch[3]), parseInt(titleMatch[1])-1, parseInt(titleMatch[2]));
+          closeDate.setDate(closeDate.getDate() - 1);
+          const pm = String(closeDate.getMonth()+1);
+          const pd = String(closeDate.getDate());
+          desde = `${pm}/${pd}/${closeDate.getFullYear()} 8:00 AM`;
+        } else {
+          desde = `${titleMatch[1]}/${titleMatch[2]}/${titleMatch[3]} 8:00 AM`;
+        }
       }
     }
 
