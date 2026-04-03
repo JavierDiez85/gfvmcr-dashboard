@@ -60,10 +60,10 @@
               <th>Fecha</th><th>Turno</th><th class="r">Entradas</th><th class="r">Salidas</th>
               <th class="r">Resultado</th><th class="r">Jugado</th><th class="r" style="color:var(--green)">Netwin</th>
               <th class="r">Hold%</th><th class="r">Terminales</th><th class="r">Ocupación</th>
-              <th>Proveedores</th><th>Acción</th>
+              <th>Proveedores</th><th>Fuente</th><th>Acción</th>
             </tr></thead>
             <tbody id="casino-history-tbody">
-              ${cortes.length === 0 ? '<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:20px">Sin cortes cargados. Sube el primer PDF.</td></tr>' : ''}
+              ${cortes.length === 0 ? '<tr><td colspan="13" style="text-align:center;color:var(--muted);padding:20px">Sin cortes cargados. Sube el PDF o Excel de Wigos.</td></tr>' : ''}
               ${cortes.map(c => `<tr>
                 <td class="bld">${escapeHtml(c.fecha)}</td>
                 <td style="font-size:.65rem;color:var(--muted)">${escapeHtml(c.turno||'')}</td>
@@ -76,6 +76,7 @@
                 <td class="mo">${c.terminales||'—'}</td>
                 <td class="mo">${c.ocupacion_actual ? c.ocupacion_actual.toFixed(1)+'%' : '—'}</td>
                 <td style="font-size:.6rem;color:var(--muted)">${(c.proveedores||[]).length} prov.</td>
+                <td style="font-size:.55rem;color:var(--muted)">${(c.source||'').split('+').map(s => s === 'pdf' ? '📄PDF' : s === 'excel-resumen' ? '📊Excel' : s).filter(Boolean).join(' + ') || '—'}</td>
                 <td><button class="casino-del-btn btn btn-out" data-id="${escapeHtml(c.id)}" style="font-size:.6rem;padding:2px 8px;color:var(--red);border-color:var(--red)">🗑</button></td>
               </tr>`).join('')}
             </tbody>
