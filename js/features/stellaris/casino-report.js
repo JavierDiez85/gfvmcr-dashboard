@@ -64,6 +64,13 @@
     const last = cortes[0] || {};
     const fechaHoy = new Date().toLocaleDateString('es-MX', { day:'numeric', month:'long', year:'numeric' });
 
+    // Analytics
+    var prevCorte = last.fecha ? (typeof casinoPrevCorte === 'function' ? casinoPrevCorte(last.fecha) : null) : null;
+    var prevKpis = prevCorte ? casinoKPIs(prevCorte.fecha, prevCorte.fecha) : null;
+    var insights = (typeof casinoInsights === 'function') ? casinoInsights(kpis, prevKpis) : [];
+    var breakeven = (typeof casinoBreakEven === 'function') ? casinoBreakEven(kpis) : {};
+    var provStats = (cortes.length > 1 && typeof casinoProviderStats === 'function') ? casinoProviderStats(cortes) : null;
+
     // ─── HELPERS ───
     function addPageFooter() {
       doc.setFontSize(6); doc.setTextColor(MUTED);
@@ -105,6 +112,17 @@
       doc.text(k[0], x + kpiW/2 - 1, Y + 12, { align: 'center' });
     });
     Y += 18;
+
+    // ─── ALERTAS/INSIGHTS ───
+    if (insights.length) {
+      insights.forEach(function(i) {
+        var color = i.type === 'alert' ? '#991b1b' : i.type === 'warn' ? '#92400e' : i.type === 'positive' ? '#166534' : '#1e40af';
+        checkPage(6);
+        doc.setFontSize(7); doc.setTextColor(color);
+        doc.text(i.icon + ' ' + i.text, ML, Y); Y += 4;
+      });
+      Y += 3;
+    }
 
     // ─── FLUJO DE DINERO ───
     sectionTitle('$', 'Flujo de Dinero');
@@ -213,6 +231,42 @@
     doc.setFontSize(5.5); doc.setTextColor(MUTED);
     doc.text('Nota: Promo Redimible = Premio Sorteo (fichas gratis cobradas como premios reales)', ML, Y);
     Y += 8;
+
+    // ─── BREAK-EVEN ───
+    if (breakeven.breakeven > 0) {
+      checkPage(20);
+      sectionTitle('=', 'Punto de Equilibrio de Promociones');
+      doc.autoTable({
+        startY: Y, margin: { left: ML, right: MR },
+        theme: 'plain',
+        styles: { fontSize: 8, cellPadding: 2, lineColor: BORDER, lineWidth: 0.2 },
+        body: [
+          [{ content: 'Ratio Netwin / Promo Redimible', styles: { fontStyle: 'bold' } },
+           { content: breakeven.ratio + 'x', styles: { fontStyle: 'bold', textColor: breakeven.status === 'profit' ? GREEN : '#e53935' } }],
+          ['Break-even (netwin necesario)', _fmtR(breakeven.breakeven)],
+          ['Costo promo por terminal', _fmtR(breakeven.costo_terminal)],
+          [{ content: breakeven.status === 'profit' ? 'Netwin cubre promociones' : 'Promociones superan netwin', colSpan: 2,
+             styles: { fillColor: breakeven.status === 'profit' ? '#f0fdf4' : '#fef2f2', textColor: breakeven.status === 'profit' ? GREEN : '#e53935', fontStyle: 'bold' } }],
+        ],
+        columnStyles: { 0: { cellWidth: CW * 0.65 }, 1: { cellWidth: CW * 0.35, halign: 'right' } },
+      });
+      Y = doc.lastAutoTable.finalY + 6;
+    }
+
+    // ─── TREND SUMMARY ───
+    if (cortes.length > 1) {
+      checkPage(12);
+      var nwArr = cortes.map(function(c){ return c.netwin || 0; });
+      var resArr = cortes.map(function(c){ return c.resultado_caja || 0; });
+      var holdArr = cortes.map(function(c){ return c.hold_pct || 0; }).filter(function(v){ return v > 0; });
+      doc.setFontSize(7); doc.setFont('helvetica', 'bold'); doc.setTextColor(DARK);
+      doc.text('Tendencia (' + cortes.length + ' dias):', ML, Y); Y += 4;
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(6.5);
+      doc.text('Netwin: ' + _fmtR(Math.min.apply(null,nwArr)) + ' — ' + _fmtR(Math.max.apply(null,nwArr)) +
+        '  |  Resultado: ' + _fmtR(Math.min.apply(null,resArr)) + ' — ' + _fmtR(Math.max.apply(null,resArr)) +
+        (holdArr.length ? '  |  Hold: ' + Math.min.apply(null,holdArr).toFixed(2) + '% — ' + Math.max.apply(null,holdArr).toFixed(2) + '%' : ''), ML, Y);
+      Y += 6;
+    }
 
     // ─── RENTABILIDAD ───
     sectionTitle('>', 'Analisis de Rentabilidad');

@@ -763,6 +763,139 @@
     return monthly;
   }
 
+  // ═══════════════════════════════════════
+  // ANALYTICS HELPERS
+  // ═══════════════════════════════════════
+
+  /** Get the corte immediately before the given date */
+  function casinoPrevCorte(fecha) {
+    if (!fecha) return null;
+    const data = casinoLoad();
+    const prev = data.cortes.filter(c => c.fecha < fecha).sort((a, b) => b.fecha.localeCompare(a.fecha));
+    return prev[0] || null;
+  }
+
+  /** Get KPIs for the equivalent previous period */
+  function casinoPrevKPIs(from, to) {
+    if (!from || !to) return null;
+    const d1 = new Date(from + 'T00:00:00');
+    const d2 = new Date(to + 'T00:00:00');
+    const span = Math.round((d2 - d1) / 86400000); // days
+    const prevTo = new Date(d1); prevTo.setDate(prevTo.getDate() - 1);
+    const prevFrom = new Date(prevTo); prevFrom.setDate(prevFrom.getDate() - span);
+    const fmt2 = d => d.toISOString().slice(0, 10);
+    return casinoKPIs(fmt2(prevFrom), fmt2(prevTo));
+  }
+
+  /** Daily series for trend charts: {labels, series: {field: [values]}} */
+  function casinoDailySeries(from, to, fields) {
+    const cortes = casinoCortes(from, to).sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const labels = cortes.map(c => c.fecha);
+    const series = {};
+    fields.forEach(f => { series[f] = cortes.map(c => c[f] || 0); });
+    return { labels, series, count: cortes.length };
+  }
+
+  /** Break-even analysis for promotions */
+  function casinoBreakEven(kpis) {
+    if (!kpis) return { breakeven: 0, ratio: 0, costo_terminal: 0, status: 'neutral' };
+    const promo = kpis.total_promo_redimible || 0;
+    const netwin = kpis.total_netwin || 0;
+    const term = kpis.total_terminales || 0;
+    const ratio = promo > 0 ? +(netwin / promo).toFixed(2) : (netwin > 0 ? 999 : 0);
+    return {
+      breakeven: promo,
+      ratio: ratio,
+      costo_terminal: term > 0 ? +(promo / term).toFixed(0) : 0,
+      status: promo === 0 ? 'neutral' : (ratio >= 1 ? 'profit' : 'danger'),
+      excedente: netwin - promo
+    };
+  }
+
+  /** Auto-generate operational insights/alerts */
+  function casinoInsights(kpis, prevKpis) {
+    if (!kpis) return [];
+    const ins = [];
+    const f = typeof fmt === 'function' ? fmt : v => '$' + Math.round(v).toLocaleString('es-MX');
+
+    // Hold bajo
+    if (kpis.avg_hold > 0 && kpis.avg_hold < 5) {
+      ins.push({ type: 'warn', icon: '⚠️', text: 'Hold promedio (' + kpis.avg_hold.toFixed(2) + '%) esta por debajo del rango ideal (5-10%). Las maquinas retienen poco del juego.' });
+    }
+
+    // Promos > Netwin
+    if (kpis.total_promo_redimible > 0 && kpis.total_promo_redimible > kpis.total_netwin) {
+      const diff = kpis.total_promo_redimible - kpis.total_netwin;
+      ins.push({ type: 'alert', icon: '🔴', text: 'Promociones redimibles (' + f(kpis.total_promo_redimible) + ') superan el netwin (' + f(kpis.total_netwin) + ') por ' + f(diff) + '.' });
+    }
+
+    // Resultado negativo pero sin promos sería positivo
+    if (kpis.total_resultado < 0 && kpis.resultado_sin_promos > 0) {
+      ins.push({ type: 'info', icon: '💡', text: 'Sin promociones redimibles, el resultado seria positivo: ' + f(kpis.resultado_sin_promos) + '.' });
+    }
+
+    // Resultado positivo
+    if (kpis.total_resultado > 0) {
+      ins.push({ type: 'positive', icon: '✅', text: 'Resultado de caja positivo: ' + f(kpis.total_resultado) + '.' });
+    }
+
+    // Proveedores con hold negativo
+    if (kpis.num_cortes === 1) {
+      const data = casinoLoad();
+      const lastCorte = data.cortes[0];
+      if (lastCorte && lastCorte.proveedores) {
+        const malos = lastCorte.proveedores.filter(p => p.hold < 0);
+        if (malos.length) {
+          const names = malos.map(p => p.nombre + ' (' + p.hold.toFixed(2) + '%)').join(', ');
+          ins.push({ type: 'alert', icon: '🎰', text: 'Proveedores con hold negativo (perdiendo dinero): ' + names + '.' });
+        }
+      }
+    }
+
+    // Comparativo vs dia anterior
+    if (prevKpis) {
+      if (kpis.total_netwin > 0 && prevKpis.total_netwin > 0) {
+        const pct = ((kpis.total_netwin - prevKpis.total_netwin) / prevKpis.total_netwin * 100).toFixed(1);
+        const dir = pct > 0 ? '▲' : '▼';
+        ins.push({ type: pct > 0 ? 'positive' : 'warn', icon: dir, text: 'Netwin ' + dir + ' ' + Math.abs(pct) + '% vs dia anterior (' + f(prevKpis.total_netwin) + ' → ' + f(kpis.total_netwin) + ').' });
+      }
+      if (prevKpis.avg_hold > 0) {
+        const holdDiff = (kpis.avg_hold - prevKpis.avg_hold).toFixed(2);
+        if (Math.abs(holdDiff) >= 1) {
+          ins.push({ type: holdDiff > 0 ? 'positive' : 'warn', icon: holdDiff > 0 ? '▲' : '▼', text: 'Hold ' + (holdDiff > 0 ? '+' : '') + holdDiff + '% vs dia anterior (' + prevKpis.avg_hold.toFixed(2) + '% → ' + kpis.avg_hold.toFixed(2) + '%).' });
+        }
+      }
+    }
+
+    return ins;
+  }
+
+  /** Provider stats across multiple cortes: participation, daily avg */
+  function casinoProviderStats(cortes) {
+    if (!cortes || !cortes.length) return [];
+    const agg = {};
+    let totalNetwin = 0;
+    const days = cortes.length;
+
+    cortes.forEach(c => {
+      (c.proveedores || []).forEach(p => {
+        if (!agg[p.nombre]) agg[p.nombre] = { nombre: p.nombre, netwin: 0, jugado: 0, terminales: 0, days: 0 };
+        agg[p.nombre].netwin += p.netwin || 0;
+        agg[p.nombre].jugado += p.jugado || 0;
+        agg[p.nombre].terminales = Math.max(agg[p.nombre].terminales, p.terminales || 0);
+        agg[p.nombre].days++;
+        totalNetwin += p.netwin || 0;
+      });
+    });
+
+    return Object.values(agg).map(p => ({
+      ...p,
+      participacion: totalNetwin !== 0 ? +(p.netwin / totalNetwin * 100).toFixed(1) : 0,
+      netwin_dia: days > 0 ? +(p.netwin / days).toFixed(0) : 0,
+      hold: p.jugado > 0 ? +(p.netwin / p.jugado * 100).toFixed(2) : 0
+    })).sort((a, b) => b.netwin - a.netwin);
+  }
+
   /** KPIs for a period */
   function casinoKPIs(from, to) {
     const cortes = casinoCortes(from, to);
@@ -871,6 +1004,12 @@
   window.parseCasinoResumenExcel = parseCasinoResumenExcel;
   window.detectCasinoExcelType = detectCasinoExcelType;
   window.parseCasinoExcel = parseCasinoExcel;
+  window.casinoPrevCorte = casinoPrevCorte;
+  window.casinoPrevKPIs = casinoPrevKPIs;
+  window.casinoDailySeries = casinoDailySeries;
+  window.casinoBreakEven = casinoBreakEven;
+  window.casinoInsights = casinoInsights;
+  window.casinoProviderStats = casinoProviderStats;
   window.casinoCortes = casinoCortes;
   window.casinoMonthlyNetwin = casinoMonthlyNetwin;
   window.casinoKPIs = casinoKPIs;

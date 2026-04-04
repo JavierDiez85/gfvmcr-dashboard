@@ -52,6 +52,16 @@
     rCasinoDashboard();
   }
 
+  // Badge helper for day-over-day comparison (reuses cmpDelta from compare-engine)
+  function _casinoBadge(cur, prev, invert) {
+    if (prev === null || prev === undefined || typeof cmpDelta !== 'function') return '';
+    const d = cmpDelta(cur, prev);
+    if (d.dir === 'neutral') return '';
+    const cls = invert ? (d.dir === 'up' ? 'ddn' : 'dup') : (d.dir === 'up' ? 'dup' : 'ddn');
+    const arrow = d.dir === 'up' ? '&#9650;' : '&#9660;';
+    return ' <span class="' + cls + '" style="font-size:.55rem;padding:0 4px;border-radius:8px;white-space:nowrap">' + arrow + ' ' + d.label + '</span>';
+  }
+
   function rCasinoDashboard() {
     const el = document.getElementById('view-stel_casino');
     if (!el) return;
@@ -64,6 +74,16 @@
 
     // Last corte in filtered range
     const last = cortes[0] || {};
+
+    // Previous period for comparison badges
+    const prevCorte = (_casinoFilter === 'ultimo' && last.fecha) ? casinoPrevCorte(last.fecha) : null;
+    const prevKpis = prevCorte ? casinoKPIs(prevCorte.fecha, prevCorte.fecha) : (_casinoFilter !== 'ultimo' ? casinoPrevKPIs(range.from, range.to) : null);
+    const B = (cur, prev, inv) => prevKpis ? _casinoBadge(cur, prev, inv) : '';
+
+    // Analytics
+    const insights = (typeof casinoInsights === 'function') ? casinoInsights(kpis, prevKpis) : [];
+    const breakeven = (typeof casinoBreakEven === 'function') ? casinoBreakEven(kpis) : {};
+    const provStats = (cortes.length > 1 && typeof casinoProviderStats === 'function') ? casinoProviderStats(cortes) : null;
 
     // Filter bar
     const filters = [
@@ -88,41 +108,41 @@
         </div>
       </div>
 
-      <!-- KPIs -->
+      <!-- KPIs with comparison badges -->
       <div class="kpi-row" style="margin-bottom:14px">
         <div class="kpi-card" style="--ac:var(--green)">
           <div class="kpi-top"><div class="kpi-lbl">Netwin Total</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">💰</div></div>
           <div class="kpi-val" style="color:var(--green)">${fmt(kpis.total_netwin || 0)}</div>
-          <div class="kpi-d dup">Ganancia neta acumulada</div>
+          <div class="kpi-d dup">Ganancia neta${B(kpis.total_netwin, prevKpis?.total_netwin, false)}</div>
         </div>
-        <div class="kpi-card" style="--ac:#e53935">
+        <div class="kpi-card" style="--ac:${(kpis.total_resultado||0) >= 0 ? 'var(--green)' : '#e53935'}">
           <div class="kpi-top"><div class="kpi-lbl">Resultado Caja</div><div class="kpi-ico" style="background:var(--red-bg);color:#e53935">🏦</div></div>
-          <div class="kpi-val" style="color:#e53935">${fmt(kpis.total_resultado || 0)}</div>
-          <div class="kpi-d dnu">Entradas - Salidas</div>
+          <div class="kpi-val" style="color:${(kpis.total_resultado||0) >= 0 ? 'var(--green)' : '#e53935'}">${fmt(kpis.total_resultado || 0)}</div>
+          <div class="kpi-d dnu">Entradas - Salidas${B(kpis.total_resultado, prevKpis?.total_resultado, false)}</div>
         </div>
         <div class="kpi-card" style="--ac:var(--blue)">
           <div class="kpi-top"><div class="kpi-lbl">Hold Promedio</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">📊</div></div>
           <div class="kpi-val" style="color:var(--blue)">${kpis.avg_hold ? kpis.avg_hold.toFixed(2) + '%' : '—'}</div>
-          <div class="kpi-d dnu">% retención de máquinas</div>
+          <div class="kpi-d dnu">% retencion${B(kpis.avg_hold, prevKpis?.avg_hold, false)}</div>
         </div>
         <div class="kpi-card" style="--ac:var(--purple)">
           <div class="kpi-top"><div class="kpi-lbl">Jugado Total</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">🎰</div></div>
           <div class="kpi-val" style="color:var(--purple)">${fmt(kpis.total_jugado || 0)}</div>
-          <div class="kpi-d dnu">${kpis.total_terminales || 0} terminales</div>
+          <div class="kpi-d dnu">${kpis.total_terminales || 0} terminales${B(kpis.total_jugado, prevKpis?.total_jugado, false)}</div>
         </div>
       </div>
 
       <!-- Second row KPIs -->
       <div class="kpi-row c3" style="margin-bottom:14px">
         <div class="kpi-card" style="--ac:var(--orange)">
-          <div class="kpi-top"><div class="kpi-lbl">Ocupación</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">👥</div></div>
+          <div class="kpi-top"><div class="kpi-lbl">Ocupacion</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">👥</div></div>
           <div class="kpi-val" style="color:var(--orange)">${kpis.avg_ocupacion ? kpis.avg_ocupacion.toFixed(1) + '%' : '—'}</div>
-          <div class="kpi-d dnu">${kpis.total_aforo || 0} personas total</div>
+          <div class="kpi-d dnu">${kpis.total_aforo || 0} personas${B(kpis.avg_ocupacion, prevKpis?.avg_ocupacion, false)}</div>
         </div>
         <div class="kpi-card" style="--ac:var(--green)">
           <div class="kpi-top"><div class="kpi-lbl">Cuentas Nuevas</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">📈</div></div>
           <div class="kpi-val" style="color:var(--green)">${kpis.total_altas || 0}</div>
-          <div class="kpi-d dup">Altas en el periodo</div>
+          <div class="kpi-d dup">Altas${B(kpis.total_altas, prevKpis?.total_altas, false)}</div>
         </div>
         <div class="kpi-card" style="--ac:var(--muted)">
           <div class="kpi-top"><div class="kpi-lbl">Cortes</div><div class="kpi-ico" style="background:var(--bg);color:var(--muted)">📋</div></div>
@@ -139,6 +159,17 @@
           ? 'El resultado de caja es negativo (' + fmt(kpis.total_resultado) + ') porque se entregaron ' + fmt(kpis.total_promo_redimible) + ' en promociones redimibles (sorteos) que se pagaron como premios reales. Sin estas promociones, el resultado hubiera sido ' + fmt(kpis.resultado_sin_promos || 0) + '.'
           : 'El resultado de caja es ' + fmt(kpis.total_resultado || 0) + '.'}
       </div>
+
+      <!-- Alertas/Insights -->
+      ${insights.length ? `
+        <div style="margin-bottom:14px;display:flex;flex-direction:column;gap:4px">
+          ${insights.map(i => {
+            const bg = i.type === 'alert' ? 'var(--red-bg)' : i.type === 'warn' ? 'var(--orange-bg)' : i.type === 'positive' ? 'var(--green-bg)' : 'var(--blue-bg)';
+            const tc = i.type === 'alert' ? 'var(--red)' : i.type === 'warn' ? 'var(--orange)' : i.type === 'positive' ? 'var(--green)' : 'var(--blue)';
+            return '<div style="background:' + bg + ';color:' + tc + ';border-radius:var(--r);padding:6px 12px;font-size:.7rem;line-height:1.4">' + i.icon + ' ' + escapeHtml(i.text) + '</div>';
+          }).join('')}
+        </div>
+      ` : ''}
 
       <!-- Flujo de Dinero -->
       <div class="tw" style="margin-bottom:14px">
@@ -228,6 +259,27 @@
         </div>
       </div>
 
+      <!-- Break-Even de Promociones -->
+      ${(kpis.total_promo_redimible || 0) > 0 ? `
+        <div class="kpi-row c3" style="margin-bottom:14px">
+          <div class="kpi-card" style="--ac:${breakeven.status === 'profit' ? 'var(--green)' : 'var(--red)'}">
+            <div class="kpi-top"><div class="kpi-lbl">Ratio Netwin/Promo</div><div class="kpi-ico" style="background:${breakeven.status === 'profit' ? 'var(--green-bg)' : 'var(--red-bg)'};color:${breakeven.status === 'profit' ? 'var(--green)' : 'var(--red)'}">⚖️</div></div>
+            <div class="kpi-val" style="color:${breakeven.status === 'profit' ? 'var(--green)' : 'var(--red)'}">${breakeven.ratio}x</div>
+            <div class="kpi-d ${breakeven.status === 'profit' ? 'dup' : 'ddn'}">${breakeven.ratio >= 1 ? 'Netwin cubre promos' : 'Promos superan netwin'}</div>
+          </div>
+          <div class="kpi-card" style="--ac:var(--purple)">
+            <div class="kpi-top"><div class="kpi-lbl">Break-Even Netwin</div><div class="kpi-ico" style="background:var(--purple-bg);color:var(--purple)">🎯</div></div>
+            <div class="kpi-val" style="color:var(--purple)">${fmt(breakeven.breakeven)}</div>
+            <div class="kpi-d dnu">Netwin necesario para cubrir promos</div>
+          </div>
+          <div class="kpi-card" style="--ac:var(--orange)">
+            <div class="kpi-top"><div class="kpi-lbl">Costo Promo/Terminal</div><div class="kpi-ico" style="background:var(--orange-bg);color:var(--orange)">🎰</div></div>
+            <div class="kpi-val" style="color:var(--orange)">${fmt(breakeven.costo_terminal)}</div>
+            <div class="kpi-d dnu">Costo promocional por maquina</div>
+          </div>
+        </div>
+      ` : ''}
+
       <!-- Analisis de Rentabilidad -->
       <div class="tw" style="margin-bottom:14px">
         <div class="tw-h"><div class="tw-ht">📈 Analisis de Rentabilidad</div></div>
@@ -296,43 +348,62 @@
         </div>
       </div>
 
-      <!-- Last corte detail -->
+      <!-- Trend Charts (only if >1 corte) -->
+      ${cortes.length > 1 ? `
+        <div style="margin-bottom:14px">
+          <div style="font-family:'Poppins',sans-serif;font-size:.78rem;font-weight:700;margin-bottom:8px">📈 Evolucion Temporal (${cortes.length} dias)</div>
+          <div class="g2" style="margin-bottom:10px">
+            <div class="cc"><div class="cc-h"><div><div class="cc-t">Netwin Diario</div></div></div><div class="cc-b"><canvas id="c-casino-nw-evo" height="180"></canvas></div></div>
+            <div class="cc"><div class="cc-h"><div><div class="cc-t">Resultado de Caja</div></div></div><div class="cc-b"><canvas id="c-casino-res-evo" height="180"></canvas></div></div>
+          </div>
+          <div class="g2">
+            <div class="cc"><div class="cc-h"><div><div class="cc-t">Entradas Desglosadas</div></div></div><div class="cc-b"><canvas id="c-casino-ent-evo" height="180"></canvas></div></div>
+            <div class="cc"><div class="cc-h"><div><div class="cc-t">Hold% Evolucion</div></div></div><div class="cc-b"><canvas id="c-casino-hold-evo" height="180"></canvas></div></div>
+          </div>
+        </div>
+      ` : ''}
+
+      <!-- Provider detail (sorted by netwin, with participation %) -->
       ${last.fecha ? `
         <div class="tw" style="margin-bottom:14px">
-          <div class="tw-h"><div class="tw-ht">📊 Último Corte — ${escapeHtml(last.fecha)} ${escapeHtml(last.turno||'')}</div></div>
+          <div class="tw-h"><div class="tw-ht">📊 ${provStats ? 'Proveedores — Acumulado (' + cortes.length + ' dias)' : 'Proveedores — ' + escapeHtml(last.fecha)}</div></div>
           <div style="overflow-x:auto">
             <table class="bt">
               <thead><tr>
                 <th>Proveedor</th><th class="r">Jugado</th><th class="r">Netwin</th>
-                <th class="r">Hold%</th><th class="r">Terminales</th><th class="r">Netwin/Term.</th><th></th>
+                <th class="r">Part.%</th><th class="r">Hold%</th><th class="r">Term.</th><th class="r">Netwin/T</th>${provStats ? '<th class="r">Netwin/Dia</th>' : ''}<th></th>
               </tr></thead>
               <tbody>
-                ${(last.proveedores||[]).map(p => {
+                ${(provStats || (last.proveedores||[]).sort((a,b) => b.netwin - a.netwin).map(p => ({...p, participacion: last.netwin ? +(p.netwin/last.netwin*100).toFixed(1) : 0}))).map(p => {
                   const sem = p.hold >= 10 ? '⭐' : p.hold >= 5 ? '✅' : p.hold >= 0 ? '⚠️' : '🔴';
                   const semLabel = p.hold >= 10 ? 'Excelente' : p.hold >= 5 ? 'Bueno' : p.hold >= 0 ? 'Hold bajo' : 'Perdida';
-                  return `<tr>
-                  <td class="bld">${sem} ${escapeHtml(p.nombre)}</td>
-                  <td class="mo">${fmt(p.jugado)}</td>
-                  <td class="mo ${p.netwin >= 0 ? 'pos' : 'neg'} bld">${fmt(p.netwin)}</td>
-                  <td class="mo" style="color:${p.hold >= 10 ? 'var(--green)' : p.hold >= 5 ? 'var(--blue)' : p.hold >= 0 ? 'var(--orange)' : 'var(--red)'}">${p.hold.toFixed(2)}%</td>
-                  <td class="mo">${p.terminales}</td>
-                  <td class="mo">${fmt(p.netwin_terminal || (p.terminales ? p.netwin/p.terminales : 0))}</td>
-                  <td style="font-size:.55rem;color:var(--muted)">${semLabel}</td>
-                </tr>`;}).join('')}
+                  const hColor = p.hold >= 10 ? 'var(--green)' : p.hold >= 5 ? 'var(--blue)' : p.hold >= 0 ? 'var(--orange)' : 'var(--red)';
+                  return '<tr>' +
+                    '<td class="bld">' + sem + ' ' + escapeHtml(p.nombre) + '</td>' +
+                    '<td class="mo">' + fmt(p.jugado) + '</td>' +
+                    '<td class="mo ' + (p.netwin >= 0 ? 'pos' : 'neg') + ' bld">' + fmt(p.netwin) + '</td>' +
+                    '<td class="mo" style="font-size:.65rem">' + (p.participacion || 0) + '%</td>' +
+                    '<td class="mo" style="color:' + hColor + '">' + (typeof p.hold === 'number' ? p.hold.toFixed(2) : p.hold) + '%</td>' +
+                    '<td class="mo">' + p.terminales + '</td>' +
+                    '<td class="mo">' + fmt(p.netwin_terminal || (p.terminales ? Math.round(p.netwin/p.terminales) : 0)) + '</td>' +
+                    (provStats ? '<td class="mo" style="font-size:.65rem">' + fmt(p.netwin_dia || 0) + '</td>' : '') +
+                    '<td style="font-size:.55rem;color:var(--muted)">' + semLabel + '</td></tr>';
+                }).join('')}
                 <tr style="font-weight:700;border-top:2px solid var(--border2)">
                   <td>TOTAL</td>
-                  <td class="mo">${fmt(last.jugado)}</td>
-                  <td class="mo pos">${fmt(last.netwin)}</td>
-                  <td class="mo">${last.hold_pct ? last.hold_pct.toFixed(2)+'%' : '—'}</td>
-                  <td class="mo">${last.terminales}</td>
-                  <td class="mo">${fmt(last.netwin_terminal)}</td>
-                  <td></td>
+                  <td class="mo">${fmt(provStats ? provStats.reduce((s,p)=>s+p.jugado,0) : last.jugado)}</td>
+                  <td class="mo pos">${fmt(provStats ? provStats.reduce((s,p)=>s+p.netwin,0) : last.netwin)}</td>
+                  <td class="mo">100%</td>
+                  <td class="mo">${kpis.avg_hold ? kpis.avg_hold.toFixed(2)+'%' : last.hold_pct ? last.hold_pct.toFixed(2)+'%' : '—'}</td>
+                  <td class="mo">${kpis.total_terminales || last.terminales || ''}</td>
+                  <td class="mo">${fmt(kpis.netwin_por_terminal || last.netwin_terminal || 0)}</td>
+                  ${provStats ? '<td></td>' : ''}<td></td>
                 </tr>
               </tbody>
             </table>
           </div>
         </div>
-      ` : '<div style="text-align:center;color:var(--muted);padding:40px">Sin datos. Sube el primer corte PDF en la sección de Carga de Datos.</div>'}
+      ` : '<div style="text-align:center;color:var(--muted);padding:40px">Sin datos. Sube el primer corte PDF en la seccion de Carga de Datos.</div>'}
 
       <!-- Cajeros (if available) -->
       ${(last.cajeros && last.cajeros.length) ? `
@@ -377,6 +448,10 @@
     // Render charts
     if (last.proveedores && last.proveedores.length) {
       setTimeout(() => _renderCasinoCharts(last), 80);
+    }
+    // Render trend charts (only if >1 corte)
+    if (cortes.length > 1) {
+      setTimeout(() => _renderCasinoTrendCharts(cortes), 120);
     }
   }
 
@@ -441,6 +516,74 @@
             y: { grid: { display: false }, ticks: { color: tc, font: { size: 10 } } }
           }
         }
+      });
+    }
+  }
+
+  // ═══════════════════════════════════════
+  // TREND CHARTS
+  // ═══════════════════════════════════════
+  function _renderCasinoTrendCharts(cortes) {
+    const isDark = document.body.classList.contains('dark');
+    const tc = isDark ? '#9da0c5' : '#8b8fb5';
+    const gc = isDark ? 'rgba(255,255,255,.06)' : 'rgba(0,0,0,.06)';
+    const sorted = cortes.slice().sort((a, b) => a.fecha.localeCompare(b.fecha));
+    const labels = sorted.map(c => c.fecha.slice(5)); // MM-DD
+    const mkOpts = (cbk) => ({
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: tc, font: { size: 9 } } },
+        y: { grid: { color: gc }, ticks: { color: tc, font: { size: 8 }, callback: cbk || (v => '$' + Math.round(v).toLocaleString('es-MX')) } }
+      }
+    });
+
+    // 1. Netwin line
+    const nwC = document.getElementById('c-casino-nw-evo');
+    if (nwC) {
+      if (CASINO_CHARTS['nw_evo']) CASINO_CHARTS['nw_evo'].destroy();
+      CASINO_CHARTS['nw_evo'] = new Chart(nwC, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Netwin', data: sorted.map(c => c.netwin || 0), borderColor: '#00b875', backgroundColor: '#00b87520', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#00b875', borderWidth: 2 }] },
+        options: mkOpts()
+      });
+    }
+
+    // 2. Resultado line
+    const resC = document.getElementById('c-casino-res-evo');
+    if (resC) {
+      if (CASINO_CHARTS['res_evo']) CASINO_CHARTS['res_evo'].destroy();
+      const resData = sorted.map(c => c.resultado_caja || 0);
+      CASINO_CHARTS['res_evo'] = new Chart(resC, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Resultado', data: resData, borderColor: '#e53935', backgroundColor: '#e5393520', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: resData.map(v => v >= 0 ? '#00b875' : '#e53935'), borderWidth: 2, segment: { borderColor: ctx => (ctx.p0.parsed.y >= 0 && ctx.p1.parsed.y >= 0) ? '#00b875' : '#e53935' } }] },
+        options: mkOpts()
+      });
+    }
+
+    // 3. Entradas stacked bar
+    const entC = document.getElementById('c-casino-ent-evo');
+    if (entC) {
+      if (CASINO_CHARTS['ent_evo']) CASINO_CHARTS['ent_evo'].destroy();
+      CASINO_CHARTS['ent_evo'] = new Chart(entC, {
+        type: 'bar',
+        data: { labels, datasets: [
+          { label: 'Deposito', data: sorted.map(c => c.deposito_juego_in || 0), backgroundColor: '#0073eaCC', borderRadius: 2 },
+          { label: 'Acceso', data: sorted.map(c => c.acceso_instalaciones || 0), backgroundColor: '#00b875CC', borderRadius: 2 },
+          { label: 'Tarjeta', data: sorted.map(c => c.tarjeta_bancaria_in || 0), backgroundColor: '#ff7043CC', borderRadius: 2 }
+        ]},
+        options: { ...mkOpts(), plugins: { legend: { display: true, position: 'bottom', labels: { font: { size: 9 }, boxWidth: 10, padding: 8, color: tc } } }, scales: { x: { stacked: true, grid: { display: false }, ticks: { color: tc, font: { size: 9 } } }, y: { stacked: true, grid: { color: gc }, ticks: { color: tc, font: { size: 8 }, callback: v => '$' + Math.round(v).toLocaleString('es-MX') } } } }
+      });
+    }
+
+    // 4. Hold% line
+    const holdC = document.getElementById('c-casino-hold-evo');
+    if (holdC) {
+      if (CASINO_CHARTS['hold_evo']) CASINO_CHARTS['hold_evo'].destroy();
+      CASINO_CHARTS['hold_evo'] = new Chart(holdC, {
+        type: 'line',
+        data: { labels, datasets: [{ label: 'Hold %', data: sorted.map(c => c.hold_pct || 0), borderColor: '#0073ea', backgroundColor: '#0073ea20', fill: true, tension: 0.3, pointRadius: 4, pointBackgroundColor: '#0073ea', borderWidth: 2 }] },
+        options: mkOpts(v => v + '%')
       });
     }
   }
