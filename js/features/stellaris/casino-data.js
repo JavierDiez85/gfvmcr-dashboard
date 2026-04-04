@@ -16,25 +16,72 @@
     if (typeof DB !== 'undefined') DB.set(CASINO_KEY, data);
   }
 
+  // Financial fields that the Excel Resumen is authoritative for
+  const EXCEL_FINANCIAL_FIELDS = [
+    'entradas','salidas','resultado_caja','retencion_premios',
+    'deposito_juego_in','acceso_instalaciones','tarjeta_bancaria_in',
+    'deposito_juego_out','pago_premios',
+    'premios_maquinas','premio_sorteo',
+    'imp_federal','imp_estatal',
+    'promo_redimible','promo_no_redimible','cancel_promo_nr',
+    'pagos_manuales','efectivo_caja','efectivo_entregado',
+    'efectivo_faltante','efectivo_sobrante',
+    'pasivo_redimible','pasivo_no_redimible',
+    'bancos_moviles','depositos_caja'
+  ];
+
+  // Machine fields that the PDF is authoritative for
+  const PDF_MACHINE_FIELDS = [
+    'jugado','netwin','hold_pct','terminales','netwin_terminal',
+    'sesiones','ocupacion_actual','ocupacion_periodo',
+    'aforo_hombres','aforo_mujeres','aforo_total',
+    'altas','cuentas_activas_30','cuentas_activas_90','cuentas_activas_180',
+    'cuentas_inactivas','cuentas_total'
+  ];
+
   function casinoAddCorte(corte) {
     const data = casinoLoad();
     const idx = data.cortes.findIndex(c => c.id === corte.id);
     if (idx >= 0) {
-      // MERGE: keep existing non-zero values for fields the new corte doesn't have
       const existing = data.cortes[idx];
       const merged = Object.assign({}, existing);
+      const isExcel = (corte.source || '').includes('excel');
+      const isPDF = (corte.source || '') === 'pdf';
+
       for (const key of Object.keys(corte)) {
         const newVal = corte[key];
-        // Overwrite if new value is truthy, non-zero, or non-empty array
+
+        // Arrays: only overwrite if new is non-empty
         if (Array.isArray(newVal)) {
           if (newVal.length > 0) merged[key] = newVal;
-        } else if (newVal !== 0 && newVal !== '' && newVal !== null && newVal !== undefined) {
+          continue;
+        }
+
+        // Excel source: always wins for financial fields (even if 0 is valid)
+        if (isExcel && EXCEL_FINANCIAL_FIELDS.includes(key)) {
+          if (newVal !== null && newVal !== undefined && newVal !== '') merged[key] = newVal;
+          continue;
+        }
+
+        // PDF source: always wins for machine fields
+        if (isPDF && PDF_MACHINE_FIELDS.includes(key)) {
+          if (newVal !== null && newVal !== undefined && newVal !== '') merged[key] = newVal;
+          continue;
+        }
+
+        // Default: overwrite if non-zero/truthy
+        if (newVal !== 0 && newVal !== '' && newVal !== null && newVal !== undefined) {
           merged[key] = newVal;
         }
       }
+
       // Always update metadata
       merged.uploaded_at = corte.uploaded_at;
-      if (corte.source) merged.source = (existing.source || '') + '+' + corte.source;
+      if (corte.source) {
+        const sources = (existing.source || '').split('+').filter(Boolean);
+        if (!sources.includes(corte.source)) sources.push(corte.source);
+        merged.source = sources.join('+');
+      }
       data.cortes[idx] = merged;
     } else {
       data.cortes.push(corte);
@@ -911,7 +958,8 @@
     const total_promo_no_redimible = sum('promo_no_redimible');
     const total_cancel_promo_nr = sum('cancel_promo_nr');
     const total_netwin = sum('netwin');
-    const total_retencion = sum('retencion_premios');
+    // Retención = siempre Federal + Estatal (más confiable que el campo separado)
+    const total_retencion = (total_imp_federal + total_imp_estatal) || sum('retencion_premios');
     const total_imp_federal = sum('imp_federal');
     const total_imp_estatal = sum('imp_estatal');
 
