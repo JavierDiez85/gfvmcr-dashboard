@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.5 | **Fecha**: 2026-04-03 | **Código**: ~40,000 líneas
+> **Versión**: 1.6 | **Fecha**: 2026-04-04 | **Código**: ~40,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -321,7 +321,10 @@ Upload de Excel con transacciones de tarjetas. Similar al TPV upload.
 ### 1.8.1 Dashboard Casino
 **Vista**: `stel_casino`
 
-**Filtro de período** (barra superior): Hoy · Ayer · Semana · Mes · Trimestre · Semestre · Año · Todo. Todos los KPIs, charts y tablas recalculan con los cortes del rango seleccionado.
+**Filtro de período** (barra superior): Último Corte · Semana · Mes · Trimestre · Semestre · Año. Todos los KPIs, charts y tablas recalculan con los cortes del rango seleccionado.
+
+- **Último Corte** (default): Muestra el corte más reciente. El label incluye la fecha del corte: "Último corte (YYYY-MM-DD)".
+- Los filtros Hoy/Ayer/Todo fueron eliminados — el casino opera con cortes diarios, no con datos en tiempo real.
 
 KPIs del período seleccionado:
 
@@ -368,6 +371,7 @@ Soporta dos tipos de documentos del sistema Wigos:
 - Preview con datos parseados antes de guardar
 - Parser dual: PDF.js inline primero, fallback a líneas pdftotext
 - Proveedores reconocidos: AGS, EGT, FBM, MERKUR, ORTIZ, ZITRO, ARISTOCRAT, IGT, BALLY, KONAMI, SCIENTIFIC, NOVOMATIC, EVERI
+- **Lógica de fecha para cortes nocturnos**: El sistema Wigos cierra el corte a las 5:00 AM del día siguiente. El parser detecta si la hora de cierre es antes de las 8:00 AM y resta un día para obtener la fecha real de operación. Ejemplo: PDF "4/3/2026 5:00 AM" → fecha del corte = 2026-04-02. Esto garantiza el merge correcto entre PDF y Excel del mismo día.
 
 **Excel — Dos tipos, auto-detectados**:
 1. **Resumen de Cajas** (`parseCasinoResumenExcel`): Excel de resumen financiero completo. Extrae: desglose entradas (depósito juego, acceso, TPV), desglose salidas, premios, impuestos, promociones, balance de caja. Parser usa `findVal`/`findValN` para manejar etiquetas duplicadas.
