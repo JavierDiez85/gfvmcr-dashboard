@@ -197,7 +197,11 @@ const TPV_UPLOAD = {
           // Month: derive from fecha
           const mesStr = fecha.substring(0, 7); // YYYY-MM
 
-          const monto = parseFloat(r['Monto']) || 0;
+          const monto = parseFloat(r['Monto']);
+          if (!monto || monto <= 0) {
+            errors.push('Fila ' + (i + 2) + ': monto invalido o vacio (' + String(r['Monto'] || '') + ')');
+            continue;
+          }
 
           rows.push({
             excel_id: String(r['ID'] || ''),
