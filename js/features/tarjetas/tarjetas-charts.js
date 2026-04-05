@@ -432,6 +432,10 @@ const CAT_CD_DEFAULT = [
   {id:'cd3', nombre:'Hardware',              tipo:'Operaciones',     empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
   {id:'cd4', nombre:'Liquidity Providers',   tipo:'Costos Directos', empresas:['Wirebit'], ppto:0},
   {id:'cd5', nombre:'Comisiones Promotoría', tipo:'Com. Bancarias',  empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
+  // Casino Stellaris — costos directos auto-inyectados
+  {id:'cd6', nombre:'Comisión Maquinero',      tipo:'Maquinero',          empresas:['Stellaris'], ppto:0},
+  {id:'cd7', nombre:'Impuestos sobre Premios', tipo:'Impuestos Premios',  empresas:['Stellaris'], ppto:0},
+  {id:'cd8', nombre:'Promociones Redimibles',  tipo:'Promociones',        empresas:['Stellaris'], ppto:0},
 ];
 const CAT_GA_DEFAULT = [
   {id:'ga1', nombre:'Nómina Administrativa', tipo:'Nómina', empresas:['Salem','Endless','Dynamo','Wirebit','Stellaris'], ppto:0},
