@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.6 | **Fecha**: 2026-04-04 | **Código**: ~40,000 líneas
+> **Versión**: 1.7 | **Fecha**: 2026-04-05 | **Código**: ~41,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -328,35 +328,43 @@ Upload de Excel con transacciones de tarjetas. Similar al TPV upload.
 
 KPIs del período seleccionado:
 
-| KPI | Fuente |
-|-----|--------|
-| Netwin Total | Suma de netwin de todos los cortes |
-| Premios Brutos | pago_premios de todos los cortes |
-| Ganancia Neta Real | Netwin − Promo Redimible |
-| Resultado de Caja | Suma de resultado de cajeros (del Excel) |
-| Hold% promedio | Promedio ponderado por jugado |
-| Jugado Total | Suma de `caja.maqJugado` |
-| Impuestos Totales | Federal 1% + Estatal 6% = 7% sobre premios brutos |
-| Ocupación | Promedio de ocupación diaria |
-| Altas | Suma de altas del período |
-| Cortes | Número de cortes cargados |
+| KPI | Fuente | Badge comparativo |
+|-----|--------|-------------------|
+| Netwin Total | Suma de netwin de todos los cortes | ▲/▼ % vs período anterior |
+| Premios Brutos | pago_premios de todos los cortes | ▲/▼ % vs período anterior |
+| Ganancia Neta Real | Netwin − Promo Redimible | ▲/▼ % vs período anterior |
+| Resultado de Caja | Suma de resultado de cajeros (del Excel) | ▲/▼ % vs período anterior |
+| Hold% promedio | Promedio ponderado por jugado | ▲/▼ % vs período anterior |
+| Jugado Total | Suma de `caja.maqJugado` | — |
+| Impuestos Totales | Federal 1% + Estatal 6% = 7% sobre premios brutos | — |
+| Ocupación | Promedio de ocupación diaria | — |
+| Altas | Suma de altas del período | — |
+| Cortes | Número de cortes cargados | — |
+
+Los badges (▲/▼) usan `casinoPrevKPIs()` para calcular el período equivalente anterior con igual número de días.
 
 **Secciones del dashboard**:
 
-1. **Flujo de Dinero** — tabla completa: entradas (depósito juego, acceso instalaciones, TPV) → salidas (depósito juego out, pago premios) → resultado bruto → impuestos → resultado neto. Con base legal (Art. 137-139 LISR + Chiapas 6%).
-2. **Impuestos** — KPIs: ISR Federal (1%), Estatal (6%), Retención Total (7%), Base Imponible.
-3. **Premios y Promociones** — Máquinas vs Sorteo, Promo Redimible vs No Redimible, nota "Redimible = Premio Sorteo".
-4. **Rentabilidad** — dos métricas separadas: Ganancia Neta Real (netwin − promo redimible) y Resultado de Caja (cajeros).
-5. **Proveedores** — tabla con semáforo hold%: ⭐≥10% · ✅≥5% · ⚠️0-5% · 🔴negativo.
-6. **Balance** — efectivo caja, entregado, faltante/sobrante, alerta de errores.
-7. **Pasivo** — saldo pendiente de cajeros.
-8. **Cajeros** — control por cajero (solo con Excel cargado).
+1. **Alertas operativas** — panel auto-generado por `casinoInsights()` con alertas color-coded: 🔴 hold bajo (<5%), promos > netwin, 💡 resultado positivo sin promos, ✅ resultado positivo. Mostrado siempre arriba.
+2. **Break-even** — 3 KPIs: Ratio Netwin/Promos, Break-even Netwin requerido, Costo/Terminal. Muestra si las promociones son rentables.
+3. **Flujo de Dinero** — tabla completa: entradas (depósito juego, acceso instalaciones, TPV) → salidas (depósito juego out, pago premios) → resultado bruto → impuestos → resultado neto. Con base legal (Art. 137-139 LISR + Chiapas 6%).
+4. **Impuestos** — KPIs: ISR Federal (1%), Estatal (6%), Retención Total (7%), Base Imponible.
+5. **Premios y Promociones** — Máquinas vs Sorteo, Promo Redimible vs No Redimible, nota "Redimible = Premio Sorteo".
+6. **Rentabilidad** — dos métricas separadas: Ganancia Neta Real (netwin − promo redimible) y Resultado de Caja (cajeros).
+7. **Proveedores** — tabla enriquecida con: semáforo hold% (⭐≥10% · ✅≥5% · ⚠️0-5% · 🔴negativo), % participación sobre netwin total, netwin/día promedio. Si hay múltiples cortes, muestra acumulado agregado (`casinoProviderStats()`).
+8. **Balance** — efectivo caja, entregado, faltante/sobrante, alerta de errores.
+9. **Pasivo** — saldo pendiente de cajeros.
+10. **Cajeros** — control por cajero (solo con Excel cargado).
 
-**Charts**:
+**Charts** (solo visibles cuando hay >1 corte cargado en el período):
 - Netwin por proveedor (barras verticales)
 - Hold% por proveedor (barras horizontales)
+- Tendencia Netwin diario (línea)
+- Tendencia Resultado diario (línea)
+- Entradas desglosadas (depósito + acceso + TPV, barras apiladas)
+- Hold% diario (línea)
 
-**PDF Export**: Botón 📄 en el header genera reporte ejecutivo completo del período activo (6 páginas con todas las secciones + glosario). Generado client-side con jsPDF + AutoTable.
+**PDF Export**: Botón 📄 en el header genera reporte ejecutivo completo del período activo (incluye sección de alertas y break-even). Generado client-side con jsPDF + AutoTable.
 
 **Integración P&L**: `fiInjectCasino()` inyecta automáticamente el netwin mensual en el P&L de Stellaris vía `_syncAll`.
 
@@ -377,7 +385,11 @@ Soporta dos tipos de documentos del sistema Wigos:
 1. **Resumen de Cajas** (`parseCasinoResumenExcel`): Excel de resumen financiero completo. Extrae: desglose entradas (depósito juego, acceso, TPV), desglose salidas, premios, impuestos, promociones, balance de caja. Parser usa `findVal`/`findValN` para manejar etiquetas duplicadas.
 2. **Sesiones de Caja** (`parseCasinoExcel`): Excel de sesiones de cajero. Extrae: nombre cajero, entradas, salidas, impuestos, resultado por sesión.
 
-**Merge en upload**: Al subir un Excel, `casinoAddCorte()` FUSIONA con el corte existente del mismo día. Preserva datos de máquinas (netwin, hold, proveedores) del PDF. Solo sobreescribe campos no-cero. Source tracking: `"pdf"` · `"excel-sesiones"` · `"pdf+excel-resumen"`.
+**Merge en upload**: Al subir un Excel, `casinoAddCorte()` FUSIONA con el corte existente del mismo día usando prioridad por fuente:
+- **Excel Resumen** gana en campos financieros (entradas, salidas, impuestos, promos, balance) — sobreescribe incluso si el valor es 0, porque 0 puede ser válido.
+- **PDF** gana en campos de máquinas (jugado, netwin, hold, terminales, proveedores, ocupación, aforo, cuentas).
+- **Retención** siempre se recalcula como `imp_federal + imp_estatal` (más confiable que el campo separado del PDF).
+- Source tracking sin duplicados: `"pdf"` · `"excel-sesiones"` · `"excel-resumen"` · `"pdf+excel-resumen"` · etc.
 
 **Historial**: Tabla de cortes con columna de fuente (📄 PDF / 📊 Excel) y botón eliminar por corte.
 
@@ -1238,6 +1250,7 @@ Antes de hacer deploy:
 │   ├── compare-engine.js      # Motor de comparación periodos (101)
 │   ├── data-constants.js      # Constantes (NOM, GCOMP, WB) (189)
 │   ├── flujo-engine.js        # Motor flujo de caja (478)
+│   ├── insights-engine.js     # Motor alertas operativas (Salem, Endless, Wirebit, Stellaris) (121)
 │   ├── period-filter.js       # Filtros de periodo (210)
 │   ├── pl-engine.js           # Motor P&L (1,249)
 │   ├── ui-components.js       # Modal, toast, exports (881)
