@@ -80,6 +80,9 @@
     const prevKpis = prevCorte ? casinoKPIs(prevCorte.fecha, prevCorte.fecha) : (_casinoFilter !== 'ultimo' ? casinoPrevKPIs(range.from, range.to) : null);
     const B = (cur, prev, inv) => prevKpis ? _casinoBadge(cur, prev, inv) : '';
 
+    // Config
+    const _casinoCfg = (typeof casinoConfigLoad === 'function') ? casinoConfigLoad() : { proveedores: {}, pct_operadora: 10 };
+
     // Analytics
     const insights = (typeof casinoInsights === 'function') ? casinoInsights(kpis, prevKpis) : [];
     const breakeven = (typeof casinoBreakEven === 'function') ? casinoBreakEven(kpis) : {};
@@ -429,7 +432,51 @@
           </div>
         </div>
       ` : ''}
+
+      <!-- Config: % Maquinero por Proveedor + Operadora -->
+      <div class="tw" style="margin-top:14px">
+        <div class="tw-h"><div class="tw-ht">⚙️ Configuración P&L Casino</div></div>
+        <div style="padding:12px">
+          <div style="font-size:.7rem;color:var(--muted);margin-bottom:8px">
+            Configura el % que cada proveedor de maquinas cobra del netwin, y el % de la comision a la Operadora.
+            Estos valores se usan para calcular los Costos Directos y la Utilidad Neta en el P&L de Stellaris.
+          </div>
+          <table class="bt" style="max-width:500px">
+            <thead><tr><th>Proveedor</th><th class="r" style="width:100px">% Maquinero</th></tr></thead>
+            <tbody id="casino-cfg-provs">
+              ${Object.keys(_casinoCfg.proveedores).sort().map(name => {
+                const pct = _casinoCfg.proveedores[name].pct_maquinero || 0;
+                return '<tr><td class="bld">' + escapeHtml(name) + '</td><td><input type="number" class="casino-cfg-pct" data-prov="' + escapeHtml(name) + '" value="' + pct + '" min="0" max="100" step="0.5" style="width:70px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:.75rem;text-align:right">%</td></tr>';
+              }).join('')}
+            </tbody>
+          </table>
+          <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+            <label style="font-size:.75rem;font-weight:600">Comision Operadora:</label>
+            <input type="number" id="casino-cfg-operadora" value="${_casinoCfg.pct_operadora || 10}" min="0" max="50" step="0.5" style="width:60px;padding:3px 6px;border:1px solid var(--border2);border-radius:4px;font-size:.75rem;text-align:right">
+            <span style="font-size:.75rem">% del EBITDA</span>
+          </div>
+          <button class="btn btn-blue casino-cfg-save-btn" style="margin-top:10px;font-size:.72rem">💾 Guardar Configuracion</button>
+        </div>
+      </div>
     `;
+
+    // Wire config inputs
+    const _casinoCfgRef = _casinoCfg; // reference for event handler
+    const cfgSaveBtn = el.querySelector('.casino-cfg-save-btn');
+    if (cfgSaveBtn) {
+      cfgSaveBtn.addEventListener('click', function() {
+        el.querySelectorAll('.casino-cfg-pct').forEach(function(inp) {
+          var prov = inp.dataset.prov;
+          var val = parseFloat(inp.value) || 0;
+          if (!_casinoCfgRef.proveedores[prov]) _casinoCfgRef.proveedores[prov] = {};
+          _casinoCfgRef.proveedores[prov].pct_maquinero = val;
+        });
+        var opEl = document.getElementById('casino-cfg-operadora');
+        if (opEl) _casinoCfgRef.pct_operadora = parseFloat(opEl.value) || 10;
+        casinoConfigSave(_casinoCfgRef);
+        if (typeof toast === 'function') toast('✅ Configuracion guardada');
+      });
+    }
 
     // Wire filter buttons
     el.querySelectorAll('.casino-filter-btn').forEach(btn => {
