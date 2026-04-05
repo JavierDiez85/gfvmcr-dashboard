@@ -216,6 +216,10 @@
           ..._gasRowsFromConfig('Stellaris').gaRows,
           { type:'total_gas', label:'TOTAL GASTOS ADMINISTRATIVOS', bold:true },
           { type:'ebitda',    label:'EBITDA', bold:true, util:true },
+
+          { type:'header', label:'▶ COMISIÓN OPERADORA', note:'Participación de la Operadora sobre utilidad' },
+          { type:'comision_op', label:'  Comisión Operadora', bold:false },
+          { type:'utilidad_neta', label:'UTILIDAD NETA', bold:true, util:true },
         ]
       },
     };
@@ -265,6 +269,7 @@
     let pTotCost = MO.map(()=>0);
     let pTotGas  = MO.map(()=>0);
     let section = 'none';
+    let _stelEbitda = null, _stelComision = null; // For Stellaris comision operadora
 
     // ── Resolver cada seccion ──
     const rows = [];
@@ -340,6 +345,27 @@
         const ebitda = totIng.map((x,i)=>x-totCost[i]-totGas[i]);
         const pEbitda = _tblCmp ? pTotIng.map((x,i)=>x-pTotCost[i]-pTotGas[i]) : null;
         rows.push({...s, _type:'util', _vals:ebitda, _valsPrev:pEbitda, _cls:_periodSum(ebitda,ent)>=0?'pos':'neg'});
+        // Store ebitda for Stellaris comision calculation
+        if(ent==='stel') _stelEbitda = ebitda;
+        continue;
+      }
+      // ── Stellaris only: Comisión Operadora + Utilidad Neta ──
+      if(s.type==='comision_op'){
+        const cfg = typeof casinoConfigLoad === 'function' ? casinoConfigLoad() : { pct_operadora: 10 };
+        const pct = (cfg.pct_operadora || 10) / 100;
+        const ebitda = _stelEbitda || totIng.map((x,i)=>x-totCost[i]-totGas[i]);
+        const comision = ebitda.map(v => v > 0 ? Math.round(v * pct) : 0);
+        const pComision = _tblCmp ? (pTotIng||[]).map((x,i)=>{ const e=x-(pTotCost[i]||0)-(pTotGas[i]||0); return e>0?Math.round(e*pct):0; }) : null;
+        rows.push({...s, _type:'gasto_row', _vals:comision, _valsPrev:pComision, _cls:'neg'});
+        _stelComision = comision;
+        continue;
+      }
+      if(s.type==='utilidad_neta'){
+        const ebitda = _stelEbitda || totIng.map((x,i)=>x-totCost[i]-totGas[i]);
+        const comision = _stelComision || ebitda.map(()=>0);
+        const utilidad = ebitda.map((v,i) => v - comision[i]);
+        const pUtilidad = _tblCmp ? (pTotIng||[]).map((x,i)=>{ const e=x-(pTotCost[i]||0)-(pTotGas[i]||0); const c=e>0?Math.round(e*((typeof casinoConfigLoad==='function'?casinoConfigLoad():{pct_operadora:10}).pct_operadora||10)/100):0; return e-c; }) : null;
+        rows.push({...s, _type:'util', _vals:utilidad, _valsPrev:pUtilidad, _cls:_periodSum(utilidad,ent)>=0?'pos':'neg'});
         continue;
       }
     }
@@ -401,8 +427,8 @@
 
       // Data row normal
       const isIng = r.type==='ing' || r.type==='ing_ppto';
-      const valColor = isIng ? '#1b5e20' : '#555';
-      const isGasRow = r.type==='gasto';
+      const valColor = isIng ? '#1b5e20' : (r._type==='gasto_row' ? '#b71c1c' : '#555');
+      const isGasRow = r.type==='gasto' || r._type==='gasto_row';
       return `<tr style="border-bottom:1px solid var(--border)">
         <td style="padding:6px 12px 6px 20px;font-size:.8rem;color:var(--text)">${r.label}</td>
         ${agg.map((x,i)=>`<td class="mo" style="color:${x?valColor:'var(--muted)'};font-size:.78rem${i===agg.length-1?';font-weight:600':''}">${x?fmtFull(x):'\u2014'}${pAgg?_cmpSub(x,pAgg[i],isGasRow):''}</td>`).join('')}

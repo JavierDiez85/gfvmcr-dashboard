@@ -3,6 +3,20 @@
   'use strict';
 
   const CASINO_KEY = 'gf_casino';
+  const CASINO_CONFIG_KEY = 'gf_casino_config';
+
+  // Default config
+  const CASINO_CONFIG_DEFAULT = {
+    proveedores: {
+      AGS: { pct_maquinero: 0 },
+      EGT: { pct_maquinero: 0 },
+      FBM: { pct_maquinero: 0 },
+      MERKUR: { pct_maquinero: 0 },
+      ORTIZ: { pct_maquinero: 0 },
+      ZITRO: { pct_maquinero: 0 }
+    },
+    pct_operadora: 10
+  };
 
   // ═══════════════════════════════════════
   // STORAGE
@@ -10,6 +24,22 @@
 
   function casinoLoad() {
     return (typeof DB !== 'undefined' && DB.get(CASINO_KEY)) || { cortes: [] };
+  }
+
+  function casinoConfigLoad() {
+    const cfg = (typeof DB !== 'undefined' && DB.get(CASINO_CONFIG_KEY)) || null;
+    if (!cfg) return JSON.parse(JSON.stringify(CASINO_CONFIG_DEFAULT));
+    // Merge with defaults to ensure new providers are included
+    const merged = JSON.parse(JSON.stringify(CASINO_CONFIG_DEFAULT));
+    if (cfg.proveedores) {
+      for (var k in cfg.proveedores) merged.proveedores[k] = cfg.proveedores[k];
+    }
+    if (cfg.pct_operadora !== undefined) merged.pct_operadora = cfg.pct_operadora;
+    return merged;
+  }
+
+  function casinoConfigSave(cfg) {
+    if (typeof DB !== 'undefined') DB.set(CASINO_CONFIG_KEY, cfg);
   }
 
   function casinoSave(data) {
@@ -810,6 +840,59 @@
     return monthly;
   }
 
+  /** Full monthly P&L aggregation for Casino — feeds into fiInjectCasino() */
+  function casinoMonthlyPnL(year) {
+    const data = casinoLoad();
+    const cfg = casinoConfigLoad();
+    const prefix = String(year);
+    const zeros = () => Array(12).fill(0);
+
+    const pnl = {
+      // INGRESOS
+      netwin: zeros(), acceso_instalaciones: zeros(), tarjeta_bancaria: zeros(),
+      // COSTOS DIRECTOS
+      maquinero: zeros(), imp_federal: zeros(), imp_estatal: zeros(), promo_redimible: zeros(),
+      // Totals (calculated after aggregation)
+      total_ingresos: zeros(), total_costos: zeros(), margen_operativo: zeros()
+    };
+
+    data.cortes.forEach(function(c) {
+      if (!c.fecha || !c.fecha.startsWith(prefix)) return;
+      var m = parseInt(c.fecha.split('-')[1]) - 1;
+      if (m < 0 || m > 11) return;
+
+      // Ingresos
+      pnl.netwin[m] += c.netwin || 0;
+      pnl.acceso_instalaciones[m] += c.acceso_instalaciones || 0;
+      pnl.tarjeta_bancaria[m] += c.tarjeta_bancaria_in || 0;
+
+      // Impuestos
+      pnl.imp_federal[m] += c.imp_federal || 0;
+      pnl.imp_estatal[m] += c.imp_estatal || 0;
+
+      // Promos redimibles
+      pnl.promo_redimible[m] += c.promo_redimible || 0;
+
+      // Maquinero: calculate per provider from corte data
+      (c.proveedores || []).forEach(function(p) {
+        var provCfg = cfg.proveedores[p.nombre] || cfg.proveedores[p.nombre.toUpperCase()];
+        var pct = provCfg ? (provCfg.pct_maquinero || 0) : 0;
+        if (pct > 0 && p.netwin > 0) {
+          pnl.maquinero[m] += Math.round(p.netwin * pct / 100);
+        }
+      });
+    });
+
+    // Calculate totals
+    for (var i = 0; i < 12; i++) {
+      pnl.total_ingresos[i] = pnl.netwin[i] + pnl.acceso_instalaciones[i] + pnl.tarjeta_bancaria[i];
+      pnl.total_costos[i] = pnl.maquinero[i] + pnl.imp_federal[i] + pnl.imp_estatal[i] + pnl.promo_redimible[i];
+      pnl.margen_operativo[i] = pnl.total_ingresos[i] - pnl.total_costos[i];
+    }
+
+    return pnl;
+  }
+
   // ═══════════════════════════════════════
   // ANALYTICS HELPERS
   // ═══════════════════════════════════════
@@ -1044,7 +1127,10 @@
   // EXPOSE
   // ═══════════════════════════════════════
   window.CASINO_KEY = CASINO_KEY;
+  window.CASINO_CONFIG_KEY = CASINO_CONFIG_KEY;
   window.casinoLoad = casinoLoad;
+  window.casinoConfigLoad = casinoConfigLoad;
+  window.casinoConfigSave = casinoConfigSave;
   window.casinoSave = casinoSave;
   window.casinoAddCorte = casinoAddCorte;
   window.casinoDeleteCorte = casinoDeleteCorte;
@@ -1060,6 +1146,7 @@
   window.casinoProviderStats = casinoProviderStats;
   window.casinoCortes = casinoCortes;
   window.casinoMonthlyNetwin = casinoMonthlyNetwin;
+  window.casinoMonthlyPnL = casinoMonthlyPnL;
   window.casinoKPIs = casinoKPIs;
 
 })(window);

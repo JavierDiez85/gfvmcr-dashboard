@@ -74,7 +74,8 @@ const APP_KEYS = [
   // Facturación CxP
   'gf_cxp',
   // Stellaris Casino
-  'gf_casino'
+  'gf_casino',
+  'gf_casino_config'
 ];
 
 // Estado de sync

@@ -594,23 +594,45 @@
   function fiInjectCasino() {
     if (typeof FI_ROWS === 'undefined' || typeof _year === 'undefined') return;
 
-    // Remove previous casino auto rows
+    // Remove previous casino auto rows (ingresos + gastos)
     FI_ROWS = FI_ROWS.filter(r => !r.autoCasino);
+    if (typeof FG_ROWS !== 'undefined') FG_ROWS = FG_ROWS.filter(r => !r.autoCasino);
 
-    const monthly = casinoMonthlyNetwin(_year);
-    const hasData = monthly.some(v => v > 0);
+    const pnl = casinoMonthlyPnL(_year);
+    const hasData = pnl.netwin.some(v => v > 0) || pnl.acceso_instalaciones.some(v => v > 0);
     if (!hasData) return;
 
-    FI_ROWS.unshift({
-      id: 'casino_netwin_' + _year,
-      concepto: 'Casino — Netwin Máquinas (auto)',
-      ent: 'Stellaris',
-      cat: 'Máquinas Net Win',
-      yr: String(_year),
-      vals: monthly.map(v => Math.round(v)),
-      auto: true,
-      autoCasino: true
+    const yr = String(_year);
+    const mkRow = (id, concepto, cat, vals) => ({
+      id: 'casino_' + id + '_' + yr, concepto, ent: 'Stellaris', cat, yr,
+      vals: vals.map(v => Math.round(v)), auto: true, autoCasino: true
     });
+
+    // ── INGRESOS (→ FI_ROWS → S.recs tipo 'ingreso') ──
+    FI_ROWS.unshift(mkRow('netwin', 'Casino — Netwin Máquinas (auto)', 'Máquinas Net Win', pnl.netwin));
+
+    if (pnl.acceso_instalaciones.some(v => v > 0)) {
+      FI_ROWS.unshift(mkRow('acceso', 'Casino — Acceso e Instalaciones (auto)', 'Otros Ingresos', pnl.acceso_instalaciones));
+    }
+    if (pnl.tarjeta_bancaria.some(v => v > 0)) {
+      FI_ROWS.unshift(mkRow('tarjeta', 'Casino — Tarjeta Bancaria (auto)', 'Otros Ingresos', pnl.tarjeta_bancaria));
+    }
+
+    // ── COSTOS DIRECTOS (→ FG_ROWS → S.recs tipo 'gasto') ──
+    if (typeof FG_ROWS !== 'undefined') {
+      if (pnl.maquinero.some(v => v > 0)) {
+        FG_ROWS.unshift(mkRow('maquinero', 'Casino — Comisión Maquinero (auto)', 'Maquinero', pnl.maquinero));
+      }
+      if (pnl.imp_federal.some(v => v > 0)) {
+        FG_ROWS.unshift(mkRow('imp_fed', 'Casino — Impuesto Federal 1% (auto)', 'Impuestos Premios', pnl.imp_federal));
+      }
+      if (pnl.imp_estatal.some(v => v > 0)) {
+        FG_ROWS.unshift(mkRow('imp_est', 'Casino — Impuesto Estatal 6% (auto)', 'Impuestos Premios', pnl.imp_estatal));
+      }
+      if (pnl.promo_redimible.some(v => v > 0)) {
+        FG_ROWS.unshift(mkRow('promo_red', 'Casino — Promociones Redimibles (auto)', 'Promociones', pnl.promo_redimible));
+      }
+    }
   }
 
   // ═══════════════════════════════════════
