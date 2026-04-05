@@ -111,8 +111,8 @@ function rTkPagosList(){
     const pagosHint = pagosCount > 1 ? ` <span style="font-size:.55rem;color:var(--muted)">(${pagosCount})</span>` : '';
     return `<tr style="cursor:pointer;${rowBg}" class="tk-row" data-tid="${t.id}">
     <td style="font-size:.7rem;color:var(--muted);font-weight:600">${unreadDot}#${t.id}</td>
-    <td style="font-size:.75rem;font-weight:600">${t.cliente||'—'}${origenBadge}</td>
-    <td style="font-size:.73rem">${t.asunto||'—'}</td>
+    <td style="font-size:.75rem;font-weight:600">${escapeHtml(t.cliente||'—')}${origenBadge}</td>
+    <td style="font-size:.73rem">${escapeHtml(t.asunto||'—')}</td>
     <td>${priorBadge[t.prioridad]||'—'}</td>
     <td>${statusBadge[t.estado]||'—'}</td>
     <td class="r" style="font-size:.75rem;font-weight:600">${_tkFmtMonto(t)}${pagosHint}</td>
@@ -390,7 +390,7 @@ function changeTkStatus(id){
   const cancelBtn = document.getElementById('confirm-cancel');
 
   msg.innerHTML = `<div style="margin-bottom:10px;font-weight:600">Cambiar estado — Ticket #${id}</div>
-    <div style="font-size:.75rem;margin-bottom:6px;color:var(--muted)">${t.cliente} — ${t.asunto}</div>
+    <div style="font-size:.75rem;margin-bottom:6px;color:var(--muted)">${escapeHtml(t.cliente||'')} — ${escapeHtml(t.asunto||'')}</div>
     <select id="tk-status-change-sel" style="width:100%;padding:7px 10px;border-radius:var(--r);border:1px solid var(--border2);font-size:.78rem;background:var(--white);color:var(--text)">${opts}</select>`;
   okBtn.textContent = 'Guardar';
   okBtn.style.background = 'var(--blue)';
@@ -491,15 +491,15 @@ function openTkDetail(id){
   msg.innerHTML = `
     <div style="font-weight:700;font-size:.88rem;margin-bottom:12px">🎫 Ticket #${t.id}</div>
     <div style="display:grid;grid-template-columns:100px 1fr;gap:6px 12px;font-size:.75rem">
-      <div style="color:var(--muted);font-weight:600">Cliente:</div><div>${t.cliente}</div>
-      <div style="color:var(--muted);font-weight:600">Asunto:</div><div>${t.asunto}</div>
+      <div style="color:var(--muted);font-weight:600">Cliente:</div><div>${escapeHtml(t.cliente||'—')}</div>
+      <div style="color:var(--muted);font-weight:600">Asunto:</div><div>${escapeHtml(t.asunto||'—')}</div>
       <div style="color:var(--muted);font-weight:600">Estado:</div><div>${statusLabels[t.estado]||t.estado}</div>
       <div style="color:var(--muted);font-weight:600">Prioridad:</div><div>${priorLabels[t.prioridad]||t.prioridad}</div>
       <div style="color:var(--muted);font-weight:600">Origen:</div><div>${origenLabels[t.origen]||'—'}</div>
       <div style="color:var(--muted);font-weight:600">Creado:</div><div>${new Date(t.creado).toLocaleString('es-MX')}</div>
       <div style="color:var(--muted);font-weight:600">Actualizado:</div><div>${new Date(t.actualizado).toLocaleString('es-MX')}</div>
     </div>
-    ${t.descripcion ? `<div style="margin-top:10px;font-size:.73rem;padding:8px;background:var(--bg);border-radius:var(--r)">${t.descripcion}</div>` : ''}
+    ${t.descripcion ? `<div style="margin-top:10px;font-size:.73rem;padding:8px;background:var(--bg);border-radius:var(--r)">${escapeHtml(t.descripcion)}</div>` : ''}
     ${pagosHTML}`;
 
   okBtn.textContent = 'Cerrar';

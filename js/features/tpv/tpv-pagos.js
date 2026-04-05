@@ -137,7 +137,7 @@ async function rTPVPagos() {
       <td style="padding:6px 8px;width:28px">
         <button class="pagos-hist-btn" data-pid="${p.id}" title="Ver historial" style="background:none;border:none;cursor:pointer;font-size:.8rem;color:var(--muted);padding:2px 4px;border-radius:4px;${p._nPagos===0?'opacity:.35':''}">🕐${histBtn}</button>
       </td>
-      <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}${p._rate_corrected ? ' <span title="Comisiones corregidas por cambio de tasa histórica" style="font-size:.55rem;background:var(--purple-bg);color:var(--purple);border-radius:6px;padding:1px 5px;font-weight:700;cursor:help;vertical-align:middle">📊 Ajuste</span>' : ''}</td>
+      <td class="bld" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.cliente||'—')}${p._rate_corrected ? ' <span title="Comisiones corregidas por cambio de tasa histórica" style="font-size:.55rem;background:var(--purple-bg);color:var(--purple);border-radius:6px;padding:1px 5px;font-weight:700;cursor:help;vertical-align:middle">📊 Ajuste</span>' : ''}</td>
       <td class="mo">${fmtTPVFull(p.total_cobrado,2)}</td>
       <td class="mo" style="color:var(--orange)">${fmtTPVFull(p.total_comisiones,2)}</td>
       <td class="mo bld pos">${fmtTPVFull(p.a_pagar,2)}</td>
@@ -205,7 +205,7 @@ function openPagoModal(clienteId) {
   _pagoClienteAllOptions = eligibleClients.map(p => ({ value: String(p.id), label: p.cliente }));
   sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
     eligibleClients.map(p =>
-      `<option value="${p.id}" ${p.id === clienteId ? 'selected' : ''}>${p.cliente}</option>`
+      `<option value="${p.id}" ${p.id === clienteId ? 'selected' : ''}>${escapeHtml(p.cliente||'')}</option>`
     ).join('');
   const pagoSearchEl = document.getElementById('pago-cliente-search');
   if (pagoSearchEl) pagoSearchEl.value = '';
@@ -573,7 +573,7 @@ function _renderHistorial(rows) {
       : `<button class="hist-anular-btn" data-cid="${p.clienteId}" data-pid="${p.id}" style="background:none;border:1px solid var(--red-lt);border-radius:5px;cursor:pointer;color:var(--red);font-size:.65rem;padding:2px 8px;font-family:'Figtree',sans-serif" title="Anular pago">Anular</button>`;
     return `<tr style="${rowStyle}">
       <td class="bld">${p.fecha || '—'}</td>
-      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.cliente}</td>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${escapeHtml(p.cliente||'—')}</td>
       <td class="mo r">${fmtTPVFull(p.monto)}</td>
       <td>${destPill}</td>
       <td style="color:var(--muted);font-size:.72rem;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.ref || '—'}</td>
@@ -683,7 +683,7 @@ function exportHistorialPDF() {
 <div class="sub">Generado: ${new Date().toLocaleString('es-MX')} · ${rows.length} pagos · Monto activo: $${totalMonto.toLocaleString('es-MX',{minimumFractionDigits:2})}</div>
 <table>
 <thead><tr><th>Fecha</th><th>Cliente</th><th class="r">Monto</th><th>Destino</th><th>Referencia</th><th>Estado</th></tr></thead>
-<tbody>${rows.map(p=>`<tr class="${p.anulado?'anulado':''}"><td>${p.fecha}</td><td>${p.cliente}</td><td class="r">$${(p.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</td><td>${p.destino==='tarjeta'?'Tarjeta':'Banco'}</td><td>${p.ref||'—'}</td><td>${p.anulado?'Anulado':'Activo'}</td></tr>`).join('')}</tbody>
+<tbody>${rows.map(p=>`<tr class="${p.anulado?'anulado':''}"><td>${escapeHtml(p.fecha||'')}</td><td>${escapeHtml(p.cliente||'')}</td><td class="r">$${(p.monto||0).toLocaleString('es-MX',{minimumFractionDigits:2})}</td><td>${p.destino==='tarjeta'?'Tarjeta':'Banco'}</td><td>${escapeHtml(p.ref||'—')}</td><td>${p.anulado?'Anulado':'Activo'}</td></tr>`).join('')}</tbody>
 </table></body></html>`);
   w.document.close();
   setTimeout(() => w.print(), 300);
