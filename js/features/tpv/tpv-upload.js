@@ -170,6 +170,23 @@ const TPV_UPLOAD = {
 
       // Step 3: Transform rows
       this._progress(20, 'Transformando datos...');
+
+      // Detect date column: might be 'Fecha' or a date-serialized header
+      let _fechaKey = 'Fecha';
+      if (rawRows.length > 0 && rawRows[0]['Fecha'] === undefined) {
+        // Look for a key that contains date-like values in the first row
+        const firstRow = rawRows[0];
+        for (var k in firstRow) {
+          if (k === 'Fecha') { _fechaKey = k; break; }
+          var v = String(firstRow[k] || '');
+          if (v.match(/^\d{1,2}\/\d{1,2}\/\d{4}$/) || v.match(/^\d{4}-\d{2}-\d{2}/)) {
+            _fechaKey = k;
+            console.log('[Upload] Fecha column detected as: "' + k + '" (header is date-formatted)');
+            break;
+          }
+        }
+      }
+
       const rows = [];
       for (let i = 0; i < rawRows.length; i++) {
         const r = rawRows[i];
@@ -180,7 +197,7 @@ const TPV_UPLOAD = {
           const tipoTarjeta = r['Tipo de Tarjeta'] || '';
           const tipoTxn = r['Tipo de Transacción'] || r['Tipo de Transaccion'] || '';
 
-          const fecha = this.parseDate(r['Fecha']);
+          const fecha = this.parseDate(r[_fechaKey]);
           if (!fecha) { errors.push(`Fila ${i + 2}: fecha inválida`); continue; }
 
           const hora = this.parseTime(r['Hora'], r['Columna1'], r['Columna2'], r['Columna3']);
