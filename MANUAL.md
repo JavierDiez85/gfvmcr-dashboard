@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.7 | **Fecha**: 2026-04-05 | **Código**: ~41,000 líneas
+> **Versión**: 1.8 | **Fecha**: 2026-04-06 | **Código**: ~42,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -274,8 +274,15 @@ Facturas por cliente/periodo. Crear, ver PDF, eliminar facturas.
 Upload de Excel con transacciones:
 - Estrategias: reemplazar todo, reemplazar periodo, solo agregar nuevas
 - Validación y preview antes de confirmar
-- Rollback disponible (deshacer última carga)
+- Rollback disponible (deshacer última carga); batches revertidos se muestran en historial con tachado y badge "Eliminada" (estado `rolled_back`)
 - Historial de cargas
+
+**Validaciones de parser**:
+- Filas con `Monto` inválido, vacío o ≤ 0 son rechazadas explícitamente a `errors[]` (no insertadas con monto 0).
+- Si 0 filas son válidas, el upload aborta antes de llamar al servidor.
+- Detección automática de columna fecha cuando el header de Excel es una fecha serializada (no el texto "Fecha").
+
+**batchId** (rollback): validado como alfanumérico (`[a-zA-Z0-9\-_]`, máx 64 chars) tanto en cliente como servidor. URL-encoded en las queries a Supabase.
 
 ### 1.6.9 Fórmulas de Comisiones TPV
 
@@ -355,6 +362,7 @@ Los badges (▲/▼) usan `casinoPrevKPIs()` para calcular el período equivalen
 8. **Balance** — efectivo caja, entregado, faltante/sobrante, alerta de errores.
 9. **Pasivo** — saldo pendiente de cajeros.
 10. **Cajeros** — control por cajero (solo con Excel cargado).
+11. **Configuración P&L Casino** — panel editable para ajustar `% Maquinero` por proveedor (AGS, EGT, FBM, MERKUR, ORTIZ, ZITRO) y `% Comisión Operadora` sobre EBITDA. Persiste en `gf_casino_config`. Se usa en `casinoMonthlyPnL()` para calcular costos directos e inyectarlos en el P&L de Stellaris.
 
 **Charts** (solo visibles cuando hay >1 corte cargado en el período):
 - Netwin por proveedor (barras verticales)
@@ -366,7 +374,13 @@ Los badges (▲/▼) usan `casinoPrevKPIs()` para calcular el período equivalen
 
 **PDF Export**: Botón 📄 en el header genera reporte ejecutivo completo del período activo (incluye sección de alertas y break-even). Generado client-side con jsPDF + AutoTable.
 
-**Integración P&L**: `fiInjectCasino()` inyecta automáticamente el netwin mensual en el P&L de Stellaris vía `_syncAll`.
+**Integración P&L**: `fiInjectCasino()` inyecta automáticamente múltiples líneas en el P&L de Stellaris vía `_syncAll`:
+- **Ingresos**: Netwin Máquinas, Acceso Instalaciones, Tarjeta Bancaria
+- **Costos Directos**: Maquinero (% por proveedor × netwin), Imp. Federal (1%), Imp. Estatal (6%), Promo Redimible
+- **Gastos Admin**: Comisión Operadora (% del EBITDA, configurable)
+- **Utilidad Neta**: EBITDA − Comisión Operadora
+
+Todos los valores calculados mensualmente por `casinoMonthlyPnL(year)` en `casino-data.js`, usando la config de `gf_casino_config`.
 
 ### 1.8.2 Carga de Datos Casino
 **Vista**: `stel_casino_upload`
@@ -393,7 +407,9 @@ Soporta dos tipos de documentos del sistema Wigos:
 
 **Historial**: Tabla de cortes con columna de fuente (📄 PDF / 📊 Excel) y botón eliminar por corte.
 
-**Storage**: Clave `gf_casino` en Supabase. Estructura: `{ cortes: [ ...corteObjects ] }`.
+**Storage**: Dos claves en Supabase:
+- `gf_casino` — Cortes diarios. Estructura: `{ cortes: [ ...corteObjects ] }`.
+- `gf_casino_config` — Config P&L. Estructura: `{ proveedores: { AGS: { pct_maquinero: 0 }, ... }, pct_operadora: 10 }`. Defaults a 0% maquinero y 10% operadora.
 
 ---
 
@@ -1112,9 +1128,22 @@ Excel Wigos (auto-detección de tipo) — upload client-side
   ↓    source tracking: "pdf+excel-resumen" o "pdf+excel-sesiones"
 
 fiInjectCasino() [casino-dashboard.js] llamado desde _syncAll()
-  ↓ casinoMonthlyNetwin(mes, año) — agrega netwin de todos los cortes del mes
-  ↓ inyecta en P&L Stellaris como ingreso de 'Casino — Netwin'
-  ↓ Afecta Ingresos Brutos → Margen Bruto → EBITDA de Stellaris
+  ↓ casinoMonthlyPnL(año) [casino-data.js] — agrega todos los cortes del año por mes
+  ↓   Lee casinoConfigLoad() → pct_maquinero por proveedor, pct_operadora
+  ↓   Calcula: netwin, acceso_instalaciones, tarjeta_bancaria (ingresos)
+  ↓            maquinero, imp_federal, imp_estatal, promo_redimible (costos)
+  ↓            total_ingresos, total_costos, margen_operativo
+  ↓ Inyecta en FI_ROWS (ingresos Stellaris):
+  ↓   · Casino — Netwin Máquinas (auto)
+  ↓   · Casino — Acceso Instalaciones (auto)
+  ↓   · Casino — Tarjeta Bancaria In (auto)
+  ↓ Inyecta en FG_ROWS (gastos Stellaris):
+  ↓   · Casino — Maquinero (auto)
+  ↓   · Casino — Imp. Federal (auto)
+  ↓   · Casino — Imp. Estatal (auto)
+  ↓   · Casino — Promo Redimible (auto)
+  ↓ pl-engine.js calcula Comisión Operadora (type:'comision_op') y Utilidad Neta
+  ↓   usando casinoConfigLoad().pct_operadora sobre EBITDA de Stellaris
 
 casinoGeneratePDFReport() [casino-report.js] — browser-side
   ↓ Lee estado actual del dashboard (cortes filtrados)
