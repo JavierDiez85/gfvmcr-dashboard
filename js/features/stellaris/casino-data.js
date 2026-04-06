@@ -875,7 +875,8 @@
 
       // Maquinero: calculate per provider from corte data
       (c.proveedores || []).forEach(function(p) {
-        var provCfg = cfg.proveedores[p.nombre] || cfg.proveedores[p.nombre.toUpperCase()];
+        var pName = (p.nombre || '');
+        var provCfg = cfg.proveedores[pName] || cfg.proveedores[pName.toUpperCase()];
         var pct = provCfg ? (provCfg.pct_maquinero || 0) : 0;
         if (pct > 0 && p.netwin > 0) {
           pnl.maquinero[m] += Math.round(p.netwin * pct / 100);
