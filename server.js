@@ -274,14 +274,14 @@ http.createServer(async (req, res) => {
   if (req.method === 'DELETE' && req.url.startsWith('/api/upload/tpv/batch/')) {
     if (!requireAuth(req, res)) return;
     try {
-      const batchId = req.url.split('/').pop();
-      if (!batchId || isNaN(Number(batchId))) { sendError(res, 400, 'batchId inválido'); return; }
+      const batchId = decodeURIComponent(req.url.split('/').pop());
+      if (!batchId || batchId.length > 64 || /[^a-zA-Z0-9\-_]/.test(batchId)) { sendError(res, 400, 'batchId inválido'); return; }
       const { url: sbUrl, key: sbKey } = _sbCreds();
       const parsed = new URL(sbUrl);
       const hdrs = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Prefer': 'return=minimal' };
-      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_transactions?batch_id=eq.${batchId}`, method: 'DELETE', headers: hdrs });
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_transactions?batch_id=eq.${encodeURIComponent(batchId)}`, method: 'DELETE', headers: hdrs });
       const upd = JSON.stringify({ estado: 'rolled_back', updated_at: new Date().toISOString() });
-      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_upload_batches?id=eq.${batchId}`, method: 'PATCH',
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tpv_upload_batches?id=eq.${encodeURIComponent(batchId)}`, method: 'PATCH',
         headers: { ...hdrs, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(upd) } }, upd);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ success: true }));

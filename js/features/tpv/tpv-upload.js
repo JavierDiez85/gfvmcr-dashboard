@@ -232,6 +232,19 @@ const TPV_UPLOAD = {
         }
       }
 
+      // Abort early if no valid rows after parsing
+      if (rows.length === 0) {
+        this._progress(100, `⚠️ 0 filas válidas. ${errors.length} advertencias.`);
+        return {
+          success: true,
+          rowCount: 0,
+          batchId: null,
+          errors: errors,
+          totalParsed: 0,
+          montoTotal: 0
+        };
+      }
+
       this._progress(30, `${rows.length.toLocaleString()} filas listas. Subiendo a Supabase...`);
 
       // Step 4+5: Strategy-based cleanup + register batch (via server — usa service key para DELETE)
