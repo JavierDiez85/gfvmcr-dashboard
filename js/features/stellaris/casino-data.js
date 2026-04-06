@@ -1042,10 +1042,10 @@
     const total_promo_no_redimible = sum('promo_no_redimible');
     const total_cancel_promo_nr = sum('cancel_promo_nr');
     const total_netwin = sum('netwin');
-    // Retención = siempre Federal + Estatal (más confiable que el campo separado)
-    const total_retencion = (total_imp_federal + total_imp_estatal) || sum('retencion_premios');
     const total_imp_federal = sum('imp_federal');
     const total_imp_estatal = sum('imp_estatal');
+    // Retención = siempre Federal + Estatal (más confiable que el campo separado)
+    const total_retencion = (total_imp_federal + total_imp_estatal) || sum('retencion_premios');
 
     // Confirmed formulas
     const premios_brutos = total_premios_maquinas + total_premio_sorteo;
