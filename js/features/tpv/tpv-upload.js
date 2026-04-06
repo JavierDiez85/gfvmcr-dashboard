@@ -791,13 +791,16 @@ async function rTPVUpload() {
       const periodo = (h.date_range_from && h.date_range_to)
         ? `${h.date_range_from} → ${h.date_range_to}`
         : '—';
-      return `<tr>
+      const isRolledBack = h.estado === 'rolled_back';
+      const rowStyle = isRolledBack ? 'opacity:.45;text-decoration:line-through' : '';
+      const badge = isRolledBack ? ' <span style="font-size:.55rem;background:var(--red-bg);color:var(--red);padding:1px 5px;border-radius:4px;text-decoration:none;display:inline-block">Eliminada</span>' : '';
+      return `<tr style="${rowStyle}">
         <td style="font-size:.72rem">${fecha}</td>
-        <td style="font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis">${h.filename || '—'}</td>
+        <td style="font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis">${h.filename || '—'}${badge}</td>
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.row_count || 0).toLocaleString()}</td>
         <td style="font-size:.72rem">${periodo}</td>
-        <td>${h.strategy !== 'config' ? `<button class="btn btn-out upload-rollback-btn" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" data-hid="${h.id}">🗑️ Deshacer</button>` : ''}</td>
+        <td>${!isRolledBack && h.strategy !== 'config' ? `<button class="btn btn-out upload-rollback-btn" style="font-size:.65rem;padding:2px 8px;color:var(--red);border-color:var(--red)" data-hid="${h.id}">Deshacer</button>` : ''}</td>
       </tr>`;
     }).join('');
 
