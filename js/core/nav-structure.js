@@ -251,11 +251,7 @@ const NAV_STRUCTURE = {
             {id:'stel_casino_upload',label:'Casino (PDF/Excel)',icon:'🎰'},
           ]}]
         },
-        { id:'expedientes', label:'Expedientes', icon:'📁', defaultView:'expedientes_stel',
-          groups:[{ label:null, views:[
-            {id:'expedientes_stel',label:'Clientes',icon:'👤'},
-          ]}]
-        },
+        /* Expedientes de clientes removido — no aplica para casino */
         { id:'facturacion', label:'Facturación', icon:'🧾', defaultView:'emit_stellaris',
           groups:[{ label:null, views:[
             {id:'emit_stellaris',label:'Emitidas',icon:'📤'},

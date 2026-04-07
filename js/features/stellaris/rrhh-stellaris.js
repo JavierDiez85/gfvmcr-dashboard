@@ -167,32 +167,57 @@
     html += '<div class="tw" style="margin-bottom:14px"><div class="tw-h"><div class="tw-ht">📁 Expediente Digital (' + docs.length + ' documentos)</div></div>';
     html += '<div style="padding:14px">';
 
-    // Upload area
-    html += '<div style="margin-bottom:12px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
-    html += '<select id="rrhh-doc-cat" style="font-size:.72rem;padding:5px 8px;border:1px solid var(--border2);border-radius:var(--r)">';
+    // Upload card — dropzone style
+    html += '<div style="background:var(--blue-bg);border:2px dashed var(--blue);border-radius:var(--r);padding:20px;margin-bottom:16px">';
+    html += '<div style="text-align:center;margin-bottom:12px">';
+    html += '<div style="font-size:1.5rem;margin-bottom:4px">📤</div>';
+    html += '<div style="font-size:.78rem;font-weight:700;color:var(--blue)">Subir Documento al Expediente</div>';
+    html += '<div style="font-size:.65rem;color:var(--muted);margin-top:2px">PDF, JPG o PNG · Max 50MB por archivo</div>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:8px;align-items:center;justify-content:center;flex-wrap:wrap">';
+    html += '<select id="rrhh-doc-cat" style="font-size:.75rem;padding:6px 10px;border:1px solid var(--border2);border-radius:var(--r);background:var(--white)">';
     DOC_CATEGORIAS.forEach(function(c) { html += '<option value="' + esc(c) + '">' + esc(c) + '</option>'; });
     html += '</select>';
-    html += '<input type="file" id="rrhh-doc-file" accept=".jpg,.jpeg,.png,.pdf,image/*" style="font-size:.68rem">';
-    html += '<button class="btn rrhh-upload-doc-btn" style="font-size:.68rem;padding:4px 10px">📤 Subir</button>';
+    html += '<div id="rrhh-doc-dropzone" style="flex:1;min-width:200px;border:1px dashed var(--border2);border-radius:var(--r);padding:10px;text-align:center;cursor:pointer;background:var(--white);font-size:.72rem;color:var(--muted)">';
+    html += '📎 Arrastra archivo aqui o haz clic';
+    html += '<input type="file" id="rrhh-doc-file" accept=".jpg,.jpeg,.png,.pdf,image/*" capture="environment" multiple style="display:none">';
     html += '</div>';
-    html += '<div id="rrhh-doc-status" style="display:none;font-size:.68rem;margin-bottom:8px"></div>';
+    html += '<button class="btn rrhh-upload-doc-btn" style="font-size:.75rem;padding:6px 14px">📤 Subir</button>';
+    html += '</div>';
+    html += '<div id="rrhh-doc-status" style="display:none;font-size:.7rem;margin-top:8px;text-align:center"></div>';
+    html += '<div id="rrhh-doc-queue" style="margin-top:8px"></div>';
+    html += '</div>';
 
-    // Docs table
+    // Checklist — which docs are present
+    html += '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">';
+    DOC_CATEGORIAS.forEach(function(cat) {
+      var hasDoc = docs.some(function(d) { return d.categoria === cat; });
+      var icon = hasDoc ? '✅' : '⬜';
+      var style = hasDoc
+        ? 'background:var(--green-bg);color:var(--green);border:1px solid var(--green)'
+        : 'background:var(--bg);color:var(--muted);border:1px solid var(--border2)';
+      html += '<span style="' + style + ';border-radius:var(--r);padding:3px 8px;font-size:.62rem;font-weight:600">' + icon + ' ' + esc(cat) + '</span>';
+    });
+    html += '</div>';
+
+    // Docs history table
+    html += '<div style="font-size:.75rem;font-weight:700;margin-bottom:6px">Historial de Documentos</div>';
     if (docs.length) {
-      html += '<table class="bt"><thead><tr><th>Categoria</th><th>Archivo</th><th>Fecha</th><th></th></tr></thead><tbody>';
+      html += '<div style="overflow-x:auto"><table class="bt"><thead><tr><th>Categoria</th><th>Archivo</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>';
       docs.forEach(function(d, i) {
+        var catIcon = d.categoria.includes('INE') ? '🪪' : d.categoria.includes('Contrato') ? '📝' : d.categoria.includes('Nomina') ? '💰' : d.categoria.includes('RFC') ? '🏛️' : d.categoria.includes('CURP') ? '📋' : '📄';
         html += '<tr>';
-        html += '<td style="font-size:.72rem;font-weight:600">' + esc(d.categoria) + '</td>';
-        html += '<td style="font-size:.72rem">' + esc(d.filename) + '</td>';
-        html += '<td style="font-size:.72rem">' + (d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString('es-MX') : '') + '</td>';
+        html += '<td style="font-size:.72rem"><span style="margin-right:4px">' + catIcon + '</span><b>' + esc(d.categoria) + '</b></td>';
+        html += '<td style="font-size:.72rem;max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="' + esc(d.filename) + '">' + esc(d.filename) + '</td>';
+        html += '<td style="font-size:.72rem;color:var(--muted)">' + (d.uploaded_at ? new Date(d.uploaded_at).toLocaleDateString('es-MX', {day:'2-digit',month:'short',year:'numeric'}) : '') + '</td>';
         html += '<td style="white-space:nowrap">';
-        html += '<button class="btn btn-out rrhh-view-doc-btn" data-idx="' + i + '" style="font-size:.6rem;padding:2px 6px">👁️</button> ';
-        html += '<button class="btn btn-out rrhh-del-doc-btn" data-idx="' + i + '" style="font-size:.6rem;padding:2px 6px;color:var(--red);border-color:var(--red)">🗑️</button>';
+        html += '<button class="btn btn-out rrhh-view-doc-btn" data-idx="' + i + '" style="font-size:.62rem;padding:3px 8px" title="Ver documento">👁️ Ver</button> ';
+        html += '<button class="btn btn-out rrhh-del-doc-btn" data-idx="' + i + '" style="font-size:.62rem;padding:3px 8px;color:var(--red);border-color:var(--red)" title="Eliminar">🗑️</button>';
         html += '</td></tr>';
       });
-      html += '</tbody></table>';
+      html += '</tbody></table></div>';
     } else {
-      html += '<div style="text-align:center;color:var(--muted);font-size:.72rem;padding:10px">Sin documentos. Sube el primer archivo arriba.</div>';
+      html += '<div style="text-align:center;color:var(--muted);font-size:.72rem;padding:20px;background:var(--bg);border-radius:var(--r)">📭 Sin documentos en el expediente. Sube el primer archivo arriba.</div>';
     }
     html += '</div></div>';
 
@@ -239,37 +264,71 @@
       toast('💾 Notas guardadas');
     };
 
-    // Upload document
+    // Dropzone wiring
+    var dz = document.getElementById('rrhh-doc-dropzone');
+    var fi = document.getElementById('rrhh-doc-file');
+    if (dz && fi) {
+      dz.onclick = function() { fi.click(); };
+      dz.ondragover = function(ev) { ev.preventDefault(); dz.style.borderColor = 'var(--blue)'; dz.style.background = 'var(--blue-bg)'; };
+      dz.ondragleave = function() { dz.style.borderColor = 'var(--border2)'; dz.style.background = 'var(--white)'; };
+      dz.ondrop = function(ev) {
+        ev.preventDefault(); dz.style.borderColor = 'var(--border2)'; dz.style.background = 'var(--white)';
+        if (ev.dataTransfer && ev.dataTransfer.files) { fi.files = ev.dataTransfer.files; _rrhhShowQueue(); }
+      };
+      fi.onchange = _rrhhShowQueue;
+    }
+    function _rrhhShowQueue() {
+      var queueEl = document.getElementById('rrhh-doc-queue');
+      if (!queueEl || !fi.files.length) return;
+      var html = '';
+      for (var i = 0; i < fi.files.length; i++) {
+        html += '<div style="font-size:.68rem;color:var(--text);padding:2px 0">📎 ' + escapeHtml(fi.files[i].name) + ' (' + (fi.files[i].size / 1024).toFixed(0) + 'KB)</div>';
+      }
+      queueEl.innerHTML = html;
+    }
+
+    // Upload document(s)
     var uploadBtn = el.querySelector('.rrhh-upload-doc-btn');
     if (uploadBtn) uploadBtn.onclick = async function() {
       var fileInput = document.getElementById('rrhh-doc-file');
       var catSel = document.getElementById('rrhh-doc-cat');
       var statusEl = document.getElementById('rrhh-doc-status');
-      if (!fileInput || !fileInput.files[0]) { toast('Selecciona un archivo'); return; }
+      if (!fileInput || !fileInput.files || !fileInput.files.length) { toast('Selecciona al menos un archivo'); return; }
 
-      var file = fileInput.files[0];
       var cat = catSel ? catSel.value : 'Otro';
-      if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = '⏳ Subiendo...'; statusEl.style.color = 'var(--blue)'; }
-
       if (typeof GF_STORAGE === 'undefined') { toast('Storage no disponible'); return; }
-      var path = GF_STORAGE.makePath('rrhh/stellaris/' + e.id + '/' + cat.replace(/[^a-zA-Z0-9]/g, '_'), file.name);
-      var result = await GF_STORAGE.upload(file, path);
-      if (!result.success) {
-        if (statusEl) { statusEl.textContent = '❌ ' + result.error; statusEl.style.color = 'var(--red)'; }
-        return;
+
+      var files = fileInput.files;
+      var total = files.length;
+      var uploaded = 0;
+
+      if (statusEl) { statusEl.style.display = 'block'; statusEl.textContent = '⏳ Subiendo ' + total + ' archivo' + (total > 1 ? 's' : '') + '...'; statusEl.style.color = 'var(--blue)'; }
+
+      for (var i = 0; i < total; i++) {
+        var file = files[i];
+        var path = GF_STORAGE.makePath('rrhh/stellaris/' + e.id + '/' + cat.replace(/[^a-zA-Z0-9]/g, '_'), file.name);
+        var result = await GF_STORAGE.upload(file, path);
+        if (result.success) {
+          var docEntry = { categoria: cat, filename: file.name, storage_path: path, uploaded_at: new Date().toISOString() };
+          var updatedData = rrhhLoad();
+          var emp = updatedData.empleados.find(function(x) { return x.id === e.id; });
+          if (emp) {
+            if (!emp.documentos) emp.documentos = [];
+            emp.documentos.push(docEntry);
+            rrhhSave(updatedData);
+          }
+          uploaded++;
+          if (statusEl) statusEl.textContent = '⏳ ' + uploaded + '/' + total + ' subidos...';
+        } else {
+          if (statusEl) { statusEl.textContent = '❌ Error en ' + file.name + ': ' + result.error; statusEl.style.color = 'var(--red)'; }
+        }
       }
 
-      var docEntry = { categoria: cat, filename: file.name, storage_path: path, uploaded_at: new Date().toISOString() };
-      var updatedData = rrhhLoad();
-      var emp = updatedData.empleados.find(function(x) { return x.id === e.id; });
-      if (emp) {
-        if (!emp.documentos) emp.documentos = [];
-        emp.documentos.push(docEntry);
-        rrhhSave(updatedData);
+      if (uploaded > 0) {
+        if (statusEl) { statusEl.textContent = '✅ ' + uploaded + ' documento' + (uploaded > 1 ? 's' : '') + ' subido' + (uploaded > 1 ? 's' : ''); statusEl.style.color = 'var(--green)'; }
+        toast('📁 ' + uploaded + ' documento' + (uploaded > 1 ? 's' : '') + ' subido' + (uploaded > 1 ? 's' : ''));
+        _rrhhRenderDetail(el);
       }
-      if (statusEl) { statusEl.textContent = '✅ Documento subido'; statusEl.style.color = 'var(--green)'; }
-      toast('📁 Documento subido: ' + file.name);
-      _rrhhRenderDetail(el);
     };
 
     // View/Delete docs
