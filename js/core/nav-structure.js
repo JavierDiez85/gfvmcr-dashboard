@@ -238,6 +238,11 @@ const NAV_STRUCTURE = {
             {id:'stel_casino',label:'Dashboard Casino',icon:'🎰'},
           ]}]
         },
+        { id:'rrhh', label:'RRHH', icon:'👥', defaultView:'stel_rrhh_empleados',
+          groups:[{ label:null, views:[
+            {id:'stel_rrhh_empleados',label:'Empleados',icon:'👤'},
+          ]}]
+        },
         { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva_stel',
           groups:[{ label:null, views:[
             {id:'carga_masiva_stel',label:'Carga Masiva',icon:'📊'},
