@@ -75,7 +75,9 @@ const APP_KEYS = [
   'gf_cxp',
   // Stellaris Casino
   'gf_casino',
-  'gf_casino_config'
+  'gf_casino_config',
+  // RRHH Stellaris
+  'gf_rrhh_stel'
 ];
 
 // Estado de sync
@@ -448,3 +450,96 @@ async function initApp() {
   SB.startPolling(30000);
   console.log('[SB] App inicializada con Supabase sync ✓');
 }
+
+// ═══════════════════════════════════════
+// STORAGE HELPERS — Generic file upload/download/delete via Supabase Storage
+// ═══════════════════════════════════════
+const GF_STORAGE = {
+  BUCKET: 'expedientes',
+  MAX_SIZE: 50 * 1024 * 1024, // 50MB
+  ALLOWED_TYPES: ['application/pdf', 'image/png', 'image/jpeg', 'image/jpg'],
+
+  /** Ensure Supabase client is ready */
+  async _ensureSB() {
+    if (!_sb) await _loadConfig();
+    return _sb;
+  },
+
+  /**
+   * Upload a file to Supabase Storage
+   * @param {File} file — browser File object
+   * @param {string} path — storage path (e.g., 'tickets/stellaris/cxp_123/foto.jpg')
+   * @returns {Promise<{success: boolean, path?: string, error?: string}>}
+   */
+  async upload(file, path) {
+    try {
+      if (!file) return { success: false, error: 'No file provided' };
+      if (file.size > this.MAX_SIZE) return { success: false, error: 'Archivo excede 50MB' };
+      if (!this.ALLOWED_TYPES.includes(file.type)) return { success: false, error: 'Tipo no permitido. Usa PDF, PNG o JPG.' };
+
+      const sb = await this._ensureSB();
+      const { error } = await sb.storage.from(this.BUCKET).upload(path, file, {
+        contentType: file.type,
+        upsert: true
+      });
+      if (error) return { success: false, error: error.message };
+      return { success: true, path: path };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
+   * Get a signed URL for viewing/downloading a file (5 min expiry)
+   * @param {string} path — storage path
+   * @returns {Promise<string|null>} — signed URL or null
+   */
+  async getUrl(path) {
+    try {
+      const sb = await this._ensureSB();
+      const { data } = await sb.storage.from(this.BUCKET).createSignedUrl(path, 300);
+      return data?.signedUrl || null;
+    } catch (e) {
+      console.warn('[GF_STORAGE] getUrl error:', e.message);
+      return null;
+    }
+  },
+
+  /**
+   * Delete file(s) from storage
+   * @param {string|string[]} paths — one or more storage paths
+   * @returns {Promise<{success: boolean, error?: string}>}
+   */
+  async remove(paths) {
+    try {
+      const sb = await this._ensureSB();
+      const arr = Array.isArray(paths) ? paths : [paths];
+      const { error } = await sb.storage.from(this.BUCKET).remove(arr);
+      if (error) return { success: false, error: error.message };
+      return { success: true };
+    } catch (e) {
+      return { success: false, error: e.message };
+    }
+  },
+
+  /**
+   * Open a file in a new browser tab
+   * @param {string} path — storage path
+   */
+  async viewFile(path) {
+    const url = await this.getUrl(path);
+    if (url) window.open(url, '_blank');
+    else if (typeof toast === 'function') toast('No se pudo abrir el archivo');
+  },
+
+  /**
+   * Generate a unique storage path
+   * @param {string} prefix — e.g., 'tickets/stellaris'
+   * @param {string} filename — original filename
+   * @returns {string} — path like 'tickets/stellaris/1712345678901_foto.jpg'
+   */
+  makePath(prefix, filename) {
+    var ext = (filename || 'file').split('.').pop().toLowerCase();
+    return prefix + '/' + Date.now() + '_' + Math.random().toString(36).slice(2, 6) + '.' + ext;
+  }
+};

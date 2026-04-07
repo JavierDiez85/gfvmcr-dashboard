@@ -37,6 +37,7 @@ function _statusPill(st){
 function _origenPill(o){
   if(o==='cfdi')     return '<span class="pill" style="background:var(--blue-lt);color:#003d7a">CFDI</span>';
   if(o==='efectivo') return '<span class="pill" style="background:var(--orange-lt);color:#7a3000">Efectivo</span>';
+  if(o==='ticket')   return '<span class="pill" style="background:#fff3e0;color:#e65100">🧾 Ticket</span>';
   return '<span class="pill" style="background:var(--purple-lt);color:#5a1e9e">Manual</span>';
 }
 function _empPill(e){
@@ -169,8 +170,9 @@ function ceGatherLineas(){
 //  VISTA: CARGA EGRESOS  (Facturas Recibidas)
 // ══════════════════════════════════════════════════════════
 var _cePreview = null; // parsed data from PDF
-var _ceMode = 'idle'; // idle | cfdi | manual | efectivo
+var _ceMode = 'idle'; // idle | cfdi | manual | efectivo | ticket
 var _cePdfData = null; // {base64, filename}
+var _ceTicketFile = null; // File object for ticket photo (Supabase Storage)
 
 function rCargaEgresos(){
   cxpLoad();
@@ -187,6 +189,7 @@ function rCargaEgresos(){
   html += '<div style="display:flex;gap:8px">';
   html += '<button class="btn btn-out ce-mode-btn" style="font-size:.7rem" data-mode="manual">✏️ Captura Manual</button>';
   html += '<button class="btn btn-out ce-mode-btn" style="font-size:.7rem" data-mode="efectivo">💵 Pago en Efectivo</button>';
+  html += '<button class="btn btn-out ce-mode-btn" style="font-size:.7rem;background:var(--orange-bg);border-color:var(--orange);color:var(--orange)" data-mode="ticket">🧾 Ticket/Comprobante</button>';
   html += '</div></div>';
 
   html += '<div style="padding:16px;display:flex;flex-direction:column;gap:14px">';
@@ -275,9 +278,14 @@ function ceSetMode(mode){
   var st = document.getElementById('ce-status');
   if(st) st.style.display = 'none';
 
-  if(mode === 'manual' || mode === 'efectivo'){
+  _ceTicketFile = null;
+  if(mode === 'manual' || mode === 'efectivo' || mode === 'ticket'){
     if(dz) dz.style.display = 'none';
-    if(fa){ fa.style.display = 'block'; fa.innerHTML = _ceManualFormHTML(mode); _ceWireManualForm(fa); }
+    if(mode === 'ticket'){
+      if(fa){ fa.style.display = 'block'; fa.innerHTML = _ceTicketFormHTML(); _ceWireTicketForm(fa); }
+    } else {
+      if(fa){ fa.style.display = 'block'; fa.innerHTML = _ceManualFormHTML(mode); _ceWireManualForm(fa); }
+    }
   } else {
     if(dz) dz.style.display = '';
     if(fa){ fa.style.display = 'none'; fa.innerHTML = ''; }
@@ -542,6 +550,177 @@ function ceManualAttach(file){
     if(el){ el.style.display = 'block'; el.textContent = '✅ '+file.name+' adjuntado'; }
   };
   reader.readAsDataURL(file);
+}
+
+// ── Ticket/Comprobante Form ──
+function _ceTicketFormHTML(){
+  var cats = '';
+  try {
+    var cdArr = typeof catGetData === 'function' ? catGetData('cd') : [];
+    var gaArr = typeof catGetData === 'function' ? catGetData('ga') : [];
+    var allCats = cdArr.concat(gaArr).filter(function(c){ return c.empresas && c.empresas.includes('Stellaris'); });
+    var seen = {};
+    allCats.forEach(function(c){ if(!seen[c.tipo]){ cats += '<option value="'+_esc(c.tipo)+'">'+_esc(c.tipo)+'</option>'; seen[c.tipo]=1; } });
+  } catch(e){}
+
+  var empresaOpts = '<option value="Stellaris" selected>Stellaris</option><option value="Salem">Salem</option><option value="Endless">Endless</option><option value="Dynamo">Dynamo</option><option value="Wirebit">Wirebit</option>';
+
+  var h = '<div style="margin-bottom:14px">';
+  h += '<div style="font-size:.78rem;font-weight:700;color:var(--orange);margin-bottom:10px">🧾 Registro de Ticket/Comprobante (sin factura)</div>';
+  h += '<div style="font-size:.68rem;color:var(--muted);margin-bottom:12px">Para compras que no tienen factura formal. Sube una foto del ticket o boucher.</div>';
+
+  // Row 1: Proveedor + Empresa
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:.78rem;margin-bottom:10px">';
+  h += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Proveedor / Comercio *</label>';
+  h += '<input type="text" id="ce-tk-proveedor" class="fi" placeholder="Ej: Oxxo, Walmart, Gasolinera..." style="width:100%;font-size:.78rem;padding:6px 10px"></div>';
+  h += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Empresa</label>';
+  h += '<select id="ce-tk-empresa" class="fi" style="width:100%;font-size:.78rem;padding:6px 10px">'+empresaOpts+'</select></div>';
+  h += '</div>';
+
+  // Row 2: Concepto + Categoría
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:.78rem;margin-bottom:10px">';
+  h += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto / Descripcion *</label>';
+  h += '<input type="text" id="ce-tk-concepto" class="fi" placeholder="Ej: Material de limpieza" style="width:100%;font-size:.78rem;padding:6px 10px"></div>';
+  h += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Categoria P&L</label>';
+  h += '<select id="ce-tk-categoria" class="fi" style="width:100%;font-size:.78rem;padding:6px 10px"><option value="">— Seleccionar —</option>'+cats+'</select></div>';
+  h += '</div>';
+
+  // Row 3: Monto + Fecha
+  h += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;font-size:.78rem;margin-bottom:14px">';
+  h += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Monto Total (MXN) *</label>';
+  h += '<input type="number" id="ce-tk-monto" class="fi" placeholder="0.00" min="0" step="0.01" style="width:100%;font-size:.78rem;padding:6px 10px"></div>';
+  h += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha de Compra</label>';
+  h += '<input type="date" id="ce-tk-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:6px 10px"></div>';
+  h += '</div>';
+
+  // Row 4: Foto del ticket (OBLIGATORIA)
+  h += '<div style="margin-bottom:14px">';
+  h += '<label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">📸 Foto del Ticket / Comprobante *</label>';
+  h += '<div id="ce-tk-dropzone" style="border:2px dashed var(--orange);border-radius:var(--r);padding:20px;text-align:center;cursor:pointer;background:var(--orange-bg)">';
+  h += '<div style="font-size:1.3rem;margin-bottom:4px">📷</div>';
+  h += '<div style="font-size:.72rem;font-weight:600;color:var(--orange)">Arrastra la foto aqui o haz clic para seleccionar</div>';
+  h += '<div style="font-size:.65rem;color:var(--muted);margin-top:2px">JPG, PNG o PDF (max 50MB)</div>';
+  h += '<input type="file" id="ce-tk-file" accept=".jpg,.jpeg,.png,.pdf,image/*" capture="environment" style="display:none">';
+  h += '</div>';
+  h += '<div id="ce-tk-file-name" style="display:none;font-size:.7rem;color:var(--green);margin-top:4px"></div>';
+  h += '</div>';
+
+  // Notas
+  h += '<div style="margin-bottom:14px">';
+  h += '<label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Notas (opcional)</label>';
+  h += '<textarea id="ce-tk-notas" class="fi" rows="2" placeholder="Notas adicionales..." style="width:100%;font-size:.75rem;padding:6px 10px;resize:vertical"></textarea>';
+  h += '</div>';
+
+  // Actions
+  h += '<div style="display:flex;justify-content:flex-end;gap:10px">';
+  h += '<button class="btn btn-out ce-cancel-btn" style="font-size:.72rem">Cancelar</button>';
+  h += '<button class="btn ce-tk-save-btn" style="font-size:.72rem;background:var(--orange);border-color:var(--orange);color:white">🧾 Registrar Comprobante</button>';
+  h += '</div>';
+
+  h += '</div>';
+  return h;
+}
+
+function _ceWireTicketForm(container){
+  container.querySelectorAll('.ce-cancel-btn').forEach(function(b){ b.onclick = ceClearForm; });
+  container.querySelectorAll('.ce-tk-save-btn').forEach(function(b){ b.onclick = ceTicketSave; });
+
+  var dz = document.getElementById('ce-tk-dropzone');
+  if(dz){
+    dz.ondrop = function(e){
+      e.preventDefault(); e.stopPropagation();
+      dz.style.borderColor = 'var(--orange)';
+      var f = e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files[0];
+      if(f) _ceTicketAttach(f);
+    };
+    dz.ondragover = function(e){ e.preventDefault(); this.style.borderColor='var(--blue)'; };
+    dz.ondragleave = function(){ this.style.borderColor='var(--orange)'; };
+    dz.onclick = function(){ document.getElementById('ce-tk-file').click(); };
+  }
+  var fi = document.getElementById('ce-tk-file');
+  if(fi) fi.onchange = function(){ if(this.files[0]) _ceTicketAttach(this.files[0]); };
+}
+
+function _ceTicketAttach(file){
+  if(!file) return;
+  var allowed = ['image/jpeg','image/png','image/jpg','application/pdf'];
+  if(allowed.indexOf(file.type) < 0){
+    toast('Solo se aceptan JPG, PNG o PDF');
+    return;
+  }
+  _ceTicketFile = file;
+  var el = document.getElementById('ce-tk-file-name');
+  if(el){ el.style.display = 'block'; el.textContent = '✅ ' + _esc(file.name) + ' (' + (file.size/1024).toFixed(0) + 'KB)'; }
+}
+
+async function ceTicketSave(){
+  var proveedor = (document.getElementById('ce-tk-proveedor')||{}).value || '';
+  var empresa   = (document.getElementById('ce-tk-empresa')||{}).value || 'Stellaris';
+  var concepto  = (document.getElementById('ce-tk-concepto')||{}).value || '';
+  var categoria = (document.getElementById('ce-tk-categoria')||{}).value || '';
+  var monto     = parseFloat((document.getElementById('ce-tk-monto')||{}).value) || 0;
+  var fecha     = (document.getElementById('ce-tk-fecha')||{}).value || _today();
+  var notas     = (document.getElementById('ce-tk-notas')||{}).value || '';
+
+  if(!proveedor.trim()){ toast('Ingresa el proveedor o comercio'); return; }
+  if(!concepto.trim()){ toast('Ingresa el concepto'); return; }
+  if(monto <= 0){ toast('El monto debe ser mayor a 0'); return; }
+  if(!_ceTicketFile){ toast('Sube la foto del ticket o comprobante'); return; }
+
+  // Upload file to Supabase Storage
+  ceSetStatus('loading', 'Subiendo comprobante...');
+  var cxpId = 'cxp_' + Date.now();
+  var storagePath = typeof GF_STORAGE !== 'undefined'
+    ? GF_STORAGE.makePath('tickets/' + empresa.toLowerCase(), _ceTicketFile.name)
+    : 'tickets/' + empresa.toLowerCase() + '/' + Date.now() + '_' + _ceTicketFile.name;
+
+  var uploadResult = { success: false };
+  if(typeof GF_STORAGE !== 'undefined'){
+    uploadResult = await GF_STORAGE.upload(_ceTicketFile, storagePath);
+  }
+  if(!uploadResult.success){
+    ceSetStatus('error', 'Error subiendo archivo: ' + (uploadResult.error || 'No se pudo conectar'));
+    return;
+  }
+
+  var cxp = {
+    id: cxpId,
+    proveedor: proveedor.trim(),
+    rfc_proveedor: '',
+    empresa: empresa,
+    categoria: categoria || 'Operaciones',
+    concepto: concepto.trim(),
+    lineas: null,
+    moneda: 'MXN',
+    tipo_cambio: 1,
+    subtotal: monto,
+    iva: 0,
+    total: monto,
+    total_mxn: Math.round(monto),
+    folio_fiscal: '',
+    rfc_emisor: '',
+    fecha_emision: '',
+    fecha_factura: fecha,
+    fecha_vencimiento: fecha,
+    status: 'pendiente',
+    monto_pagado_mxn: 0,
+    saldo_mxn: Math.round(monto),
+    origen: 'ticket',
+    ticket_storage_path: storagePath,
+    ticket_filename: _ceTicketFile.name,
+    pdf_filename: null,
+    pdf_base64: null,
+    notas: notas,
+    created_at: _now(),
+    updated_at: _now()
+  };
+
+  _cxpStore.cuentas.push(cxp);
+  cxpSave();
+  ceSetStatus('ok', '✅ Comprobante registrado: ' + _esc(proveedor) + ' — $' + monto.toLocaleString('es-MX'));
+  ceClearForm();
+  ceRenderHistory();
+  if(typeof toast === 'function') toast('🧾 Comprobante registrado');
 }
 
 // ── Clear form ──
@@ -864,6 +1043,9 @@ function ppRenderCxpTable(search){
     if(c.pdf_base64){
       actions += ' <button class="btn btn-out pp-viewpdf-btn" style="font-size:.62rem;padding:3px 8px" data-id="'+_esc(c.id)+'">📄</button>';
     }
+    if(c.ticket_storage_path){
+      actions += ' <button class="btn btn-out pp-viewticket-btn" style="font-size:.62rem;padding:3px 8px;color:var(--orange);border-color:var(--orange)" data-id="'+_esc(c.id)+'">🧾</button>';
+    }
     return '<tr>'
       + '<td style="font-weight:600;max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(c.proveedor)+'</td>'
       + '<td>'+_empPill(c.empresa)+'</td>'
@@ -878,6 +1060,7 @@ function ppRenderCxpTable(search){
   }).join('');
   tb.querySelectorAll('.pp-pagar-btn').forEach(function(b){ b.onclick = function(){ ppOpenPago(b.dataset.id); }; });
   tb.querySelectorAll('.pp-viewpdf-btn').forEach(function(b){ b.onclick = function(){ ppViewPDF(b.dataset.id); }; });
+  tb.querySelectorAll('.pp-viewticket-btn').forEach(function(b){ b.onclick = function(){ ppViewTicket(b.dataset.id); }; });
 }
 
 // ── Register Payment Modal ──
@@ -1122,6 +1305,17 @@ function ceInjectGastos(){
 // ══════════════════════════════════════════════════════════
 //  EXPORTS
 // ══════════════════════════════════════════════════════════
+// ── View Ticket (from Supabase Storage) ──
+async function ppViewTicket(cxpId){
+  var cxp = _cxpStore.cuentas.find(function(c){ return c.id === cxpId; });
+  if(!cxp || !cxp.ticket_storage_path) return;
+  if(typeof GF_STORAGE !== 'undefined'){
+    GF_STORAGE.viewFile(cxp.ticket_storage_path);
+  } else {
+    toast('Storage no disponible');
+  }
+}
+
 window.rCargaEgresos    = rCargaEgresos;
 window.rPagosPendientes = rPagosPendientes;
 window.ceSetMode        = ceSetMode;
@@ -1138,6 +1332,8 @@ window.ppFilter         = ppFilter;
 window.ppOpenPago       = ppOpenPago;
 window.ppSavePago       = ppSavePago;
 window.ppViewPDF        = ppViewPDF;
+window.ppViewTicket     = ppViewTicket;
+window.ceTicketSave     = ceTicketSave;
 window.ceInjectGastos     = ceInjectGastos;
 window.cxpLoad            = cxpLoad;
 window.ceAddManualLinea   = ceAddManualLinea;
