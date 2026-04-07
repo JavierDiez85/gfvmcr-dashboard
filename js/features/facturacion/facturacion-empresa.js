@@ -47,6 +47,7 @@ function _statusPill(st){
 function _origenPill(o){
   if(o==='cfdi')     return '<span class="pill" style="background:var(--blue-lt);color:#003d7a">CFDI</span>';
   if(o==='efectivo') return '<span class="pill" style="background:var(--orange-lt);color:#7a3000">Efectivo</span>';
+  if(o==='ticket')   return '<span class="pill" style="background:#fff3e0;color:#e65100">🧾 Ticket</span>';
   return '<span class="pill" style="background:var(--purple-lt);color:#5a1e9e">Manual</span>';
 }
 
@@ -1310,8 +1311,10 @@ function rFactRecibidas(empresa){
   // Upload section — drop zone PDF CFDI
   html += '<div class="tw" style="margin-bottom:14px">';
   html += '<div class="tw-h"><div class="tw-ht">📥 Registrar Factura Recibida</div>';
+  html += '<div style="display:flex;gap:6px">';
   html += '<button class="btn btn-out recv-manual-btn" style="font-size:.7rem">✏️ Registro Manual</button>';
-  html += '</div>';
+  html += '<button class="btn btn-out recv-ticket-btn" style="font-size:.7rem;background:var(--orange-bg);border-color:var(--orange);color:var(--orange)">🧾 Ticket/Comprobante</button>';
+  html += '</div></div>';
   html += '<div style="padding:16px">';
 
   // Drop zone
@@ -1346,6 +1349,7 @@ function rFactRecibidas(empresa){
   // ── Wire recv events ──
   el.querySelectorAll('.recv-periodo-btn').forEach(function(b){ b.onclick = function(){ recvSetPeriodo(b.dataset.periodo); }; });
   el.querySelectorAll('.recv-manual-btn').forEach(function(b){ b.onclick = recvSetManual; });
+  el.querySelectorAll('.recv-ticket-btn').forEach(function(b){ b.onclick = recvSetTicket; });
   var recvDz = document.getElementById('recv-dropzone');
   if(recvDz){
     recvDz.ondrop = function(e){ recvHandleDrop(e); };
@@ -1597,6 +1601,126 @@ function recvSetManual(){
   });
   fa.querySelectorAll('.recv-save-manual-btn').forEach(function(b){ b.onclick = recvSaveManual; });
   fa.querySelectorAll('.recv-clear-btn').forEach(function(b){ b.onclick = recvClearForm; });
+}
+
+// ── Ticket/Comprobante (sin factura) ──
+var _recvTicketFile = null;
+
+function recvSetTicket(){
+  var fa = document.getElementById('recv-form-area');
+  if(!fa) return;
+  _recvTicketFile = null;
+  fa.style.display = 'block';
+
+  var cats = '';
+  try { var all = (typeof catGetData === 'function' ? catGetData('cd').concat(catGetData('ga')) : []).filter(function(c){ return c.empresas && c.empresas.includes(_recvEmpresa || 'Stellaris'); });
+    var seen = {}; all.forEach(function(c){ if(c.tipo && !seen[c.tipo]){ cats += '<option value="'+_esc(c.tipo)+'">'+_esc(c.tipo)+'</option>'; seen[c.tipo]=1; } });
+  } catch(e){}
+
+  var html = '<div style="border:2px solid var(--orange);border-radius:var(--r);padding:16px;background:var(--orange-bg)">';
+  html += '<div style="font-size:.82rem;font-weight:700;color:var(--orange);margin-bottom:4px">🧾 Registro de Ticket / Comprobante (sin factura)</div>';
+  html += '<div style="font-size:.68rem;color:var(--muted);margin-bottom:12px">Para compras que no tienen factura formal. Sube una foto del ticket.</div>';
+  html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px 14px;font-size:.78rem">';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Proveedor / Comercio *</label>';
+  html += '<input type="text" id="recv-tk-prov" class="fi" placeholder="Ej: Oxxo, Walmart..." style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Concepto *</label>';
+  html += '<input type="text" id="recv-tk-concepto" class="fi" placeholder="Ej: Material limpieza" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Monto Total (MXN) *</label>';
+  html += '<input type="number" id="recv-tk-monto" class="fi" placeholder="0.00" min="0" step="0.01" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Fecha</label>';
+  html += '<input type="date" id="recv-tk-fecha" class="fi" value="'+_today()+'" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Categoria</label>';
+  html += '<select id="recv-tk-cat" class="fi" style="width:100%;font-size:.78rem;padding:7px 10px"><option value="">— Seleccionar —</option>'+cats+'</select></div>';
+  html += '<div></div>';
+  html += '</div>';
+
+  // Photo upload
+  html += '<div style="margin-top:12px">';
+  html += '<label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">📸 Foto del Ticket *</label>';
+  html += '<div id="recv-tk-dropzone" style="border:2px dashed var(--orange);border-radius:var(--r);padding:16px;text-align:center;cursor:pointer;background:white">';
+  html += '<div style="font-size:1.2rem">📷</div>';
+  html += '<div style="font-size:.72rem;font-weight:600;color:var(--orange)">Arrastra la foto o haz clic</div>';
+  html += '<div style="font-size:.62rem;color:var(--muted)">JPG, PNG o PDF</div>';
+  html += '<input type="file" id="recv-tk-file" accept=".jpg,.jpeg,.png,.pdf,image/*" capture="environment" style="display:none">';
+  html += '</div>';
+  html += '<div id="recv-tk-fname" style="display:none;font-size:.7rem;color:var(--green);margin-top:4px"></div>';
+  html += '</div>';
+
+  html += '<div style="display:flex;gap:8px;margin-top:12px">';
+  html += '<button class="btn recv-save-ticket-btn" style="font-size:.72rem;background:var(--orange);border-color:var(--orange);color:white">🧾 Registrar Comprobante</button>';
+  html += '<button class="btn btn-out recv-clear-btn" style="font-size:.72rem">Cancelar</button>';
+  html += '</div></div>';
+  fa.innerHTML = html;
+
+  // Wire
+  var dz = document.getElementById('recv-tk-dropzone');
+  var fi = document.getElementById('recv-tk-file');
+  if(dz && fi){
+    dz.onclick = function(){ fi.click(); };
+    dz.ondragover = function(e){ e.preventDefault(); dz.style.borderColor='var(--blue)'; };
+    dz.ondragleave = function(){ dz.style.borderColor='var(--orange)'; };
+    dz.ondrop = function(e){ e.preventDefault(); dz.style.borderColor='var(--orange)'; if(e.dataTransfer.files[0]) _recvTicketAttach(e.dataTransfer.files[0]); };
+    fi.onchange = function(){ if(fi.files[0]) _recvTicketAttach(fi.files[0]); };
+  }
+  fa.querySelectorAll('.recv-save-ticket-btn').forEach(function(b){ b.onclick = recvSaveTicket; });
+  fa.querySelectorAll('.recv-clear-btn').forEach(function(b){ b.onclick = recvClearForm; });
+}
+
+function _recvTicketAttach(file){
+  if(!file) return;
+  var ok = ['image/jpeg','image/png','image/jpg','application/pdf'];
+  if(ok.indexOf(file.type) < 0){ toast('Solo JPG, PNG o PDF'); return; }
+  _recvTicketFile = file;
+  var el = document.getElementById('recv-tk-fname');
+  if(el){ el.style.display = 'block'; el.textContent = '✅ ' + _esc(file.name) + ' (' + (file.size/1024).toFixed(0) + 'KB)'; }
+}
+
+async function recvSaveTicket(){
+  var prov = (document.getElementById('recv-tk-prov')||{}).value || '';
+  var concepto = (document.getElementById('recv-tk-concepto')||{}).value || '';
+  var monto = parseFloat((document.getElementById('recv-tk-monto')||{}).value) || 0;
+  var fecha = (document.getElementById('recv-tk-fecha')||{}).value || _today();
+  var cat = (document.getElementById('recv-tk-cat')||{}).value || 'Operaciones';
+  var empresa = _recvEmpresa || 'Stellaris';
+
+  if(!prov.trim()){ toast('Ingresa el proveedor'); return; }
+  if(!concepto.trim()){ toast('Ingresa el concepto'); return; }
+  if(monto <= 0){ toast('El monto debe ser mayor a 0'); return; }
+  if(!_recvTicketFile){ toast('Sube la foto del ticket'); return; }
+
+  var st = document.getElementById('recv-status');
+  if(st){ st.style.display='block'; st.className=''; st.style.background='var(--blue-bg)'; st.style.color='var(--blue)'; st.textContent='⏳ Subiendo comprobante...'; }
+
+  var cxpId = 'cxp_' + Date.now();
+  var storagePath = typeof GF_STORAGE !== 'undefined' ? GF_STORAGE.makePath('tickets/' + empresa.toLowerCase(), _recvTicketFile.name) : '';
+  var uploadOk = false;
+  if(typeof GF_STORAGE !== 'undefined'){
+    var res = await GF_STORAGE.upload(_recvTicketFile, storagePath);
+    uploadOk = res.success;
+    if(!res.success){ if(st){ st.style.background='var(--red-bg)'; st.style.color='var(--red)'; st.textContent='❌ ' + res.error; } return; }
+  }
+
+  var cxp = {
+    id: cxpId, proveedor: prov.trim(), rfc_proveedor: '', empresa: empresa,
+    categoria: cat, concepto: concepto.trim(), lineas: null,
+    moneda: 'MXN', tipo_cambio: 1, subtotal: monto, iva: 0, total: monto, total_mxn: Math.round(monto),
+    folio_fiscal: '', rfc_emisor: '', fecha_emision: '', fecha_factura: fecha, fecha_vencimiento: fecha,
+    status: 'pendiente', monto_pagado_mxn: 0, saldo_mxn: Math.round(monto),
+    origen: 'ticket', ticket_storage_path: storagePath, ticket_filename: _recvTicketFile.name,
+    pdf_filename: null, pdf_base64: null,
+    created_at: new Date().toISOString(), updated_at: new Date().toISOString()
+  };
+
+  if(typeof cxpLoad === 'function'){
+    var store = cxpLoad(); store.cuentas.push(cxp);
+    if(typeof DB !== 'undefined') DB.set('gf_cxp', store);
+  }
+
+  if(st){ st.style.background='var(--green-bg)'; st.style.color='var(--green)'; st.textContent='✅ Comprobante registrado: ' + _esc(prov) + ' — $' + monto.toLocaleString('es-MX'); }
+  _recvTicketFile = null;
+  recvClearForm();
+  recvRenderAll();
+  toast('🧾 Comprobante registrado');
 }
 
 // ── Helpers de formato moneda para formularios ──────────────────────────────
