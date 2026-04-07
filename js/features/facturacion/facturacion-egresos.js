@@ -1097,6 +1097,9 @@ function ppOpenPago(cxpId){
   html += '</select></div>';
   html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">Referencia / Nota</label>';
   html += '<input type="text" id="pago-ref" class="fi" placeholder="REF-12345" style="width:100%;font-size:.78rem;padding:7px 10px"></div>';
+  html += '<div><label style="font-size:.68rem;font-weight:600;color:var(--muted);display:block;margin-bottom:3px">📎 Comprobante de Pago (opcional)</label>';
+  html += '<input type="file" id="pago-comprobante" accept=".jpg,.jpeg,.png,.pdf,image/*" style="font-size:.72rem">';
+  html += '<div id="pago-comprobante-status" style="display:none;font-size:.65rem;margin-top:3px"></div></div>';
   html += '</div>';
 
   // Actions
@@ -1112,7 +1115,7 @@ function ppOpenPago(cxpId){
   document.querySelectorAll('.pp-save-pago-btn').forEach(function(b){ b.onclick = function(){ ppSavePago(b.dataset.id); }; });
 }
 
-function ppSavePago(cxpId){
+async function ppSavePago(cxpId){
   var cxp = _cxpStore.cuentas.find(function(c){ return c.id === cxpId; });
   if(!cxp) return;
 
@@ -1124,6 +1127,22 @@ function ppSavePago(cxpId){
   if(monto <= 0){ toast('❌ El monto debe ser mayor a 0'); return; }
   if(monto > cxp.saldo_mxn + 0.01){ toast('❌ El monto excede el saldo pendiente'); return; }
 
+  // Upload comprobante if provided
+  var comprobantePath = null;
+  var comprobanteInput = document.getElementById('pago-comprobante');
+  if(comprobanteInput && comprobanteInput.files && comprobanteInput.files[0] && typeof GF_STORAGE !== 'undefined'){
+    var statusEl = document.getElementById('pago-comprobante-status');
+    if(statusEl){ statusEl.style.display = 'block'; statusEl.textContent = '⏳ Subiendo comprobante...'; statusEl.style.color = 'var(--blue)'; }
+    var file = comprobanteInput.files[0];
+    var path = GF_STORAGE.makePath('pagos/' + cxpId, file.name);
+    var result = await GF_STORAGE.upload(file, path);
+    if(result.success){
+      comprobantePath = path;
+    } else {
+      if(statusEl){ statusEl.textContent = '❌ Error: ' + result.error; statusEl.style.color = 'var(--red)'; }
+    }
+  }
+
   // Create payment record
   var pago = {
     id: 'pago_' + Date.now(),
@@ -1132,6 +1151,7 @@ function ppSavePago(cxpId){
     fecha: fecha,
     metodo: metodo,
     referencia: ref.trim(),
+    comprobante_path: comprobantePath,
     notas: '',
     created_at: _now()
   };
