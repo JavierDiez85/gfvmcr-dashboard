@@ -353,7 +353,7 @@ async function rTarUpload() {
         : '—';
       return `<tr>
         <td style="font-size:.72rem">${fecha}</td>
-        <td style="font-size:.72rem;max-width:180px;overflow:hidden;text-overflow:ellipsis">${h.filename || '—'}</td>
+        <td style="font-size:.72rem;max-width:180px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(h.filename || '—')}</td>
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.txn_count || 0).toLocaleString()}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.card_count || 0).toLocaleString()}</td>

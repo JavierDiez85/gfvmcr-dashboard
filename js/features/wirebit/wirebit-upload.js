@@ -392,7 +392,7 @@ const WB_UPLOAD = (() => {
       resultDiv.style.display = 'block';
       resultDiv.style.background = 'rgba(235,87,87,.08)';
       resultDiv.style.color = '#eb5757';
-      resultDiv.innerHTML = `<div style="font-weight:600">❌ Error</div><div>${err.message}</div>`;
+      resultDiv.innerHTML = `<div style="font-weight:600">❌ Error</div><div>${escapeHtml(err.message)}</div>`;
       console.error('[WB Upload]', err);
       toast('❌ Error: ' + err.message);
     }

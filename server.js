@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -112,7 +113,7 @@ http.createServer(async (req, res) => {
       if (!user) { sendError(res, 401, 'Credenciales inválidas'); return; }
 
       // Verify hash matches
-      if (passwordHash !== user.passwordHash) { sendError(res, 401, 'Credenciales inválidas'); return; }
+      if (!crypto.timingSafeEqual(Buffer.from(passwordHash), Buffer.from(user.passwordHash || ''))) { sendError(res, 401, 'Credenciales inválidas'); return; }
 
       // Sign JWT
       const token = signToken({
@@ -273,6 +274,7 @@ http.createServer(async (req, res) => {
   // ── TPV: Rollback batch ──
   if (req.method === 'DELETE' && req.url.startsWith('/api/upload/tpv/batch/')) {
     if (!requireAuth(req, res)) return;
+    if (req._user.rol !== 'admin') { sendError(res, 403, 'Solo administradores pueden eliminar lotes'); return; }
     try {
       const batchId = decodeURIComponent(req.url.split('/').pop());
       if (!batchId || batchId.length > 64 || /[^a-zA-Z0-9\-_]/.test(batchId)) { sendError(res, 400, 'batchId inválido'); return; }
@@ -333,6 +335,7 @@ http.createServer(async (req, res) => {
   // ── Tarjetas: Rollback batch ──
   if (req.method === 'DELETE' && req.url.startsWith('/api/upload/tarjetas/batch/')) {
     if (!requireAuth(req, res)) return;
+    if (req._user.rol !== 'admin') { sendError(res, 403, 'Solo administradores pueden eliminar lotes'); return; }
     try {
       const batchId = req.url.split('/').pop();
       if (!batchId || isNaN(Number(batchId))) { sendError(res, 400, 'batchId inválido'); return; }

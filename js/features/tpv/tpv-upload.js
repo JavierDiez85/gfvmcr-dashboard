@@ -796,7 +796,7 @@ async function rTPVUpload() {
       const badge = isRolledBack ? ' <span style="font-size:.55rem;background:var(--red-bg);color:var(--red);padding:1px 5px;border-radius:4px;text-decoration:none;display:inline-block">Eliminada</span>' : '';
       return `<tr style="${rowStyle}">
         <td style="font-size:.72rem">${fecha}</td>
-        <td style="font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis">${h.filename || '—'}${badge}</td>
+        <td style="font-size:.72rem;max-width:200px;overflow:hidden;text-overflow:ellipsis">${escapeHtml(h.filename || '—')}${badge}</td>
         <td style="font-size:.72rem">${strategy}</td>
         <td class="r" style="font-size:.72rem;font-weight:600">${(h.row_count || 0).toLocaleString()}</td>
         <td style="font-size:.72rem">${periodo}</td>

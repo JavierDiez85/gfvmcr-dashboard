@@ -103,7 +103,7 @@
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div>
           <div style="font-family:'Poppins',sans-serif;font-size:.95rem;font-weight:700">🎰 Casino Stellaris — Dashboard</div>
-          <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${last.sala || 'Grand Tuxtla Casino'} · ${range.label} · ${cortes.length} corte${cortes.length!==1?'s':''}</div>
+          <div style="font-size:.68rem;color:var(--muted);margin-top:2px">${escapeHtml(last.sala || 'Grand Tuxtla Casino')} · ${range.label} · ${cortes.length} corte${cortes.length!==1?'s':''}</div>
         </div>
         <div style="display:flex;gap:3px;flex-wrap:wrap;align-items:center">
           ${filterBar}
