@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.8 | **Fecha**: 2026-04-06 | **Código**: ~42,000 líneas
+> **Versión**: 1.9 | **Fecha**: 2026-04-08 | **Código**: ~43,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -411,6 +411,35 @@ Soporta dos tipos de documentos del sistema Wigos:
 - `gf_casino` — Cortes diarios. Estructura: `{ cortes: [ ...corteObjects ] }`.
 - `gf_casino_config` — Config P&L. Estructura: `{ proveedores: { AGS: { pct_maquinero: 0 }, ... }, pct_operadora: 10 }`. Defaults a 0% maquinero y 10% operadora.
 
+### 1.8.3 RRHH — Empleados Stellaris
+**Vista**: `stel_rrhh_empleados`
+
+Módulo de gestión de recursos humanos para Stellaris Casino.
+
+**Funcionalidades**:
+- **CRUD completo**: Agregar, editar, ver detalle, dar de baja/reactivar empleados
+- **Campos por empleado**: nombre, puesto, turno, celular, email, RFC, CURP, NSS (IMSS), banco, CLABE, salario mensual, contacto de emergencia (nombre, teléfono, parentesco), notas, fecha ingreso/baja
+
+**KPIs**:
+| KPI | Descripción |
+|-----|-------------|
+| Total Empleados | Activos de registrados |
+| Nómina Mensual | Suma salario bruto de activos |
+| Antigüedad Promedio | Promedio en meses de empleados activos |
+
+**Filtros**: Activos / Inactivos / Todos
+
+**Expediente Digital**:
+- Upload de documentos por categoría: INE, CURP, RFC/CSF, Comprobante Domicilio, Contrato Laboral, Alta IMSS, Recibo de Nómina, Otro
+- Drag & drop + cámara (móvil) + selección múltiple
+- Checklist visual de categorías presentes/faltantes (✅/⬜)
+- Documentos almacenados en Supabase Storage bucket `expedientes` bajo `rrhh/stellaris/{empleado_id}/`
+- Ver y eliminar documentos con signed URL (5 min)
+
+**Storage**: Clave `gf_rrhh_stel` en `APP_KEYS` (sync Supabase). Estructura: `{ empleados: [...] }`
+
+> **Nota de privacidad**: RFC, CURP, NSS y CLABE se almacenan en localStorage + Supabase (mismo patrón que el resto del sistema). Solo usuarios autenticados acceden a estos datos.
+
 ---
 
 ## 1.9 Wirebit
@@ -466,8 +495,8 @@ Configurar cuentas bancarias: nombre, tipo, empresas asignadas.
 
 Tres sub-secciones por empresa:
 - **Emitidas**: Facturas que emitimos (CxC)
-- **Recibidas**: Facturas que recibimos (CxP)
-- **Pagos Pendientes**: Facturas sin cobrar/pagar
+- **Recibidas**: Facturas que recibimos (CxP). Incluye botón **🧾 Ticket/Comprobante** para registrar compras sin factura formal (con foto adjunta). Origen: `ticket`.
+- **Pagos Pendientes**: Facturas sin cobrar/pagar. Al registrar un pago puede adjuntarse un **comprobante de pago** (JPG/PNG/PDF) almacenado en Supabase Storage bajo `pagos/{cxp_id}/`.
 
 ### 1.11.2 Carga de Facturas
 **Vista**: `carga_facturas`
@@ -477,7 +506,11 @@ Upload de XML CFDI. Parseo automático de datos del comprobante.
 ### 1.11.3 Carga de Egresos
 **Vista**: `carga_egresos`
 
-Captura manual o por archivo de facturas de egreso. Drag & drop de PDFs. Modo efectivo.
+Captura manual o por archivo de facturas de egreso. Drag & drop de PDFs. Cuatro modos disponibles:
+- **CFDI**: Drag & drop de PDF (extrae datos automáticamente)
+- **Captura Manual**: Formulario completo de egreso
+- **Pago en Efectivo**: Registro rápido sin factura
+- **🧾 Ticket/Comprobante**: Para compras sin factura formal. Campos: proveedor, concepto, monto, fecha, categoría, empresa. Foto del ticket (JPG/PNG/PDF) subida a Supabase Storage. Registro guardado en `gf_cxp` con `origen: 'ticket'` y `ticket_storage_path`.
 
 ---
 
@@ -666,7 +699,11 @@ DB.set(key, data)
  'gf_cat_cd','gf_cat_ga','gf_tickets_pagos_tpv','gf_tpv_agente_pagos',
  'gf_tpv_promotor_pagos','gf_tpv_rate_changes',
  'gf_wb_fees_2025','gf_wb_fees_2026','gf_wb_upload_summary',
- 'gf_wb_tarjetas_2025','gf_wb_tarjetas_2026','gf_nomina','gf_gc','gf_cxp']
+ 'gf_wb_tarjetas_2025','gf_wb_tarjetas_2026','gf_nomina','gf_gc','gf_cxp',
+ // Stellaris Casino
+ 'gf_casino','gf_casino_config',
+ // RRHH Stellaris
+ 'gf_rrhh_stel']
 ```
 
 ### Tablas Supabase Directas (no app_data)
@@ -684,6 +721,28 @@ DB.set(key, data)
 | `exp_documentos` | Expedientes | Documentos (metadata + storage path) |
 | `app_data` | Todos | Key-value store para datos sincronizados |
 | `sync_meta` | Sistema | Tracking de sincronización por cliente |
+
+### GF_STORAGE — Supabase Storage Helper
+
+Helper global en `supabase.js` para subir, ver y eliminar archivos en Supabase Storage.
+
+**Bucket**: `expedientes`
+**Max size**: 50MB por archivo
+**Tipos permitidos**: `application/pdf`, `image/png`, `image/jpeg`, `image/jpg`
+
+| Método | Descripción |
+|--------|-------------|
+| `GF_STORAGE.upload(file, path)` | Sube un File al bucket. Valida tipo y tamaño. Retorna `{success, path, error}` |
+| `GF_STORAGE.getUrl(path)` | Obtiene signed URL (5 min). Retorna string o null |
+| `GF_STORAGE.remove(paths)` | Elimina uno o varios archivos. Retorna `{success, error}` |
+| `GF_STORAGE.viewFile(path)` | Abre el archivo en nueva pestaña |
+| `GF_STORAGE.makePath(prefix, filename)` | Genera ruta única: `prefix/timestamp_rand.ext` (solo usa extensión del filename) |
+
+**Uso actual**:
+- `expedientes/` — Expedientes de clientes (módulo Expedientes)
+- `rrhh/stellaris/{id}/` — Documentos de empleados (módulo RRHH Stellaris)
+- `tickets/{empresa}/` — Fotos de tickets/comprobantes (Facturación)
+- `pagos/{cxp_id}/` — Comprobantes de pago (Pagos Pendientes)
 
 ---
 
@@ -1267,7 +1326,7 @@ Antes de hacer deploy:
 │
 ├── js/core/                   # Infraestructura frontend
 │   ├── storage.js             # DB wrapper (42)
-│   ├── supabase.js            # Sync engine (448)
+│   ├── supabase.js            # Sync engine + GF_STORAGE (~545)
 │   ├── login.js               # Auth flow (283)
 │   ├── helpers.js             # Utilidades globales
 │   ├── nav-structure.js       # NAV_STRUCTURE
@@ -1316,7 +1375,8 @@ Antes de hacer deploy:
 │   │   ├── casino-data.js         # Parser PDF/Excel + storage gf_casino (~800)
 │   │   ├── casino-upload.js       # UI carga PDF/Excel cortes casino (~320)
 │   │   ├── casino-dashboard.js    # KPIs, charts, fiInjectCasino (~520)
-│   │   └── casino-report.js       # PDF ejecutivo client-side (jsPDF, ~380)
+│   │   ├── casino-report.js       # PDF ejecutivo client-side (jsPDF, ~380)
+│   │   └── rrhh-stellaris.js      # Módulo RRHH: empleados + expedientes (488)
 │   ├── finanzas/
 │   │   ├── carga-masiva.js        # Upload masivo CSV (397)
 │   │   ├── flujo-gastos.js        # Flujo de gastos (242)
