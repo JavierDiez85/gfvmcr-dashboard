@@ -337,13 +337,13 @@ http.createServer(async (req, res) => {
     if (!requireAuth(req, res)) return;
     if (req._user.rol !== 'admin') { sendError(res, 403, 'Solo administradores pueden eliminar lotes'); return; }
     try {
-      const batchId = req.url.split('/').pop();
-      if (!batchId || isNaN(Number(batchId))) { sendError(res, 400, 'batchId inválido'); return; }
+      const batchId = decodeURIComponent(req.url.split('/').pop());
+      if (!batchId || batchId.length > 64 || /[^a-zA-Z0-9\-_]/.test(batchId)) { sendError(res, 400, 'batchId inválido'); return; }
       const { url: sbUrl, key: sbKey } = _sbCreds();
       const parsed = new URL(sbUrl);
       const hdrs = { 'apikey': sbKey, 'Authorization': `Bearer ${sbKey}`, 'Prefer': 'return=minimal' };
-      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_transactions?batch_id=eq.${batchId}`, method: 'DELETE', headers: hdrs });
-      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_cardholders?batch_id=eq.${batchId}`, method: 'DELETE', headers: hdrs });
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_transactions?batch_id=eq.${encodeURIComponent(batchId)}`, method: 'DELETE', headers: hdrs });
+      await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_cardholders?batch_id=eq.${encodeURIComponent(batchId)}`, method: 'DELETE', headers: hdrs });
       const upd = JSON.stringify({ estado: 'rolled_back', updated_at: new Date().toISOString() });
       await httpsRequest({ hostname: parsed.hostname, path: `/rest/v1/tar_upload_batches?id=eq.${batchId}`, method: 'PATCH',
         headers: { ...hdrs, 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(upd) } }, upd);

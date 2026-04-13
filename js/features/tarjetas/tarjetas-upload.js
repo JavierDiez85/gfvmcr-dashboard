@@ -133,7 +133,7 @@ const TAR_UPLOAD = {
             tarjeta: r['Tarjeta'] || null,
             cliente: r['Cliente'] || null,
             subcliente: r['Subcliente'] || null,
-            email: r['Correo electrónico'] || r['Correo electronico'] || null,
+            email: (function(e){ return e && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e) ? e : null; })(r['Correo electrónico'] || r['Correo electronico'] || ''),
             fecha: fecha,
             hora: hora,
             tipo: tipo,
