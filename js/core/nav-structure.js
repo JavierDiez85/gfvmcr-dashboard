@@ -234,9 +234,15 @@ const NAV_STRUCTURE = {
           ]}]
         },
         { id:'operacion', label:'Operación', icon:'🎰', defaultView:'stel_casino',
-          groups:[{ label:null, views:[
-            {id:'stel_casino',label:'Dashboard Casino',icon:'🎰'},
-          ]}]
+          groups:[
+            { label:'Maquinas', views:[
+              {id:'stel_casino',label:'Dashboard Casino',icon:'🎰'},
+            ]},
+            { label:'Boveda', views:[
+              {id:'stel_boveda',label:'Dashboard Boveda',icon:'🏦'},
+              {id:'stel_boveda_upload',label:'Carga Boveda',icon:'📤'},
+            ]},
+          ]
         },
         { id:'rrhh', label:'RRHH', icon:'👥', defaultView:'stel_rrhh_empleados',
           groups:[{ label:null, views:[

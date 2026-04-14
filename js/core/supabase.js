@@ -77,7 +77,9 @@ const APP_KEYS = [
   'gf_casino',
   'gf_casino_config',
   // RRHH Stellaris
-  'gf_rrhh_stel'
+  'gf_rrhh_stel',
+  // Bóveda Stellaris
+  'gf_boveda'
 ];
 
 // Estado de sync

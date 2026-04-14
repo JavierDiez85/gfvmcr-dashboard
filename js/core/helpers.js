@@ -49,7 +49,11 @@ function destroyAllCharts(){
   if(typeof TES_CHARTS !== 'undefined' && TES_CHARTS){
     Object.keys(TES_CHARTS).forEach(k => { try{ TES_CHARTS[k].destroy(); }catch(e){} delete TES_CHARTS[k]; });
   }
-  // 5. CASINO_CHARTS
+  // 5. BOVEDA_CHARTS
+  if(typeof BOVEDA_CHARTS !== 'undefined' && BOVEDA_CHARTS){
+    Object.keys(BOVEDA_CHARTS).forEach(k => { try{ BOVEDA_CHARTS[k].destroy(); }catch(e){} delete BOVEDA_CHARTS[k]; });
+  }
+  // 6. CASINO_CHARTS
   if(typeof CASINO_CHARTS !== 'undefined' && CASINO_CHARTS){
     Object.keys(CASINO_CHARTS).forEach(k => { try{ CASINO_CHARTS[k].destroy(); }catch(e){} delete CASINO_CHARTS[k]; });
   }
