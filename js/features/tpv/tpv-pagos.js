@@ -186,8 +186,44 @@ async function rTPVPagos() {
 
 // ── PAGO MODAL ──
 let _pagoClienteId = null;
+let _pagoAllClients = []; // Full client catalog for manual payments
 
+/** Open modal with a specific client (from commission table) */
 function openPagoModal(clienteId) {
+  _openPagoModalWith(clienteId, _tpvPagosCache.filter(p => (p.total_cobrado || 0) > 0));
+}
+
+/** Open modal with full client catalog — for manual/direct payments */
+async function openPagoManual() {
+  // Show modal quickly with current cache while we fetch
+  _openPagoModalWith(null, _tpvPagosCache.filter(p => (p.total_cobrado || 0) > 0));
+
+  // Fetch all clients in background and update the selector
+  try {
+    const allClients = await TPV.getClients();
+    if (allClients && allClients.length) {
+      // Merge: keep commission data for existing clients, add catalog-only clients
+      const cacheMap = new Map(_tpvPagosCache.map(c => [c.id, c]));
+      const merged = allClients.map(c => {
+        const cached = cacheMap.get(c.id);
+        return cached || { id: c.id, cliente: c.nombre_display || c.nombre, total_cobrado: 0, total_comisiones: 0, a_pagar: 0, _totalPagado: 0, _saldo: 0, _nPagos: 0 };
+      });
+      merged.sort((a, b) => (a.cliente || '').localeCompare(b.cliente || ''));
+      _pagoAllClients = merged;
+
+      // Refresh the selector in the open modal
+      const sel = document.getElementById('pago-cliente-sel');
+      const ov = document.getElementById('pago-overlay');
+      if (sel && ov && ov.style.display !== 'none') {
+        _pagoClienteAllOptions = merged.map(p => ({ value: String(p.id), label: p.cliente }));
+        sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
+          merged.map(p => `<option value="${p.id}">${escapeHtml(p.cliente||'')}</option>`).join('');
+      }
+    }
+  } catch(e) { console.warn('[TPV] openPagoManual getClients failed:', e); }
+}
+
+function _openPagoModalWith(clienteId, clientList) {
   _pagoClienteId = clienteId;
   const ov = document.getElementById('pago-overlay');
   ov.style.display = 'flex';
@@ -201,10 +237,9 @@ function openPagoModal(clienteId) {
   // Populate client selector + search cache
   const sel = document.getElementById('pago-cliente-sel');
   const wrap = document.getElementById('pago-cliente-wrap');
-  const eligibleClients = _tpvPagosCache.filter(p => (p.total_cobrado || 0) > 0);
-  _pagoClienteAllOptions = eligibleClients.map(p => ({ value: String(p.id), label: p.cliente }));
+  _pagoClienteAllOptions = clientList.map(p => ({ value: String(p.id), label: p.cliente }));
   sel.innerHTML = '<option value="">— Seleccionar cliente —</option>' +
-    eligibleClients.map(p =>
+    clientList.map(p =>
       `<option value="${p.id}" ${p.id === clienteId ? 'selected' : ''}>${escapeHtml(p.cliente||'')}</option>`
     ).join('');
   const pagoSearchEl = document.getElementById('pago-cliente-search');
@@ -227,11 +262,16 @@ function closePagoModal() {
   _pagoClienteId = null;
 }
 
+function _pagoFindCli(selId) {
+  return _tpvPagosCache.find(p => p.id === selId) ||
+         (_pagoAllClients || []).find(p => p.id === selId);
+}
+
 function pagoUpdateSaldo() {
   const selId = _pagoClienteId || parseInt(document.getElementById('pago-cliente-sel').value);
   const info = document.getElementById('pago-saldo-info');
   if (!selId) { info.style.display = 'none'; return; }
-  const cli = _tpvPagosCache.find(p => p.id === selId);
+  const cli = _pagoFindCli(selId);
   if (!cli) return;
   const saldo = pagosSaldo(cli);
   document.getElementById('pago-saldo-val').textContent = fmtTPVFull(saldo, 2);
@@ -246,7 +286,7 @@ function pagoValidateMonto() {
   const monto = parseFloat(document.getElementById('pago-monto').value) || 0;
   const warn = document.getElementById('pago-monto-warn');
   if (!selId) { warn.style.display = 'none'; return; }
-  const cli = _tpvPagosCache.find(p => p.id === selId);
+  const cli = _pagoFindCli(selId);
   const saldo = pagosSaldo(cli);
   warn.style.display = (monto > saldo + 0.01) ? '' : 'none';
 }
@@ -255,7 +295,7 @@ function pagoValidateMonto() {
 function pagoLlenarTotal() {
   const selId = _pagoClienteId || parseInt(document.getElementById('pago-cliente-sel').value);
   if (!selId) return;
-  const cli = _tpvPagosCache.find(p => p.id === selId);
+  const cli = _pagoFindCli(selId);
   if (!cli) return;
   const saldo = pagosSaldo(cli);
   document.getElementById('pago-monto').value = saldo.toFixed(2);
@@ -286,7 +326,7 @@ function submitPago() {
   });
   pagosSave(data);
 
-  const cli = _tpvPagosCache.find(p => p.id === selId);
+  const cli = _pagoFindCli(selId);
   toast(`✅ Pago de ${fmtTPVFull(monto)} registrado — ${cli?.cliente || ''}`);
   closePagoModal();
   rTPVPagos();
@@ -699,7 +739,9 @@ function exportHistorialPDF() {
   window.rTPVPagosView = rTPVPagosView;
   window.rTPVPagos = rTPVPagos;
   window._pagoClienteId = _pagoClienteId;
+  window._pagoAllClients = _pagoAllClients;
   window.openPagoModal = openPagoModal;
+  window.openPagoManual = openPagoManual;
   window.closePagoModal = closePagoModal;
   window.pagoUpdateSaldo = pagoUpdateSaldo;
   window.pagoValidateMonto = pagoValidateMonto;
