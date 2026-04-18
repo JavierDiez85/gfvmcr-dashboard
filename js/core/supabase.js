@@ -79,7 +79,9 @@ const APP_KEYS = [
   // RRHH Stellaris
   'gf_rrhh_stel',
   // Bóveda Stellaris
-  'gf_boveda'
+  'gf_boveda',
+  // Maquineros / Cierre Stellaris
+  'gf_cierre_maquineros'
 ];
 
 // Estado de sync

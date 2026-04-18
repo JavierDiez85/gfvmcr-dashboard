@@ -242,6 +242,11 @@ const NAV_STRUCTURE = {
               {id:'stel_boveda',label:'Dashboard Boveda',icon:'🏦'},
               {id:'stel_boveda_upload',label:'Carga Boveda',icon:'📤'},
             ]},
+            { label:'Maquineros', views:[
+              {id:'stel_cierre_maquineros',label:'Análisis Maquineros',icon:'🎰'},
+              {id:'stel_cierre_acumulado', label:'Acumulado Mensual', icon:'📅'},
+              {id:'stel_cierre_upload',    label:'Cargar Reporte',    icon:'📤'},
+            ]},
           ]
         },
         { id:'rrhh', label:'RRHH', icon:'👥', defaultView:'stel_rrhh_empleados',
