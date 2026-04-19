@@ -155,6 +155,13 @@
       if (fabStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
       if (!nomStr.match(/[a-zA-Z]/) && !fabStr.match(/[a-zA-Z]/)) continue;
       if (nomStr && fabStr && nomStr.toUpperCase() === fabStr.toUpperCase()) continue;
+      // Saltar si nombre es exactamente un proveedor (subtotal con fabricante vacío)
+      // Ej: nombre="AGS", fabricante="" → fila de subtotal de fabricante
+      var _nomUp = nomStr.toUpperCase();
+      var _isProvRow = DEFAULT_TASAS.some(function(t){
+        return !t.esOperadora && t.proveedor.toUpperCase() === _nomUp;
+      });
+      if (_isProvRow && !fabStr) continue;
       var nw = parseFloat(r[colNetwin]);
       if (isNaN(nw)) continue;
 
