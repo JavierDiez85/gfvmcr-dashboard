@@ -426,7 +426,10 @@
     var lastS = nS ? data.sesiones[0] : null;
 
     el.innerHTML =
-      '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">📤 Cargar Reportes — Operadora</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700">📤 Cargar Reportes — Operadora</div>' +
+        ((nR || nS) ? '<button onclick="op_clearAll()" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:4px 10px;font-size:.7rem;cursor:pointer;font-family:inherit">🗑 Limpiar todo</button>' : '') +
+      '</div>' +
       '<div style="font-size:.68rem;color:var(--muted);margin-bottom:14px">El sistema detecta automáticamente si el Excel es el Reporte Fiscal o las Sesiones de Caja.</div>' +
 
       '<div class="kpi-row c4" style="margin-bottom:14px">' +
@@ -604,6 +607,13 @@
     }
   }
 
+  function op_clearAll() {
+    if (!confirm('¿Eliminar TODOS los reportes y sesiones cargados y empezar de cero?')) return;
+    operadora_save({ reportes: [], sesiones: [] });
+    toast('🗑 Datos limpiados');
+    rOperadoraUpload();
+  }
+
   function op_deleteReporte(tipo, id) {
     if (!confirm('¿Eliminar este reporte?')) return;
     var data = operadoraLoad();
@@ -620,6 +630,7 @@
   window.op_handleFile     = op_handleFile;
   window.op_confirmSave    = op_confirmSave;
   window.op_deleteReporte  = op_deleteReporte;
+  window.op_clearAll       = op_clearAll;
 
   if (typeof registerView === 'function') {
     registerView('stel_operadora',        function(){ rOperadora(); });

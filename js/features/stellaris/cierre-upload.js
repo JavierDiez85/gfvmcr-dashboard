@@ -11,7 +11,10 @@
     var lastCorte = nCortes ? data.cortes[0] : null;
 
     el.innerHTML =
-      '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">📤 Cargar Reporte de Máquinas</div>' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">' +
+        '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700">📤 Cargar Reporte de Máquinas</div>' +
+        (nCortes ? '<button onclick="cierre_clearAll()" style="background:none;border:1px solid var(--red);color:var(--red);border-radius:6px;padding:4px 10px;font-size:.7rem;cursor:pointer;font-family:inherit">🗑 Limpiar todo</button>' : '') +
+      '</div>' +
       '<div style="font-size:.68rem;color:var(--muted);margin-bottom:14px">Sube el Excel exportado del sistema de casino. Se detecta la hoja de datos y la hoja de Comisiones automáticamente.</div>' +
 
       // KPIs de estado
@@ -261,6 +264,13 @@
     }
   }
 
+  function cierre_clearAll() {
+    if (!confirm('¿Eliminar TODOS los cortes cargados y empezar de cero?')) return;
+    cierre_save({ tasas: [], cortes: [] });
+    toast('🗑 Datos limpiados');
+    rCierreUpload();
+  }
+
   function cierre_deleteCorte(id) {
     if (!confirm('¿Eliminar este corte?')) return;
     var data = cierreLoad();
@@ -272,6 +282,7 @@
 
   // ── EXPOSE ────────────────────────────────────────────────────
   window.rCierreUpload      = rCierreUpload;
+  window.cierre_clearAll    = cierre_clearAll;
   window.cierre_handleFile  = cierre_handleFile;
   window.cierre_confirmSave = cierre_confirmSave;
   window.cierre_deleteCorte = cierre_deleteCorte;
