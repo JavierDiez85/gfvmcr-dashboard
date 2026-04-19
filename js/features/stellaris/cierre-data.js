@@ -153,6 +153,9 @@
       if (fabStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
       // Debe tener letras para ser un nombre de máquina válido
       if (!nomStr.match(/[a-zA-Z]/) && !fabStr.match(/[a-zA-Z]/)) continue;
+      // Saltar filas donde nombre = fabricante (filas de subtotal del sistema)
+      // Ej: nombre="AGS", fabricante="AGS" → es un resumen, no una máquina
+      if (nomStr && fabStr && nomStr.toUpperCase() === fabStr.toUpperCase()) continue;
       // Netwin debe ser numérico (aunque sea 0 o negativo)
       var nw = parseFloat(r[colNetwin]);
       if (isNaN(nw)) continue;
