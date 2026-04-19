@@ -12,8 +12,12 @@
     var nIng = data.reportes.ingresos.length;
     var nGas = data.reportes.gastos.length;
 
-    el.innerHTML = '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">🏦 Carga de Datos — Boveda</div>' +
-      '<div style="font-size:.68rem;color:var(--muted);margin-bottom:14px">Sube los reportes Excel de Boveda. Se detecta automaticamente el tipo.</div>' +
+    var hasData = nArq > 0 || nFondos > 0 || nIng > 0 || nGas > 0;
+    el.innerHTML = '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">' +
+      '<div><div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700">🏦 Carga de Datos — Bóveda</div>' +
+      '<div style="font-size:.68rem;color:var(--muted);margin-top:2px">Sube los reportes Excel. Se detecta automáticamente el tipo.</div></div>' +
+      (hasData ? '<button onclick="boveda_clearAll()" style="font-size:.68rem;padding:5px 10px;background:var(--red-bg);color:var(--red);border:1px solid var(--red);border-radius:6px;cursor:pointer">🗑 Limpiar datos</button>' : '') +
+      '</div>' +
 
       // KPIs
       '<div class="kpi-row c3" style="margin-bottom:14px">' +

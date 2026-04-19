@@ -172,16 +172,17 @@
     var ws = workbook.Sheets[workbook.SheetNames[0]];
     var data = XLSX.utils.sheet_to_json(ws, { header: 1 });
 
-    // Find header row with dates (row 1 typically)
+    // Find header row with dates (row index 1 = Excel row 2)
+    // Col 0 = empty, Col 1 = "Fondo Inicial" (label), Col 2+ = actual dates
     var fechas = [];
     var headerRow = data[1] || [];
-    for (var c = 3; c < headerRow.length; c++) {
+    for (var c = 2; c < headerRow.length; c++) {  // start at 2, not 3
       var val = headerRow[c];
       var f = _parseDate(val);
       if (f) fechas.push({ col: c, fecha: f, label: val });
     }
 
-    // Fund names in column 2, values starting from column 3
+    // Fund names in column A (index 0), Fondo Inicial values in col B (index 1), dates in C+ (index 2+)
     var FUND_ROWS = {
       'Fondo A': 2, 'Fondo B': 3, 'SportBook Cajas': 4, 'SportBook Premios': 5,
       'Fondo Adrian': 6, 'Fondo Gastos': 7, 'Caja Stellaris': 8, 'TPV': 9, 'Restaurante': 10
@@ -201,11 +202,11 @@
       fondos.push(entry);
     });
 
-    // Also get fondo inicial (column 3 = "Fondo Inicial")
+    // Fondo Inicial values are in col B (index 1)
     var iniciales = {};
     for (var name in FUND_ROWS) {
       var row = data[FUND_ROWS[name]];
-      iniciales[name.toLowerCase().replace(/\s+/g, '_')] = row ? (parseFloat(row[3]) || 0) : 0;
+      iniciales[name.toLowerCase().replace(/\s+/g, '_')] = row ? (parseFloat(row[1]) || 0) : 0;
     }
 
     return { fondos: fondos, iniciales: iniciales };
@@ -380,6 +381,16 @@
   }
 
   // ═══════════════════════════════════════
+  // CLEAR ALL
+  // ═══════════════════════════════════════
+  function boveda_clearAll() {
+    if (!confirm('¿Eliminar todos los datos de Bóveda (arqueos, fondos y reportes)?')) return;
+    bovedaSave({ arqueos: [], fondos: [], reportes: { ingresos: [], gastos: [] } });
+    toast('🗑 Datos de Bóveda eliminados');
+    if (typeof rBovedaUpload === 'function') rBovedaUpload();
+  }
+
+  // ═══════════════════════════════════════
   // EXPOSE
   // ═══════════════════════════════════════
   window.BOVEDA_KEY = BOVEDA_KEY;
@@ -392,5 +403,6 @@
   window.bovedaKPIs = bovedaKPIs;
   window.bovedaFechas = bovedaFechas;
   window.bovedaAlertas = bovedaAlertas;
+  window.boveda_clearAll = boveda_clearAll;
 
 })(window);
