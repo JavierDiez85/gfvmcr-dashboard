@@ -137,8 +137,10 @@
 
     var dataStart = headerRow >= 0 ? headerRow + 1 : 7;
 
-    // ── Leer datos de máquinas ──
-    var maquinas = [];
+    // ── Leer datos de máquinas — agrupar por nombre único ──
+    // El Excel tiene una fila por máquina por día + subtotales por fabricante
+    // Agrupamos por nombre para obtener el total del período (no suma de días)
+    var maquinaMap = {};
     for (i = dataStart; i < raw.length; i++) {
       var r = raw[i];
       if (!r) continue;
@@ -148,26 +150,28 @@
       var fabStr = fab ? String(fab).trim() : '';
       var nomStr = nom ? String(nom).trim() : '';
       if (!nomStr && !fabStr) continue;
-      // Saltar filas de totales o subtotales
+      // Saltar totales, subtotales y filas donde nombre = fabricante
       if (nomStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
       if (fabStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
-      // Debe tener letras para ser un nombre de máquina válido
       if (!nomStr.match(/[a-zA-Z]/) && !fabStr.match(/[a-zA-Z]/)) continue;
-      // Saltar filas donde nombre = fabricante (filas de subtotal del sistema)
-      // Ej: nombre="AGS", fabricante="AGS" → es un resumen, no una máquina
       if (nomStr && fabStr && nomStr.toUpperCase() === fabStr.toUpperCase()) continue;
-      // Netwin debe ser numérico (aunque sea 0 o negativo)
       var nw = parseFloat(r[colNetwin]);
       if (isNaN(nw)) continue;
 
-      maquinas.push({
-        fabricante: fabStr || nomStr.split(' ')[0],
-        nombre:     nomStr || fabStr,
-        coinIn:     parseFloat(r[colCoinIn]) || 0,
-        netwin:     nw,
-        jugadas:    parseFloat(r[colJugadas]) || 0
-      });
+      // Clave única: nombre de máquina (incluye número de terminal, ej. F-EGT V55-057)
+      var key = nomStr || fabStr;
+      if (!maquinaMap[key]) {
+        maquinaMap[key] = {
+          fabricante: fabStr || nomStr.split(' ')[0],
+          nombre:     nomStr || fabStr,
+          coinIn: 0, netwin: 0, jugadas: 0
+        };
+      }
+      maquinaMap[key].coinIn   += parseFloat(r[colCoinIn]) || 0;
+      maquinaMap[key].netwin   += nw;
+      maquinaMap[key].jugadas  += parseFloat(r[colJugadas]) || 0;
     }
+    var maquinas = Object.values(maquinaMap);
 
     // ── Tasas de Sheet2 (si existe) ──
     var tasas = [];
