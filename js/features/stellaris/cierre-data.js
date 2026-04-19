@@ -74,12 +74,8 @@
   }
 
   // ── PARSE EXCEL ──────────────────────────────────────────────
-  // Estructura Sheet1:
-  //   Row 0: blank | Row 1: title | Row 2: params (Fecha Desde/Hasta)
-  //   Row 3: descripcion | Row 4: blank | Row 5-6: headers
-  //   Row 7+: datos (col 3=Fabricante, col 5=Nombre, col 9=CoinIn, col 17=Netwin, col 19=Jugadas)
-  // Estructura Sheet2:
-  //   Row 1: headers | Rows 2-15: tasas | Row 18: Operadora
+  // Detecta columnas dinámicamente leyendo headers reales del Excel
+  // Soporta variantes del sistema de casino (Wigos u otros)
   function parseCierreExcel(workbook) {
     if (!workbook || !workbook.SheetNames || !workbook.SheetNames.length) return null;
 
@@ -87,63 +83,118 @@
     if (!sheet1) return null;
     var raw = XLSX.utils.sheet_to_json(sheet1, { header: 1, defval: null });
 
-    // Metadata
+    // ── Metadata: escanear primeras 8 filas buscando casino y fechas ──
     var casino = '', desde = '', hasta = '';
     var i, c;
-    var metaRow = raw[1] || [];
-    for (c = 0; c < metaRow.length; c++) {
-      var mc = String(metaRow[c] || '');
-      if (mc.indexOf('CASINO') !== -1 || mc.indexOf('Casino') !== -1) {
-        casino = mc.split('|')[0].replace(/Generado:/i, '').trim();
-        break;
+    for (i = 0; i < Math.min(8, raw.length); i++) {
+      var mr = raw[i] || [];
+      for (c = 0; c < mr.length; c++) {
+        var mv = String(mr[c] || '');
+        if (!mv) continue;
+        if (!casino && (mv.indexOf('CASINO') !== -1 || mv.indexOf('Casino') !== -1)) {
+          casino = mv.split('|')[0].replace(/Generado:/i,'').trim();
+        }
+        var mD = mv.match(/Fecha Desde:\s*(\d{2}\/\d{2}\/\d{4})/i);
+        var mH = mv.match(/Fecha Hasta:\s*(\d{2}\/\d{2}\/\d{4})/i);
+        if (mD && !desde) desde = mD[1];
+        if (mH && !hasta) hasta = mH[1];
       }
     }
-    var paramStr = '';
-    var paramRow = raw[2] || [];
-    for (c = 0; c < paramRow.length; c++) {
-      if (paramRow[c]) { paramStr = String(paramRow[c]); break; }
-    }
-    var mD = paramStr.match(/Fecha Desde:\s*(\d{2}\/\d{2}\/\d{4})/);
-    var mH = paramStr.match(/Fecha Hasta:\s*(\d{2}\/\d{2}\/\d{4})/);
-    if (mD) desde = mD[1];
-    if (mH) hasta = mH[1];
 
-    // Machine data rows
+    // ── Detectar fila de headers y columnas ──
+    // Busca la fila que tenga "Nombre" o "Fabricante" entre las primeras 12 filas
+    var headerRow = -1;
+    // Columnas por defecto (fallback si no se detectan)
+    var colFab = 3, colNom = 5, colCoinIn = 9, colNetwin = 17, colJugadas = 19;
+
+    for (i = 0; i < Math.min(12, raw.length); i++) {
+      var hr = raw[i] || [];
+      var foundNom = false, foundFab = false;
+      for (c = 0; c < hr.length; c++) {
+        var hv = String(hr[c] || '').toLowerCase().replace(/\s+/g,' ').trim();
+        if (!hv) continue;
+        if (hv === 'nombre' || hv === 'name' || hv === 'terminal' || hv === 'máquina' || hv === 'maquina') {
+          colNom = c; foundNom = true;
+        }
+        if (hv === 'fabricante' || hv === 'manufacturer' || hv === 'marca' || hv === 'proveedor') {
+          colFab = c; foundFab = true;
+        }
+        if (hv === 'coin in' || hv === 'coin_in' || hv === 'coinin' || hv === 'total apostado' || hv === 'apostado') {
+          colCoinIn = c;
+        }
+        if (hv === 'net win' || hv === 'netwin' || hv === 'net_win' || hv === 'ingreso neto' || hv === 'neto') {
+          colNetwin = c;
+        }
+        if (hv === 'jugadas' || hv === 'games' || hv === 'plays' || hv === 'partidas') {
+          colJugadas = c;
+        }
+      }
+      if (foundNom || foundFab) {
+        headerRow = i;
+        if (foundNom && foundFab) break; // fila completa encontrada
+      }
+    }
+
+    var dataStart = headerRow >= 0 ? headerRow + 1 : 7;
+
+    // ── Leer datos de máquinas ──
     var maquinas = [];
-    for (i = 7; i < raw.length; i++) {
+    for (i = dataStart; i < raw.length; i++) {
       var r = raw[i];
-      var fab = r[3];
-      var nom = r[5];
-      if (!fab || !nom || typeof nom !== 'string') continue;
-      if (String(nom).match(/^total/i)) continue; // skip total rows
+      if (!r) continue;
+      var fab = r[colFab];
+      var nom = r[colNom];
+      if (!fab && !nom) continue;
+      var fabStr = fab ? String(fab).trim() : '';
+      var nomStr = nom ? String(nom).trim() : '';
+      if (!nomStr && !fabStr) continue;
+      // Saltar filas de totales o subtotales
+      if (nomStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
+      if (fabStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
+      // Debe tener letras para ser un nombre de máquina válido
+      if (!nomStr.match(/[a-zA-Z]/) && !fabStr.match(/[a-zA-Z]/)) continue;
+      // Netwin debe ser numérico (aunque sea 0 o negativo)
+      var nw = parseFloat(r[colNetwin]);
+      if (isNaN(nw)) continue;
+
       maquinas.push({
-        fabricante: String(fab).trim(),
-        nombre:     String(nom).trim(),
-        coinIn:     parseFloat(r[9])  || 0,
-        netwin:     parseFloat(r[17]) || 0,
-        jugadas:    parseFloat(r[19]) || 0
+        fabricante: fabStr || nomStr.split(' ')[0],
+        nombre:     nomStr || fabStr,
+        coinIn:     parseFloat(r[colCoinIn]) || 0,
+        netwin:     nw,
+        jugadas:    parseFloat(r[colJugadas]) || 0
       });
     }
 
-    // Tasas from Sheet2
+    // ── Tasas de Sheet2 (si existe) ──
     var tasas = [];
     if (workbook.SheetNames.length > 1) {
       var sheet2 = workbook.Sheets[workbook.SheetNames[1]];
       if (sheet2) {
         var rawT = XLSX.utils.sheet_to_json(sheet2, { header: 1, defval: null });
-        for (i = 2; i < rawT.length; i++) {
+        // Buscar fila de headers en Sheet2
+        var t2DataStart = 2;
+        for (i = 0; i < Math.min(5, rawT.length); i++) {
+          var t2h = rawT[i] || [];
+          for (c = 0; c < t2h.length; c++) {
+            var t2hv = String(t2h[c] || '').toLowerCase();
+            if (t2hv.indexOf('proveedor') !== -1 || t2hv.indexOf('fabricante') !== -1) {
+              t2DataStart = i + 1; break;
+            }
+          }
+        }
+        for (i = t2DataStart; i < rawT.length; i++) {
           var tr = rawT[i];
-          if (!tr[1]) continue;
+          if (!tr || !tr[1]) continue;
           var prov = String(tr[1]).trim();
           var tipo = String(tr[2] || '').trim();
           var pct  = parseFloat(tr[3]) || 0;
           if (!prov || !pct) continue;
           var noms = [];
           for (c = 4; c <= 9; c++) {
-            if (tr[c]) noms.push(String(tr[c]).trim());
+            if (tr[c] && String(tr[c]).trim()) noms.push(String(tr[c]).trim());
           }
-          var isOp = prov.toLowerCase() === 'operadora';
-          // find default color for this provider
+          var isOp = prov.toLowerCase().indexOf('operadora') !== -1;
           var defCol = '#8b95a5';
           for (var di = 0; di < DEFAULT_TASAS.length; di++) {
             if (DEFAULT_TASAS[di].proveedor.toLowerCase() === prov.toLowerCase()) { defCol = DEFAULT_TASAS[di].color; break; }
@@ -161,7 +212,9 @@
       }
     }
 
-    return { maquinas: maquinas, tasas: tasas, desde: desde, hasta: hasta, casino: casino };
+    // Debug info para diagnóstico
+    var _debug = { headerRow: headerRow, dataStart: dataStart, colFab: colFab, colNom: colNom, colNetwin: colNetwin, totalRows: raw.length };
+    return { maquinas: maquinas, tasas: tasas, desde: desde, hasta: hasta, casino: casino, _debug: _debug };
   }
 
   // ── CALCULAR COMISIONES ───────────────────────────────────────

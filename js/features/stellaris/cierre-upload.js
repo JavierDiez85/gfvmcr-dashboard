@@ -135,8 +135,14 @@
         var wb = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
         var parsed = parseCierreExcel(wb);
         if (!parsed || !parsed.maquinas || !parsed.maquinas.length) {
+          var dbg = parsed && parsed._debug ? parsed._debug : {};
           statusEl.style.background = 'var(--red-lt)'; statusEl.style.color = 'var(--red)';
-          statusEl.innerHTML = '⚠ No se encontraron datos de máquinas en el archivo.<br><span style="font-size:.7rem">Verifica que el archivo sea el reporte correcto del sistema de casino.</span>';
+          statusEl.innerHTML = '⚠ No se encontraron datos de máquinas en el archivo.' +
+            '<br><span style="font-size:.7rem">Hojas: ' + wb.SheetNames.join(', ') + '</span>' +
+            '<br><span style="font-size:.7rem">Headers detectados en fila: ' + (dbg.headerRow >= 0 ? dbg.headerRow : 'ninguna') +
+            ' · Col Nombre: ' + dbg.colNom + ' · Col Fabricante: ' + dbg.colFab +
+            ' · Col Netwin: ' + dbg.colNetwin + ' · Total filas: ' + dbg.totalRows + '</span>' +
+            '<br><span style="font-size:.7rem;color:var(--text2)">Verifica que el archivo sea el reporte de máquinas del sistema de casino (Wigos u otro).</span>';
           return;
         }
         _cierre_parsed = parsed;
