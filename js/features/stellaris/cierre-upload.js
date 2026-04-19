@@ -219,7 +219,32 @@
         '<thead><tr><th>Proveedor</th><th class="r">Máquinas</th><th class="r">Netwin</th><th class="r">Tasas</th><th class="r">Base</th><th class="r">IVA</th><th class="r">Total</th></tr></thead>' +
         '<tbody>' + provRows + '</tbody>' +
       '</table>' +
-      (kpis.sinTasa&&kpis.sinTasa.length ? '<div style="margin-top:8px;padding:6px 10px;background:var(--red-lt);border-radius:6px;font-size:.68rem;color:var(--red)">⚠ ' + kpis.sinTasa.length + ' máquinas sin tasa: ' + kpis.sinTasa.slice(0,3).map(escapeHtml).join(', ') + (kpis.sinTasa.length>3?'...':'') + '</div>' : '') +
+      (kpis.sinTasa&&kpis.sinTasa.length ? _sinTasaBlock(kpis.sinTasa) : '') +
+    '</div>';
+  }
+
+  function _sinTasaBlock(sinTasa) {
+    // Agrupa por nombre base (sin número terminal)
+    var grupos = {};
+    sinTasa.forEach(function(n) {
+      var base = String(n).replace(/-\d+$/, '').trim();
+      if (!grupos[base]) grupos[base] = 0;
+      grupos[base]++;
+    });
+    var items = Object.keys(grupos).sort();
+    var rows = items.map(function(b) {
+      return '<tr><td style="font-family:monospace;font-size:.7rem">' + escapeHtml(b) + '</td>' +
+             '<td style="text-align:right;color:var(--muted);font-size:.7rem">' + grupos[b] + ' terminal' + (grupos[b]>1?'es':'') + '</td></tr>';
+    }).join('');
+    return '<div style="margin-top:10px;border:1px solid var(--red);border-radius:8px;overflow:hidden">' +
+      '<div style="background:var(--red-lt);padding:8px 12px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="var b=document.getElementById(\'st-body\');b.style.display=b.style.display===\'none\'?\'block\':\'none\'">' +
+        '<span style="font-size:.75rem;font-weight:700;color:var(--red)">⚠ ' + sinTasa.length + ' máquinas sin tasa asignada (' + items.length + ' modelos únicos)</span>' +
+        '<span style="font-size:.68rem;color:var(--red)">▼ ver lista</span>' +
+      '</div>' +
+      '<div id="st-body" style="display:none;padding:8px 12px;background:var(--white)">' +
+        '<div style="font-size:.68rem;color:var(--muted);margin-bottom:6px">Estas máquinas no tienen comisión asignada y no se incluyen en el cálculo. Comparte los nombres con el administrador para agregarlos.</div>' +
+        '<table style="width:100%;border-collapse:collapse">' + rows + '</table>' +
+      '</div>' +
     '</div>';
   }
 
