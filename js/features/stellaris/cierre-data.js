@@ -155,13 +155,14 @@
       if (fabStr.match(/^(total|sub.?total|suma|gran)/i)) continue;
       if (!nomStr.match(/[a-zA-Z]/) && !fabStr.match(/[a-zA-Z]/)) continue;
       if (nomStr && fabStr && nomStr.toUpperCase() === fabStr.toUpperCase()) continue;
-      // Saltar si nombre es exactamente un proveedor (subtotal con fabricante vacío)
-      // Ej: nombre="AGS", fabricante="" → fila de subtotal de fabricante
-      var _nomUp = nomStr.toUpperCase();
+      // Saltar si la clave de la fila es exactamente un nombre de proveedor
+      // (subtotales diarios: nom="AGS" fab="" / nom="" fab="AGS" / nom="AGS" fab="AGS")
+      // Las máquinas reales tienen nombres tipo "F-AGS ALORA-001" (no son solo el proveedor)
+      var _keyUp = (nomStr || fabStr).toUpperCase();
       var _isProvRow = DEFAULT_TASAS.some(function(t){
-        return !t.esOperadora && t.proveedor.toUpperCase() === _nomUp;
+        return !t.esOperadora && t.proveedor.toUpperCase() === _keyUp;
       });
-      if (_isProvRow && !fabStr) continue;
+      if (_isProvRow && (!nomStr || !fabStr || nomStr.toUpperCase() === fabStr.toUpperCase())) continue;
       var nw = parseFloat(r[colNetwin]);
       if (isNaN(nw)) continue;
 
