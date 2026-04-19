@@ -137,8 +137,8 @@
       // KPIs
       '<div class="kpi-row" style="margin-bottom:14px">' +
         _kpiCard('Netwin Total', fmtC(nt), (corte.maquinas||[]).length + ' máquinas activas', '#0073ea', '🎰') +
-        _kpiCard('Comisiones Maquineros', fmtC(cmb), 'Base · IVA: ' + fmtC(cmi), '#ff7043', '🔧') +
-        _kpiCard('Comisión Operadora', fmtC(cop.base || 0), fmtPctC(cop.pct || 0.1) + ' Netwin · IVA: ' + fmtC(cop.iva || 0), '#9b51e0', '🏛') +
+        _kpiCard('Comisiones Maquineros', fmtC(cmt), 'Base ' + fmtC(cmb) + ' + IVA ' + fmtC(cmi), '#ff7043', '🔧') +
+        _kpiCard('Comisión Operadora', fmtC(cop.total || 0), fmtPctC(cop.pct || 0.1) + ' Netwin · Base ' + fmtC(cop.base || 0) + ' + IVA ' + fmtC(cop.iva || 0), '#9b51e0', '🏛') +
         _kpiCard('Neto Stellaris', fmtC(neo), fmtPctC(neoPct > 0 ? neoPct : 0) + ' del Netwin (sin IVA recuperable)', neo > 0 ? 'var(--green)' : 'var(--red)', '💰') +
       '</div>' +
 
