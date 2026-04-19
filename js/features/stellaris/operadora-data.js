@@ -20,19 +20,23 @@
 
   // ── DETECT FILE TYPE ─────────────────────────────────────────
   // Fiscal:   tiene hoja "REPORTE MAQUINAS 100%" o "REPORTE OPERADORA"
-  // Sesiones: tiene hoja "Sheet1" con 75 cols y "Usuario" en fila 6
+  // Sesiones: alguna fila entre 0-9 contiene "usuario" en cualquier celda
   function detectOperadoraTipo(workbook) {
     if (!workbook || !workbook.SheetNames) return null;
     var names = workbook.SheetNames.map(function(n){ return n.trim().toUpperCase(); });
     if (names.some(function(n){ return n.indexOf('REPORTE') !== -1 && (n.indexOf('MAQUINA') !== -1 || n.indexOf('OPERADORA') !== -1); })) {
       return 'fiscal';
     }
-    // Sesiones: check col 1 in row 6 for "Usuario"
+    // Sesiones: scan first 12 rows for any cell containing "usuario"
     var s1 = workbook.Sheets[workbook.SheetNames[0]];
     if (s1) {
       var raw = XLSX.utils.sheet_to_json(s1, { header: 1, defval: null });
-      var h = raw[6] || [];
-      if (h[1] && String(h[1]).toLowerCase().indexOf('usuario') !== -1) return 'sesiones';
+      for (var ri = 0; ri < Math.min(12, raw.length); ri++) {
+        var row = raw[ri] || [];
+        for (var ci = 0; ci < Math.min(10, row.length); ci++) {
+          if (row[ci] && String(row[ci]).toLowerCase().indexOf('usuario') !== -1) return 'sesiones';
+        }
+      }
     }
     return null;
   }
@@ -191,10 +195,22 @@
     var raw = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null });
     var n   = function(v) { return parseFloat(v) || 0; };
 
+    // Find the header row dynamically (look for "Usuario")
+    var headerRow = 6;
+    for (var hi = 0; hi < Math.min(12, raw.length); hi++) {
+      var hr = raw[hi] || [];
+      for (var hc = 0; hc < Math.min(10, hr.length); hc++) {
+        if (hr[hc] && String(hr[hc]).toLowerCase().indexOf('usuario') !== -1) {
+          headerRow = hi; break;
+        }
+      }
+    }
+    var dataStart = headerRow + 1;
+
     var sesiones = [];
     var desde = '', hasta = '';
 
-    for (var i = 7; i < raw.length; i++) {
+    for (var i = dataStart; i < raw.length; i++) {
       var r = raw[i];
       var usuario = r[1];
       if (!usuario) continue;
