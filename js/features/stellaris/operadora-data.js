@@ -342,6 +342,138 @@
     };
   }
 
+  // ── DERIVAR FISCAL DESDE SESIONES ────────────────────────────
+  // Genera un objeto fiscal-compatible a partir de sesiones de caja
+  // Fórmulas: 70/30 mecánico, Federal 1%, Estatal 6%, L002-L006 = 0
+  function deriveFiscalFromSesiones(ses) {
+    if (!ses || !ses.porDia || !ses.porDia.length) return null;
+    var n = function(v) { return parseFloat(v) || 0; };
+    var MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+    var totRF70 = 0, totRE70 = 0, totRF30 = 0, totRE30 = 0;
+
+    var dias = ses.porDia.map(function(d) {
+      var cover     = n(d.acceso);
+      var l007ent   = n(d.depositoJuego);
+      var l007pre   = n(d.premios);
+      var l007ent70 = l007ent * 0.70;  var l007ent30 = l007ent * 0.30;
+      var l007pre70 = l007pre * 0.70;  var l007pre30 = l007pre * 0.30;
+      var l007sal   = l007pre;          // devoluciones = 0
+      var l007ing   = l007ent - l007sal;
+      var rf70 = l007pre70 * 0.01;     var re70 = l007pre70 * 0.06;
+      var rf30 = l007pre30 * 0.01;     var re30 = l007pre30 * 0.06;
+      totRF70 += rf70; totRE70 += re70; totRF30 += rf30; totRE30 += re30;
+      var diaNum = d.fecha ? parseInt(d.fecha.slice(8), 10) : 0;
+      return {
+        dia: diaNum, cover,
+        l007_entradas: l007ent, l007_ent70, l007_ent30,
+        l007_devol: 0, l007_premios: l007pre, l007_pre70, l007_pre30,
+        l007_salidas: l007sal, l007_ingreso: l007ing,
+        l002_entradas:0,l002_premios:0,l002_resultado:0,
+        l003_entradas:0,l003_premios:0,l003_resultado:0,
+        l005_entradas:0,l005_premios:0,l005_resultado:0,
+        l006_entradas:0,l006_premios:0,l006_resultado:0,
+        ret_fed70: rf70, ret_est70: re70,
+        ret_fed_30x70: 0, ret_est_30x70: 0,
+        ret_fed30: rf30, ret_est30: re30
+      };
+    });
+
+    var totales = {
+      cover:           ses.totales.acceso        || 0,
+      l007_entradas:   ses.totales.depositoJuego || 0,
+      l007_premios:    ses.totales.premios        || 0,
+      l007_ingreso:    (ses.totales.depositoJuego||0) - (ses.totales.premios||0),
+      l002_resultado:0, l003_resultado:0, l005_resultado:0, l006_resultado:0,
+      ret_federal:  totRF70 + totRF30,
+      ret_estatal:  totRE70 + totRE30,
+      ret_total:    totRF70 + totRF30 + totRE70 + totRE30,
+      ret_fed70: totRF70, ret_est70: totRE70, ret_fed30: totRF30, ret_est30: totRE30
+    };
+    totales.ingreso_sala = totales.cover + totales.l007_ingreso;
+    totales.comision_operadora_10pct = totales.l007_ingreso * 0.10;
+
+    var mes = '';
+    if (ses.porDia[0] && ses.porDia[0].fecha) {
+      var p = ses.porDia[0].fecha.split('-');
+      mes = MESES[parseInt(p[1],10)-1] + ' ' + p[0];
+    }
+    return { tipo:'fiscal', mes, dias, totales, nDias: dias.length, derivadoDeSesiones: true };
+  }
+
+  // ── GENERAR EXCEL REPORTE FISCAL ─────────────────────────────
+  // Replica las columnas del REPORTE OPERADORA para enviar a Grand Play
+  function operadora_generateExcel(fiscal) {
+    if (typeof XLSX === 'undefined') { alert('Librería XLSX no disponible — recarga la página'); return; }
+    if (!fiscal || !fiscal.dias) return;
+
+    var f = function(v) { return Math.round((parseFloat(v)||0)*100)/100; };
+    var NCOLS = 41;
+    function mkRow(map) {
+      var r = new Array(NCOLS).fill(null);
+      Object.keys(map).forEach(function(k){ r[+k] = map[k]; });
+      return r;
+    }
+
+    var aoa = [];
+    // Encabezado
+    aoa.push(mkRow({1:'REPORTE INGRESOS SALA STELLARIS FISCAL'}));
+    aoa.push(mkRow({1:'MES: ' + (fiscal.mes||'').toUpperCase()}));
+    aoa.push([]);
+    // Nombres de licencias
+    aoa.push(mkRow({3:'ACCESO',5:'L007 TERMINALES',15:'L002 CARRERAS',19:'L003 DEPORTIVAS',23:'L005 BINGO',26:'L006 MESAS',32:'RETENCIONES'}));
+    // Headers de columnas
+    aoa.push(mkRow({
+      1:'FECHA',     3:'COVER',
+      5:'ENTRADAS',  6:'ENT 70%', 7:'ENT 30%', 8:'DEVOL.', 9:'PREMIOS', 10:'PRE 70%', 11:'PRE 30%', 12:'SALIDAS', 13:'ING. FINAL',
+      15:'ENTRADAS', 16:'DEVOL.', 17:'PREMIOS', 18:'RESULTADO',
+      19:'ENTRADAS', 20:'DEVOL.', 21:'PREMIOS', 22:'RESULTADO',
+      23:'ENTRADAS', 24:'PREMIOS',25:'RESULTADO',
+      26:'ENTRADAS', 27:'DEVOL.', 28:'PREMIOS', 29:'RESULTADO',
+      32:'FED 70%',  33:'EST 70%',
+      36:'FED(30x70)',37:'EST(30x70)',
+      39:'FED 30%',  40:'EST 30%'
+    }));
+    aoa.push([]);
+    // Filas de datos
+    fiscal.dias.forEach(function(d) {
+      aoa.push(mkRow({
+        1:'DIA '+String(d.dia).padStart(2,'0'),
+        3:f(d.cover),
+        5:f(d.l007_entradas), 6:f(d.l007_ent70), 7:f(d.l007_ent30),
+        8:0, 9:f(d.l007_premios), 10:f(d.l007_pre70), 11:f(d.l007_pre30),
+        12:f(d.l007_salidas), 13:f(d.l007_ingreso),
+        15:0,16:0,17:0,18:0, 19:0,20:0,21:0,22:0,
+        23:0,24:0,25:0,      26:0,27:0,28:0,29:0,
+        32:f(d.ret_fed70), 33:f(d.ret_est70),
+        36:0, 37:0,
+        39:f(d.ret_fed30), 40:f(d.ret_est30)
+      }));
+    });
+    aoa.push([]);
+    // Fila TOTAL
+    var t = fiscal.totales;
+    aoa.push(mkRow({
+      1:'TOTAL',
+      3:f(t.cover),
+      5:f(t.l007_entradas), 9:f(t.l007_premios), 13:f(t.l007_ingreso),
+      32:f(t.ret_fed70||0), 33:f(t.ret_est70||0),
+      36:0, 37:0,
+      39:f(t.ret_fed30||0), 40:f(t.ret_est30||0)
+    }));
+
+    var ws = XLSX.utils.aoa_to_sheet(aoa);
+    // Anchos de columna
+    var wscols = new Array(NCOLS).fill({wch:8});
+    wscols[1]={wch:12}; wscols[3]={wch:14}; wscols[5]={wch:14}; wscols[13]={wch:14};
+    ws['!cols'] = wscols;
+
+    var wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'REPORTE OPERADORA');
+    var fname = 'Reporte_Fiscal_Stellaris_' + (fiscal.mes||'').replace(/\s+/g,'_') + '.xlsx';
+    XLSX.writeFile(wb, fname);
+  }
+
   // ── EXPOSE ────────────────────────────────────────────────────
   window.OPERADORA_KEY            = OPERADORA_KEY;
   window.operadoraLoad            = operadoraLoad;
@@ -351,5 +483,7 @@
   window.parseSesionesCaja        = parseSesionesCaja;
   window.operadora_saveReporte    = operadora_saveReporte;
   window.operadoraCrossRef        = operadoraCrossRef;
+  window.deriveFiscalFromSesiones = deriveFiscalFromSesiones;
+  window.operadora_generateExcel  = operadora_generateExcel;
 
 })(window);

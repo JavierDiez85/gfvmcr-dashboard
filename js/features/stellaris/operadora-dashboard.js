@@ -33,12 +33,21 @@
       _renderOperadoraVacio(el); return;
     }
 
-    // Reportes: usar el más reciente
-    var fiscal   = nR ? reportes[0]  : null;
-    var ses      = nS ? sesiones[0]  : null;
-    var cross    = (fiscal && ses) ? operadoraCrossRef(fiscal, ses) : null;
+    // Sesiones: selector primero
+    var sSel = el.querySelector('#op-ses-sel');
+    var ses  = nS ? (sesiones[parseInt(sSel && sSel.value) || 0] || sesiones[0]) : null;
 
-    // Selector de reporte fiscal
+    // Fiscal: si hay cargado úsalo; si no, derivar de sesiones automáticamente
+    var fSel = el.querySelector('#op-fiscal-sel');
+    var fiscal = nR ? (reportes[parseInt(fSel && fSel.value) || 0] || reportes[0]) : null;
+    var fiscalDerived = false;
+    if (!fiscal && ses) {
+      fiscal = deriveFiscalFromSesiones(ses);
+      fiscalDerived = true;
+    }
+
+    var cross = (fiscal && ses && !fiscalDerived) ? operadoraCrossRef(fiscal, ses) : null;
+
     var selOptsFiscal = reportes.map(function(r, idx) {
       return '<option value="' + idx + '"' + (idx === 0 ? ' selected' : '') + '>' + escapeHtml(r.mes || 'Reporte ' + (idx+1)) + '</option>';
     }).join('');
@@ -46,13 +55,8 @@
       return '<option value="' + idx + '"' + (idx === 0 ? ' selected' : '') + '>' + escapeHtml(s.desde + ' → ' + s.hasta) + '</option>';
     }).join('');
 
-    // Recover selected indices from selectors
-    var fSel = el.querySelector('#op-fiscal-sel');
-    var sSel = el.querySelector('#op-ses-sel');
-    if (fSel) fiscal = reportes[parseInt(fSel.value) || 0] || fiscal;
-    if (sSel) ses = sesiones[parseInt(sSel.value) || 0] || ses;
-
-    el.innerHTML = _buildOperadoraHtml(fiscal, ses, cross, selOptsFiscal, selOpsSesiones);
+    window._opFiscalCache = fiscal; // para el botón de descarga
+    el.innerHTML = _buildOperadoraHtml(fiscal, ses, cross, selOptsFiscal, selOpsSesiones, fiscalDerived);
     _renderOpCharts(fiscal, ses);
   }
 
@@ -67,7 +71,7 @@
       '</div>';
   }
 
-  function _buildOperadoraHtml(fiscal, ses, cross, selFiscal, selSes) {
+  function _buildOperadoraHtml(fiscal, ses, cross, selFiscal, selSes, fiscalDerived) {
     var ft = fiscal ? fiscal.totales : {};
     var st = ses    ? ses.totales    : {};
 
@@ -102,9 +106,11 @@
         '<div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">' +
           (selFiscal ? '<select id="op-fiscal-sel" onchange="rOperadora()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);font-family:Figtree,sans-serif"><option value="">📋 Sin reportes</option>' + selFiscal + '</select>' : '') +
           (selSes    ? '<select id="op-ses-sel" onchange="rOperadora()" style="padding:5px 8px;border:1px solid var(--border);border-radius:6px;font-size:.72rem;background:var(--bg);color:var(--text);font-family:Figtree,sans-serif"><option value="">📊 Sin sesiones</option>' + selSes + '</select>' : '') +
+          (fiscal ? '<button class="btn btn-blue" style="font-size:.7rem;background:var(--green);border-color:var(--green)" onclick="operadora_generateExcel(' + (fiscal ? 'window._opFiscalCache' : 'null') + ')">⬇ Descargar Reporte Fiscal</button>' : '') +
           '<button class="btn btn-blue edit-action" style="font-size:.7rem" onclick="navTo(\'stel_operadora_upload\')">📤 Actualizar</button>' +
         '</div>' +
-      '</div>';
+      '</div>' +
+      (fiscalDerived ? '<div style="margin-bottom:10px;padding:6px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;font-size:.72rem;color:#b8860b">⚡ Reporte Fiscal <b>calculado automáticamente</b> desde Sesiones de Caja · Retenciones: Federal 1% / Estatal 6% · Split 70/30 mecánico</div>' : '');
 
     // Tabs: Fiscal | Sesiones de Caja | Validación Cruzada
     var activeTab = 'fiscal'; // default
