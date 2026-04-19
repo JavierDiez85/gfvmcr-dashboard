@@ -24,7 +24,7 @@
   var DEFAULT_TASAS = [
     { id:'merkur_todas',    proveedor:'Merkur', tipo:'Todas',           pct:0.21, color:'#7b5ea7', nombres:['F-MK MAX TRIO','NF-MK TRIO'],                                      esOperadora:false },
     { id:'zitro_todas',     proveedor:'Zitro',  tipo:'Todas',           pct:0.25, color:'#e74c3c', nombres:['F-ZT ALLURE SLOT','NF-ZT FUSION SLOT'],                             esOperadora:false },
-    { id:'egt_premier',     proveedor:'EGT',    tipo:'Premier',         pct:0.20, color:'#0073ea', nombres:['F-EGT VS9_1','F-EGT V55'],                                          esOperadora:false },
+    { id:'egt_premier',     proveedor:'EGT',    tipo:'Premier',         pct:0.20, color:'#0073ea', nombres:['F-EGT VS9_1','F-EGT V55','NF-EGT VS9_1','NF-EGT V55'],             esOperadora:false },
     { id:'egt_general',     proveedor:'EGT',    tipo:'General',         pct:0.21, color:'#0073ea', nombres:['F-EGT VS34','NF-EGT VS34'],                                         esOperadora:false },
     { id:'egt_general_vip', proveedor:'EGT',    tipo:'General VIP',     pct:0.22, color:'#0073ea', nombres:[],                                                                    esOperadora:false },
     { id:'ortiz_ocircle',   proveedor:'Ortiz',  tipo:"O'Circle",        pct:0.19, color:'#00b875', nombres:['NF-BINGO CIRCLE'],                                                  esOperadora:false },

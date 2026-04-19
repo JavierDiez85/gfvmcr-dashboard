@@ -247,6 +247,10 @@ const NAV_STRUCTURE = {
               {id:'stel_cierre_acumulado', label:'Acumulado Mensual', icon:'📅'},
               {id:'stel_cierre_upload',    label:'Cargar Reporte',    icon:'📤'},
             ]},
+            { label:'Operadora', views:[
+              {id:'stel_operadora',        label:'Reporte Fiscal y Sesiones', icon:'📊'},
+              {id:'stel_operadora_upload', label:'Cargar Reportes',           icon:'📤'},
+            ]},
           ]
         },
         { id:'rrhh', label:'RRHH', icon:'👥', defaultView:'stel_rrhh_empleados',

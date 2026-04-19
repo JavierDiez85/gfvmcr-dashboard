@@ -33,6 +33,8 @@ const VT = {
   stel_cierre_maquineros:'Maquineros — Análisis de Comisiones',
   stel_cierre_acumulado: 'Maquineros — Acumulado Mensual',
   stel_cierre_upload:    'Maquineros — Cargar Reporte',
+  stel_operadora:'Operadora — Reporte Fiscal y Sesiones',
+  stel_operadora_upload:'Operadora — Cargar Reportes',
   stel_boveda:'Stellaris — Dashboard Bóveda',stel_boveda_upload:'Stellaris — Carga Bóveda',
   stel_rrhh_empleados:'Stellaris — RRHH Empleados',
   carga_facturas:'Facturación — Carga de Facturas',
