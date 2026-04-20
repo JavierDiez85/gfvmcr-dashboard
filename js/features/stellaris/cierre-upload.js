@@ -141,7 +141,7 @@
           var dbg = parsed && parsed._debug ? parsed._debug : {};
           statusEl.style.background = 'var(--red-lt)'; statusEl.style.color = 'var(--red)';
           statusEl.innerHTML = '⚠ No se encontraron datos de máquinas en el archivo.' +
-            '<br><span style="font-size:.7rem">Hojas: ' + wb.SheetNames.join(', ') + '</span>' +
+            '<br><span style="font-size:.7rem">Hojas: ' + escapeHtml(wb.SheetNames.join(', ')) + '</span>' +
             '<br><span style="font-size:.7rem">Headers detectados en fila: ' + (dbg.headerRow >= 0 ? dbg.headerRow : 'ninguna') +
             ' · Col Nombre: ' + dbg.colNom + ' · Col Fabricante: ' + dbg.colFab +
             ' · Col Netwin: ' + dbg.colNetwin + ' · Total filas: ' + dbg.totalRows + '</span>' +

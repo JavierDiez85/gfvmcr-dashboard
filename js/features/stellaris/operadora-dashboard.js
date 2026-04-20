@@ -433,8 +433,8 @@
       '<div style="font-size:.68rem;color:var(--muted);margin-bottom:14px">El sistema detecta automáticamente si el Excel es el Reporte Fiscal o las Sesiones de Caja.</div>' +
 
       '<div class="kpi-row c4" style="margin-bottom:14px">' +
-        '<div class="kpi-card" style="--ac:#9b51e0"><div class="kpi-top"><div class="kpi-lbl">Reportes Fiscales</div><div class="kpi-ico" style="background:var(--purple-bg);color:#9b51e0">📋</div></div><div class="kpi-val" style="color:#9b51e0">' + nR + '</div><div class="kpi-d dnu">' + (lastR ? 'Último: ' + lastR.mes : 'Sin datos') + '</div></div>' +
-        '<div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Sesiones de Caja</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🧾</div></div><div class="kpi-val" style="color:var(--blue)">' + nS + '</div><div class="kpi-d dnu">' + (lastS ? lastS.desde + ' → ' + lastS.hasta : 'Sin datos') + '</div></div>' +
+        '<div class="kpi-card" style="--ac:#9b51e0"><div class="kpi-top"><div class="kpi-lbl">Reportes Fiscales</div><div class="kpi-ico" style="background:var(--purple-bg);color:#9b51e0">📋</div></div><div class="kpi-val" style="color:#9b51e0">' + nR + '</div><div class="kpi-d dnu">' + (lastR ? 'Último: ' + escapeHtml(lastR.mes||'') : 'Sin datos') + '</div></div>' +
+        '<div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Sesiones de Caja</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">🧾</div></div><div class="kpi-val" style="color:var(--blue)">' + nS + '</div><div class="kpi-d dnu">' + (lastS ? escapeHtml(lastS.desde||'') + ' → ' + escapeHtml(lastS.hasta||'') : 'Sin datos') + '</div></div>' +
       '</div>' +
 
       '<div class="tw" style="margin-bottom:14px">' +
@@ -543,8 +543,8 @@
 
         _op_parsed = parsed;
         st.style.background = 'var(--green-bg)'; st.style.color = 'var(--green)';
-        st.innerHTML = '✅ ' + (tipo === 'fiscal' ? '📋 Reporte Fiscal — ' + (parsed.mes||'') + ' · ' + parsed.nDias + ' días' :
-                                                    '🧾 Sesiones de Caja — ' + parsed.desde + ' → ' + parsed.hasta + ' · ' + parsed.nSesiones + ' sesiones');
+        st.innerHTML = '✅ ' + (tipo === 'fiscal' ? '📋 Reporte Fiscal — ' + escapeHtml(parsed.mes||'') + ' · ' + parsed.nDias + ' días' :
+                                                    '🧾 Sesiones de Caja — ' + escapeHtml(parsed.desde||'') + ' → ' + escapeHtml(parsed.hasta||'') + ' · ' + parsed.nSesiones + ' sesiones');
 
         // Preview
         if (prv) { prv.style.display = ''; prv.innerHTML = _opPreview(parsed); }
