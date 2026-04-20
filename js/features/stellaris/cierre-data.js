@@ -334,22 +334,12 @@
       kpis:       kpis
     };
 
-    // Reemplazar si hay algún corte del mismo mes (YYYY-MM)
-    // Lógica: un solo corte por mes — siempre actualizar con el más reciente
-    var ym = corte.desdeISO ? corte.desdeISO.slice(0, 7) : '';
+    // Reemplazar solo si existe el mismo rango de fechas exacto (desdeISO + hastaISO)
+    // Permite múltiples cortes por mes (ej. cargas diarias para el Cuadro Fiscal)
     var replaced = false;
-    if (ym) {
-      for (var i = 0; i < data.cortes.length; i++) {
-        if (data.cortes[i].desdeISO && data.cortes[i].desdeISO.slice(0, 7) === ym) {
-          data.cortes[i] = corte; replaced = true; break;
-        }
-      }
-    } else {
-      // Sin fecha: reemplazar si mismo desde+hasta exacto
-      for (var j = 0; j < data.cortes.length; j++) {
-        if (data.cortes[j].desde === corte.desde && data.cortes[j].hasta === corte.hasta) {
-          data.cortes[j] = corte; replaced = true; break;
-        }
+    for (var i = 0; i < data.cortes.length; i++) {
+      if (data.cortes[i].desdeISO === corte.desdeISO && data.cortes[i].hastaISO === corte.hastaISO) {
+        data.cortes[i] = corte; replaced = true; break;
       }
     }
     if (!replaced) data.cortes.unshift(corte);

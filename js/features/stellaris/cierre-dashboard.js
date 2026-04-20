@@ -420,13 +420,177 @@
     });
   }
 
+  // ── CUADRO FISCAL ─────────────────────────────────────────────
+  var IMP_FED = 0.01;
+  var IMP_EST = 0.06;
+  var MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  function _fiscalYmLabel(ym) {
+    var p = ym.split('-');
+    return MESES_ES[parseInt(p[1], 10) - 1] + ' ' + p[0];
+  }
+  function _fiscalQuarterKey(ym) {
+    var p = ym.split('-'); return p[0] + '-Q' + Math.ceil(parseInt(p[1], 10) / 3);
+  }
+  function _fiscalQuarterLabel(k) {
+    var p = k.split('-Q'); return 'Q' + p[1] + ' ' + p[0];
+  }
+  function _fiscalSemKey(ym) {
+    var p = ym.split('-'); return p[0] + '-S' + (parseInt(p[1], 10) <= 6 ? '1' : '2');
+  }
+  function _fiscalSemLabel(k) {
+    var p = k.split('-S'); return 'S' + p[1] + ' ' + p[0] + ' (' + (p[1]==='1'?'Ene–Jun':'Jul–Dic') + ')';
+  }
+
+  function _fiscalAgg(rows, keyFn, labelFn) {
+    var groups = {}, order = [];
+    rows.forEach(function(r) {
+      var k = keyFn(r);
+      if (!groups[k]) { groups[k] = { label: labelFn(k), nt:0, comMaq:0, comOp:0, impFed:0, impEst:0, total:0 }; order.push(k); }
+      var g = groups[k];
+      g.nt += r.nt; g.comMaq += r.comMaq; g.comOp += r.comOp;
+      g.impFed += r.impFed; g.impEst += r.impEst; g.total += r.total;
+    });
+    return order.map(function(k) { return groups[k]; });
+  }
+
+  function _fiscalTableRow(label, r) {
+    return '<tr>' +
+      '<td class="bld">' + label + '</td>' +
+      '<td class="r mo pos">'                             + fmtC(r.nt)     + '</td>' +
+      '<td class="r mo" style="color:var(--orange)">'    + fmtC(r.comMaq) + '</td>' +
+      '<td class="r mo" style="color:#9b51e0">'          + fmtC(r.comOp)  + '</td>' +
+      '<td class="r mo" style="color:#c62828">'          + fmtC(r.impFed) + '</td>' +
+      '<td class="r mo" style="color:#e53935">'          + fmtC(r.impEst) + '</td>' +
+      '<td class="r mo bld" style="color:var(--blue)">'  + fmtC(r.total)  + '</td>' +
+    '</tr>';
+  }
+
+  function rCierreFiscal(tab) {
+    var el = document.getElementById('view-stel_cierre_fiscal');
+    if (!el) return;
+
+    var data = cierreLoad();
+    var cortes = (data.cortes || []).slice().sort(function(a, b) {
+      return (a.desdeISO || '').localeCompare(b.desdeISO || '');
+    });
+
+    if (!cortes.length) {
+      el.innerHTML =
+        '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700;margin-bottom:4px">📊 Cuadro Fiscal — Stellaris</div>' +
+        '<div style="text-align:center;padding:60px 20px;background:var(--white);border:2px dashed var(--border2);border-radius:var(--r);margin-top:14px">' +
+          '<div style="font-size:2rem;margin-bottom:10px">📊</div>' +
+          '<div style="font-weight:700;font-size:.9rem;margin-bottom:6px">Sin datos cargados</div>' +
+          '<div style="font-size:.75rem;color:var(--muted);margin-bottom:16px">Carga al menos un reporte de máquinas para ver el cuadro fiscal</div>' +
+          '<button class="btn btn-blue" style="font-size:.78rem" onclick="navTo(\'stel_cierre_upload\')">📤 Cargar Reporte</button>' +
+        '</div>';
+      return;
+    }
+
+    tab = tab || 'detalle';
+
+    var rows = cortes.map(function(c) {
+      var k = c.kpis || {};
+      var nt     = k.netwinTotal        || 0;
+      var comMaq = k.totalComMaquineros || 0;
+      var comOp  = (k.comOperadora || {}).total || 0;
+      var impFed = nt * IMP_FED;
+      var impEst = nt * IMP_EST;
+      return {
+        ym:     (c.desdeISO || '').slice(0, 7),
+        label:  escapeHtml((c.desde || '') + ' → ' + (c.hasta || '')),
+        nt: nt, comMaq: comMaq, comOp: comOp,
+        impFed: impFed, impEst: impEst,
+        total:  comMaq + comOp + impFed + impEst
+      };
+    });
+
+    var displayRows;
+    if (tab === 'detalle') {
+      displayRows = rows.map(function(r) { return _fiscalTableRow(r.label, r); });
+    } else if (tab === 'mensual') {
+      displayRows = _fiscalAgg(rows,
+        function(r){ return r.ym; },
+        function(k){ return escapeHtml(_fiscalYmLabel(k)); }
+      ).map(function(g){ return _fiscalTableRow(g.label, g); });
+    } else if (tab === 'trimestral') {
+      displayRows = _fiscalAgg(rows,
+        function(r){ return _fiscalQuarterKey(r.ym); },
+        function(k){ return escapeHtml(_fiscalQuarterLabel(k)); }
+      ).map(function(g){ return _fiscalTableRow(g.label, g); });
+    } else {
+      displayRows = _fiscalAgg(rows,
+        function(r){ return _fiscalSemKey(r.ym); },
+        function(k){ return escapeHtml(_fiscalSemLabel(k)); }
+      ).map(function(g){ return _fiscalTableRow(g.label, g); });
+    }
+
+    var totNt=0, totMaq=0, totOp=0, totFed=0, totEst=0, totAll=0;
+    rows.forEach(function(r){ totNt+=r.nt; totMaq+=r.comMaq; totOp+=r.comOp; totFed+=r.impFed; totEst+=r.impEst; totAll+=r.total; });
+
+    var tabs = [
+      {id:'detalle',    lbl:'📋 Por Corte'},
+      {id:'mensual',    lbl:'📅 Mensual'},
+      {id:'trimestral', lbl:'📆 Trimestral'},
+      {id:'semestral',  lbl:'📊 Semestral'}
+    ];
+    var tabBtns = tabs.map(function(t) {
+      var act = t.id === tab;
+      return '<button onclick="rCierreFiscal(\'' + t.id + '\')" style="padding:5px 12px;border-radius:6px;border:1px solid ' + (act?'var(--blue)':'var(--border)') + ';background:' + (act?'var(--blue)':'var(--white)') + ';color:' + (act?'#fff':'var(--text)') + ';font-size:.72rem;font-family:Figtree,sans-serif;cursor:pointer">' + t.lbl + '</button>';
+    }).join('');
+
+    el.innerHTML =
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">' +
+        '<div>' +
+          '<div style="font-family:Poppins,sans-serif;font-size:.95rem;font-weight:700">📊 Cuadro Fiscal — Stellaris</div>' +
+          '<div style="font-size:.68rem;color:var(--muted);margin-top:2px">Comisiones + Impuestos · ' + cortes.length + ' corte' + (cortes.length!==1?'s':'') + ' cargados</div>' +
+        '</div>' +
+      '</div>' +
+
+      '<div class="kpi-row" style="margin-bottom:14px">' +
+        _kpiCard('Netwin Total',          fmtC(totNt),          'Base gravable',          '#0073ea', '🎰') +
+        _kpiCard('Com. Maquineros',       fmtC(totMaq),         'Base + IVA',             '#ff7043', '🔧') +
+        _kpiCard('Com. Operadora',        fmtC(totOp),          'Base + IVA',             '#9b51e0', '🏛') +
+        _kpiCard('Imp. Fed + Est',        fmtC(totFed+totEst),  '1% Federal · 6% Estatal','#e53935', '🏦') +
+        _kpiCard('Total a Pagar',         fmtC(totAll),         'Comisiones + Impuestos', '#00b875', '💰') +
+      '</div>' +
+
+      '<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">' + tabBtns + '</div>' +
+
+      '<div class="tw">' +
+        '<div class="tw-h"><span class="tw-ht">Desglose Fiscal</span></div>' +
+        '<table class="bt" style="width:100%"><thead><tr>' +
+          '<th>Período</th>' +
+          '<th class="r">Netwin</th>' +
+          '<th class="r" style="color:var(--orange)">Com. Maquineros</th>' +
+          '<th class="r" style="color:#9b51e0">Com. Operadora</th>' +
+          '<th class="r" style="color:#c62828">Imp. Federal 1%</th>' +
+          '<th class="r" style="color:#e53935">Imp. Estatal 6%</th>' +
+          '<th class="r" style="color:var(--blue)">Total a Pagar</th>' +
+        '</tr></thead><tbody>' +
+        displayRows.join('') +
+        '<tr style="background:var(--bg);font-weight:700;border-top:2px solid var(--border)">' +
+          '<td class="bld">TOTAL ACUMULADO</td>' +
+          '<td class="r mo pos">'                             + fmtC(totNt)  + '</td>' +
+          '<td class="r mo" style="color:var(--orange)">'    + fmtC(totMaq) + '</td>' +
+          '<td class="r mo" style="color:#9b51e0">'          + fmtC(totOp)  + '</td>' +
+          '<td class="r mo" style="color:#c62828">'          + fmtC(totFed) + '</td>' +
+          '<td class="r mo" style="color:#e53935">'          + fmtC(totEst) + '</td>' +
+          '<td class="r mo bld" style="color:var(--blue)">'  + fmtC(totAll) + '</td>' +
+        '</tr>' +
+        '</tbody></table>' +
+      '</div>';
+  }
+
   // ── EXPOSE ────────────────────────────────────────────────────
   window.rCierreMaquineros = rCierreMaquineros;
   window.rCierreAcumulado  = rCierreAcumulado;
+  window.rCierreFiscal     = rCierreFiscal;
 
   if (typeof registerView === 'function') {
     registerView('stel_cierre_maquineros', function(){ rCierreMaquineros(); });
     registerView('stel_cierre_acumulado',  function(){ rCierreAcumulado();  });
+    registerView('stel_cierre_fiscal',     function(){ rCierreFiscal();     });
   }
 
 })(window);

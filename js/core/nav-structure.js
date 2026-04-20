@@ -244,8 +244,9 @@ const NAV_STRUCTURE = {
             ]},
             { label:'Maquineros', views:[
               {id:'stel_cierre_maquineros',label:'Análisis Maquineros',icon:'🎰'},
-              {id:'stel_cierre_acumulado', label:'Acumulado Mensual', icon:'📅'},
-              {id:'stel_cierre_upload',    label:'Cargar Reporte',    icon:'📤'},
+              {id:'stel_cierre_acumulado', label:'Acumulado Mensual',  icon:'📅'},
+              {id:'stel_cierre_fiscal',    label:'Cuadro Fiscal',      icon:'📊'},
+              {id:'stel_cierre_upload',    label:'Cargar Reporte',     icon:'📤'},
             ]},
             { label:'Operadora', views:[
               {id:'stel_operadora',        label:'Reporte Fiscal y Sesiones', icon:'📊'},
