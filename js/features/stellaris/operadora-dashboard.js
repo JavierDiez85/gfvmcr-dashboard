@@ -260,6 +260,18 @@
       extra = extra || '';
       return '<td class="r" style="' + extra + '">' + (v ? fmtO(v) : '<span style="color:var(--muted)">—</span>') + '</td>';
     }
+    // Siempre recalcular totales de desglose desde dias (para compatibilidad con datos guardados en formato anterior)
+    var dtot = dias.reduce(function(a, d) {
+      a.cover += d.cover||0; a.l007_entradas += d.l007_entradas||0; a.l007_ent70 += d.l007_ent70||0; a.l007_ent30 += d.l007_ent30||0;
+      a.l007_devol += d.l007_devol||0; a.l007_premios += d.l007_premios||0; a.l007_pre70 += d.l007_pre70||0; a.l007_pre30 += d.l007_pre30||0;
+      a.l007_salidas += d.l007_salidas||0; a.l007_ingreso += d.l007_ingreso||0;
+      a.retD += (d.ret_fed70||0) + (d.ret_fed_30x70||0) + (d.ret_fed30||0);
+      a.retE += (d.ret_est70||0) + (d.ret_est_30x70||0) + (d.ret_est30||0);
+      a.ret_fed70 += d.ret_fed70||0; a.ret_est70 += d.ret_est70||0;
+      a.ret_fed30 += d.ret_fed30||0; a.ret_est30 += d.ret_est30||0;
+      return a;
+    }, { cover:0,l007_entradas:0,l007_ent70:0,l007_ent30:0,l007_devol:0,l007_premios:0,l007_pre70:0,l007_pre30:0,l007_salidas:0,l007_ingreso:0,retD:0,retE:0,ret_fed70:0,ret_est70:0,ret_fed30:0,ret_est30:0 });
+
     var rows = dias.map(function(d) {
       var retD = (d.ret_fed70||0) + (d.ret_fed_30x70||0) + (d.ret_fed30||0);
       var retE = (d.ret_est70||0) + (d.ret_est_30x70||0) + (d.ret_est30||0);
@@ -283,28 +295,26 @@
         _mo(d.ret_est30||0, 'color:var(--red)') +
       '</tr>';
     }).join('');
-    // Totals row
-    var tRetFed = ft.ret_federal || 0;
-    var tRetEst = ft.ret_estatal || 0;
+    // Totals row — siempre desde dtot (calculado desde días, no depende del formato del objeto guardado)
     rows +=
       '<tr style="font-weight:800;background:var(--blue-bg)">' +
         '<td>TOTAL</td>' +
-        _moZ(ft.cover) +
-        _mo(ft.l007_entradas, 'color:var(--blue)') +
-        _mo(ft.l007_ent70||0) +
-        _mo(ft.l007_ent30||0) +
-        _moZ(ft.l007_devol||0, 'color:var(--muted)') +
-        _mo(ft.l007_premios, 'color:var(--orange)') +
-        _mo(ft.l007_pre70||0) +
-        _mo(ft.l007_pre30||0) +
-        _mo(ft.l007_salidas||0, 'color:var(--orange)') +
-        '<td class="r bld" style="color:var(--green)">' + fmtO(ft.l007_ingreso) + '</td>' +
-        _mo(tRetFed, 'color:var(--red)') +
-        _mo(tRetEst, 'color:var(--red)') +
-        _mo(ft.ret_fed70||0, 'color:var(--red)') +
-        _mo(ft.ret_est70||0, 'color:var(--red)') +
-        _mo(ft.ret_fed30||0, 'color:var(--red)') +
-        _mo(ft.ret_est30||0, 'color:var(--red)') +
+        _moZ(dtot.cover) +
+        _mo(dtot.l007_entradas, 'color:var(--blue)') +
+        _mo(dtot.l007_ent70) +
+        _mo(dtot.l007_ent30) +
+        _moZ(dtot.l007_devol, 'color:var(--muted)') +
+        _mo(dtot.l007_premios, 'color:var(--orange)') +
+        _mo(dtot.l007_pre70) +
+        _mo(dtot.l007_pre30) +
+        _mo(dtot.l007_salidas, 'color:var(--orange)') +
+        '<td class="r bld" style="color:var(--green)">' + fmtO(dtot.l007_ingreso) + '</td>' +
+        _mo(dtot.retD, 'color:var(--red)') +
+        _mo(dtot.retE, 'color:var(--red)') +
+        _mo(dtot.ret_fed70, 'color:var(--red)') +
+        _mo(dtot.ret_est70, 'color:var(--red)') +
+        _mo(dtot.ret_fed30, 'color:var(--red)') +
+        _mo(dtot.ret_est30, 'color:var(--red)') +
       '</tr>';
     return rows;
   }
