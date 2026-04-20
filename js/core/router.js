@@ -32,6 +32,7 @@ const VT = {
   stel_casino:'Stellaris — Dashboard Casino',stel_casino_upload:'Stellaris — Carga Casino',
   stel_cierre_maquineros:'Maquineros — Análisis de Comisiones',
   stel_cierre_acumulado: 'Maquineros — Acumulado Mensual',
+  stel_cierre_fiscal:    'Maquineros — Cuadro Fiscal',
   stel_cierre_upload:    'Maquineros — Cargar Reporte',
   stel_operadora:'Operadora — Reporte Fiscal y Sesiones',
   stel_operadora_upload:'Operadora — Cargar Reportes',
