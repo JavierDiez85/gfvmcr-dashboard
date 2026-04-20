@@ -1,6 +1,6 @@
 # Manual Completo — Dashboard Grupo Financiero VMCR
 
-> **Versión**: 1.9 | **Fecha**: 2026-04-08 | **Código**: ~43,000 líneas
+> **Versión**: 2.0 | **Fecha**: 2026-04-20 | **Código**: ~50,000 líneas
 >
 > Este manual cubre 3 niveles: operativo (cómo usar), técnico (cómo funciona) y desarrollo (cómo modificar). Diseñado para que cualquier desarrollador o agente de IA pueda retomar el proyecto desde cero.
 
@@ -439,6 +439,94 @@ Módulo de gestión de recursos humanos para Stellaris Casino.
 **Storage**: Clave `gf_rrhh_stel` en `APP_KEYS` (sync Supabase). Estructura: `{ empleados: [...] }`
 
 > **Nota de privacidad**: RFC, CURP, NSS y CLABE se almacenan en localStorage + Supabase (mismo patrón que el resto del sistema). Solo usuarios autenticados acceden a estos datos.
+
+### 1.8.4 Maquineros — Análisis de Comisiones
+**Vistas**: `stel_cierre_maquineros` (dashboard) · `stel_cierre_upload` (carga) · `stel_acumulado_maquineros` (acumulado mensual)
+
+Módulo para calcular y analizar las comisiones pagadas a cada proveedor de máquinas, basado en el reporte Excel de cierre del sistema Wigos.
+
+**Flujo de datos**:
+1. Se sube el Excel de máquinas (formato Wigos). El parser detecta dinámicamente las columnas por encabezado.
+2. Cada máquina se cruza contra la tabla de tasas para determinar su % de comisión.
+3. Se calculan comisiones por máquina, por proveedor y totales (base + IVA 16%).
+
+**KPIs del dashboard**:
+| KPI | Descripción |
+|-----|-------------|
+| Netwin Total | Suma netwin de todas las máquinas del corte |
+| Comisión Maquineros (c/IVA) | Total a pagar a proveedores con IVA incluido |
+| Comisión Operadora | 10% del netwin total |
+| Neto Stellaris | Netwin − todas las comisiones |
+
+**Tabla por proveedor**: Netwin, % tasa promedio, comisión base, IVA, comisión total. Barra de participación visual.
+
+**Vista Acumulado**: Agrega múltiples cortes cargados por mes (selector). Muestra tendencia mensual en chart de líneas.
+
+**Tasas de comisión** (DEFAULT_TASAS en `cierre-data.js`):
+- Merkur: 21% · Zitro: 25% · EGT Premier: 20% · EGT General: 21% · Ortiz O'Circle: 19% · Ortiz O'Vision: 21% · AGS DVS-23: 20% · AGS ST42P: 23% · FBM Spins: 21% · FBM VideoBingo: 18%
+- Operadora (sobre todas): 10%
+- Las tasas se actualizan automáticamente si el Excel incluye una Sheet2 de "Comisiones".
+- Máquinas sin tasa asignada se listan como "Sin Tasa" con alerta visual.
+
+**Parser** (`parseCierreExcel`):
+- Detecta columnas por nombre: busca "nombre", "fabricante", "netwin", "jugado"
+- Filtra filas de subtotal del sistema (las que contienen subtotales automáticos por fabricante)
+- Agrupa por máquina única para consolidar filas diarias del mismo mes
+- Soporta Excel de reemplazo: si hay corte del mismo mes, reemplaza en vez de duplicar
+
+**Storage**: Clave `gf_cierre_maquineros` en `DB` (sessionStorage). Estructura: `{ tasas: [...], cortes: [{ id, mes, maquinas: [...], kpis: {...}, uploadedAt }] }`
+
+---
+
+### 1.8.5 Operadora — Reporte Fiscal y Sesiones de Caja
+**Vistas**: `stel_operadora` (dashboard) · `stel_operadora_upload` (carga)
+
+Módulo para analizar el reporte fiscal mensual de la operadora del casino (Grand Play) y las sesiones de caja de cajeros.
+
+**Tipos de archivo soportados** (auto-detectados):
+1. **Reporte Fiscal** — Hoja "REPORTE MAQUINAS 100%" o "REPORTE OPERADORA". Datos mensuales de entradas L007, premios pagados, retenciones e ingreso final.
+2. **Sesiones de Caja** — Excel de sesiones de cajero. Filas con campo "usuario". Datos por sesión: depósito juego, acceso (cover), premios, retención, promo redimible/no redimible.
+
+**Tabs del dashboard**:
+- **📋 Reporte Fiscal**: KPIs de Cover (acceso), L007 Entradas/Premios/Ingreso Final, retenciones federal 1%/estatal 6%, comisión operadora 10%. Tabla por día. Chart evolución diaria (entradas vs premios) + donut mix de ingresos.
+- **🧾 Sesiones de Caja**: KPIs de depósito de juego, acceso, promos (redimible/no redimible), resultado. Tabla detallada por sesión.
+- **🔗 Validación Cruzada** (solo si hay ambos): Compara cifras del Reporte Fiscal vs Sesiones de Caja. Semáforo de coincidencia por campo.
+
+**Derivación automática**: Si hay Sesiones de Caja pero no Reporte Fiscal, el sistema calcula automáticamente el fiscal estimado usando retenciones Federal 1% / Estatal 6% y split mecánico 70/30. Se muestra badge amarillo indicando que es calculado.
+
+**Export Excel**: Botón "⬇ Descargar Reporte Fiscal" genera Excel del reporte con todos los datos del período.
+
+**Storage**: Clave `gf_operadora` en `DB`. Estructura: `{ reportes: [{ tipo:'fiscal', mes, nDias, totales:{...}, porDia:[...], id, uploadedAt }], sesiones: [{ tipo:'sesiones', desde, hasta, nSesiones, totales:{...}, porDia:[...], id, uploadedAt }] }`
+
+---
+
+### 1.8.6 Bóveda — Control de Efectivo en Caja
+**Vistas**: `stel_boveda` (dashboard) · `stel_boveda_upload` (carga)
+
+Módulo para controlar el efectivo en la bóveda del casino Grand Tuxtla. Registra arqueos por turno (Apertura, T1, T2), seguimiento de fondos y reportes de ingresos/gastos.
+
+**Tipos de archivo soportados** (auto-detectados):
+1. **Arqueo Bóveda** — Excel multi-hoja: cada hoja = 1 día. 3 secciones horizontales (Apertura cols 0-3, T1 cols 5-8, T2 cols 10-13). Detecta fecha en fila 2 col 1.
+2. **Control de Fondo** — Seguimiento diario de los fondos operativos.
+3. **Reporte Ingresos/Gastos** — Reporte de ingresos y gastos del período.
+
+**KPIs del dashboard** (por fecha seleccionada):
+| KPI | Descripción |
+|-----|-------------|
+| Efectivo Bóveda | Total efectivo del último conteo (T2 o apertura) |
+| SOB/FAL Total | Sobrante (+) o Faltante (−) del arqueo |
+| Caja Stellaris | Acumulado de caja |
+| TPV Acumulado | Total en terminales bancarias |
+
+**Tabla de Arqueo**: Compara Apertura / T1 / T2 — Efectivo MXN, Efectivo USD, Total Efectivo. Si hay resumen: Pagos Manuales T1/T2, TPV Prohidro T1/T2, TPV Grand Play T1/T2, Total Caja, Fondo Operativo, Wigos (sistema), SOB/FAL con color-coding (🔴 faltante / 🟡 sobrante / ✅ cuadre perfecto).
+
+**Control de Fondos**: Tabla histórica con todas las fechas cargadas mostrando: Fondo A/B, SportBook Cajas/Premios, Fondo Adrián/Gastos, Caja Stellaris, TPV, Restaurante, Total. Chart de líneas: evolución de fondos en el tiempo.
+
+**Alertas automáticas** (`bovedaAlertas`): Detecta sobrantes/faltantes y genera alertas con color-coding rojo/naranja/verde/azul.
+
+**Storage**: Clave `gf_boveda` en `DB`. Estructura: `{ arqueos: [{ fecha, apertura:{...}, turno1:{...}, turno2:{...}, resumen_t1, resumen_t2, fondoB, uploaded_at }], fondos: [{ fecha, fondo_a, fondo_b, ..., total }], reportes: { ingresos: [...], gastos: [...] } }`
+
+> **Nota**: Los módulos Maquineros, Operadora y Bóveda almacenan datos en `DB` (sessionStorage), sin sincronización a Supabase. Los datos persisten mientras dure la sesión del navegador.
 
 ---
 
