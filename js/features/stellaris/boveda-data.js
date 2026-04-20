@@ -62,18 +62,32 @@
   }
 
   function _parseDate(val) {
-    if (!val) return null;
-    var s = String(val);
-    // Handle Excel date serial or ISO string
+    if (!val && val !== 0) return null;
+    // JS Date object (SheetJS devuelve Date cuando la celda tiene tipo fecha)
+    if (typeof val === 'object' && val instanceof Date) {
+      if (!isNaN(val.getTime())) return val.toISOString().slice(0, 10);
+      return null;
+    }
+    var s = String(val).trim();
+    // ISO: 2026-04-17
     if (s.match(/^\d{4}-\d{2}-\d{2}/)) return s.slice(0, 10);
+    // MM/DD/YYYY
     if (s.match(/^\d{1,2}\/\d{1,2}\/\d{4}/)) {
       var p = s.split('/');
       return p[2] + '-' + p[0].padStart(2, '0') + '-' + p[1].padStart(2, '0');
     }
-    // Try Date parse
-    try {
-      var d = new Date(val);
+    // Número serial de Excel (días desde 1899-12-30)
+    // Rango 40000-55000 cubre aprox 2009–2036
+    var n = parseFloat(s);
+    if (!isNaN(n) && n > 40000 && n < 55000) {
+      // 25569 = días entre 1899-12-30 y 1970-01-01
+      var d = new Date(Math.round((n - 25569) * 86400000));
       if (!isNaN(d.getTime())) return d.toISOString().slice(0, 10);
+    }
+    // Fallback: string parseble (filtrar fechas 1970 falsas)
+    try {
+      var d2 = new Date(s);
+      if (!isNaN(d2.getTime()) && d2.getFullYear() > 1970) return d2.toISOString().slice(0, 10);
     } catch (e) {}
     return null;
   }

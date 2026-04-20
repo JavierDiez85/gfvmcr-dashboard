@@ -43,8 +43,8 @@
     html += '<div class="kpi-row" style="margin-bottom:14px">';
     html += '<div class="kpi-card" style="--ac:var(--blue)"><div class="kpi-top"><div class="kpi-lbl">Efectivo Boveda</div><div class="kpi-ico" style="background:var(--blue-bg);color:var(--blue)">💰</div></div><div class="kpi-val" style="color:var(--blue)">' + f(kpis.efectivo_t2 || kpis.efectivo_apertura) + '</div><div class="kpi-d dnu">ultimo conteo</div></div>';
 
-    var sfColor = kpis.sob_fal_total < 0 ? 'var(--red)' : kpis.sob_fal_total > 0 ? 'var(--orange)' : 'var(--green)';
-    var sfBg = kpis.sob_fal_total < 0 ? 'var(--red-bg)' : kpis.sob_fal_total > 0 ? 'var(--orange-bg)' : 'var(--green-bg)';
+    var sfColor = kpis.sob_fal_total < 0 ? 'var(--red)' : kpis.sob_fal_total > 0 ? 'var(--blue)' : 'var(--green)';
+    var sfBg = kpis.sob_fal_total < 0 ? 'var(--red-bg)' : kpis.sob_fal_total > 0 ? 'var(--blue-bg)' : 'var(--green-bg)';
     html += '<div class="kpi-card" style="--ac:' + sfColor + '"><div class="kpi-top"><div class="kpi-lbl">SOB/FAL Total</div><div class="kpi-ico" style="background:' + sfBg + ';color:' + sfColor + '">' + (kpis.sob_fal_total < 0 ? '🔴' : kpis.sob_fal_total > 0 ? '🟡' : '✅') + '</div></div><div class="kpi-val" style="color:' + sfColor + '">' + f(kpis.sob_fal_total) + '</div><div class="kpi-d dnu">' + (kpis.sob_fal_total === 0 ? 'Cuadre perfecto' : kpis.sob_fal_total < 0 ? 'Faltante' : 'Sobrante') + '</div></div>';
 
     html += '<div class="kpi-card" style="--ac:var(--green)"><div class="kpi-top"><div class="kpi-lbl">Caja Stellaris</div><div class="kpi-ico" style="background:var(--green-bg);color:var(--green)">🏦</div></div><div class="kpi-val" style="color:var(--green)">' + f(kpis.caja_stellaris) + '</div><div class="kpi-d dnu">acumulado</div></div>';
@@ -104,7 +104,7 @@
           if (r[c] === '') { html += '<td></td>'; continue; }
           var val = r[c];
           var color = '';
-          if (isSF) color = val < 0 ? 'color:var(--red);font-weight:700' : val > 0 ? 'color:var(--orange);font-weight:700' : 'color:var(--green);font-weight:700';
+          if (isSF) color = val < 0 ? 'color:var(--red);font-weight:700' : val > 0 ? 'color:var(--blue);font-weight:700' : 'color:var(--green);font-weight:700';
           html += '<td class="r mo" style="font-size:.75rem;' + color + '">' + f(val) + '</td>';
         }
         html += '</tr>';
