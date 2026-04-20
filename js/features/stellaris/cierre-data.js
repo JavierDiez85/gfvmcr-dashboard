@@ -104,8 +104,8 @@
     // ── Detectar fila de headers y columnas ──
     // Busca la fila que tenga "Nombre" o "Fabricante" entre las primeras 12 filas
     var headerRow = -1;
-    // Columnas por defecto (fallback si no se detectan)
-    var colFab = 3, colNom = 5, colCoinIn = 9, colNetwin = 17, colJugadas = 19;
+    // Columnas por defecto basados en estructura real (col[1]=fecha, col[3]=fab, col[5]=nom)
+    var colFab = 3, colNom = 5, colCoinIn = 8, colNetwin = 17, colJugadas = 19, colDateDesde = 1;
 
     for (i = 0; i < Math.min(12, raw.length); i++) {
       var hr = raw[i] || [];
@@ -128,6 +128,9 @@
         if (hv === 'jugadas' || hv === 'games' || hv === 'plays' || hv === 'partidas') {
           colJugadas = c;
         }
+        if (hv === 'fecha desde' || hv === 'fecha inicio' || hv === 'fecha' || hv === 'date') {
+          colDateDesde = c;
+        }
       }
       if (foundNom || foundFab) {
         headerRow = i;
@@ -141,6 +144,7 @@
     // El Excel tiene una fila por máquina por día + subtotales por fabricante
     // Agrupamos por nombre para obtener el total del período (no suma de días)
     var maquinaMap = {};
+    var dailyMap   = {};   // {YYYY-MM-DD: {fecha, netwin, coinIn}}
     for (i = dataStart; i < raw.length; i++) {
       var r = raw[i];
       if (!r) continue;
@@ -178,8 +182,20 @@
       maquinaMap[key].coinIn   += parseFloat(r[colCoinIn]) || 0;
       maquinaMap[key].netwin   += nw;
       maquinaMap[key].jugadas  += parseFloat(r[colJugadas]) || 0;
+
+      // ── Acumular totales por día ──
+      // col[colDateDesde] = "DD/MM/YYYY HH:MM" → extraer solo la fecha
+      var rawDt = r[colDateDesde] ? String(r[colDateDesde]) : '';
+      var mDt = rawDt.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
+      if (mDt) {
+        var dKey = mDt[3] + '-' + mDt[2].padStart(2,'0') + '-' + mDt[1].padStart(2,'0');
+        if (!dailyMap[dKey]) dailyMap[dKey] = { fecha: dKey, netwin: 0, coinIn: 0 };
+        dailyMap[dKey].netwin += nw;
+        dailyMap[dKey].coinIn += parseFloat(r[colCoinIn]) || 0;
+      }
     }
     var maquinas = Object.values(maquinaMap);
+    var dailyTotals = Object.values(dailyMap).sort(function(a,b){ return a.fecha.localeCompare(b.fecha); });
 
     // ── Tasas de Sheet2 (si existe) ──
     var tasas = [];
@@ -229,7 +245,7 @@
 
     // Debug info para diagnóstico
     var _debug = { headerRow: headerRow, dataStart: dataStart, colFab: colFab, colNom: colNom, colNetwin: colNetwin, totalRows: raw.length };
-    return { maquinas: maquinas, tasas: tasas, desde: desde, hasta: hasta, casino: casino, _debug: _debug };
+    return { maquinas: maquinas, tasas: tasas, desde: desde, hasta: hasta, casino: casino, dailyTotals: dailyTotals, _debug: _debug };
   }
 
   // ── CALCULAR COMISIONES ───────────────────────────────────────
@@ -330,8 +346,9 @@
       hastaISO:   _dmy2iso(parsed.hasta),
       casino:     parsed.casino || '',
       uploadedAt: new Date().toISOString().split('T')[0],
-      maquinas:   parsed.maquinas,
-      kpis:       kpis
+      maquinas:    parsed.maquinas,
+      dailyTotals: parsed.dailyTotals || [],
+      kpis:        kpis
     };
 
     // Reemplazar solo si existe el mismo rango de fechas exacto (desdeISO + hastaISO)

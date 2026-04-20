@@ -505,8 +505,31 @@
       };
     });
 
+    // Corte más reciente del mes en curso para el desglose diario
+    var latestCorte = cortes[cortes.length - 1];
+    var dailyTotals = latestCorte ? (latestCorte.dailyTotals || []) : [];
+
     var displayRows;
-    if (tab === 'detalle') {
+    if (tab === 'dia') {
+      // Tasas efectivas blended del período más reciente
+      var _k    = latestCorte ? (latestCorte.kpis || {}) : {};
+      var _nt   = _k.netwinTotal || 1;
+      var _maqR = _nt > 0 ? (_k.totalComMaquineros || 0) / _nt : 0;   // tasa maquineros + IVA
+      var _opR  = ((_k.comOperadora || {}).pct || 0.10) * (1 + 0.16); // tasa operadora + IVA
+      var IMP_F = 0.01, IMP_E = 0.06;
+      var _dMonths = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      displayRows = dailyTotals.map(function(d) {
+        var p = d.fecha.split('-'); // YYYY-MM-DD
+        var lbl = 'Día ' + parseInt(p[2],10) + ' ' + _dMonths[parseInt(p[1],10)-1];
+        var comMaq = d.netwin * _maqR;
+        var comOp  = d.netwin * _opR;
+        var impFed = d.netwin * IMP_F;
+        var impEst = d.netwin * IMP_E;
+        return _fiscalTableRow(lbl, { nt: d.netwin, comMaq: comMaq, comOp: comOp,
+          impFed: impFed, impEst: impEst, total: comMaq + comOp + impFed + impEst });
+      });
+      if (!displayRows.length) displayRows = ['<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">Sin datos diarios — re-sube el Excel de máquinas para generarlos</td></tr>'];
+    } else if (tab === 'detalle') {
       displayRows = rows.map(function(r) { return _fiscalTableRow(r.label, r); });
     } else if (tab === 'mensual') {
       displayRows = _fiscalAgg(rows,
@@ -529,6 +552,7 @@
     rows.forEach(function(r){ totNt+=r.nt; totMaq+=r.comMaq; totOp+=r.comOp; totFed+=r.impFed; totEst+=r.impEst; totAll+=r.total; });
 
     var tabs = [
+      {id:'dia',        lbl:'📆 Por Día'},
       {id:'detalle',    lbl:'📋 Por Corte'},
       {id:'mensual',    lbl:'📅 Mensual'},
       {id:'trimestral', lbl:'📆 Trimestral'},
