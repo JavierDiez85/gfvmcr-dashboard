@@ -351,16 +351,16 @@
       kpis:        kpis
     };
 
-    // Reemplazar solo si existe el mismo rango de fechas exacto (desdeISO + hastaISO)
-    // Permite múltiples cortes por mes (ej. cargas diarias para el Cuadro Fiscal)
+    // Reemplazar por mes (YYYY-MM del desdeISO) — un corte por mes, siempre el más reciente
+    var ym = corte.desdeISO ? corte.desdeISO.slice(0, 7) : '';
     var replaced = false;
     for (var i = 0; i < data.cortes.length; i++) {
-      if (data.cortes[i].desdeISO === corte.desdeISO && data.cortes[i].hastaISO === corte.hastaISO) {
+      if (data.cortes[i].desdeISO && data.cortes[i].desdeISO.slice(0, 7) === ym) {
         data.cortes[i] = corte; replaced = true; break;
       }
     }
     if (!replaced) data.cortes.unshift(corte);
-    if (data.cortes.length > 48) data.cortes = data.cortes.slice(0, 48);
+    if (data.cortes.length > 24) data.cortes = data.cortes.slice(0, 24);
 
     cierre_save(data);
     return corte;
