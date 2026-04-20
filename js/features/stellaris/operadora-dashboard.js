@@ -159,11 +159,35 @@
           '</div>' +
         '</div>' +
 
-        // Tabla por día
+        // Tabla por día — todas las columnas del Excel
         '<div class="tw">' +
           '<div class="tw-h"><div class="tw-ht">Detalle por Día</div><div style="font-size:.68rem;color:var(--muted)">Montos en MXN</div></div>' +
-          '<div style="overflow-x:auto"><table class="bt" style="font-size:.72rem">' +
-            '<thead><tr><th>Día</th><th class="r">Cover</th><th class="r">L007 Entradas</th><th class="r">L007 Premios</th><th class="r">Ingreso Final</th><th class="r" style="color:var(--red)">Ret. Federal</th><th class="r" style="color:var(--red)">Ret. Estatal</th></tr></thead>' +
+          '<div style="overflow-x:auto"><table class="bt" style="font-size:.7rem;white-space:nowrap">' +
+            '<thead>' +
+              '<tr>' +
+                '<th rowspan="2" style="vertical-align:middle;min-width:52px">DÍA</th>' +
+                '<th rowspan="2" class="r" style="vertical-align:middle;min-width:90px">COVER</th>' +
+                '<th colspan="9" style="text-align:center;background:rgba(0,115,234,.07);color:var(--blue);border-bottom:1px solid var(--border)">L007 — INGRESOS TERMINALES ELECTRÓNICAS</th>' +
+                '<th colspan="6" style="text-align:center;background:rgba(231,76,60,.06);color:var(--red);border-bottom:1px solid var(--border)">RETENCIONES S/ PREMIOS</th>' +
+              '</tr>' +
+              '<tr>' +
+                '<th class="r" style="min-width:88px">Entradas</th>' +
+                '<th class="r" style="min-width:82px">Ent. 70</th>' +
+                '<th class="r" style="min-width:82px">Ent. 30</th>' +
+                '<th class="r" style="min-width:82px">Devoluc.</th>' +
+                '<th class="r" style="min-width:88px">Premios</th>' +
+                '<th class="r" style="min-width:82px">Pre. 70</th>' +
+                '<th class="r" style="min-width:82px">Pre. 30</th>' +
+                '<th class="r" style="min-width:88px">Tot. Sal.</th>' +
+                '<th class="r" style="min-width:88px;font-weight:800">Ing. Final</th>' +
+                '<th class="r" style="min-width:80px;color:var(--red)">Fed. 1%</th>' +
+                '<th class="r" style="min-width:80px;color:var(--red)">Est. 6%</th>' +
+                '<th class="r" style="min-width:80px;color:var(--red)">Fed.70 1%</th>' +
+                '<th class="r" style="min-width:80px;color:var(--red)">Est.70 6%</th>' +
+                '<th class="r" style="min-width:80px;color:var(--red)">Fed.30 1%</th>' +
+                '<th class="r" style="min-width:80px;color:var(--red)">Est.30 6%</th>' +
+              '</tr>' +
+            '</thead>' +
             '<tbody>' + _fiscalDiasRows(fiscal) + '</tbody>' +
           '</table></div>' +
         '</div>';
@@ -227,28 +251,62 @@
 
   function _fiscalDiasRows(fiscal) {
     var dias = (fiscal.dias || []);
-    return dias.map(function(d) {
-      var retD = d.ret_fed70 + d.ret_fed_30x70 + d.ret_fed30;
-      var retE = d.ret_est70 + d.ret_est_30x70 + d.ret_est30;
+    var ft   = fiscal.totales || {};
+    function _mo(v, extra) {
+      extra = extra || '';
+      return '<td class="r" style="' + extra + '">' + fmtO(v) + '</td>';
+    }
+    function _moZ(v, extra) { // zero → dash
+      extra = extra || '';
+      return '<td class="r" style="' + extra + '">' + (v ? fmtO(v) : '<span style="color:var(--muted)">—</span>') + '</td>';
+    }
+    var rows = dias.map(function(d) {
+      var retD = (d.ret_fed70||0) + (d.ret_fed_30x70||0) + (d.ret_fed30||0);
+      var retE = (d.ret_est70||0) + (d.ret_est_30x70||0) + (d.ret_est30||0);
       return '<tr>' +
-        '<td class="bld">DÍA ' + String(d.dia).padStart(2, '0') + '</td>' +
-        '<td class="r mo">' + (d.cover > 0 ? fmtO(d.cover) : '<span style="color:var(--muted)">—</span>') + '</td>' +
-        '<td class="r mo pos">' + fmtO(d.l007_entradas) + '</td>' +
-        '<td class="r mo" style="color:var(--orange)">' + fmtO(d.l007_premios) + '</td>' +
-        '<td class="r mo bld pos">' + fmtO(d.l007_ingreso) + '</td>' +
-        '<td class="r" style="color:var(--red)">' + fmtO(retD) + '</td>' +
-        '<td class="r" style="color:var(--red)">' + fmtO(retE) + '</td>' +
+        '<td class="bld" style="white-space:nowrap">DÍA ' + String(d.dia).padStart(2,'0') + '</td>' +
+        _moZ(d.cover) +
+        _mo(d.l007_entradas, 'color:var(--blue)') +
+        _mo(d.l007_ent70) +
+        _mo(d.l007_ent30) +
+        _moZ(d.l007_devol, 'color:var(--muted)') +
+        _mo(d.l007_premios, 'color:var(--orange)') +
+        _mo(d.l007_pre70) +
+        _mo(d.l007_pre30) +
+        _mo(d.l007_salidas, 'color:var(--orange)') +
+        '<td class="r bld" style="color:var(--green)">' + fmtO(d.l007_ingreso) + '</td>' +
+        _mo(retD, 'color:var(--red)') +
+        _mo(retE, 'color:var(--red)') +
+        _mo(d.ret_fed70||0, 'color:var(--red)') +
+        _mo(d.ret_est70||0, 'color:var(--red)') +
+        _mo(d.ret_fed30||0, 'color:var(--red)') +
+        _mo(d.ret_est30||0, 'color:var(--red)') +
       '</tr>';
-    }).join('') +
-    '<tr style="font-weight:800;background:var(--blue-bg)">' +
-      '<td>TOTAL</td>' +
-      '<td class="r mo">' + fmtO(fiscal.totales.cover) + '</td>' +
-      '<td class="r mo pos">' + fmtO(fiscal.totales.l007_entradas) + '</td>' +
-      '<td class="r mo" style="color:var(--orange)">' + fmtO(fiscal.totales.l007_premios) + '</td>' +
-      '<td class="r mo bld pos">' + fmtO(fiscal.totales.l007_ingreso) + '</td>' +
-      '<td class="r" style="color:var(--red)">' + fmtO(fiscal.totales.ret_federal) + '</td>' +
-      '<td class="r" style="color:var(--red)">' + fmtO(fiscal.totales.ret_estatal) + '</td>' +
-    '</tr>';
+    }).join('');
+    // Totals row
+    var tRetFed = ft.ret_federal || 0;
+    var tRetEst = ft.ret_estatal || 0;
+    rows +=
+      '<tr style="font-weight:800;background:var(--blue-bg)">' +
+        '<td>TOTAL</td>' +
+        _moZ(ft.cover) +
+        _mo(ft.l007_entradas, 'color:var(--blue)') +
+        _mo(ft.l007_ent70||0) +
+        _mo(ft.l007_ent30||0) +
+        _moZ(ft.l007_devol||0, 'color:var(--muted)') +
+        _mo(ft.l007_premios, 'color:var(--orange)') +
+        _mo(ft.l007_pre70||0) +
+        _mo(ft.l007_pre30||0) +
+        _mo(ft.l007_salidas||0, 'color:var(--orange)') +
+        '<td class="r bld" style="color:var(--green)">' + fmtO(ft.l007_ingreso) + '</td>' +
+        _mo(tRetFed, 'color:var(--red)') +
+        _mo(tRetEst, 'color:var(--red)') +
+        _mo(ft.ret_fed70||0, 'color:var(--red)') +
+        _mo(ft.ret_est70||0, 'color:var(--red)') +
+        _mo(ft.ret_fed30||0, 'color:var(--red)') +
+        _mo(ft.ret_est30||0, 'color:var(--red)') +
+      '</tr>';
+    return rows;
   }
 
   function _sesionesDiasRows(ses) {

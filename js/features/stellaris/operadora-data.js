@@ -130,17 +130,29 @@
         var tRetFed = n(r[32]) + n(r[36]) + n(r[39]);
         var tRetEst = n(r[33]) + n(r[37]) + n(r[40]);
         totales = {
-          cover:          n(r[3]),
-          l007_entradas:  n(r[5]),
-          l007_premios:   n(r[9]),
-          l007_ingreso:   n(r[13]),
-          l002_resultado: n(r[18]),
-          l003_resultado: n(r[22]),
-          l005_resultado: n(r[25]),
-          l006_resultado: n(r[29]),
-          ret_federal:    tRetFed,
-          ret_estatal:    tRetEst,
-          ret_total:      tRetFed + tRetEst
+          cover:           n(r[3]),
+          l007_entradas:   n(r[5]),
+          l007_ent70:      n(r[6]),
+          l007_ent30:      n(r[7]),
+          l007_devol:      n(r[8]),
+          l007_premios:    n(r[9]),
+          l007_pre70:      n(r[10]),
+          l007_pre30:      n(r[11]),
+          l007_salidas:    n(r[12]),
+          l007_ingreso:    n(r[13]),
+          l002_resultado:  n(r[18]),
+          l003_resultado:  n(r[22]),
+          l005_resultado:  n(r[25]),
+          l006_resultado:  n(r[29]),
+          ret_fed70:       n(r[32]),
+          ret_est70:       n(r[33]),
+          ret_fed_30x70:   n(r[36]),
+          ret_est_30x70:   n(r[37]),
+          ret_fed30:       n(r[39]),
+          ret_est30:       n(r[40]),
+          ret_federal:     tRetFed,
+          ret_estatal:     tRetEst,
+          ret_total:       tRetFed + tRetEst
         };
       }
     }
@@ -152,16 +164,28 @@
       totales = dias.reduce(function(acc, d) {
         acc.cover          += d.cover;
         acc.l007_entradas  += d.l007_entradas;
+        acc.l007_ent70     += d.l007_ent70;
+        acc.l007_ent30     += d.l007_ent30;
+        acc.l007_devol     += d.l007_devol;
         acc.l007_premios   += d.l007_premios;
+        acc.l007_pre70     += d.l007_pre70;
+        acc.l007_pre30     += d.l007_pre30;
+        acc.l007_salidas   += d.l007_salidas;
         acc.l007_ingreso   += d.l007_ingreso;
         acc.l002_resultado += d.l002_resultado;
         acc.l003_resultado += d.l003_resultado;
         acc.l005_resultado += d.l005_resultado;
         acc.l006_resultado += d.l006_resultado;
+        acc.ret_fed70      += d.ret_fed70;
+        acc.ret_est70      += d.ret_est70;
+        acc.ret_fed_30x70  += d.ret_fed_30x70;
+        acc.ret_est_30x70  += d.ret_est_30x70;
+        acc.ret_fed30      += d.ret_fed30;
+        acc.ret_est30      += d.ret_est30;
         acc.ret_federal    += d.ret_fed70 + d.ret_fed_30x70 + d.ret_fed30;
         acc.ret_estatal    += d.ret_est70 + d.ret_est_30x70 + d.ret_est30;
         return acc;
-      }, { cover:0, l007_entradas:0, l007_premios:0, l007_ingreso:0, l002_resultado:0, l003_resultado:0, l005_resultado:0, l006_resultado:0, ret_federal:0, ret_estatal:0, ret_total:0 });
+      }, { cover:0, l007_entradas:0, l007_ent70:0, l007_ent30:0, l007_devol:0, l007_premios:0, l007_pre70:0, l007_pre30:0, l007_salidas:0, l007_ingreso:0, l002_resultado:0, l003_resultado:0, l005_resultado:0, l006_resultado:0, ret_fed70:0, ret_est70:0, ret_fed_30x70:0, ret_est_30x70:0, ret_fed30:0, ret_est30:0, ret_federal:0, ret_estatal:0, ret_total:0 });
       totales.ret_total = totales.ret_federal + totales.ret_estatal;
     }
 
