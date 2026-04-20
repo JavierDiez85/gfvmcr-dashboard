@@ -366,8 +366,8 @@
       var diaNum = d.fecha ? parseInt(d.fecha.slice(8), 10) : 0;
       return {
         dia: diaNum, cover,
-        l007_entradas: l007ent, l007_ent70, l007_ent30,
-        l007_devol: 0, l007_premios: l007pre, l007_pre70, l007_pre30,
+        l007_entradas: l007ent, l007_ent70: l007ent70, l007_ent30: l007ent30,
+        l007_devol: 0, l007_premios: l007pre, l007_pre70: l007pre70, l007_pre30: l007pre30,
         l007_salidas: l007sal, l007_ingreso: l007ing,
         l002_entradas:0,l002_premios:0,l002_resultado:0,
         l003_entradas:0,l003_premios:0,l003_resultado:0,
