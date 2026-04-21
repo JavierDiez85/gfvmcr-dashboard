@@ -448,6 +448,32 @@
     return { total: (found.totales || {}).l007_premios || 0, byDay: byDay };
   }
 
+  // Helper: carga INGRESO FINAL (l007_ingreso) del Reporte Operadora para un mes YYYY-MM
+  // La comisión de Operadora (10%) se aplica SOLO sobre días con ingreso > 0 (días negativos no generan comisión)
+  function _opIngresoFinal(ym) {
+    var empty = { totalPositivo: 0, byDay: {} };
+    if (typeof operadoraLoad !== 'function') return empty;
+    var found = null;
+    try {
+      (operadoraLoad().reportes || []).forEach(function(r) {
+        if (found) return;
+        var parts = (r.mes || '').toUpperCase().split(/\s+/);
+        var mesN = _MES_MAP_CF[parts[0]];
+        var ano  = parts[1];
+        if (mesN && ano && (ano + '-' + mesN) === ym) found = r;
+      });
+    } catch(e) {}
+    if (!found) return empty;
+    var byDay = {};
+    var totalPositivo = 0;
+    (found.dias || []).forEach(function(d) {
+      var ing = d.l007_ingreso || 0;
+      byDay[d.dia] = ing;                              // guardar el valor real (puede ser negativo)
+      if (ing > 0) totalPositivo += ing;               // solo sumar días positivos
+    });
+    return { totalPositivo: totalPositivo, byDay: byDay };
+  }
+
   function _fiscalYmLabel(ym) {
     var p = ym.split('-');
     return MESES_ES[parseInt(p[1], 10) - 1] + ' ' + p[0];
@@ -516,12 +542,20 @@
       var k = c.kpis || {};
       var nt     = k.netwinTotal        || 0;
       var comMaq = k.totalComMaquineros || 0;
-      var comOp  = (k.comOperadora || {}).total || 0;
       var ym     = (c.desdeISO || '').slice(0, 7);
+
+      // Comisión Operadora: 10% sobre Ingresos Finales del Reporte Operadora
+      // Solo días positivos cuentan (días con ingreso negativo no generan comisión)
+      var opIF   = _opIngresoFinal(ym);
+      var opPct  = (k.comOperadora || {}).pct || 0.10;
+      var opBase = opIF.totalPositivo > 0
+        ? opIF.totalPositivo * opPct                          // usa Ingresos Finales de Operadora
+        : (k.comOperadora || {}).base || 0;                   // fallback: valor pre-calculado del corte
+      var comOp  = opBase * (1 + 0.16);                       // + IVA 16%
+
+      // Retenciones s/ premios: base = PAGO PREMIOS (del reporte Operadora)
       var opP    = _opPremios(ym);
       var premios = opP.total;
-      // Retenciones s/ premios: base = PAGO PREMIOS (del reporte Operadora)
-      // Si aún no hay datos Operadora cargados, usa netwin como fallback
       var impFed = (premios > 0 ? premios : nt) * IMP_FED;
       var impEst = (premios > 0 ? premios : nt) * IMP_EST;
       return {
@@ -542,18 +576,21 @@
       // Tasas efectivas blended del período más reciente
       var _k    = latestCorte ? (latestCorte.kpis || {}) : {};
       var _nt   = _k.netwinTotal || 1;
-      var _maqR = _nt > 0 ? (_k.totalComMaquineros || 0) / _nt : 0;   // tasa maquineros + IVA
-      var _opR  = ((_k.comOperadora || {}).pct || 0.10) * (1 + 0.16); // tasa operadora + IVA
+      var _maqR = _nt > 0 ? (_k.totalComMaquineros || 0) / _nt : 0;   // tasa maquineros + IVA (blended)
+      var _opPct = ((_k.comOperadora || {}).pct || 0.10) * (1 + 0.16); // 10% + IVA 16%
       var IMP_F = 0.01, IMP_E = 0.06;
       var _dMonths = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
       var corteYm = (latestCorte ? (latestCorte.desdeISO || '') : '').slice(0, 7);
       var opPD    = _opPremios(corteYm);
+      var opIFD   = _opIngresoFinal(corteYm);
       displayRows = dailyTotals.map(function(d) {
         var p = d.fecha.split('-'); // YYYY-MM-DD
         var dayNum = parseInt(p[2], 10);
         var lbl = 'Día ' + dayNum + ' ' + _dMonths[parseInt(p[1],10)-1];
         var comMaq = d.netwin * _maqR;
-        var comOp  = d.netwin * _opR;
+        // Comisión Operadora: 10%+IVA sobre Ingreso Final del día, SOLO si es positivo
+        var ingDia = opIFD.byDay[dayNum] !== undefined ? opIFD.byDay[dayNum] : d.netwin;
+        var comOp  = ingDia > 0 ? ingDia * _opPct : 0;
         var premiosD = opPD.byDay[dayNum] || 0;
         var impFed = (premiosD > 0 ? premiosD : d.netwin) * IMP_F;
         var impEst = (premiosD > 0 ? premiosD : d.netwin) * IMP_E;
