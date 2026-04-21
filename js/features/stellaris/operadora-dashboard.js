@@ -77,6 +77,7 @@
   function _buildOperadoraHtml(fiscal, ses, cross, selFiscal, selSes, fiscalDerived) {
     var ft = fiscal ? fiscal.totales : {};
     var st = ses    ? ses.totales    : {};
+    var crossAvailable = !!cross || (!!ses && !!fiscal);
 
     // KPIs from Fiscal report
     var cover      = ft.cover          || 0;
