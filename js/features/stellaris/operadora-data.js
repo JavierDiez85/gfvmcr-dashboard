@@ -266,7 +266,7 @@
         resultadoCaja:   n(r[10]),
         depositoJuego:   n(r[30]),
         acceso:          n(r[31]),
-        premios:         n(r[42]) || n(r[40]),  // col[42]=Premios (sección propia), fallback col[40]=Pago de Premios
+        premios:         n(r[40]),  // col[40]=Pago de Premios (coincide con PAGO PREMIOS del Reporte Fiscal). col[42]="Premios" es la base gravable (≠ monto pagado)
         retencion:       n(r[43]),
         promoRedimible:  n(r[50]),
         promoNoRed:      n(r[51]),

@@ -425,6 +425,29 @@
   var IMP_EST = 0.06;
   var MESES_ES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
 
+  // Helper: carga PAGO PREMIOS del Reporte Operadora para un mes YYYY-MM
+  // Los impuestos 1%/6% se calculan sobre PREMIOS PAGADOS (igual que Reporte Fiscal Operadora)
+  var _MES_MAP_CF = {ENERO:'01',FEBRERO:'02',MARZO:'03',ABRIL:'04',MAYO:'05',JUNIO:'06',
+                     JULIO:'07',AGOSTO:'08',SEPTIEMBRE:'09',OCTUBRE:'10',NOVIEMBRE:'11',DICIEMBRE:'12'};
+  function _opPremios(ym) {
+    var empty = { total: 0, byDay: {} };
+    if (typeof operadoraLoad !== 'function') return empty;
+    var found = null;
+    try {
+      (operadoraLoad().reportes || []).forEach(function(r) {
+        if (found) return;
+        var parts = (r.mes || '').toUpperCase().split(/\s+/);
+        var mesN = _MES_MAP_CF[parts[0]];
+        var ano  = parts[1];
+        if (mesN && ano && (ano + '-' + mesN) === ym) found = r;
+      });
+    } catch(e) {}
+    if (!found) return empty;
+    var byDay = {};
+    (found.dias || []).forEach(function(d) { byDay[d.dia] = d.l007_premios || 0; });
+    return { total: (found.totales || {}).l007_premios || 0, byDay: byDay };
+  }
+
   function _fiscalYmLabel(ym) {
     var p = ym.split('-');
     return MESES_ES[parseInt(p[1], 10) - 1] + ' ' + p[0];
@@ -494,10 +517,15 @@
       var nt     = k.netwinTotal        || 0;
       var comMaq = k.totalComMaquineros || 0;
       var comOp  = (k.comOperadora || {}).total || 0;
-      var impFed = nt * IMP_FED;
-      var impEst = nt * IMP_EST;
+      var ym     = (c.desdeISO || '').slice(0, 7);
+      var opP    = _opPremios(ym);
+      var premios = opP.total;
+      // Retenciones s/ premios: base = PAGO PREMIOS (del reporte Operadora)
+      // Si aún no hay datos Operadora cargados, usa netwin como fallback
+      var impFed = (premios > 0 ? premios : nt) * IMP_FED;
+      var impEst = (premios > 0 ? premios : nt) * IMP_EST;
       return {
-        ym:     (c.desdeISO || '').slice(0, 7),
+        ym:     ym,
         label:  escapeHtml((c.desde || '') + ' → ' + (c.hasta || '')),
         nt: nt, comMaq: comMaq, comOp: comOp,
         impFed: impFed, impEst: impEst,
@@ -518,13 +546,17 @@
       var _opR  = ((_k.comOperadora || {}).pct || 0.10) * (1 + 0.16); // tasa operadora + IVA
       var IMP_F = 0.01, IMP_E = 0.06;
       var _dMonths = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+      var corteYm = (latestCorte ? (latestCorte.desdeISO || '') : '').slice(0, 7);
+      var opPD    = _opPremios(corteYm);
       displayRows = dailyTotals.map(function(d) {
         var p = d.fecha.split('-'); // YYYY-MM-DD
-        var lbl = 'Día ' + parseInt(p[2],10) + ' ' + _dMonths[parseInt(p[1],10)-1];
+        var dayNum = parseInt(p[2], 10);
+        var lbl = 'Día ' + dayNum + ' ' + _dMonths[parseInt(p[1],10)-1];
         var comMaq = d.netwin * _maqR;
         var comOp  = d.netwin * _opR;
-        var impFed = d.netwin * IMP_F;
-        var impEst = d.netwin * IMP_E;
+        var premiosD = opPD.byDay[dayNum] || 0;
+        var impFed = (premiosD > 0 ? premiosD : d.netwin) * IMP_F;
+        var impEst = (premiosD > 0 ? premiosD : d.netwin) * IMP_E;
         return _fiscalTableRow(lbl, { nt: d.netwin, comMaq: comMaq, comOp: comOp,
           impFed: impFed, impEst: impEst, total: comMaq + comOp + impFed + impEst });
       });
