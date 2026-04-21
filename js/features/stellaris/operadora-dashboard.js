@@ -46,7 +46,10 @@
       fiscalDerived = true;
     }
 
+    // Cross ref: disponible cuando hay Reporte Fiscal real + Sesiones (no si fiscal fue derivado de las mismas sesiones)
     var cross = (fiscal && ses && !fiscalDerived) ? operadoraCrossRef(fiscal, ses) : null;
+    // Pero si hay sesiones y NO hay fiscal real, seguimos mostrando la tab con una nota
+    var crossAvailable = !!cross || (!!ses && !!fiscal);
 
     var selOptsFiscal = reportes.map(function(r, idx) {
       return '<option value="' + idx + '"' + (idx === 0 ? ' selected' : '') + '>' + escapeHtml(r.mes || 'Reporte ' + (idx+1)) + '</option>';
@@ -118,7 +121,7 @@
       '<div style="display:flex;gap:2px;margin-bottom:14px;border-bottom:2px solid var(--border);padding-bottom:0">' +
         '<button id="op-tab-fiscal" class="op-tab-btn" onclick="opSwitchTab(\'fiscal\')" style="padding:6px 14px;border:none;background:none;font-family:Figtree,sans-serif;font-size:.75rem;font-weight:700;cursor:pointer;border-bottom:2px solid var(--blue);color:var(--blue);margin-bottom:-2px">📋 Reporte Fiscal</button>' +
         '<button id="op-tab-sesiones" class="op-tab-btn" onclick="opSwitchTab(\'sesiones\')" style="padding:6px 14px;border:none;background:none;font-family:Figtree,sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted)">🧾 Sesiones de Caja</button>' +
-        (cross ? '<button id="op-tab-cross" class="op-tab-btn" onclick="opSwitchTab(\'cross\')" style="padding:6px 14px;border:none;background:none;font-family:Figtree,sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted)">🔗 Validación Cruzada</button>' : '') +
+        (crossAvailable ? '<button id="op-tab-cross" class="op-tab-btn" onclick="opSwitchTab(\'cross\')" style="padding:6px 14px;border:none;background:none;font-family:Figtree,sans-serif;font-size:.75rem;font-weight:600;cursor:pointer;color:var(--muted)">🔗 Validación Cruzada</button>' : '') +
       '</div>';
 
     // ── TAB: FISCAL ──
@@ -243,6 +246,13 @@
     html += '<div id="op-panel-cross" style="display:none">';
     if (cross) {
       html += _buildCrossRef(cross, fiscal, ses);
+    } else if (crossAvailable && fiscalDerived && ses) {
+      // Fiscal derivado de sesiones: cross-ref se hace contra sí mismo, mostrar nota explicativa
+      html += '<div style="padding:16px;background:#fff8e1;border:1px solid #ffe082;border-radius:var(--r);margin-bottom:14px;font-size:.78rem;color:#8a6400">' +
+        '<div style="font-weight:700;margin-bottom:4px">⚡ Reporte Fiscal derivado automáticamente de Sesiones</div>' +
+        'Para ver la Validación Cruzada real (comparar Reporte Grand Play vs tus Sesiones), ' +
+        'carga el <b>Reporte Fiscal original de Grand Play</b> (Excel que te entrega la operadora).' +
+        '</div>';
     }
     html += '</div>';
 
@@ -352,39 +362,152 @@
 
   function _buildCrossRef(cross, fiscal, ses) {
     function pill(ok) {
-      return ok ? '<span class="pill" style="background:var(--green-lt);color:#007a48">✓ Cuadra</span>'
-                : '<span class="pill" style="background:var(--red-lt);color:#b02020">⚠ Diferencia</span>';
+      return ok ? '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700;background:#d4edda;color:#007a48">✓ Cuadra</span>'
+                : '<span style="display:inline-block;padding:2px 8px;border-radius:10px;font-size:.68rem;font-weight:700;background:#fde8e8;color:#b02020">⚠ Diferencia</span>';
     }
-    return '<div style="margin-bottom:14px">' +
-      '<div style="font-weight:700;font-size:.82rem;margin-bottom:10px">🔗 Validación Reporte Fiscal vs Sesiones de Caja</div>' +
-      '<div class="tw"><div style="overflow-x:auto"><table class="bt">' +
-        '<thead><tr><th>Concepto</th><th class="r">Reporte Fiscal</th><th class="r">Sesiones de Caja</th><th class="r">Diferencia</th><th>Estado</th></tr></thead>' +
-        '<tbody>' +
-          '<tr>' +
-            '<td>Entradas (Cover + L007)</td>' +
-            '<td class="r mo">' + fmtO((fiscal.totales.cover||0) + (fiscal.totales.l007_entradas||0)) + '</td>' +
-            '<td class="r mo">' + fmtO((ses.totales.depositoJuego||0) + (ses.totales.acceso||0)) + '</td>' +
-            '<td class="r ' + (Math.abs(cross.diff_entradas) < 100 ? '' : 'neg') + '">' + fmtO(cross.diff_entradas) + '</td>' +
-            '<td>' + pill(cross.ok_entradas) + '</td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td>Premios Pagados</td>' +
-            '<td class="r mo">' + fmtO(fiscal.totales.l007_premios||0) + '</td>' +
-            '<td class="r mo">' + fmtO(ses.totales.premios||0) + '</td>' +
-            '<td class="r ' + (Math.abs(cross.diff_premios) < 100 ? '' : 'neg') + '">' + fmtO(cross.diff_premios) + '</td>' +
-            '<td>' + pill(cross.ok_premios) + '</td>' +
-          '</tr>' +
-          '<tr>' +
-            '<td>Retenciones</td>' +
-            '<td class="r mo">' + fmtO(fiscal.totales.ret_total||0) + '</td>' +
-            '<td class="r mo">' + fmtO(ses.totales.retencion||0) + '</td>' +
-            '<td class="r ' + (Math.abs(cross.diff_ret) < 100 ? '' : 'neg') + '">' + fmtO(cross.diff_ret) + '</td>' +
-            '<td>' + pill(cross.ok_ret) + '</td>' +
-          '</tr>' +
-        '</tbody>' +
-      '</table></div></div>' +
-      '<div style="margin-top:10px;padding:8px 14px;background:var(--blue-bg);border-radius:8px;font-size:.72rem;color:var(--blue)">ℹ Una diferencia menor a $100 MXN se considera cuadrada (redondeos del sistema)</div>' +
+    function diffStyle(d) { return Math.abs(d) < 100 ? 'color:var(--green)' : 'color:var(--red);font-weight:700'; }
+    function fmtD(d) { return (d >= 0 ? '+' : '') + '$' + d.toLocaleString('es-MX', {minimumFractionDigits:2, maximumFractionDigits:2}); }
+
+    // ── Resumen totales ──
+    var ft = fiscal.totales;
+    var st = ses.totales;
+
+    // Ingreso Final: Fiscal = l007_ingreso, Sesiones = depositoJuego - premios
+    var ingFiscal = ft.l007_ingreso || 0;
+    var ingSes    = (st.depositoJuego || 0) - (st.premios || 0);
+    var diffIng   = ingSes - ingFiscal;
+    var okIng     = Math.abs(diffIng) < 500;
+
+    // Cover
+    var diffCover = (st.acceso || 0) - (ft.cover || 0);
+    var okCover   = Math.abs(diffCover) < 100;
+
+    // Comisión 10% calculada desde cada fuente
+    var com10Fiscal = ft.comision_operadora_10pct || (ingFiscal * 0.10);
+    var com10Ses    = ingSes > 0 ? ingSes * 0.10 : 0;
+    var diffCom     = com10Ses - com10Fiscal;
+
+    var html = '<div style="margin-bottom:14px">' +
+      '<div style="font-weight:700;font-size:.82rem;margin-bottom:10px">🔗 Validación Cruzada — Reporte Fiscal vs Sesiones de Caja</div>' +
+
+      // Resumen 4 KPIs de estado
+      '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:14px">' +
+        _kpiCross('Premios Pagados', fmtO(ft.l007_premios||0), fmtO(st.premios||0), cross.ok_premios, fmtD(cross.diff_premios)) +
+        _kpiCross('Ingreso Final (NetWin)', fmtO(ingFiscal), fmtO(ingSes), okIng, fmtD(diffIng)) +
+        _kpiCross('Cover / Acceso', fmtO(ft.cover||0), fmtO(st.acceso||0), okCover, fmtD(diffCover)) +
+        _kpiCross('Comisión 10%', fmtO(com10Fiscal), fmtO(com10Ses), Math.abs(diffCom)<50, fmtD(diffCom)) +
+      '</div>' +
+
+      // Tabla resumen totales
+      '<div class="tw" style="margin-bottom:14px"><div class="tw-h"><div class="tw-ht">Comparativo de Totales</div></div>' +
+      '<div style="overflow-x:auto"><table class="bt" style="font-size:.72rem">' +
+        '<thead><tr>' +
+          '<th>Concepto</th>' +
+          '<th class="r" style="color:var(--purple)">Reporte Fiscal<br><span style="font-weight:400;color:var(--muted)">(Grand Play)</span></th>' +
+          '<th class="r" style="color:var(--blue)">Sesiones de Caja<br><span style="font-weight:400;color:var(--muted)">(Stellaris)</span></th>' +
+          '<th class="r">Diferencia</th><th style="text-align:center">Estado</th>' +
+        '</tr></thead><tbody>' +
+        '<tr><td>Cover / Acceso</td>' +
+          '<td class="r mo">' + fmtO(ft.cover||0) + '</td>' +
+          '<td class="r mo">' + fmtO(st.acceso||0) + '</td>' +
+          '<td class="r" style="' + diffStyle(diffCover) + '">' + fmtD(diffCover) + '</td>' +
+          '<td style="text-align:center">' + pill(okCover) + '</td></tr>' +
+        '<tr><td>Premios Pagados</td>' +
+          '<td class="r mo" style="color:var(--orange)">' + fmtO(ft.l007_premios||0) + '</td>' +
+          '<td class="r mo" style="color:var(--orange)">' + fmtO(st.premios||0) + '</td>' +
+          '<td class="r" style="' + diffStyle(cross.diff_premios) + '">' + fmtD(cross.diff_premios) + '</td>' +
+          '<td style="text-align:center">' + pill(cross.ok_premios) + '</td></tr>' +
+        '<tr><td><b>Ingreso Final</b> (Entradas−Salidas)</td>' +
+          '<td class="r mo bld" style="color:var(--green)">' + fmtO(ingFiscal) + '</td>' +
+          '<td class="r mo bld" style="color:var(--green)">' + fmtO(ingSes) + '</td>' +
+          '<td class="r" style="' + diffStyle(diffIng) + '">' + fmtD(diffIng) + '</td>' +
+          '<td style="text-align:center">' + pill(okIng) + '</td></tr>' +
+        '<tr><td>Comisión Operadora 10%</td>' +
+          '<td class="r mo" style="color:#9b51e0">' + fmtO(com10Fiscal) + '</td>' +
+          '<td class="r mo" style="color:#9b51e0">' + fmtO(com10Ses) + '</td>' +
+          '<td class="r" style="' + diffStyle(diffCom) + '">' + fmtD(diffCom) + '</td>' +
+          '<td style="text-align:center">' + pill(Math.abs(diffCom)<50) + '</td></tr>' +
+        '<tr><td>Retenciones (1%+6% s/premios)</td>' +
+          '<td class="r mo" style="color:var(--red)">' + fmtO(ft.ret_total||0) + '</td>' +
+          '<td class="r mo" style="color:var(--red)">' + fmtO(st.retencion||0) + '</td>' +
+          '<td class="r" style="' + diffStyle(cross.diff_ret) + '">' + fmtD(cross.diff_ret) + '</td>' +
+          '<td style="text-align:center">' + pill(cross.ok_ret) + '</td></tr>' +
+      '</tbody></table></div></div>' +
+
+      // Tabla por día
+      _buildCrossDayTable(fiscal, ses) +
+
+      '<div style="margin-top:10px;padding:8px 14px;background:var(--blue-bg);border-radius:8px;font-size:.72rem;color:var(--blue)">' +
+        'ℹ <b>Diferencia aceptable:</b> &lt;$100 para premios/cover/ret, &lt;$500 para Ingreso Final. ' +
+        'El Ingreso Final de Sesiones = Depósito de Juego − Premios (devoluciones ya neteadas en depósito).' +
+      '</div>' +
     '</div>';
+    return html;
+  }
+
+  function _kpiCross(lbl, vFiscal, vSes, ok, diff) {
+    var bdr = ok ? 'border-left:3px solid var(--green)' : 'border-left:3px solid var(--red)';
+    return '<div style="background:var(--white);border:1px solid var(--border);border-radius:var(--r);padding:12px 14px;' + bdr + '">' +
+      '<div style="font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:6px">' + lbl + '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:.72rem;margin-bottom:6px">' +
+        '<div><span style="color:var(--muted);font-size:.6rem">FISCAL</span><br><b>' + vFiscal + '</b></div>' +
+        '<div><span style="color:var(--muted);font-size:.6rem">SESIONES</span><br><b>' + vSes + '</b></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;justify-content:space-between">' +
+        '<span style="font-size:.68rem;color:var(--muted)">Δ ' + diff + '</span>' +
+        (ok ? '<span style="font-size:.65rem;color:#007a48;font-weight:700">✓</span>' : '<span style="font-size:.65rem;color:#b02020;font-weight:700">⚠</span>') +
+      '</div>' +
+    '</div>';
+  }
+
+  function _buildCrossDayTable(fiscal, ses) {
+    if (!fiscal || !ses || !ses.porDia || !ses.porDia.length) return '';
+    // Build sesiones lookup by day number
+    var sesMap = {};
+    ses.porDia.forEach(function(d) {
+      var day = d.fecha ? parseInt(d.fecha.slice(8), 10) : 0;
+      if (day) sesMap[day] = d;
+    });
+
+    var rows = (fiscal.dias || []).map(function(fd) {
+      var sd    = sesMap[fd.dia] || {};
+      var fPrem = fd.l007_premios || 0;
+      var sPrem = sd.premios      || 0;
+      var fIng  = fd.l007_ingreso || 0;
+      var sIng  = (sd.depositoJuego||0) - sPrem;
+      var dPrem = sPrem - fPrem;
+      var dIng  = sIng  - fIng;
+      var okP   = Math.abs(dPrem) < 100;
+      var okI   = Math.abs(dIng)  < 500;
+      function sty(d){ return d >= 0 ? 'color:var(--green)' : 'color:var(--red)'; }
+      return '<tr>' +
+        '<td class="bld" style="white-space:nowrap">DÍA ' + String(fd.dia).padStart(2,'0') + '</td>' +
+        '<td class="r mo" style="color:var(--orange)">' + (fPrem ? fmtO(fPrem) : '<span style="color:var(--muted)">—</span>') + '</td>' +
+        '<td class="r mo" style="color:var(--orange)">' + (sPrem ? fmtO(sPrem) : '<span style="color:var(--muted)">—</span>') + '</td>' +
+        '<td class="r" style="' + sty(dPrem) + '">' + (fPrem||sPrem ? (dPrem>=0?'+':'') + '$' + Math.abs(dPrem).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—') + '</td>' +
+        '<td style="text-align:center">' + (fPrem||sPrem ? (okP ? '✅' : '⚠️') : '') + '</td>' +
+        '<td class="r mo" style="color:' + (fIng < 0 ? 'var(--red)' : 'var(--green)') + '">' + fmtO(fIng) + '</td>' +
+        '<td class="r mo" style="color:' + (sIng < 0 ? 'var(--red)' : 'var(--green)') + '">' + (sd.depositoJuego ? fmtO(sIng) : '<span style="color:var(--muted)">—</span>') + '</td>' +
+        '<td class="r" style="' + sty(dIng) + '">' + (sd.depositoJuego ? (dIng>=0?'+':'') + '$' + Math.abs(dIng).toLocaleString('es-MX',{minimumFractionDigits:0,maximumFractionDigits:0}) : '—') + '</td>' +
+        '<td style="text-align:center">' + (sd.depositoJuego ? (okI ? '✅' : '⚠️') : '') + '</td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="tw"><div class="tw-h"><div class="tw-ht">Comparativo Por Día</div><div style="font-size:.68rem;color:var(--muted)">Fiscal (Grand Play) vs Sesiones (Stellaris)</div></div>' +
+      '<div style="overflow-x:auto"><table class="bt" style="font-size:.7rem;white-space:nowrap">' +
+        '<thead>' +
+          '<tr>' +
+            '<th rowspan="2" style="vertical-align:middle">DÍA</th>' +
+            '<th colspan="4" style="text-align:center;background:rgba(255,112,67,.06);color:var(--orange)">PREMIOS PAGADOS</th>' +
+            '<th colspan="4" style="text-align:center;background:rgba(0,184,117,.06);color:var(--green)">INGRESO FINAL (NETWIN)</th>' +
+          '</tr>' +
+          '<tr>' +
+            '<th class="r">Fiscal</th><th class="r">Sesiones</th><th class="r">Δ</th><th style="text-align:center">OK</th>' +
+            '<th class="r">Fiscal</th><th class="r">Sesiones</th><th class="r">Δ</th><th style="text-align:center">OK</th>' +
+          '</tr>' +
+        '</thead>' +
+        '<tbody>' + rows + '</tbody>' +
+      '</table></div></div>';
   }
 
   function _renderOpCharts(fiscal, ses) {

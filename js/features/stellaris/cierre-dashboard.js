@@ -540,18 +540,19 @@
 
     var rows = cortes.map(function(c) {
       var k = c.kpis || {};
-      var nt     = k.netwinTotal        || 0;
-      var comMaq = k.totalComMaquineros || 0;
+      var nt     = k.netwinTotal  || 0;
+      // Comisiones: se muestran SIN IVA para coincidir con el P&L (IVA es pass-through recuperable)
+      var comMaq = k.totalComBase || 0;  // base pre-IVA de maquineros
       var ym     = (c.desdeISO || '').slice(0, 7);
 
-      // Comisión Operadora: 10% sobre Ingresos Finales del Reporte Operadora
+      // Comisión Operadora: 10% sobre Ingresos Finales del Reporte Operadora (sin IVA)
       // Solo días positivos cuentan (días con ingreso negativo no generan comisión)
       var opIF   = _opIngresoFinal(ym);
       var opPct  = (k.comOperadora || {}).pct || 0.10;
       var opBase = opIF.totalPositivo > 0
         ? opIF.totalPositivo * opPct                          // usa Ingresos Finales de Operadora
         : (k.comOperadora || {}).base || 0;                   // fallback: valor pre-calculado del corte
-      var comOp  = opBase * (1 + 0.16);                       // + IVA 16%
+      var comOp  = opBase;                                    // sin IVA (mismo criterio que P&L)
 
       // Retenciones s/ premios: base = PAGO PREMIOS (del reporte Operadora)
       var opP    = _opPremios(ym);
@@ -576,8 +577,8 @@
       // Tasas efectivas blended del período más reciente
       var _k    = latestCorte ? (latestCorte.kpis || {}) : {};
       var _nt   = _k.netwinTotal || 1;
-      var _maqR = _nt > 0 ? (_k.totalComMaquineros || 0) / _nt : 0;   // tasa maquineros + IVA (blended)
-      var _opPct = ((_k.comOperadora || {}).pct || 0.10) * (1 + 0.16); // 10% + IVA 16%
+      var _maqR = _nt > 0 ? (_k.totalComBase || 0) / _nt : 0;          // tasa maquineros sin IVA (blended)
+      var _opPct = (_k.comOperadora || {}).pct || 0.10;                  // 10% sin IVA
       var IMP_F = 0.01, IMP_E = 0.06;
       var _dMonths = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
       var corteYm = (latestCorte ? (latestCorte.desdeISO || '') : '').slice(0, 7);
@@ -642,8 +643,8 @@
 
       '<div class="kpi-row" style="margin-bottom:14px">' +
         _kpiCard('Netwin Total',          fmtC(totNt),          'Base gravable',          '#0073ea', '🎰') +
-        _kpiCard('Com. Maquineros',       fmtC(totMaq),         'Base + IVA',             '#ff7043', '🔧') +
-        _kpiCard('Com. Operadora',        fmtC(totOp),          'Base + IVA',             '#9b51e0', '🏛') +
+        _kpiCard('Com. Maquineros',       fmtC(totMaq),         'Sin IVA (P&L)',          '#ff7043', '🔧') +
+        _kpiCard('Com. Operadora',        fmtC(totOp),          'Sin IVA · solo días +',  '#9b51e0', '🏛') +
         _kpiCard('Imp. Fed + Est',        fmtC(totFed+totEst),  '1% Federal · 6% Estatal','#e53935', '🏦') +
         _kpiCard('Total a Pagar',         fmtC(totAll),         'Comisiones + Impuestos', '#00b875', '💰') +
       '</div>' +
