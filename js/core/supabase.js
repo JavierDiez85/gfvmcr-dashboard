@@ -83,7 +83,9 @@ const APP_KEYS = [
   // Maquineros / Cierre Stellaris
   'gf_cierre_maquineros',
   // Operadora Stellaris
-  'gf_operadora'
+  'gf_operadora',
+  // Nómina Quincenas Stellaris
+  'gf_stel_nomina'
 ];
 
 // Estado de sync

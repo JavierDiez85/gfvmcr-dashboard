@@ -256,7 +256,9 @@ const NAV_STRUCTURE = {
         },
         { id:'rrhh', label:'RRHH', icon:'👥', defaultView:'stel_rrhh_empleados',
           groups:[{ label:null, views:[
-            {id:'stel_rrhh_empleados',label:'Empleados',icon:'👤'},
+            {id:'stel_rrhh_empleados',        label:'Empleados',       icon:'👤'},
+            {id:'stel_rrhh_nomina',           label:'Nómina Quincenas',icon:'💰'},
+            {id:'stel_rrhh_nomina_upload',    label:'Cargar Quincena', icon:'📤'},
           ]}]
         },
         { id:'carga', label:'Carga de Datos', icon:'📤', defaultView:'carga_masiva_stel',
