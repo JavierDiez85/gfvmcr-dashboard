@@ -260,21 +260,25 @@
       extra = extra || '';
       return '<td class="r" style="' + extra + '">' + (v ? fmtO(v) : '<span style="color:var(--muted)">—</span>') + '</td>';
     }
-    // Siempre recalcular totales de desglose desde dias (para compatibilidad con datos guardados en formato anterior)
+    // Siempre recalcular totales de desglose desde dias (compatibilidad con datos guardados en cualquier formato)
     var dtot = dias.reduce(function(a, d) {
       a.cover += d.cover||0; a.l007_entradas += d.l007_entradas||0; a.l007_ent70 += d.l007_ent70||0; a.l007_ent30 += d.l007_ent30||0;
       a.l007_devol += d.l007_devol||0; a.l007_premios += d.l007_premios||0; a.l007_pre70 += d.l007_pre70||0; a.l007_pre30 += d.l007_pre30||0;
       a.l007_salidas += d.l007_salidas||0; a.l007_ingreso += d.l007_ingreso||0;
-      a.retD += (d.ret_fed70||0) + (d.ret_fed_30x70||0) + (d.ret_fed30||0);
-      a.retE += (d.ret_est70||0) + (d.ret_est_30x70||0) + (d.ret_est30||0);
+      // ret_fed_total = col[32] (TOTAL directo). Para datos viejos, era ret_fed70 (también col[32] = confusión de nombres)
+      var rfd = d.ret_fed_total || d.ret_fed70 || 0;
+      var red = d.ret_est_total || d.ret_est70 || 0;
+      a.retD += rfd; a.retE += red;
+      // 70% porción: nuevo=ret_fed70 (col[36]), viejo=ret_fed_30x70 (también col[36])
       a.ret_fed70 += d.ret_fed70||0; a.ret_est70 += d.ret_est70||0;
       a.ret_fed30 += d.ret_fed30||0; a.ret_est30 += d.ret_est30||0;
       return a;
     }, { cover:0,l007_entradas:0,l007_ent70:0,l007_ent30:0,l007_devol:0,l007_premios:0,l007_pre70:0,l007_pre30:0,l007_salidas:0,l007_ingreso:0,retD:0,retE:0,ret_fed70:0,ret_est70:0,ret_fed30:0,ret_est30:0 });
 
     var rows = dias.map(function(d) {
-      var retD = (d.ret_fed70||0) + (d.ret_fed_30x70||0) + (d.ret_fed30||0);
-      var retE = (d.ret_est70||0) + (d.ret_est_30x70||0) + (d.ret_est30||0);
+      // ret_fed_total = col[32] (TOTAL). Para datos guardados antes del fix, era ret_fed70 (mismo col[32])
+      var retD = d.ret_fed_total || d.ret_fed70 || 0;
+      var retE = d.ret_est_total || d.ret_est70 || 0;
       return '<tr>' +
         '<td class="bld" style="white-space:nowrap">DÍA ' + String(d.dia).padStart(2,'0') + '</td>' +
         _moZ(d.cover) +

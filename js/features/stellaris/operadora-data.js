@@ -118,17 +118,18 @@
           l003_entradas:   n(r[19]), l003_premios: n(r[21]), l003_resultado: n(r[22]),
           l005_entradas:   n(r[23]), l005_premios: n(r[24]), l005_resultado: n(r[25]),
           l006_entradas:   n(r[26]), l006_premios: n(r[28]), l006_resultado: n(r[29]),
-          ret_fed70:       n(r[32]),
-          ret_est70:       n(r[33]),
-          ret_fed_30x70:   n(r[36]),
-          ret_est_30x70:   n(r[37]),
+          // Retenciones: col[32/33]=TOTAL (ya suma 70+30), col[36/37]=porción 70%, col[39/40]=porción 30%
+          ret_fed_total:   n(r[32]),
+          ret_est_total:   n(r[33]),
+          ret_fed70:       n(r[36]),
+          ret_est70:       n(r[37]),
           ret_fed30:       n(r[39]),
           ret_est30:       n(r[40])
         });
       } else if (i >= 40 && !fecha && (n(r[3]) !== 0 || n(r[5]) !== 0)) {
-        // TOTAL row
-        var tRetFed = n(r[32]) + n(r[36]) + n(r[39]);
-        var tRetEst = n(r[33]) + n(r[37]) + n(r[40]);
+        // TOTAL row — col[32/33] ya son el total correcto, no sumar subcols
+        var tRetFed = n(r[32]);
+        var tRetEst = n(r[33]);
         totales = {
           cover:           n(r[3]),
           l007_entradas:   n(r[5]),
@@ -144,12 +145,12 @@
           l003_resultado:  n(r[22]),
           l005_resultado:  n(r[25]),
           l006_resultado:  n(r[29]),
-          ret_fed70:       n(r[32]),
-          ret_est70:       n(r[33]),
-          ret_fed_30x70:   n(r[36]),
-          ret_est_30x70:   n(r[37]),
-          ret_fed30:       n(r[39]),
-          ret_est30:       n(r[40]),
+          ret_fed_total:   tRetFed,   // col[32] = TOTAL federal (ya suma 70+30)
+          ret_est_total:   tRetEst,   // col[33] = TOTAL estatal
+          ret_fed70:       n(r[36]),  // col[36] = porción 70%
+          ret_est70:       n(r[37]),  // col[37] = porción 70%
+          ret_fed30:       n(r[39]),  // col[39] = porción 30%
+          ret_est30:       n(r[40]),  // col[40] = porción 30%
           ret_federal:     tRetFed,
           ret_estatal:     tRetEst,
           ret_total:       tRetFed + tRetEst
@@ -176,16 +177,16 @@
         acc.l003_resultado += d.l003_resultado;
         acc.l005_resultado += d.l005_resultado;
         acc.l006_resultado += d.l006_resultado;
+        acc.ret_fed_total  += d.ret_fed_total;
+        acc.ret_est_total  += d.ret_est_total;
         acc.ret_fed70      += d.ret_fed70;
         acc.ret_est70      += d.ret_est70;
-        acc.ret_fed_30x70  += d.ret_fed_30x70;
-        acc.ret_est_30x70  += d.ret_est_30x70;
         acc.ret_fed30      += d.ret_fed30;
         acc.ret_est30      += d.ret_est30;
-        acc.ret_federal    += d.ret_fed70 + d.ret_fed_30x70 + d.ret_fed30;
-        acc.ret_estatal    += d.ret_est70 + d.ret_est_30x70 + d.ret_est30;
+        acc.ret_federal    += d.ret_fed_total;
+        acc.ret_estatal    += d.ret_est_total;
         return acc;
-      }, { cover:0, l007_entradas:0, l007_ent70:0, l007_ent30:0, l007_devol:0, l007_premios:0, l007_pre70:0, l007_pre30:0, l007_salidas:0, l007_ingreso:0, l002_resultado:0, l003_resultado:0, l005_resultado:0, l006_resultado:0, ret_fed70:0, ret_est70:0, ret_fed_30x70:0, ret_est_30x70:0, ret_fed30:0, ret_est30:0, ret_federal:0, ret_estatal:0, ret_total:0 });
+      }, { cover:0, l007_entradas:0, l007_ent70:0, l007_ent30:0, l007_devol:0, l007_premios:0, l007_pre70:0, l007_pre30:0, l007_salidas:0, l007_ingreso:0, l002_resultado:0, l003_resultado:0, l005_resultado:0, l006_resultado:0, ret_fed_total:0, ret_est_total:0, ret_fed70:0, ret_est70:0, ret_fed30:0, ret_est30:0, ret_federal:0, ret_estatal:0, ret_total:0 });
       totales.ret_total = totales.ret_federal + totales.ret_estatal;
     }
 
@@ -209,7 +210,7 @@
   //   6=Entradas, 7=Salidas, 9=Impuestos, 10=ResultadoCaja
   //   30=DepositoJuego(ent), 31=Acceso(ent)
   //   37=DepositoJuego(sal), 38=Acceso(sal)
-  //   40=PagoPremios, 43=RetencionPremios
+  //   40=PagoPremios(bajo sección Salidas), 42=Premios(sección propia), 43=RetencionPremios
   //   50=PromoRedimible, 51=PromoNoRedimible
   //   52=CancelPromoRed, 56=NoRedimibleCaducado
   function parseSesionesCaja(workbook) {
@@ -265,7 +266,7 @@
         resultadoCaja:   n(r[10]),
         depositoJuego:   n(r[30]),
         acceso:          n(r[31]),
-        premios:         n(r[40]),
+        premios:         n(r[42]) || n(r[40]),  // col[42]=Premios (sección propia), fallback col[40]=Pago de Premios
         retencion:       n(r[43]),
         promoRedimible:  n(r[50]),
         promoNoRed:      n(r[51]),
