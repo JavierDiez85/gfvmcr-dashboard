@@ -69,20 +69,58 @@ async function _centumAuth() {
   return jwt;
 }
 
-// ── Festivos bancarios México (días inhábiles) ──
+// ── Festivos bancarios México — CNBV/Banxico ──
+
+// Domingo de Pascua (algoritmo gregoriano anónimo)
+function _easterSunday(year) {
+  const a = year % 19, b = Math.floor(year / 100), c = year % 100;
+  const d = Math.floor(b / 4), e = b % 4, f = Math.floor((b + 8) / 25);
+  const g = Math.floor((b - f + 1) / 3);
+  const h = (19 * a + b - d - g + 15) % 30;
+  const i = Math.floor(c / 4), k = c % 4;
+  const l = (32 + 2 * e + 2 * i - h - k) % 7;
+  const m = Math.floor((a + 11 * h + 22 * l) / 451);
+  const month = Math.floor((h + l - 7 * m + 114) / 31);
+  const day   = ((h + l - 7 * m + 114) % 31) + 1;
+  return new Date(year, month - 1, day);
+}
+// Cache de Semana Santa por año
+const _easterCache = {};
+function _semanaSanta(year) {
+  if (!_easterCache[year]) {
+    const pascua     = _easterSunday(year);
+    const juevesSanto = new Date(pascua); juevesSanto.setDate(pascua.getDate() - 3);
+    const viernesSanto = new Date(pascua); viernesSanto.setDate(pascua.getDate() - 2);
+    _easterCache[year] = {
+      jueves: juevesSanto.toISOString().slice(0, 10),
+      viernes: viernesSanto.toISOString().slice(0, 10),
+    };
+  }
+  return _easterCache[year];
+}
+
 function _isMexHoliday(d) {
-  const mm  = d.getMonth() + 1;
-  const dd  = d.getDate();
-  const dow = d.getDay(); // 0=dom, 1=lun … 6=sab
-  // Festivos de fecha fija
+  const year = d.getFullYear();
+  const mm   = d.getMonth() + 1;
+  const dd   = d.getDate();
+  const dow  = d.getDay(); // 0=dom … 6=sab
+  const iso  = d.toISOString().slice(0, 10);
+
+  // ── Festivos de fecha fija ──
   if (mm === 1  && dd === 1)  return true; // Año Nuevo
   if (mm === 5  && dd === 1)  return true; // Día del Trabajo
   if (mm === 9  && dd === 16) return true; // Independencia
   if (mm === 12 && dd === 25) return true; // Navidad
-  // Festivos en lunes (por decreto)
+
+  // ── Festivos en lunes (por decreto DOF) ──
   if (mm === 2  && dow === 1 && dd >= 1  && dd <= 7)  return true; // Constitución (1er lunes feb)
   if (mm === 3  && dow === 1 && dd >= 15 && dd <= 21) return true; // Benito Juárez (3er lunes mar)
   if (mm === 11 && dow === 1 && dd >= 15 && dd <= 21) return true; // Revolución (3er lunes nov)
+
+  // ── Semana Santa (Jueves y Viernes Santo) ──
+  const ss = _semanaSanta(year);
+  if (iso === ss.jueves || iso === ss.viernes) return true;
+
   return false;
 }
 function _isBizDay(d) { return d.getDay() !== 0 && d.getDay() !== 6 && !_isMexHoliday(d); }
