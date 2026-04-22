@@ -69,41 +69,90 @@ async function _centumAuth() {
   return jwt;
 }
 
+// ── Festivos bancarios México (días inhábiles) ──
+function _isMexHoliday(d) {
+  const mm  = d.getMonth() + 1;
+  const dd  = d.getDate();
+  const dow = d.getDay(); // 0=dom, 1=lun … 6=sab
+  // Festivos de fecha fija
+  if (mm === 1  && dd === 1)  return true; // Año Nuevo
+  if (mm === 5  && dd === 1)  return true; // Día del Trabajo
+  if (mm === 9  && dd === 16) return true; // Independencia
+  if (mm === 12 && dd === 25) return true; // Navidad
+  // Festivos en lunes (por decreto)
+  if (mm === 2  && dow === 1 && dd >= 1  && dd <= 7)  return true; // Constitución (1er lunes feb)
+  if (mm === 3  && dow === 1 && dd >= 15 && dd <= 21) return true; // Benito Juárez (3er lunes mar)
+  if (mm === 11 && dow === 1 && dd >= 15 && dd <= 21) return true; // Revolución (3er lunes nov)
+  return false;
+}
+function _isBizDay(d) { return d.getDay() !== 0 && d.getDay() !== 6 && !_isMexHoliday(d); }
+// Avanza N días hábiles a partir de una fecha (sin modificar el objeto original)
+function _addBizDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00'); // mediodía para evitar DST
+  let added = 0;
+  while (added < n) { d.setDate(d.getDate() + 1); if (_isBizDay(d)) added++; }
+  return d.toISOString().slice(0, 10);
+}
+// Siguiente día hábil después de dateStr
+function _nextBizDay(dateStr) { return _addBizDays(dateStr, 1); }
+
 function _centumTransform(t, batchId) {
-  const dt      = t.datcr ? new Date(t.datcr) : null;
-  const fecha   = dt ? dt.toISOString().slice(0, 10) : null;
-  const hora    = dt ? dt.toTimeString().slice(0, 8) : null;
-  // Fecha liquidación: si hora >= 23:00 → día siguiente
-  let fechaLiq  = fecha;
-  if (dt && dt.getHours() >= 23) {
-    const next = new Date(dt); next.setDate(next.getDate() + 1);
-    fechaLiq = next.toISOString().slice(0, 10);
+  // Parsear directamente del string para evitar conversión de timezone
+  // datcr viene en hora local de México (ej. "2026-04-22T23:15:00")
+  const raw   = t.datcr || '';
+  const fecha = raw.slice(0, 10) || null;                         // YYYY-MM-DD
+  const hora  = raw.length >= 19 ? raw.slice(11, 19) : null;     // HH:MM:SS
+  const hour  = raw.length >= 13 ? parseInt(raw.slice(11, 13)) : -1;
+
+  // ── Fecha base: si hora >= 23:00 avanza al día siguiente ──
+  let baseDate = fecha;
+  if (fecha && hour >= 23) {
+    const next = new Date(fecha + 'T12:00:00'); // mediodia UTC, seguro contra DST
+    next.setDate(next.getDate() + 1);
+    baseDate = next.toISOString().slice(0, 10);
   }
-  // Card type key
+
+  // ── Card type key ──
   const marca  = (t.redtarj  || '').toLowerCase();
   const bin    = (t.BIN      || '').toLowerCase();
   const metodo = (t.tipotarj || '').toLowerCase();
   let cardTypeKey = 'TC';
-  if (marca.includes('amex') || marca.includes('american')) cardTypeKey = 'Amex';
-  else if (bin.includes('internacional'))                   cardTypeKey = 'TI';
+  const isAmex = marca.includes('amex') || marca.includes('american');
+  if      (isAmex)                        cardTypeKey = 'Amex';
+  else if (bin.includes('internacional')) cardTypeKey = 'TI';
   else if (metodo.includes('d\u00e9b') || metodo.includes('deb') || metodo.includes('prepago')) cardTypeKey = 'TD';
-  // Tipo transacción
+
+  // ── Fecha liquidación ──
+  // Amex: T+3 días hábiles | Resto: siguiente día hábil (T+1)
+  const fechaLiq = baseDate
+    ? (isAmex ? _addBizDays(baseDate, 3) : _nextBizDay(baseDate))
+    : null;
+
+  // ── Tipo transacción ──
+  const isCancela = !!(t.cancela || t.devolucion || t.reverso);
   let tipo = 'PAGO';
-  if      (t.cancela)   tipo = 'CANCELACI\u00d3N';
+  if      (t.cancela)    tipo = 'CANCELACI\u00d3N';
   else if (t.devolucion) tipo = 'DEVOLUCI\u00d3N';
   else if (t.reverso)    tipo = 'REVERSO';
   else if (t.msi)        tipo = 'PAGO X MSI';
-  // Plazo MSI
+
+  // ── Plazo MSI ──
   let plazo = 0;
   if (t.msi && typeof t.msi === 'number') plazo = t.msi;
   else if (t.msi && typeof t.msi === 'string') { const m = String(t.msi).match(/\d+/); if (m) plazo = +m[0]; }
+
+  // ── Montos: negativos en cancelaciones/devoluciones/reversas ──
+  const sign  = isCancela ? -1 : 1;
+  const monto = sign * (parseFloat(t.amount)     || 0);
+  const com   = t.ganancia   != null ? sign * parseFloat(t.ganancia)   : null;
+  const iva   = t.iva        != null ? sign * parseFloat(t.iva)        : null;
 
   return {
     excel_id:          String(t.idTrans || ''),
     upload_batch:      batchId,
     adquiriente:       'EfevooPay',
     cliente:           (t.EMP || '').toUpperCase().trim(),
-    monto:             parseFloat(t.amount)     || 0,
+    monto,
     fecha,
     hora,
     terminal_id:       t.device_id ? String(t.device_id) : null,
@@ -117,8 +166,8 @@ function _centumTransform(t, batchId) {
     tipo_transaccion:  tipo,
     plazo_msi:         plazo,
     tasa_comision_cp:  t.porcentaje != null ? parseFloat(t.porcentaje) : null,
-    monto_comision_cp: t.ganancia   != null ? parseFloat(t.ganancia)   : null,
-    iva_comision_cp:   t.iva        != null ? parseFloat(t.iva)        : null,
+    monto_comision_cp: com,
+    iva_comision_cp:   iva,
     modo_entrada:      null,
   };
 }
