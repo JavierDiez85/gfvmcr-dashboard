@@ -937,9 +937,113 @@ async function rollbackUpload(batchId) {
   window.startCfgUpload = startCfgUpload;
   window.rollbackUpload = rollbackUpload;
 
+  // ═══════════════════════════════════════
+  // CENTUMPAY AUTO-SYNC
+  // ═══════════════════════════════════════
+
+  /** Consulta /api/centum/status y pinta el panel */
+  async function _centumInitPanel() {
+    try {
+      const r = await fetch('/api/centum/status', { credentials: 'include' });
+      const d = await r.json();
+      const statusEl = document.getElementById('centum-sync-status');
+      const tokenEl  = document.getElementById('centum-sync-token');
+      if (!d.configured) {
+        if (statusEl) statusEl.textContent = '⚠ Credenciales no configuradas (.env)';
+        if (tokenEl) { tokenEl.textContent = 'Sin config'; tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:#fff3cd;color:#856404'; }
+      } else {
+        if (statusEl) statusEl.textContent = '✓ Configurado · ' + (process && process.env && process.env.CENTUMPAY_EMAIL ? process.env.CENTUMPAY_EMAIL : '');
+        if (tokenEl) {
+          if (d.tokenActive) {
+            const exp = new Date(d.tokenExp);
+            tokenEl.textContent = 'Token activo hasta ' + exp.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:#d4edda;color:#155724';
+          } else {
+            tokenEl.textContent = 'Token inactivo (se renueva al sync)';
+            tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)';
+          }
+        }
+      }
+    } catch (e) { console.warn('[CentumPay panel]', e.message); }
+    // Fechas por defecto: hoy
+    const today = new Date().toISOString().slice(0, 10);
+    const fromEl = document.getElementById('centum-sync-from');
+    const toEl   = document.getElementById('centum-sync-to');
+    if (fromEl && !fromEl.value) fromEl.value = today;
+    if (toEl   && !toEl.value)   toEl.value   = today;
+  }
+
+  /** Muestra resultado en el panel */
+  function _centumShowResult(type, msg) {
+    const el = document.getElementById('centum-sync-result');
+    if (!el) return;
+    const styles = {
+      loading: 'background:#e8f4fd;color:#0073ea;border:1px solid #b3d9f5',
+      ok:      'background:#d4edda;color:#155724;border:1px solid #c3e6cb',
+      err:     'background:#f8d7da;color:#721c24;border:1px solid #f5c6cb',
+    };
+    el.style.cssText = `display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem;${styles[type]||''}`;
+    el.textContent = msg;
+  }
+
+  /** Sincronizar el rango de fechas seleccionado */
+  async function centumSyncStart() {
+    const from = document.getElementById('centum-sync-from')?.value;
+    const to   = document.getElementById('centum-sync-to')?.value;
+    if (!from || !to) { alert('Selecciona el rango de fechas'); return; }
+    if (from > to)    { alert('La fecha inicial debe ser anterior o igual a la final'); return; }
+    _centumShowResult('loading', `⏳ Sincronizando ${from} → ${to}...`);
+    try {
+      const r = await fetch('/api/centum/sync-terminales', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fechaInicio: from, fechaFin: to }),
+      });
+      const d = await r.json();
+      if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
+      const msg = d.inserted
+        ? `✅ ${d.inserted.toLocaleString()} transacciones sincronizadas (${d.from} → ${d.to})`
+        : '✅ Sin transacciones nuevas en el período';
+      _centumShowResult('ok', msg);
+      if (typeof TPV !== 'undefined') TPV.invalidateAll();
+      rTPVUpload(); // Refrescar KPIs
+    } catch (e) {
+      _centumShowResult('err', '❌ Error: ' + e.message);
+    }
+  }
+
+  /** Atajo: solo hoy */
+  function centumSyncHoy() {
+    const today = new Date().toISOString().slice(0, 10);
+    const f = document.getElementById('centum-sync-from');
+    const t = document.getElementById('centum-sync-to');
+    if (f) f.value = today;
+    if (t) t.value = today;
+    centumSyncStart();
+  }
+
+  /** Atajo: mes actual completo */
+  function centumSyncMes() {
+    const now  = new Date();
+    const from = now.getFullYear() + '-' + String(now.getMonth()+1).padStart(2,'0') + '-01';
+    const to   = now.toISOString().slice(0, 10);
+    const f = document.getElementById('centum-sync-from');
+    const t = document.getElementById('centum-sync-to');
+    if (f) f.value = from;
+    if (t) t.value = to;
+    centumSyncStart();
+  }
+
+  window.centumSyncStart = centumSyncStart;
+  window.centumSyncHoy   = centumSyncHoy;
+  window.centumSyncMes   = centumSyncMes;
+
   // Register views
   if(typeof registerView === 'function'){
-    registerView('tpv_upload', function(){ return rTPVUpload(); });
+    registerView('tpv_upload', function(){
+      rTPVUpload();
+      _centumInitPanel();
+    });
   }
 
 })(window);

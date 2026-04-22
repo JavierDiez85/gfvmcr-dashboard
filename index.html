@@ -3530,6 +3530,34 @@
       <div class="kpi-d dnu" id="upload-kpi-last-sub">Sin uploads registrados</div>
     </div>
   </div>
+  <!-- ── CentumPay Auto-Sync ── -->
+  <div class="tw" style="margin-bottom:14px;border-color:#0073ea33">
+    <div class="tw-h" style="background:linear-gradient(90deg,#0073ea12,transparent)">
+      <div class="tw-ht" style="color:#0073ea">⚡ Sincronización Automática — CentumPay</div>
+      <div style="display:flex;align-items:center;gap:8px">
+        <span id="centum-sync-status" style="font-size:.62rem;color:var(--muted)">Comprobando...</span>
+        <span id="centum-sync-token" style="font-size:.6rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)">—</span>
+      </div>
+    </div>
+    <div style="padding:16px">
+      <p style="font-size:.75rem;color:var(--muted);margin:0 0 12px">Descarga automáticamente las transacciones desde <b>centumpay.centum.mx</b> y las guarda directamente en la BD sin necesidad de Excel.</p>
+      <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <label style="font-size:.62rem;color:var(--muted);font-weight:600">DESDE</label>
+          <input type="date" id="centum-sync-from" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;background:var(--bg);color:var(--text)">
+        </div>
+        <div style="display:flex;flex-direction:column;gap:2px">
+          <label style="font-size:.62rem;color:var(--muted);font-weight:600">HASTA</label>
+          <input type="date" id="centum-sync-to" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;font-size:.75rem;background:var(--bg);color:var(--text)">
+        </div>
+        <button class="btn btn-blue" style="font-size:.72rem;white-space:nowrap;margin-top:14px" onclick="centumSyncStart()">⚡ Sincronizar</button>
+        <button class="btn btn-out" style="font-size:.72rem;white-space:nowrap;margin-top:14px" onclick="centumSyncHoy()">📅 Hoy</button>
+        <button class="btn btn-out" style="font-size:.72rem;white-space:nowrap;margin-top:14px" onclick="centumSyncMes()">🗓 Este mes</button>
+      </div>
+      <div id="centum-sync-result" style="display:none;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem"></div>
+    </div>
+  </div>
+
   <!-- Alerta: clientes sin tasas -->
   <div id="upload-kpi-noratescard" style="display:none;background:#fff3cd;border:1px solid #ffc107;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:.78rem;color:#856404">
     <strong>⚠️ <span id="upload-kpi-norates">0</span> clientes con TODAS las tasas en 0</strong>

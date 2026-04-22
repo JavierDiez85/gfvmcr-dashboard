@@ -39,6 +39,91 @@ startCleanup();
 setupGlobalErrorHandlers();
 
 // ══════════════════════════════════════
+// CENTUMPAY INTEGRATION
+// ══════════════════════════════════════
+
+// Token cache en memoria
+const _centum = { token: null, exp: 0, userId: 11 };
+
+async function _centumAuth() {
+  if (_centum.token && Date.now() < _centum.exp - 60_000) return _centum.token;
+  const email = process.env.CENTUMPAY_EMAIL;
+  const pwd   = process.env.CENTUMPAY_PASSWORD;
+  if (!email || !pwd) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
+  // SHA-256 Base64 de la contraseña (igual que el cliente web)
+  const hash = crypto.createHash('sha256').update(pwd).digest('base64');
+  const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
+  const data = await httpsRequest({
+    hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+  }, body);
+  if (!data.isSuccess || !data.response) throw new Error('CentumPay auth falló: ' + JSON.stringify(data).slice(0, 200));
+  const jwt = data.response;
+  // Decodificar JWT para obtener exp (sin librería externa)
+  const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  const pl  = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+  _centum.token  = jwt;
+  _centum.exp    = (pl.exp || 0) * 1000;
+  _centum.userId = 11; // idagep_usuarios de Javier
+  console.log('[CentumPay] Token renovado, expira:', new Date(_centum.exp).toISOString());
+  return jwt;
+}
+
+function _centumTransform(t, batchId) {
+  const dt      = t.datcr ? new Date(t.datcr) : null;
+  const fecha   = dt ? dt.toISOString().slice(0, 10) : null;
+  const hora    = dt ? dt.toTimeString().slice(0, 8) : null;
+  // Fecha liquidación: si hora >= 23:00 → día siguiente
+  let fechaLiq  = fecha;
+  if (dt && dt.getHours() >= 23) {
+    const next = new Date(dt); next.setDate(next.getDate() + 1);
+    fechaLiq = next.toISOString().slice(0, 10);
+  }
+  // Card type key
+  const marca  = (t.redtarj  || '').toLowerCase();
+  const bin    = (t.BIN      || '').toLowerCase();
+  const metodo = (t.tipotarj || '').toLowerCase();
+  let cardTypeKey = 'TC';
+  if (marca.includes('amex') || marca.includes('american')) cardTypeKey = 'Amex';
+  else if (bin.includes('internacional'))                   cardTypeKey = 'TI';
+  else if (metodo.includes('d\u00e9b') || metodo.includes('deb') || metodo.includes('prepago')) cardTypeKey = 'TD';
+  // Tipo transacción
+  let tipo = 'PAGO';
+  if      (t.cancela)   tipo = 'CANCELACI\u00d3N';
+  else if (t.devolucion) tipo = 'DEVOLUCI\u00d3N';
+  else if (t.reverso)    tipo = 'REVERSO';
+  else if (t.msi)        tipo = 'PAGO X MSI';
+  // Plazo MSI
+  let plazo = 0;
+  if (t.msi && typeof t.msi === 'number') plazo = t.msi;
+  else if (t.msi && typeof t.msi === 'string') { const m = String(t.msi).match(/\d+/); if (m) plazo = +m[0]; }
+
+  return {
+    excel_id:          String(t.idTrans || ''),
+    upload_batch:      batchId,
+    adquiriente:       'EfevooPay',
+    cliente:           (t.EMP || '').toUpperCase().trim(),
+    monto:             parseFloat(t.amount)     || 0,
+    fecha,
+    hora,
+    terminal_id:       t.device_id ? String(t.device_id) : null,
+    fecha_liquidacion: fechaLiq,
+    sucursal:          t.SUC     || null,
+    mes:               fecha ? fecha.slice(0, 7) : null,
+    marca_tarjeta:     t.redtarj  || null,
+    card_type_key:     cardTypeKey,
+    tipo_tarjeta:      t.BIN      || null,
+    metodo_pago:       t.tipotarj || null,
+    tipo_transaccion:  tipo,
+    plazo_msi:         plazo,
+    tasa_comision_cp:  t.porcentaje != null ? parseFloat(t.porcentaje) : null,
+    monto_comision_cp: t.ganancia   != null ? parseFloat(t.ganancia)   : null,
+    iva_comision_cp:   t.iva        != null ? parseFloat(t.iva)        : null,
+    modo_entrada:      null,
+  };
+}
+
+// ══════════════════════════════════════
 // SERVER
 // ══════════════════════════════════════
 http.createServer(async (req, res) => {
@@ -356,6 +441,94 @@ http.createServer(async (req, res) => {
     return;
   }
 
+  // ── CentumPay: Status ──
+  if (req.method === 'GET' && req.url === '/api/centum/status') {
+    if (!requireAuth(req, res)) return;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({
+      configured: !!(process.env.CENTUMPAY_EMAIL && process.env.CENTUMPAY_PASSWORD),
+      tokenActive: !!(_centum.token && Date.now() < _centum.exp),
+      tokenExp: _centum.exp ? new Date(_centum.exp).toISOString() : null,
+    }));
+    return;
+  }
+
+  // ── CentumPay: Sync Terminales → tpv_transactions ──
+  if (req.method === 'POST' && req.url === '/api/centum/sync-terminales') {
+    if (!requireAuth(req, res)) return;
+    if (req._user.rol !== 'admin') { sendError(res, 403, 'Solo administradores'); return; }
+    if (isRateLimited(rateLimitKey(ip, 'centum_sync'), 5)) { sendError(res, 429, 'Demasiadas solicitudes. Espera un momento.'); return; }
+    try {
+      const body = await readBody(req);
+      const { fechaInicio, fechaFin } = body;
+      if (!fechaInicio || !fechaFin) { sendError(res, 400, 'fechaInicio y fechaFin requeridos (YYYY-MM-DD)'); return; }
+
+      const token = await _centumAuth();
+
+      // Fetch transacciones desde CentumPay
+      const txBody = JSON.stringify({
+        idagep_empresa: '1',
+        fechaInicio: fechaInicio + 'T00:00:00',
+        fechaFin:    fechaFin    + 'T23:59:59',
+        idagep_sucursal: 0,
+        idagep_usuarios: _centum.userId,
+        pagina: 0, tamano_pagina: 0,
+        tipo: 'all', tipoTransaccion: 'all',
+      });
+      const txData = await httpsRequest({
+        hostname: 'centumpay.centum.mx', path: '/api/transactions/resumen', method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'Content-Length': Buffer.byteLength(txBody) },
+      }, txBody);
+
+      if (!txData.isSuccess) throw new Error('CentumPay transacciones falló: ' + JSON.stringify(txData).slice(0, 200));
+      const rows = txData.response?.transacciones || [];
+
+      if (!rows.length) {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, inserted: 0, message: 'Sin transacciones en el período' }));
+        return;
+      }
+
+      const { url: sbUrl, key: sbKey } = _sbCreds();
+      const sbH = new URL(sbUrl);
+      const sbHdrs = (ex = {}) => ({ apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', ...ex });
+
+      // Crear batch de auditoría
+      const batchId = crypto.randomUUID();
+      const bBody = JSON.stringify([{
+        id: batchId,
+        filename: `centumpay_sync_${fechaInicio}_${fechaFin}`,
+        row_count: rows.length,
+        date_range_from: fechaInicio,
+        date_range_to: fechaFin,
+        strategy: 'replace_period',
+        uploaded_by: req._user.nombre || req._user.email || 'centum_sync',
+      }]);
+      await httpsRequest({ hostname: sbH.hostname, path: '/rest/v1/tpv_upload_batches', method: 'POST', headers: { ...sbHdrs({ Prefer: 'return=minimal' }), 'Content-Length': Buffer.byteLength(bBody) } }, bBody);
+
+      // Eliminar filas previas del período (solo EfevooPay para no tocar Banorte)
+      await httpsRequest({ hostname: sbH.hostname, path: `/rest/v1/tpv_transactions?fecha=gte.${fechaInicio}&fecha=lte.${fechaFin}&adquiriente=eq.EfevooPay`, method: 'DELETE', headers: sbHdrs({ Prefer: 'return=minimal' }) });
+
+      // Transformar e insertar en lotes de 500
+      const transformed = rows.map(t => _centumTransform(t, batchId));
+      let inserted = 0;
+      for (let i = 0; i < transformed.length; i += 500) {
+        const chunk = transformed.slice(i, i + 500);
+        const iBody = JSON.stringify(chunk);
+        await httpsRequest({ hostname: sbH.hostname, path: '/rest/v1/tpv_transactions', method: 'POST', headers: { ...sbHdrs({ Prefer: 'return=minimal' }), 'Content-Length': Buffer.byteLength(iBody) } }, iBody);
+        inserted += chunk.length;
+      }
+
+      console.log(`[CentumPay] Sync OK: ${inserted} txns (${fechaInicio} → ${fechaFin})`);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, inserted, batchId, from: fechaInicio, to: fechaFin }));
+    } catch (e) {
+      console.error('[CentumPay Sync]', e.message);
+      sendError(res, 500, 'Error en sincronización: ' + (e.message || 'error desconocido'));
+    }
+    return;
+  }
+
   // ── API: AI Chat with Tool Use ──
   if (req.method === 'POST' && req.url === '/api/chat') {
     if (!requireAuth(req, res)) return;
@@ -438,4 +611,9 @@ http.createServer(async (req, res) => {
   if (_env.ANTHROPIC_API_KEY && !_env.ANTHROPIC_API_KEY.startsWith('sk-ant-'))
     _warnings.push('⚠ ANTHROPIC_API_KEY no empieza con sk-ant-');
   if (_warnings.length) console.error('[ENV] ¡CONFIGURACIÓN INCORRECTA!\n' + _warnings.join('\n'));
+  // CentumPay
+  const cpEmail = process.env.CENTUMPAY_EMAIL;
+  const cpPwd   = process.env.CENTUMPAY_PASSWORD;
+  if (!cpEmail || !cpPwd) console.warn('[CentumPay] ⚠ CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados — sync deshabilitado');
+  else console.log('[CentumPay] ✓ Credenciales configuradas para', cpEmail);
 });
