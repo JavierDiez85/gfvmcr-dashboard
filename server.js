@@ -87,14 +87,19 @@ async function _centumAuth() {
     hostname: 'centumpay.centum.mx', path: '/api/login/auth', method: 'POST',
     headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
   }, body);
-  console.log('[CentumPay] auth status:', raw.status, '| body:', raw.body.slice(0, 200));
+  console.log('[CentumPay] auth status:', raw.status, '| body:', raw.body.slice(0, 300));
   const data = raw.parsed;
   if (!data || !data.isSuccess || !data.response) {
     throw new Error(`CentumPay auth falló [HTTP ${raw.status}]: ` + raw.body.slice(0, 300));
   }
   const jwt = data.response;
+  // Validar que es un JWT real (3 partes separadas por punto)
+  const parts = typeof jwt === 'string' ? jwt.split('.') : [];
+  if (parts.length !== 3) {
+    throw new Error(`CentumPay: respuesta no es JWT válido. Recibido: "${String(jwt).slice(0, 100)}"`);
+  }
   // Decodificar JWT para obtener exp (sin librería externa)
-  const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+  const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
   const pl  = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
   _centum.token  = jwt;
   _centum.exp    = (pl.exp || 0) * 1000;
