@@ -83,8 +83,9 @@ async function _centumAuth() {
   // Usar hash pre-computado si está disponible, si no calcular SHA-256 Base64
   const hash = preHash || crypto.createHash('sha256').update(pwd).digest('base64');
   const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
+  // El backend real es gntapi.com:411 (aud del JWT)
   const raw = await _centumRaw({
-    hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
+    hostname: 'gntapi.com', port: 411, path: '/api/auth', method: 'POST',
     headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
   }, body);
   console.log('[CentumPay] auth status:', raw.status, '| body:', raw.body.slice(0, 200));
@@ -573,7 +574,7 @@ http.createServer(async (req, res) => {
       const hash    = preHash || (pwd ? crypto.createHash('sha256').update(pwd).digest('base64') : '(sin hash)');
       const body    = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
       const r = await _centumRaw({
-        hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
+        hostname: 'gntapi.com', port: 411, path: '/api/auth', method: 'POST',
         headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
       }, body);
       res.writeHead(200, { 'Content-Type': 'application/json' });
@@ -626,7 +627,7 @@ http.createServer(async (req, res) => {
         tipo: 'all', tipoTransaccion: 'all',
       });
       const txData = await httpsRequest({
-        hostname: 'centumpay.centum.mx', path: '/api/transactions/resumen', method: 'POST',
+        hostname: 'gntapi.com', port: 411, path: '/api/transactions/resumen', method: 'POST',
         headers: { ..._CENTUM_HDRS, 'Authorization': `Bearer ${token}`, 'Content-Length': Buffer.byteLength(txBody) },
       }, txBody);
 
