@@ -45,6 +45,15 @@ setupGlobalErrorHandlers();
 // Token cache en memoria
 const _centum = { token: null, exp: 0, userId: 11 };
 
+// Headers comunes que el portal web envía — sin ellos CentumPay redirige a "/"
+const _CENTUM_HDRS = {
+  'Content-Type':  'application/json',
+  'Accept':        'application/json, text/plain, */*',
+  'Origin':        'https://centumpay.centum.mx',
+  'Referer':       'https://centumpay.centum.mx/',
+  'User-Agent':    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+};
+
 async function _centumAuth() {
   if (_centum.token && Date.now() < _centum.exp - 60_000) return _centum.token;
   const email = process.env.CENTUMPAY_EMAIL;
@@ -55,17 +64,19 @@ async function _centumAuth() {
   const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
   const data = await httpsRequest({
     hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(body) },
+    headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
   }, body);
-  if (!data.isSuccess || !data.response) throw new Error('CentumPay auth falló: ' + JSON.stringify(data).slice(0, 200));
+  if (!data || !data.isSuccess || !data.response) {
+    throw new Error('CentumPay auth falló: ' + JSON.stringify(data).slice(0, 300));
+  }
   const jwt = data.response;
   // Decodificar JWT para obtener exp (sin librería externa)
   const b64 = jwt.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
   const pl  = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
   _centum.token  = jwt;
   _centum.exp    = (pl.exp || 0) * 1000;
-  _centum.userId = 11; // idagep_usuarios de Javier
-  console.log('[CentumPay] Token renovado, expira:', new Date(_centum.exp).toISOString());
+  _centum.userId = 11;
+  console.log('[CentumPay] Token OK, expira:', new Date(_centum.exp).toISOString());
   return jwt;
 }
 
@@ -564,7 +575,7 @@ http.createServer(async (req, res) => {
       });
       const txData = await httpsRequest({
         hostname: 'centumpay.centum.mx', path: '/api/transactions/resumen', method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}`, 'Content-Length': Buffer.byteLength(txBody) },
+        headers: { ..._CENTUM_HDRS, 'Authorization': `Bearer ${token}`, 'Content-Length': Buffer.byteLength(txBody) },
       }, txBody);
 
       if (!txData.isSuccess) throw new Error('CentumPay transacciones falló: ' + JSON.stringify(txData).slice(0, 200));
