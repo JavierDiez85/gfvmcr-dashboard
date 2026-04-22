@@ -58,9 +58,10 @@ async function _centumAuth() {
   if (_centum.token && Date.now() < _centum.exp - 60_000) return _centum.token;
   const email = process.env.CENTUMPAY_EMAIL;
   const pwd   = process.env.CENTUMPAY_PASSWORD;
-  if (!email || !pwd) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
-  // SHA-256 Base64 de la contraseña (igual que el cliente web)
-  const hash = crypto.createHash('sha256').update(pwd).digest('base64');
+  const preHash = process.env.CENTUMPAY_HASH; // hash pre-computado (alternativa al password)
+  if (!email || (!pwd && !preHash)) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
+  // Usar hash pre-computado si está disponible, si no calcular SHA-256 Base64
+  const hash = preHash || crypto.createHash('sha256').update(pwd).digest('base64');
   const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
   const data = await httpsRequest({
     hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
