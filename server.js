@@ -45,7 +45,7 @@ setupGlobalErrorHandlers();
 // Token cache en memoria
 const _centum = { token: null, exp: 0, userId: 11 };
 
-// Headers comunes que el portal web envía — sin ellos CentumPay redirige a "/"
+// Headers comunes que el portal web envía
 const _CENTUM_HDRS = {
   'Content-Type':  'application/json',
   'Accept':        'application/json, text/plain, */*',
@@ -53,6 +53,26 @@ const _CENTUM_HDRS = {
   'Referer':       'https://centumpay.centum.mx/',
   'User-Agent':    'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
 };
+
+// Versión de httpsRequest que devuelve {status, headers, body, parsed}
+function _centumRaw(options, body) {
+  return new Promise((resolve, reject) => {
+    const req = require('https').request(options, res => {
+      const chunks = [];
+      res.on('data', c => chunks.push(c));
+      res.on('end', () => {
+        const raw = Buffer.concat(chunks).toString();
+        let parsed = null;
+        try { parsed = JSON.parse(raw); } catch {}
+        resolve({ status: res.statusCode, headers: res.headers, body: raw, parsed });
+      });
+    });
+    req.on('error', reject);
+    req.setTimeout(15000, () => { req.destroy(); reject(new Error('Timeout')); });
+    if (body) req.write(body);
+    req.end();
+  });
+}
 
 async function _centumAuth() {
   if (_centum.token && Date.now() < _centum.exp - 60_000) return _centum.token;
@@ -63,12 +83,14 @@ async function _centumAuth() {
   // Usar hash pre-computado si está disponible, si no calcular SHA-256 Base64
   const hash = preHash || crypto.createHash('sha256').update(pwd).digest('base64');
   const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
-  const data = await httpsRequest({
+  const raw = await _centumRaw({
     hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
     headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
   }, body);
+  console.log('[CentumPay] auth status:', raw.status, '| body:', raw.body.slice(0, 200));
+  const data = raw.parsed;
   if (!data || !data.isSuccess || !data.response) {
-    throw new Error('CentumPay auth falló: ' + JSON.stringify(data).slice(0, 300));
+    throw new Error(`CentumPay auth falló [HTTP ${raw.status}]: ` + raw.body.slice(0, 300));
   }
   const jwt = data.response;
   // Decodificar JWT para obtener exp (sin librería externa)
@@ -536,6 +558,35 @@ http.createServer(async (req, res) => {
     } catch (e) {
       console.error('[Upload Tarjetas rollback]', e.message);
       sendError(res, 500, 'Error en rollback tarjetas: ' + e.message);
+    }
+    return;
+  }
+
+  // ── CentumPay: Debug (admin only) ──
+  if (req.method === 'GET' && req.url === '/api/centum/debug') {
+    if (!requireAuth(req, res)) return;
+    if (req._user.rol !== 'admin') { sendError(res, 403, 'Admin only'); return; }
+    try {
+      const email   = process.env.CENTUMPAY_EMAIL || '(no configurado)';
+      const preHash = process.env.CENTUMPAY_HASH;
+      const pwd     = process.env.CENTUMPAY_PASSWORD;
+      const hash    = preHash || (pwd ? crypto.createHash('sha256').update(pwd).digest('base64') : '(sin hash)');
+      const body    = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
+      const r = await _centumRaw({
+        hostname: 'centumpay.centum.mx', path: '/api/auth', method: 'POST',
+        headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
+      }, body);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        email, hashUsado: hash.slice(0, 10) + '...',
+        httpStatus: r.status,
+        responseHeaders: r.headers,
+        responseBody: r.body.slice(0, 500),
+        parsedOk: !!r.parsed,
+        isSuccess: r.parsed?.isSuccess,
+      }));
+    } catch (e) {
+      sendError(res, 500, 'Debug error: ' + e.message);
     }
     return;
   }
