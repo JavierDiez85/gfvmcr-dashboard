@@ -81,12 +81,12 @@ async function _centumAuth() {
   if (!email || !pwd) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
 
   console.log('[CentumPay] Iniciando login con Puppeteer...');
-  const puppeteer = require('puppeteer');
-  // Usar Chrome del sistema (Mac) o el de puppeteer en Linux (Railway)
-  const { execSync } = require('child_process');
-  let executablePath;
-  const macChrome = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-  try { execSync(`ls "${macChrome}"`); executablePath = macChrome; } catch {}
+  const puppeteer = require('puppeteer-core');
+  // Mac: Chrome instalado; Linux (Railway): variable de entorno
+  const executablePath = process.platform === 'darwin'
+    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    : (process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable');
+  console.log('[CentumPay] Chrome path:', executablePath);
   const browser = await puppeteer.launch({
     headless: true,
     executablePath,
