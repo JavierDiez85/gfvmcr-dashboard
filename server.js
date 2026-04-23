@@ -615,10 +615,24 @@ http.createServer(async (req, res) => {
     if (isRateLimited(rateLimitKey(ip, 'centum_sync'), 5)) { sendError(res, 429, 'Demasiadas solicitudes. Espera un momento.'); return; }
     try {
       const body = await readBody(req);
-      const { fechaInicio, fechaFin } = body;
+      const { fechaInicio, fechaFin, jwtToken } = body;
       if (!fechaInicio || !fechaFin) { sendError(res, 400, 'fechaInicio y fechaFin requeridos (YYYY-MM-DD)'); return; }
 
-      const token = await _centumAuth();
+      // Usar JWT provisto manualmente si existe, si no intentar auth automática
+      let token;
+      if (jwtToken && jwtToken.startsWith('eyJ')) {
+        token = jwtToken;
+        // Guardar en cache para reutilizar
+        try {
+          const parts = jwtToken.split('.');
+          const pl = JSON.parse(Buffer.from(parts[1].replace(/-/g,'+').replace(/_/g,'/'), 'base64').toString());
+          _centum.token = jwtToken;
+          _centum.exp   = (pl.exp || 0) * 1000;
+          console.log('[CentumPay] Usando JWT manual, expira:', new Date(_centum.exp).toISOString());
+        } catch {}
+      } else {
+        token = await _centumAuth();
+      }
 
       // Fetch transacciones desde CentumPay
       const txBody = JSON.stringify({

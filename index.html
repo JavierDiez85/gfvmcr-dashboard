@@ -3541,6 +3541,23 @@
     </div>
     <div style="padding:16px">
       <p style="font-size:.75rem;color:var(--muted);margin:0 0 12px">Descarga automáticamente las transacciones desde <b>centumpay.centum.mx</b> y las guarda directamente en la BD sin necesidad de Excel.</p>
+      <!-- JWT manual -->
+      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+          <span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Token JWT (centumpay.centum.mx)</span>
+          <span id="centum-jwt-badge" style="font-size:.58rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)">Sin token</span>
+        </div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <input type="text" id="centum-jwt-input" placeholder="Pegar eyJhbGci... (accessToken de la respuesta /api/login/auth)"
+            style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.68rem;font-family:monospace;background:var(--white);color:var(--text)"
+            oninput="centumValidateJwt(this.value)">
+          <button class="btn btn-out" style="font-size:.72rem;white-space:nowrap" onclick="centumClearJwt()">✕</button>
+        </div>
+        <div style="font-size:.63rem;color:var(--muted);margin-top:5px">
+          En centumpay.centum.mx: <b>DevTools → Network → /api/login/auth → Preview → accessToken</b>. Válido ~70 min.
+        </div>
+      </div>
+      <!-- Rango de fechas + botones -->
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
         <div style="display:flex;flex-direction:column;gap:2px">
           <label style="font-size:.62rem;color:var(--muted);font-weight:600">DESDE</label>

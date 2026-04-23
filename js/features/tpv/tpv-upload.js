@@ -986,18 +986,65 @@ async function rollbackUpload(batchId) {
     el.textContent = msg;
   }
 
+  /** Valida JWT pegado y actualiza el badge */
+  function centumValidateJwt(raw) {
+    const badge = document.getElementById('centum-jwt-badge');
+    if (!badge) return;
+    const token = (raw || '').trim();
+    if (!token || !token.startsWith('eyJ')) {
+      badge.textContent = 'Sin token';
+      badge.style.cssText = 'font-size:.58rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)';
+      return;
+    }
+    try {
+      const parts = token.split('.');
+      if (parts.length !== 3) throw new Error('formato inválido');
+      const pl  = JSON.parse(atob(parts[1].replace(/-/g,'+').replace(/_/g,'/')));
+      const exp = pl.exp ? new Date(pl.exp * 1000) : null;
+      const now = Date.now();
+      if (exp && exp.getTime() < now) {
+        badge.textContent = 'Token expirado ' + exp.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'});
+        badge.style.cssText = 'font-size:.58rem;padding:1px 7px;border-radius:10px;background:#f8d7da;color:#721c24';
+      } else {
+        const mins = exp ? Math.floor((exp.getTime() - now) / 60000) : '?';
+        badge.textContent = exp
+          ? `✓ Válido hasta ${exp.toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})} (${mins} min)`
+          : '✓ Token válido';
+        badge.style.cssText = 'font-size:.58rem;padding:1px 7px;border-radius:10px;background:#d4edda;color:#155724';
+      }
+    } catch {
+      badge.textContent = '⚠ Token inválido';
+      badge.style.cssText = 'font-size:.58rem;padding:1px 7px;border-radius:10px;background:#fff3cd;color:#856404';
+    }
+  }
+
+  /** Limpia el campo JWT */
+  function centumClearJwt() {
+    const el = document.getElementById('centum-jwt-input');
+    if (el) el.value = '';
+    centumValidateJwt('');
+  }
+
   /** Sincronizar el rango de fechas seleccionado */
   async function centumSyncStart() {
     const from = document.getElementById('centum-sync-from')?.value;
     const to   = document.getElementById('centum-sync-to')?.value;
     if (!from || !to) { alert('Selecciona el rango de fechas'); return; }
     if (from > to)    { alert('La fecha inicial debe ser anterior o igual a la final'); return; }
+
+    // Leer JWT si fue pegado manualmente
+    const jwtRaw = (document.getElementById('centum-jwt-input')?.value || '').trim();
+    const jwtToken = (jwtRaw && jwtRaw.startsWith('eyJ')) ? jwtRaw : undefined;
+
     _centumShowResult('loading', `⏳ Sincronizando ${from} → ${to}...`);
     try {
+      const payload = { fechaInicio: from, fechaFin: to };
+      if (jwtToken) payload.jwtToken = jwtToken;
+
       const r = await fetch('/api/centum/sync-terminales', {
         method: 'POST', credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ fechaInicio: from, fechaFin: to }),
+        body: JSON.stringify(payload),
       });
       const d = await r.json();
       if (!r.ok) throw new Error(d.error || 'HTTP ' + r.status);
@@ -1034,9 +1081,11 @@ async function rollbackUpload(batchId) {
     centumSyncStart();
   }
 
-  window.centumSyncStart = centumSyncStart;
-  window.centumSyncHoy   = centumSyncHoy;
-  window.centumSyncMes   = centumSyncMes;
+  window.centumSyncStart   = centumSyncStart;
+  window.centumSyncHoy     = centumSyncHoy;
+  window.centumSyncMes     = centumSyncMes;
+  window.centumValidateJwt = centumValidateJwt;
+  window.centumClearJwt    = centumClearJwt;
 
   // Register views
   if(typeof registerView === 'function'){
