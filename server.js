@@ -80,37 +80,53 @@ async function _centumAuth() {
   const pwd   = process.env.CENTUMPAY_PASSWORD;
   if (!email || !pwd) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
 
-  console.log('[CentumPay] Iniciando login con Playwright...');
-  const { chromium } = require('playwright-chromium');
-  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  console.log('[CentumPay] Iniciando login con Puppeteer...');
+  const puppeteer = require('puppeteer');
+  const browser = await puppeteer.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
   try {
     const page = await browser.newPage();
-    await page.goto('https://centumpay.centum.mx', { waitUntil: 'networkidle', timeout: 30000 });
 
-    // Llenar email y password
-    await page.fill('input[type="email"], input[name="email"], input[placeholder*="mail" i], input[placeholder*="usuario" i]', email);
-    await page.fill('input[type="password"]', pwd);
+    // Interceptar respuesta de /api/login/auth antes de navegar
+    let authData = null;
+    page.on('response', async resp => {
+      if (resp.url().includes('/api/login/auth') && resp.request().method() === 'POST') {
+        authData = await resp.json().catch(() => null);
+      }
+    });
 
-    // Click en botón de login e interceptar la respuesta de /api/login/auth
-    const [authResp] = await Promise.all([
-      page.waitForResponse(r => r.url().includes('/api/login/auth') && r.request().method() === 'POST', { timeout: 15000 }),
-      page.click('button[type="submit"], button:has-text("Iniciar"), button:has-text("Entrar"), button:has-text("Login")')
-    ]);
+    await page.goto('https://centumpay.centum.mx', { waitUntil: 'networkidle2', timeout: 30000 });
+    console.log('[CentumPay] Página cargada, llenando formulario...');
 
-    const data = await authResp.json().catch(() => null);
-    const jwt = data?.response;
+    // Llenar email
+    await page.waitForSelector('input[type="email"], input[name="email"]', { timeout: 10000 });
+    await page.type('input[type="email"], input[name="email"]', email, { delay: 50 });
+
+    // Llenar password
+    await page.waitForSelector('input[type="password"]', { timeout: 5000 });
+    await page.type('input[type="password"]', pwd, { delay: 50 });
+
+    // Click submit y esperar respuesta de auth
+    await page.click('button[type="submit"]');
+    await page.waitForFunction(() => window.sessionStorage.getItem('hash'), { timeout: 15000 }).catch(() => {});
+
+    // Obtener JWT de sessionStorage o de la respuesta interceptada
+    const jwtFromStorage = await page.evaluate(() => window.sessionStorage.getItem('hash')).catch(() => null);
+    const jwt = jwtFromStorage || authData?.response;
+
+    console.log('[CentumPay] authData:', JSON.stringify(authData)?.slice(0, 100));
+    console.log('[CentumPay] jwtFromStorage:', jwtFromStorage ? jwtFromStorage.slice(0,30)+'...' : 'null');
+
     if (!jwt || typeof jwt !== 'string' || jwt.split('.').length !== 3) {
-      throw new Error(`Playwright login falló. Respuesta: "${String(jwt || JSON.stringify(data)).slice(0, 150)}"`);
+      throw new Error(`Puppeteer login falló. jwt="${String(jwt).slice(0,100)}" authResp="${JSON.stringify(authData)?.slice(0,150)}"`);
     }
 
-    // Decodificar JWT para obtener exp
     const parts = jwt.split('.');
     const b64   = parts[1].replace(/-/g, '+').replace(/_/g, '/');
     const pl    = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
     _centum.token  = jwt;
     _centum.exp    = (pl.exp || 0) * 1000;
     _centum.userId = 11;
-    console.log('[CentumPay] ✅ Playwright login OK, expira:', new Date(_centum.exp).toISOString());
+    console.log('[CentumPay] ✅ Puppeteer login OK, expira:', new Date(_centum.exp).toISOString());
     return jwt;
   } finally {
     await browser.close();
