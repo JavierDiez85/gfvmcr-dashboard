@@ -80,44 +80,41 @@ async function _centumAuth() {
   const pwd   = process.env.CENTUMPAY_PASSWORD;
   if (!email || !pwd) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
 
-  // Paso 1: /api/login/hash — inicializa la sesión en el servidor CentumPay
-  // (el servidor necesita recibir esta llamada antes de aceptar el auth)
-  const hashPath = `/api/login/hash?email=${encodeURIComponent(email)}&usuario=&contrasena=`;
-  const hashRaw = await _centumRaw({
-    hostname: 'centumpay.centum.mx', path: hashPath, method: 'GET',
-    headers: { ..._CENTUM_HDRS },
-  });
-  console.log('[CentumPay] /api/login/hash status:', hashRaw.status, '| code:', hashRaw.parsed?.response);
-  if (!hashRaw.parsed?.isSuccess) {
-    throw new Error(`CentumPay /api/login/hash falló [HTTP ${hashRaw.status}]: ` + hashRaw.body.slice(0, 200));
-  }
+  console.log('[CentumPay] Iniciando login con Playwright...');
+  const { chromium } = require('playwright-chromium');
+  const browser = await chromium.launch({ headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] });
+  try {
+    const page = await browser.newPage();
+    await page.goto('https://centumpay.centum.mx', { waitUntil: 'networkidle', timeout: 30000 });
 
-  // Paso 2: /api/login/auth — hash = SHA256(password) en base64
-  const hash = crypto.createHash('sha256').update(pwd).digest('base64');
-  const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
-  const raw = await _centumRaw({
-    hostname: 'centumpay.centum.mx', path: '/api/login/auth', method: 'POST',
-    headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
-  }, body);
-  console.log('[CentumPay] /api/login/auth status:', raw.status, '| body:', raw.body.slice(0, 300));
-  const data = raw.parsed;
-  if (!data || !data.isSuccess || !data.response) {
-    throw new Error(`CentumPay auth falló [HTTP ${raw.status}]: ` + raw.body.slice(0, 300));
+    // Llenar email y password
+    await page.fill('input[type="email"], input[name="email"], input[placeholder*="mail" i], input[placeholder*="usuario" i]', email);
+    await page.fill('input[type="password"]', pwd);
+
+    // Click en botón de login e interceptar la respuesta de /api/login/auth
+    const [authResp] = await Promise.all([
+      page.waitForResponse(r => r.url().includes('/api/login/auth') && r.request().method() === 'POST', { timeout: 15000 }),
+      page.click('button[type="submit"], button:has-text("Iniciar"), button:has-text("Entrar"), button:has-text("Login")')
+    ]);
+
+    const data = await authResp.json().catch(() => null);
+    const jwt = data?.response;
+    if (!jwt || typeof jwt !== 'string' || jwt.split('.').length !== 3) {
+      throw new Error(`Playwright login falló. Respuesta: "${String(jwt || JSON.stringify(data)).slice(0, 150)}"`);
+    }
+
+    // Decodificar JWT para obtener exp
+    const parts = jwt.split('.');
+    const b64   = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const pl    = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
+    _centum.token  = jwt;
+    _centum.exp    = (pl.exp || 0) * 1000;
+    _centum.userId = 11;
+    console.log('[CentumPay] ✅ Playwright login OK, expira:', new Date(_centum.exp).toISOString());
+    return jwt;
+  } finally {
+    await browser.close();
   }
-  const jwt = data.response;
-  // Validar que es un JWT real (3 partes separadas por punto)
-  const parts = typeof jwt === 'string' ? jwt.split('.') : [];
-  if (parts.length !== 3) {
-    throw new Error(`CentumPay: respuesta no es JWT válido. Recibido: "${String(jwt).slice(0, 100)}"`);
-  }
-  // Decodificar JWT para obtener exp (sin librería externa)
-  const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
-  const pl  = JSON.parse(Buffer.from(b64, 'base64').toString('utf8'));
-  _centum.token  = jwt;
-  _centum.exp    = (pl.exp || 0) * 1000;
-  _centum.userId = 11;
-  console.log('[CentumPay] Token OK, expira:', new Date(_centum.exp).toISOString());
-  return jwt;
 }
 
 // ── Festivos bancarios México — CNBV/Banxico ──
