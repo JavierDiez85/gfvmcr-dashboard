@@ -3540,22 +3540,19 @@
       </div>
     </div>
     <div style="padding:16px">
-      <p style="font-size:.75rem;color:var(--muted);margin:0 0 12px">Descarga automáticamente las transacciones desde <b>centumpay.centum.mx</b> y las guarda directamente en la BD sin necesidad de Excel.</p>
-      <!-- JWT manual -->
-      <div style="margin-bottom:14px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
-          <span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Token JWT (centumpay.centum.mx)</span>
-          <span id="centum-jwt-badge" style="font-size:.58rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)">Sin token</span>
+      <!-- Banner auth automático -->
+      <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:#d4edda;border:1px solid #c3e6cb;border-radius:8px;margin-bottom:14px">
+        <span style="font-size:1.1rem">🤖</span>
+        <div style="flex:1">
+          <div style="font-size:.72rem;font-weight:700;color:#155724">Auth automático activo</div>
+          <div style="font-size:.65rem;color:#155724;opacity:.8">El servidor se autentica solo con las credenciales del .env. <b>No necesitas pegar JWT manualmente.</b></div>
         </div>
-        <div style="display:flex;gap:8px;align-items:center">
-          <input type="text" id="centum-jwt-input" placeholder="Pegar eyJhbGci... (accessToken de la respuesta /api/login/auth)"
-            style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.68rem;font-family:monospace;background:var(--white);color:var(--text)"
-            oninput="centumValidateJwt(this.value)">
-          <button class="btn btn-out" style="font-size:.72rem;white-space:nowrap" onclick="centumClearJwt()">✕</button>
-        </div>
-        <div style="font-size:.63rem;color:var(--muted);margin-top:5px">
-          En centumpay.centum.mx: <b>DevTools → Network → /api/login/auth → Preview → accessToken</b>. Válido ~70 min.
-        </div>
+        <button class="btn" style="font-size:.65rem;padding:4px 10px;background:#155724;color:#fff;border:none;border-radius:6px;cursor:pointer;white-space:nowrap" onclick="centumTestAuth()">🔑 Probar auth</button>
+      </div>
+      <!-- Info cron -->
+      <div style="font-size:.68rem;color:var(--muted);padding:8px 12px;background:var(--bg);border-radius:7px;border:1px solid var(--border);margin-bottom:14px">
+        🕖 <b>Sync automático diario a las 7:00am CST</b> — sincroniza el día anterior automáticamente.
+        <span id="centum-next-sync" style="margin-left:6px;color:var(--blue)"></span>
       </div>
       <!-- Rango de fechas + botones -->
       <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">
@@ -3572,6 +3569,22 @@
         <button class="btn btn-out" style="font-size:.72rem;white-space:nowrap;margin-top:14px" onclick="centumSyncMes()">🗓 Este mes</button>
       </div>
       <div id="centum-sync-result" style="display:none;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem"></div>
+      <!-- JWT manual (colapsado por defecto - fallback) -->
+      <details style="margin-top:12px">
+        <summary style="font-size:.65rem;color:var(--muted);cursor:pointer;user-select:none">🔧 JWT manual (fallback de emergencia)</summary>
+        <div style="margin-top:8px;padding:12px;background:var(--bg);border-radius:8px;border:1px solid var(--border)">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+            <span style="font-size:.62rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)">Token JWT manual</span>
+            <span id="centum-jwt-badge" style="font-size:.58rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)">Sin token</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:center">
+            <input type="text" id="centum-jwt-input" placeholder="Pegar eyJhbGci... (solo si el auth automático falla)"
+              style="flex:1;padding:7px 10px;border:1px solid var(--border);border-radius:6px;font-size:.68rem;font-family:monospace;background:var(--white);color:var(--text)"
+              oninput="centumValidateJwt(this.value)">
+            <button class="btn btn-out" style="font-size:.72rem;white-space:nowrap" onclick="centumClearJwt()">✕</button>
+          </div>
+        </div>
+      </details>
     </div>
   </div>
 

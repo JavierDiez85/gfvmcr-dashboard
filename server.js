@@ -78,16 +78,28 @@ async function _centumAuth() {
   if (_centum.token && Date.now() < _centum.exp - 60_000) return _centum.token;
   const email = process.env.CENTUMPAY_EMAIL;
   const pwd   = process.env.CENTUMPAY_PASSWORD;
-  const preHash = process.env.CENTUMPAY_HASH; // hash pre-computado (alternativa al password)
-  if (!email || (!pwd && !preHash)) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
-  // Usar hash pre-computado si está disponible, si no calcular SHA-256 Base64
-  const hash = preHash || crypto.createHash('sha256').update(pwd).digest('base64');
+  if (!email || !pwd) throw new Error('CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados en .env');
+
+  // Paso 1: /api/login/hash — inicializa la sesión en el servidor CentumPay
+  // (el servidor necesita recibir esta llamada antes de aceptar el auth)
+  const hashPath = `/api/login/hash?email=${encodeURIComponent(email)}&usuario=&contrasena=`;
+  const hashRaw = await _centumRaw({
+    hostname: 'centumpay.centum.mx', path: hashPath, method: 'GET',
+    headers: { ..._CENTUM_HDRS },
+  });
+  console.log('[CentumPay] /api/login/hash status:', hashRaw.status, '| code:', hashRaw.parsed?.response);
+  if (!hashRaw.parsed?.isSuccess) {
+    throw new Error(`CentumPay /api/login/hash falló [HTTP ${hashRaw.status}]: ` + hashRaw.body.slice(0, 200));
+  }
+
+  // Paso 2: /api/login/auth — hash = SHA256(password) en base64
+  const hash = crypto.createHash('sha256').update(pwd).digest('base64');
   const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
   const raw = await _centumRaw({
     hostname: 'centumpay.centum.mx', path: '/api/login/auth', method: 'POST',
     headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
   }, body);
-  console.log('[CentumPay] auth status:', raw.status, '| body:', raw.body.slice(0, 300));
+  console.log('[CentumPay] /api/login/auth status:', raw.status, '| body:', raw.body.slice(0, 300));
   const data = raw.parsed;
   if (!data || !data.isSuccess || !data.response) {
     throw new Error(`CentumPay auth falló [HTTP ${raw.status}]: ` + raw.body.slice(0, 300));
@@ -572,11 +584,14 @@ http.createServer(async (req, res) => {
     if (!requireAuth(req, res)) return;
     if (req._user.rol !== 'admin') { sendError(res, 403, 'Admin only'); return; }
     try {
-      const email   = process.env.CENTUMPAY_EMAIL || '(no configurado)';
-      const preHash = process.env.CENTUMPAY_HASH;
-      const pwd     = process.env.CENTUMPAY_PASSWORD;
-      const hash    = preHash || (pwd ? crypto.createHash('sha256').update(pwd).digest('base64') : '(sin hash)');
-      const body    = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
+      const email = process.env.CENTUMPAY_EMAIL || '(no configurado)';
+      const pwd   = process.env.CENTUMPAY_PASSWORD;
+      const hash  = pwd ? crypto.createHash('sha256').update(pwd).digest('base64') : '(sin password)';
+      // Paso 1: inicializar sesión
+      const hashPath = `/api/login/hash?email=${encodeURIComponent(email)}&usuario=&contrasena=`;
+      const h1 = await _centumRaw({ hostname: 'centumpay.centum.mx', path: hashPath, method: 'GET', headers: _CENTUM_HDRS });
+      // Paso 2: auth
+      const body = JSON.stringify({ email, hash, usuario: '', contrasena: '' });
       const r = await _centumRaw({
         hostname: 'centumpay.centum.mx', path: '/api/login/auth', method: 'POST',
         headers: { ..._CENTUM_HDRS, 'Content-Length': Buffer.byteLength(body) },
@@ -584,8 +599,8 @@ http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({
         email, hashUsado: hash.slice(0, 10) + '...',
+        step1_hash_status: h1.status, step1_code: h1.parsed?.response,
         httpStatus: r.status,
-        responseHeaders: r.headers,
         responseBody: r.body.slice(0, 500),
         parsedOk: !!r.parsed,
         isSuccess: r.parsed?.isSuccess,
@@ -605,6 +620,28 @@ http.createServer(async (req, res) => {
       tokenActive: !!(_centum.token && Date.now() < _centum.exp),
       tokenExp: _centum.exp ? new Date(_centum.exp).toISOString() : null,
     }));
+    return;
+  }
+
+  // ── CentumPay: Test Auth Automático ──
+  if (req.method === 'POST' && req.url === '/api/centum/test-auth') {
+    if (!requireAuth(req, res)) return;
+    if (req._user.rol !== 'admin') { sendError(res, 403, 'Admin only'); return; }
+    try {
+      _centum.token = null; // Forzar re-auth
+      _centum.exp = 0;
+      const jwt = await _centumAuth();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        ok: true,
+        message: 'Auth automático OK',
+        tokenPreview: jwt.slice(0, 20) + '...',
+        expira: new Date(_centum.exp).toISOString(),
+      }));
+    } catch (e) {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ ok: false, error: e.message }));
+    }
     return;
   }
 
@@ -784,5 +821,90 @@ http.createServer(async (req, res) => {
   const cpEmail = process.env.CENTUMPAY_EMAIL;
   const cpPwd   = process.env.CENTUMPAY_PASSWORD;
   if (!cpEmail || !cpPwd) console.warn('[CentumPay] ⚠ CENTUMPAY_EMAIL / CENTUMPAY_PASSWORD no configurados — sync deshabilitado');
-  else console.log('[CentumPay] ✓ Credenciales configuradas para', cpEmail);
+  else {
+    console.log('[CentumPay] ✓ Credenciales configuradas para', cpEmail);
+    _scheduleDailySync();
+  }
 });
+
+// ══════════════════════════════════════
+// CRON: Sync diario automático a las 7am CST (13:00 UTC)
+// ══════════════════════════════════════
+function _scheduleDailySync() {
+  const HOUR_UTC = 13; // 7am CST (UTC-6) / 8am CDT (UTC-5) → 13:00 UTC cubre ambos
+  const MIN_UTC  = 0;
+
+  function _msUntilNext() {
+    const now = new Date();
+    const next = new Date(Date.UTC(
+      now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(),
+      HOUR_UTC, MIN_UTC, 0, 0
+    ));
+    if (next <= now) next.setUTCDate(next.getUTCDate() + 1);
+    return next - now;
+  }
+
+  async function _runDailySync() {
+    const now = new Date();
+    // Sincronizar ayer (CST: UTC-6)
+    const ayer = new Date(now.getTime() - 6 * 3600_000 - 24 * 3600_000);
+    const fecha = ayer.toISOString().slice(0, 10);
+    console.log(`[CentumPay Cron] Iniciando sync diario: ${fecha}`);
+    try {
+      const token = await _centumAuth();
+      // Llamar al mismo flujo de sync que usa el endpoint manual
+      const txBody = JSON.stringify({
+        idagep_empresa: '1',
+        fechaInicio: fecha + 'T00:00:00',
+        fechaFin:    fecha + 'T23:59:59',
+        idagep_sucursal: 0,
+        idagep_usuarios: _centum.userId,
+        pagina: 0, tamano_pagina: 0,
+        tipo: 'all', tipoTransaccion: 'all',
+      });
+      const txData = await httpsRequest({
+        hostname: 'centumpay.centum.mx', path: '/api/transactions/resumen', method: 'POST',
+        headers: { ..._CENTUM_HDRS, 'Authorization': `Bearer ${token}`, 'Content-Length': Buffer.byteLength(txBody) },
+      }, txBody);
+
+      if (!txData.isSuccess) throw new Error('Transacciones falló: ' + JSON.stringify(txData).slice(0, 200));
+      const rows = txData.response?.transacciones || [];
+
+      if (rows.length) {
+        const { url: sbUrl, key: sbKey } = _sbCreds();
+        const sbH = new URL(sbUrl);
+        const sbHdrs = (ex = {}) => ({ apikey: sbKey, Authorization: `Bearer ${sbKey}`, 'Content-Type': 'application/json', ...ex });
+        const batchId = crypto.randomUUID();
+
+        // Batch de auditoría
+        const bBody = JSON.stringify([{
+          id: batchId, filename: `centumpay_cron_${fecha}`,
+          row_count: rows.length, date_range_from: fecha, date_range_to: fecha,
+          strategy: 'replace_period', uploaded_by: 'cron_7am',
+        }]);
+        await httpsRequest({ hostname: sbH.hostname, path: '/rest/v1/tpv_upload_batches', method: 'POST', headers: { ...sbHdrs({ Prefer: 'return=minimal' }), 'Content-Length': Buffer.byteLength(bBody) } }, bBody);
+
+        // Eliminar previas y reinsertar
+        await httpsRequest({ hostname: sbH.hostname, path: `/rest/v1/tpv_transactions?fecha=gte.${fecha}&fecha=lte.${fecha}&adquiriente=eq.EfevooPay`, method: 'DELETE', headers: sbHdrs({ Prefer: 'return=minimal' }) });
+        const transformed = rows.map(t => _centumTransform(t, batchId));
+        for (let i = 0; i < transformed.length; i += 500) {
+          const chunk = transformed.slice(i, i + 500);
+          const iBody = JSON.stringify(chunk);
+          await httpsRequest({ hostname: sbH.hostname, path: '/rest/v1/tpv_transactions', method: 'POST', headers: { ...sbHdrs({ Prefer: 'return=minimal' }), 'Content-Length': Buffer.byteLength(iBody) } }, iBody);
+        }
+        console.log(`[CentumPay Cron] ✅ ${rows.length} transacciones sincronizadas (${fecha})`);
+      } else {
+        console.log(`[CentumPay Cron] Sin transacciones para ${fecha}`);
+      }
+    } catch (e) {
+      console.error(`[CentumPay Cron] ❌ Error: ${e.message}`);
+    }
+    // Programar siguiente ejecución (mañana a las 7am CST)
+    setTimeout(() => { _runDailySync(); }, _msUntilNext());
+  }
+
+  const ms = _msUntilNext();
+  const next = new Date(Date.now() + ms);
+  console.log(`[CentumPay Cron] Próximo sync: ${next.toISOString()} (en ${Math.round(ms/60000)} min)`);
+  setTimeout(() => { _runDailySync(); }, ms);
+}

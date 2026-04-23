@@ -952,25 +952,74 @@ async function rollbackUpload(batchId) {
         if (statusEl) statusEl.textContent = '⚠ Credenciales no configuradas (.env)';
         if (tokenEl) { tokenEl.textContent = 'Sin config'; tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:#fff3cd;color:#856404'; }
       } else {
-        if (statusEl) statusEl.textContent = '✓ Configurado · ' + (process && process.env && process.env.CENTUMPAY_EMAIL ? process.env.CENTUMPAY_EMAIL : '');
+        if (statusEl) statusEl.textContent = '✓ Auth automático · diez.javier@centum.mx';
         if (tokenEl) {
           if (d.tokenActive) {
             const exp = new Date(d.tokenExp);
-            tokenEl.textContent = 'Token activo hasta ' + exp.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
+            tokenEl.textContent = '🟢 Token activo hasta ' + exp.toLocaleTimeString('es-MX', { hour: '2-digit', minute: '2-digit' });
             tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:#d4edda;color:#155724';
           } else {
-            tokenEl.textContent = 'Token inactivo (se renueva al sync)';
+            tokenEl.textContent = '⚪ Se autentica al sincronizar';
             tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:var(--border);color:var(--muted)';
           }
         }
       }
     } catch (e) { console.warn('[CentumPay panel]', e.message); }
+    // Mostrar próximo sync cron
+    const nextEl = document.getElementById('centum-next-sync');
+    if (nextEl) {
+      const now  = new Date();
+      const next7am = new Date();
+      next7am.setUTCHours(13, 0, 0, 0); // 7am CST = 13:00 UTC
+      if (next7am <= now) next7am.setUTCDate(next7am.getUTCDate() + 1);
+      const diffMin = Math.round((next7am - now) / 60000);
+      const h = Math.floor(diffMin / 60), m = diffMin % 60;
+      nextEl.textContent = `Próximo sync en ${h > 0 ? h + 'h ' : ''}${m}min`;
+    }
     // Fechas por defecto: hoy
     const today = new Date().toISOString().slice(0, 10);
     const fromEl = document.getElementById('centum-sync-from');
     const toEl   = document.getElementById('centum-sync-to');
     if (fromEl && !fromEl.value) fromEl.value = today;
     if (toEl   && !toEl.value)   toEl.value   = today;
+  }
+
+  /** Prueba el auth automático desde el servidor */
+  async function centumTestAuth() {
+    const resultEl = document.getElementById('centum-sync-result');
+    if (resultEl) {
+      resultEl.style.cssText = 'display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem;background:#e8f4fd;color:#0073ea;border:1px solid #b3d9f5';
+      resultEl.textContent = '⏳ Probando autenticación automática...';
+    }
+    try {
+      const r = await fetch('/api/centum/test-auth', {
+        method: 'POST', credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const d = await r.json();
+      if (d.ok) {
+        if (resultEl) {
+          resultEl.style.cssText = 'display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem;background:#d4edda;color:#155724;border:1px solid #c3e6cb';
+          resultEl.textContent = `✅ Auth automático OK — token válido hasta ${new Date(d.expira).toLocaleTimeString('es-MX',{hour:'2-digit',minute:'2-digit'})}`;
+        }
+        // Actualizar badge
+        const tokenEl = document.getElementById('centum-sync-token');
+        if (tokenEl) {
+          tokenEl.textContent = '🟢 Token activo';
+          tokenEl.style.cssText = 'font-size:.6rem;padding:1px 7px;border-radius:10px;background:#d4edda;color:#155724';
+        }
+      } else {
+        if (resultEl) {
+          resultEl.style.cssText = 'display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb';
+          resultEl.textContent = '❌ Auth falló: ' + d.error;
+        }
+      }
+    } catch (e) {
+      if (resultEl) {
+        resultEl.style.cssText = 'display:block;margin-top:12px;padding:10px 14px;border-radius:8px;font-size:.75rem;background:#f8d7da;color:#721c24;border:1px solid #f5c6cb';
+        resultEl.textContent = '❌ Error: ' + e.message;
+      }
+    }
   }
 
   /** Muestra resultado en el panel */
@@ -1086,6 +1135,7 @@ async function rollbackUpload(batchId) {
   window.centumSyncMes     = centumSyncMes;
   window.centumValidateJwt = centumValidateJwt;
   window.centumClearJwt    = centumClearJwt;
+  window.centumTestAuth    = centumTestAuth;
 
   // Register views
   if(typeof registerView === 'function'){
