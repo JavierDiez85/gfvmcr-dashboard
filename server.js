@@ -83,10 +83,9 @@ async function _centumAuth() {
   console.log('[CentumPay] Iniciando login con Puppeteer...');
   const puppeteer = require('puppeteer-core');
   // Mac: Chrome instalado; Linux (Railway): variable de entorno
-  const executablePath = process.platform === 'darwin'
-    ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
-    : (process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/google-chrome-stable');
-  console.log('[CentumPay] Chrome path:', executablePath);
+  const executablePath = process.env.CHROME_PATH
+    || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  console.log('[CentumPay] Chrome path:', executablePath, '| platform:', process.platform);
   const browser = await puppeteer.launch({
     headless: true,
     executablePath,
